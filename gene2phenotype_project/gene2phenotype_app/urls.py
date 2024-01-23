@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.urlpatterns import format_suffix_patterns
 from gene2phenotype_app import views
 
-def performe_create(self, serializer):
+def perform_create(self, serializer):
     serializer.save(owner=self.request.user)
 
 # specify URL Path for rest_framework
