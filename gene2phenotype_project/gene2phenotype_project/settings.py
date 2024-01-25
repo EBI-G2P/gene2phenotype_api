@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import os
+from configparser import ConfigParser
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -76,14 +77,18 @@ WSGI_APPLICATION = 'gene2phenotype_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+config_path = os.environ.get('PROJECT_CONFIG_PATH')
+config = ConfigParser()
+config.read(config_path)
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': '',
-        'USER': '',
-        'PASSWORD': '',
-        'HOST': '',
-        'PORT': '',
+        'NAME': config.get('database', 'name'),
+        'USER': config.get('database', 'user'),
+        'PASSWORD': config.get('database', 'password'),
+        'HOST': config.get('database', 'host'),
+        'PORT': config.get('database', 'port'),
     }
 }
 
