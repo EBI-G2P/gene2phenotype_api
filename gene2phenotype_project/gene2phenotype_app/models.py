@@ -328,21 +328,12 @@ class AttribType(models.Model):
     class Meta:
         db_table = "attrib_type"
 
-# TODO: update
-class Ontology(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255, unique=True, null=False)
-
-    class Meta:
-        db_table = "ontology"
-
 class OntologyTerm(models.Model):
     id = models.AutoField(primary_key=True)
     accession = models.CharField(max_length=255, null=False, unique=True)
     term = models.CharField(max_length=255, null=False, unique=True)
-    description = models.CharField(max_length=255, null=True)
-    ontology = models.ForeignKey("Ontology", on_delete=models.PROTECT)
-    source_attrib = models.ForeignKey("Attrib", on_delete=models.PROTECT)
+    description = models.TextField(null=True)
+    source = models.ForeignKey("Source", on_delete=models.PROTECT)
 
     class Meta:
         db_table = "ontology_term"
@@ -410,6 +401,7 @@ class DiseaseOntology(models.Model):
 
     class Meta:
         db_table = "disease_ontology"
+        unique_together = ["disease", "ontology_term"]
 
 class DiseasePhenotype(models.Model):
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
@@ -449,10 +441,9 @@ class DiseasePhenotypeComment(models.Model):
 class Phenotype(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255, unique=True, null=False)
-    description = models.CharField(max_length=255)
+    description = models.CharField(max_length=500, null=True)
     source = models.ForeignKey("Source", on_delete=models.PROTECT)
     ontology_term = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
-    mapped_by_attrib = models.ForeignKey("Attrib", on_delete=models.PROTECT)
 
     class Meta:
         db_table = "phenotype"
@@ -460,11 +451,11 @@ class Phenotype(models.Model):
 class Publication(models.Model):
     id = models.AutoField(primary_key=True)
     pmid = models.IntegerField(null=False, unique=True)
-    title = models.CharField(max_length=255, null=False)
-    authors = models.CharField(max_length=255, null=False)
-    source = models.CharField(max_length=100, null=False)
-    doi = models.CharField(max_length=100, null=True)
-    year = models.IntegerField(null=False)
+    title = models.CharField(max_length=500, null=False)
+    authors = models.CharField(max_length=255, null=True)
+    source = models.CharField(max_length=255, null=True)
+    doi = models.CharField(max_length=255, null=True)
+    year = models.IntegerField(null=True)
 
     class Meta:
         db_table = "publication"
@@ -503,9 +494,11 @@ class User(AbstractUser):
     id = models.AutoField(primary_key=True)
     username = models.CharField(max_length=100, unique=True, null=False)
     email = models.CharField(max_length=100, unique=True, null=False)
-    is_deleted = models.BooleanField(default=True)
+    is_deleted = models.BooleanField(default=False)
     date_joined = models.DateField(null=True)
     is_superuser = models.SmallIntegerField(default=False)
+    first_name = models.CharField(max_length=100, null=True, default=False)
+    last_name = models.CharField(max_length=100, null=True, default=False)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
