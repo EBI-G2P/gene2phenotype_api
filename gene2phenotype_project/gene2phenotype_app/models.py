@@ -63,7 +63,7 @@ class LGDCrossCuttingModifierHistory(models.Model):
 class LGDPhenotype(models.Model):
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
-    phenotype = models.ForeignKey("Phenotype", on_delete=models.PROTECT)
+    phenotype = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
 
@@ -405,7 +405,7 @@ class DiseaseOntology(models.Model):
 
 class DiseasePhenotype(models.Model):
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
-    phenotype = models.ForeignKey("Phenotype", on_delete=models.PROTECT)
+    phenotype = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     score = models.DecimalField(max_digits=10, decimal_places=6 , null=False)
 
@@ -437,16 +437,6 @@ class DiseasePhenotypeComment(models.Model):
     class Meta:
         db_table = "disease_phenotype_comment"
         # unique_together = ["disease_phenotype", "comment", "user"]
-
-class Phenotype(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255, unique=True, null=False)
-    description = models.CharField(max_length=500, null=True)
-    source = models.ForeignKey("Source", on_delete=models.PROTECT)
-    ontology_term = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
-
-    class Meta:
-        db_table = "phenotype"
 
 class Publication(models.Model):
     id = models.AutoField(primary_key=True)
