@@ -1,7 +1,14 @@
 from rest_framework import generics
 from rest_framework.response import Response
-from gene2phenotype_app.serializers import PanelSerializer, UserSerializer, PanelDetailSerializer, AttribTypeSerializer, AttribSerializer
+
+from gene2phenotype_app.serializers import (PanelSerializer,
+                                            UserSerializer,
+                                            PanelDetailSerializer,
+                                            AttribTypeSerializer,
+                                            AttribSerializer)
+
 from gene2phenotype_app.models import Panel, User, AttribType, Attrib
+
 
 class PanelList(generics.ListAPIView):
     queryset = Panel.objects.filter()

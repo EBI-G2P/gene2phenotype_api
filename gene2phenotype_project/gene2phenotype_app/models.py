@@ -258,7 +258,7 @@ class LGDPanel(models.Model):
         db_table = "lgd_panel"
         unique_together = ["lgd", "panel"]
         indexes = [
-            models.Index(fields=['lgd']),
+            models.Index(fields=['panel']),
             models.Index(fields=['lgd', 'panel'])
         ]
 
@@ -288,7 +288,8 @@ class Locus(models.Model):
     class Meta:
         db_table = "locus"
         indexes = [
-            models.Index(fields=['name'])
+            models.Index(fields=['name']),
+            models.Index(fields=['type'])
         ]
 
 class LocusHistory(models.Model):
@@ -336,6 +337,9 @@ class Attrib(models.Model):
     class Meta:
         db_table = "attrib"
         unique_together = ["type", "value"]
+        indexes = [
+            models.Index(fields=['value'])
+        ]
 
 class AttribType(models.Model):
     id = models.AutoField(primary_key=True)
@@ -506,6 +510,9 @@ class Panel(models.Model):
 
     class Meta:
         db_table = "panel"
+        indexes = [
+            models.Index(fields=['name'])
+        ]
 
 class User(AbstractUser):
     id = models.AutoField(primary_key=True)
