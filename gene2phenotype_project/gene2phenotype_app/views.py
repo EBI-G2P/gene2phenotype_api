@@ -1,13 +1,14 @@
-from rest_framework import generics
+from rest_framework import generics, permissions
 from rest_framework.response import Response
 
 from gene2phenotype_app.serializers import (PanelSerializer,
                                             UserSerializer,
                                             PanelDetailSerializer,
                                             AttribTypeSerializer,
-                                            AttribSerializer)
+                                            AttribSerializer,
+                                            LocusGenotypeDiseaseSerializer)
 
-from gene2phenotype_app.models import Panel, User, AttribType, Attrib
+from gene2phenotype_app.models import Panel, User, AttribType, Attrib, LocusGenotypeDisease
 
 
 class PanelList(generics.ListAPIView):
@@ -47,3 +48,12 @@ class AttribList(generics.ListAPIView):
         queryset = self.get_queryset()
         code_list = [attrib.value for attrib in queryset]
         return Response(code_list)
+
+class LocusGenotypeDiseaseDetail(generics.RetrieveUpdateDestroyAPIView):
+    lookup_field = 'stable_id'
+    serializer_class = LocusGenotypeDiseaseSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        stable_id = self.kwargs['stable_id']
+        return LocusGenotypeDisease.objects.filter(stable_id=stable_id)

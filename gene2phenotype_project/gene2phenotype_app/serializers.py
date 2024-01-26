@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from .models import (Panel, User, UserPanel, AttribType, Attrib,
-                     LGDPanel)
+                     LGDPanel, LocusGenotypeDisease, LGDVariantGenccConsequence,
+                     LGDCrossCuttingModifier, LGDPublication,
+                     LGDPhenotype, LGDVariantType)
 
 class PanelSerializer(serializers.ModelSerializer):
     name = serializers.CharField(read_only=True)
@@ -99,3 +101,84 @@ class LGDPanelSerializer(serializers.ModelSerializer):
     class Meta:
         model = LGDPanel
         fields = ['panel']
+
+class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
+    locus = serializers.CharField(source="locus.name")
+    genotype = serializers.CharField(source="genotype.value")
+    mechanism = serializers.SerializerMethodField()
+    disease = serializers.CharField(source="disease.name")
+    confidence = serializers.CharField(source="confidence.value")
+    publications = serializers.SerializerMethodField()
+    panels = serializers.SerializerMethodField()
+    cross_cutting_modifier = serializers.SerializerMethodField()
+    variant_type = serializers.SerializerMethodField()
+    phenotypes  = serializers.SerializerMethodField()
+
+    def get_mechanism(self, id):
+        x = LGDVariantGenccConsequence.objects.filter(lgd_id=id)
+        return MechanismSerializer(x, many=True).data
+
+    def get_cross_cutting_modifier(self, id):
+        x = LGDCrossCuttingModifier.objects.filter(lgd_id=id)
+        return LGDCrossCuttingModifierSerializer(x, many=True).data
+
+    def get_publications(self, id):
+        x = LGDPublication.objects.filter(lgd_id=id)
+        return LGDPublicationSerializer(x, many=True).data
+
+    def get_phenotypes(self, id):
+        x = LGDPhenotype.objects.filter(lgd_id=id)
+        return LGDPhenotypeSerializer(x, many=True).data
+
+    def get_variant_type(self, id):
+        x = LGDVariantType.objects.filter(lgd_id=id)
+        return VariantTypeSerializer(x, many=True).data
+
+    def get_panels(self, id):
+        x = LGDPanel.objects.filter(lgd_id=id)
+        return LGDPanelSerializer(x, many=True).data
+
+    class Meta:
+        model = LocusGenotypeDisease
+        fields = '__all__'
+        read_only_fields = ['stable_id']
+
+class MechanismSerializer(serializers.ModelSerializer):
+    variant_consequence = serializers.CharField(source="variant_consequence.term")
+    support = serializers.CharField(source="support.value")
+    publication = serializers.CharField(source="publication.title", allow_null=True)
+
+    class Meta:
+        model = LGDVariantGenccConsequence
+        fields = ['variant_consequence', 'support', 'publication']
+
+class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
+    term = serializers.CharField(source="ccm.value")
+
+    class Meta:
+        model = LGDCrossCuttingModifier
+        fields = ['term']
+
+class LGDPublicationSerializer(serializers.ModelSerializer):
+    pmid = serializers.CharField(source="publication.pmid")
+    title = serializers.CharField(source="publication.title")
+
+    class Meta:
+        model = LGDPublication
+        fields = ['pmid', 'title']
+
+class LGDPhenotypeSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source="phenotype.term")
+    accession = serializers.CharField(source="phenotype.accession")
+
+    class Meta:
+        model = LGDPhenotype
+        fields = ['name', 'accession']
+
+class VariantTypeSerializer(serializers.ModelSerializer):
+    term = serializers.CharField(source="variant_type_ot.term")
+    accession = serializers.CharField(source="variant_type_ot.accession")
+
+    class Meta:
+        model = LGDVariantType
+        fields = ['term', 'accession']
