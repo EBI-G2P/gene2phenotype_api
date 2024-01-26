@@ -8,6 +8,10 @@ def perform_create(self, serializer):
 # specify URL Path for rest_framework
 urlpatterns = [
     path('gene2phenotype/api/panel/', views.PanelList.as_view(), name="list_panels"),
+    path('gene2phenotype/api/panel/<str:name>', views.PanelDetail.as_view(), name="panel_details"),
+    path('gene2phenotype/api/users/', views.UserList.as_view(), name="list_users"),
+    path('gene2phenotype/api/attrib/', views.AttribTypeList.as_view(), name="list_attrib_type"),
+    path('gene2phenotype/api/attrib/<str:code>', views.AttribList.as_view(), name="list_attribs_by_type"),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)
