@@ -95,7 +95,6 @@ class LGDPhenotypeComment(models.Model):
 
     class Meta:
         db_table = "lgd_phenotype_comment"
-        # unique_together = ["lgd_phenotype", "comment", "user"]
 
 # Types of variants reported in the publication: missense_variant, frameshift_variant, stop_gained, etc.
 # Sequence ontology terms are used to describe variant types
@@ -137,7 +136,6 @@ class LGDVariantTypeComment(models.Model):
 
     class Meta:
         db_table = "lgd_variant_type_comment"
-        # unique_together = ["variant_type", "comment", "user"]
 
 # GenCC level of variant consequence: altered_gene_product_level, etc.
 # Sequence ontology terms are used to describe GenCC variant types
@@ -147,7 +145,7 @@ class LGDVariantGenccConsequence(models.Model):
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     variant_consequence = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
     support = models.ForeignKey("Attrib", on_delete=models.PROTECT)
-    panel = models.ForeignKey("Panel", on_delete=models.PROTECT, null=True)
+    panel = models.ForeignKey("Panel", on_delete=models.PROTECT, null=True, default=None)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
 
@@ -436,7 +434,6 @@ class DiseasePhenotypeComment(models.Model):
 
     class Meta:
         db_table = "disease_phenotype_comment"
-        # unique_together = ["disease_phenotype", "comment", "user"]
 
 class Publication(models.Model):
     id = models.AutoField(primary_key=True)
