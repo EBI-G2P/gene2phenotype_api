@@ -17,6 +17,10 @@ class LocusGenotypeDisease(models.Model):
     class Meta:
         db_table = "locus_genotype_disease"
         unique_together = ["locus", "genotype", "disease"]
+        indexes = [
+            models.Index(fields=['locus']),
+            models.Index(fields=['disease'])
+        ]
 
 class LocusGenotypeDiseaseHistory(models.Model):
     lgd_id = models.IntegerField()
@@ -46,6 +50,9 @@ class LGDCrossCuttingModifier(models.Model):
         db_table = "lgd_cross_cutting_modifier"
         UniqueConstraint(fields=["lgd", "ccm", "publication"], name='unique_with_publication')
         UniqueConstraint(fields=["lgd", "ccm"], condition=Q(publication=None), name='unique_without_publication')
+        indexes = [
+            models.Index(fields=['lgd', 'ccm']),
+        ]
 
 class LGDCrossCuttingModifierHistory(models.Model):
     lgd_cccm_id = models.IntegerField()
@@ -71,6 +78,9 @@ class LGDPhenotype(models.Model):
         db_table = "lgd_phenotype"
         UniqueConstraint(fields=["lgd", "phenotype", "publication"], name='unique_with_publication')
         UniqueConstraint(fields=["lgd", "phenotype"], condition=Q(publication=None), name='unique_without_publication')
+        indexes = [
+            models.Index(fields=['lgd', 'phenotype']),
+        ]
 
 class LGDPhenotypeHistory(models.Model):
     lgd_phenotype_id = models.IntegerField()
@@ -110,6 +120,9 @@ class LGDVariantType(models.Model):
         db_table = "lgd_variant_type"
         UniqueConstraint(fields=["lgd","variant_type_ot", "publication"], name='unique_with_publication')
         UniqueConstraint(fields=["lgd","variant_type_ot"], condition=Q(publication=None), name='unique_without_publication')
+        indexes = [
+            models.Index(fields=['lgd', 'variant_type_ot']),
+        ]
 
 class LGDVariantTypeHistory(models.Model):
     lgd_var_type_id = models.IntegerField()
@@ -244,6 +257,10 @@ class LGDPanel(models.Model):
     class Meta:
         db_table = "lgd_panel"
         unique_together = ["lgd", "panel"]
+        indexes = [
+            models.Index(fields=['lgd']),
+            models.Index(fields=['lgd', 'panel'])
+        ]
 
 class LGDPanelHistory(models.Model):
     lgd_panel_id = models.IntegerField()
@@ -270,6 +287,9 @@ class Locus(models.Model):
 
     class Meta:
         db_table = "locus"
+        indexes = [
+            models.Index(fields=['name'])
+        ]
 
 class LocusHistory(models.Model):
     locus_id = models.IntegerField()
@@ -335,6 +355,10 @@ class OntologyTerm(models.Model):
 
     class Meta:
         db_table = "ontology_term"
+        indexes = [
+            models.Index(fields=['accession']),
+            models.Index(fields=['term'])
+        ]
 
 class Disease(models.Model):
     id = models.AutoField(primary_key=True)
@@ -343,6 +367,9 @@ class Disease(models.Model):
 
     class Meta:
         db_table = "disease"
+        indexes = [
+            models.Index(fields=['name'])
+        ]
 
 class DiseaseHistory(models.Model):
     disease_id = models.IntegerField()
@@ -446,6 +473,9 @@ class Publication(models.Model):
 
     class Meta:
         db_table = "publication"
+        indexes = [
+            models.Index(fields=['pmid'])
+        ]
 
 class PublicationComment(models.Model):
     id = models.AutoField(primary_key=True)
@@ -492,6 +522,10 @@ class User(AbstractUser):
 
     class Meta:
         db_table = "user"
+        indexes = [
+            models.Index(fields=['username']),
+            models.Index(fields=['email'])
+        ]
 
 class UserPanel(models.Model):
     id = models.AutoField(primary_key=True)
@@ -501,6 +535,9 @@ class UserPanel(models.Model):
 
     class Meta:
         db_table = "user_panel"
+        indexes = [
+            models.Index(fields=['user', 'panel']),
+        ]
 
 ### Legacy data ###
 class Organ(models.Model):
