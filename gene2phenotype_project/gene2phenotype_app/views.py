@@ -36,6 +36,18 @@ class PanelStats(generics.ListAPIView):
 
         return Response(response_data)
 
+class PanelRecordsSummary(generics.ListAPIView):
+    def get(self, request, name, *args, **kwargs):
+        panel = get_object_or_404(Panel, name=name)
+        serializer = PanelDetailSerializer()
+        summmary = serializer.records_summary(panel)
+        response_data = {
+            'panel_name': panel.name,
+            'records_summary': summmary,
+        }
+
+        return Response(response_data)
+
 class UserList(generics.ListAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer

@@ -1,4 +1,5 @@
 from rest_framework import serializers
+
 from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      LGDPanel, LocusGenotypeDisease, LGDVariantGenccConsequence,
                      LGDCrossCuttingModifier, LGDPublication,
@@ -48,14 +49,15 @@ class PanelDetailSerializer(PanelSerializer):
 
     def calculate_stats(self, panel):
         lgd_panels = LGDPanel.objects.filter(panel=panel.id)
-        num_records = len(LGDPanelSerializer(lgd_panels, many=True).data)
-
+        num_records = 0
         genes = 0
         uniq_genes = {}
         diseases = 0
         uniq_diseases = {}
         attrib_id = Attrib.objects.get(value='gene').id
         for lgd_panel in lgd_panels:
+            if lgd_panel.is_deleted == 0:
+                num_records += 1
             if lgd_panel.lgd.locus.type.id == attrib_id and lgd_panel.lgd.locus.name not in uniq_genes:
                 genes += 1
                 uniq_genes = { lgd_panel.lgd.locus.name:1 }
@@ -70,6 +72,23 @@ class PanelDetailSerializer(PanelSerializer):
             }
 
         return stats
+
+    def records_summary(self, panel):
+        lgd_panels = LGDPanel.objects.filter(panel=panel.id)
+
+        lgd_panels = lgd_panels.select_related('lgd', 'lgd__locus', 'lgd__disease', 'lgd__genotype', 'lgd__confidence'
+                                               ).prefetch_related('lgd__lgd_variant_gencc_consequence', 'lgd__lgd_variant_type').order_by('-lgd__date_review')[:10]
+
+        lgd_objects_list = list(lgd_panels.values('lgd__locus__name',
+                                                  'lgd__disease__name',
+                                                  'lgd__genotype__value',
+                                                  'lgd__confidence__value',
+                                                #   'lgd__lgdvariantgenccconsequence__variant_consequence__term',
+                                                #   'lgd__lgdvarianttype__variant_type_ot__term',
+                                                  'lgd__date_review',
+                                                  'lgd__stable_id'))
+
+        return lgd_objects_list
 
     class Meta:
         model = Panel
