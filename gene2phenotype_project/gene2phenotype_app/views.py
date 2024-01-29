@@ -1,4 +1,5 @@
 from rest_framework import generics, permissions
+from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 
 from gene2phenotype_app.serializers import (PanelSerializer,
@@ -22,6 +23,18 @@ class PanelDetail(generics.ListAPIView):
     def get_queryset(self):
         name = self.kwargs['name']
         return Panel.objects.filter(name=name)
+
+class PanelStats(generics.ListAPIView):
+    def get(self, request, name, *args, **kwargs):
+        panel = get_object_or_404(Panel, name=name)
+        serializer = PanelDetailSerializer()
+        stats = serializer.calculate_stats(panel)
+        response_data = {
+            'panel_name': panel.name,
+            'stats': stats,
+        }
+
+        return Response(response_data)
 
 class UserList(generics.ListAPIView):
     queryset = User.objects.all()

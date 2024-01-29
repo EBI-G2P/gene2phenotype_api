@@ -14,9 +14,6 @@ class PanelSerializer(serializers.ModelSerializer):
 
 class PanelDetailSerializer(PanelSerializer):
     curators = serializers.SerializerMethodField()
-    number_records = serializers.SerializerMethodField()
-    genes = serializers.SerializerMethodField()
-    diseases = serializers.SerializerMethodField()
     last_updated = serializers.SerializerMethodField()
 
     def get_curators(self, id):
@@ -26,21 +23,6 @@ class PanelDetailSerializer(PanelSerializer):
             if u.user.is_active == 1:
                 users.append(u.user.username)
         return users
-    
-    def get_number_records(self, id):
-        x = LGDPanel.objects.filter(panel=id)
-        return len(LGDPanelSerializer(x, many=True).data)
-
-    def get_genes(self, id):
-        genes = 0
-        uniq_genes = {}
-        attrib_id = Attrib.objects.get(value='gene').id
-        x = LGDPanel.objects.filter(panel=id)
-        for lgd_panel in x:
-            if lgd_panel.lgd.locus.type.id == attrib_id and lgd_panel.lgd.locus.name not in uniq_genes:
-                genes += 1
-                uniq_genes = { lgd_panel.lgd.locus.name:1 }
-        return genes
 
     def get_diseases(self, id):
         diseases = 0
@@ -64,9 +46,34 @@ class PanelDetailSerializer(PanelSerializer):
         else:
             return []
 
+    def calculate_stats(self, panel):
+        lgd_panels = LGDPanel.objects.filter(panel=panel.id)
+        num_records = len(LGDPanelSerializer(lgd_panels, many=True).data)
+
+        genes = 0
+        uniq_genes = {}
+        diseases = 0
+        uniq_diseases = {}
+        attrib_id = Attrib.objects.get(value='gene').id
+        for lgd_panel in lgd_panels:
+            if lgd_panel.lgd.locus.type.id == attrib_id and lgd_panel.lgd.locus.name not in uniq_genes:
+                genes += 1
+                uniq_genes = { lgd_panel.lgd.locus.name:1 }
+            if lgd_panel.lgd.disease_id not in uniq_diseases:
+                diseases += 1
+                uniq_diseases = { lgd_panel.lgd.disease_id:1 }
+
+        stats = {
+            'number of records': num_records,
+            'number of genes': genes,
+            'number of disease':diseases
+            }
+
+        return stats
+
     class Meta:
         model = Panel
-        fields = PanelSerializer.Meta.fields + ['curators', 'number_records', 'genes', 'diseases', 'last_updated']
+        fields = PanelSerializer.Meta.fields + ['curators', 'last_updated']
 
 class UserSerializer(serializers.ModelSerializer):
     user = serializers.CharField(read_only=True, source="username")
@@ -140,7 +147,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LocusGenotypeDisease
-        fields = '__all__'
+        exclude = ['id', 'is_deleted']
         read_only_fields = ['stable_id']
 
 class MechanismSerializer(serializers.ModelSerializer):
