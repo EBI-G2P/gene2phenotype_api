@@ -76,19 +76,48 @@ class PanelDetailSerializer(PanelSerializer):
     def records_summary(self, panel):
         lgd_panels = LGDPanel.objects.filter(panel=panel.id)
 
-        lgd_panels = lgd_panels.select_related('lgd', 'lgd__locus', 'lgd__disease', 'lgd__genotype', 'lgd__confidence'
-                                               ).prefetch_related('lgd__lgd_variant_gencc_consequence', 'lgd__lgd_variant_type').order_by('-lgd__date_review')[:10]
+        lgd_panels_sel = lgd_panels.select_related('lgd', 'lgd__locus', 'lgd__disease', 'lgd__genotype', 'lgd__confidence'
+                                               ).prefetch_related('lgd__lgd_variant_gencc_consequence', 'lgd__lgd_variant_type').order_by('-lgd__date_review')[:100]
 
-        lgd_objects_list = list(lgd_panels.values('lgd__locus__name',
+        lgd_objects_list = list(lgd_panels_sel.values('lgd__locus__name',
                                                   'lgd__disease__name',
                                                   'lgd__genotype__value',
                                                   'lgd__confidence__value',
-                                                #   'lgd__lgdvariantgenccconsequence__variant_consequence__term',
-                                                #   'lgd__lgdvarianttype__variant_type_ot__term',
+                                                  'lgd__lgdvariantgenccconsequence__variant_consequence__term',
+                                                  'lgd__lgdvarianttype__variant_type_ot__term',
                                                   'lgd__date_review',
                                                   'lgd__stable_id'))
 
-        return lgd_objects_list
+        aggregated_data = {}
+        n_keys = 0
+        for o in lgd_objects_list:
+            if o['lgd__stable_id'] not in aggregated_data.keys() and n_keys < 10:
+                variant_consequences = []
+                variant_types = []
+
+                variant_consequences.append(o['lgd__lgdvariantgenccconsequence__variant_consequence__term'])
+                # Some records do not have variant types
+                print(o['lgd__lgdvarianttype__variant_type_ot__term'])
+                if o['lgd__lgdvarianttype__variant_type_ot__term'] is not None:
+                    variant_types.append(o['lgd__lgdvarianttype__variant_type_ot__term'])
+
+                aggregated_data[o['lgd__stable_id']] = { 'locus':o['lgd__locus__name'],
+                                                         'disease':o['lgd__disease__name'],
+                                                         'genotype':o['lgd__genotype__value'],
+                                                         'confidence':o['lgd__confidence__value'],
+                                                         'variant consequence':variant_consequences,
+                                                         'variant type':variant_types,
+                                                         'date review':o['lgd__date_review'],
+                                                         'stable id':o['lgd__stable_id'] }
+                n_keys += 1
+
+            elif n_keys < 10:
+                if o['lgd__lgdvariantgenccconsequence__variant_consequence__term'] not in aggregated_data[o['lgd__stable_id']]['variant consequence']:
+                    aggregated_data[o['lgd__stable_id']]['variant consequence'].append(o['lgd__lgdvariantgenccconsequence__variant_consequence__term'])
+                if o['lgd__lgdvarianttype__variant_type_ot__term'] not in aggregated_data[o['lgd__stable_id']]['variant type'] and o['lgd__lgdvarianttype__variant_type_ot__term'] is not None:
+                    aggregated_data[o['lgd__stable_id']]['variant type'].append(o['lgd__lgdvarianttype__variant_type_ot__term'])
+
+        return aggregated_data.values()
 
     class Meta:
         model = Panel
