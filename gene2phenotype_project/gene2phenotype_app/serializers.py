@@ -3,7 +3,7 @@ from rest_framework import serializers
 from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      LGDPanel, LocusGenotypeDisease, LGDVariantGenccConsequence,
                      LGDCrossCuttingModifier, LGDPublication,
-                     LGDPhenotype, LGDVariantType)
+                     LGDPhenotype, LGDVariantType, Locus)
 
 class PanelSerializer(serializers.ModelSerializer):
     name = serializers.CharField(read_only=True)
@@ -74,19 +74,19 @@ class PanelDetailSerializer(PanelSerializer):
         return stats
 
     def records_summary(self, panel):
-        lgd_panels = LGDPanel.objects.filter(panel=panel.id)
+        lgd_panels = LGDPanel.objects.filter(panel=panel.id).filter(is_deleted=0)
 
         lgd_panels_sel = lgd_panels.select_related('lgd', 'lgd__locus', 'lgd__disease', 'lgd__genotype', 'lgd__confidence'
                                                ).prefetch_related('lgd__lgd_variant_gencc_consequence', 'lgd__lgd_variant_type').order_by('-lgd__date_review')[:100]
 
         lgd_objects_list = list(lgd_panels_sel.values('lgd__locus__name',
-                                                  'lgd__disease__name',
-                                                  'lgd__genotype__value',
-                                                  'lgd__confidence__value',
-                                                  'lgd__lgdvariantgenccconsequence__variant_consequence__term',
-                                                  'lgd__lgdvarianttype__variant_type_ot__term',
-                                                  'lgd__date_review',
-                                                  'lgd__stable_id'))
+                                                      'lgd__disease__name',
+                                                      'lgd__genotype__value',
+                                                      'lgd__confidence__value',
+                                                      'lgd__lgdvariantgenccconsequence__variant_consequence__term',
+                                                      'lgd__lgdvarianttype__variant_type_ot__term',
+                                                      'lgd__date_review',
+                                                      'lgd__stable_id'))
 
         aggregated_data = {}
         n_keys = 0
@@ -97,7 +97,6 @@ class PanelDetailSerializer(PanelSerializer):
 
                 variant_consequences.append(o['lgd__lgdvariantgenccconsequence__variant_consequence__term'])
                 # Some records do not have variant types
-                print(o['lgd__lgdvarianttype__variant_type_ot__term'])
                 if o['lgd__lgdvarianttype__variant_type_ot__term'] is not None:
                     variant_types.append(o['lgd__lgdvarianttype__variant_type_ot__term'])
 
@@ -156,6 +155,56 @@ class LGDPanelSerializer(serializers.ModelSerializer):
     class Meta:
         model = LGDPanel
         fields = ['panel']
+
+class LocusGeneSerializer(PanelSerializer):
+
+    def records_summary(self):
+        lgd_list = LocusGenotypeDisease.objects.filter(locus=self.id)
+        lgd_select = lgd_list.select_related('disease', 'genotype', 'confidence'
+                                               ).prefetch_related('lgd_panel', 'panel', 'lgd_variant_gencc_consequence', 'lgd_variant_type'
+                                                                  ).order_by('-date_review')
+
+        lgd_objects_list = list(lgd_select.values('disease__name',
+                                                  'lgdpanel__panel__name',
+                                                  'stable_id',
+                                                  'genotype__value',
+                                                  'confidence__value',
+                                                  'lgdvariantgenccconsequence__variant_consequence__term',
+                                                  'lgdvarianttype__variant_type_ot__term'))
+
+        aggregated_data = {}
+        for o in lgd_objects_list:
+            if o['stable_id'] not in aggregated_data.keys():
+                variant_consequences = []
+                variant_types = []
+                panels = []
+
+                panels.append(o['lgdpanel__panel__name'])
+                variant_consequences.append(o['lgdvariantgenccconsequence__variant_consequence__term'])
+                if o['lgdvarianttype__variant_type_ot__term'] is not None:
+                    variant_types.append(o['lgdvarianttype__variant_type_ot__term'])
+
+                aggregated_data[o['stable_id']] = { 'disease':o['disease__name'],
+                                                     'genotype':o['genotype__value'],
+                                                     'confidence':o['confidence__value'],
+                                                     'panels':panels,
+                                                     'variant consequence':variant_consequences,
+                                                     'variant type':variant_types,
+                                                     'stable id':o['stable_id'] }
+
+            else:
+                if o['lgdpanel__panel__name'] not in aggregated_data[o['stable_id']]['panels']:
+                    aggregated_data[o['stable_id']]['panels'].append(o['lgdpanel__panel__name'])
+                if o['lgdvariantgenccconsequence__variant_consequence__term'] not in aggregated_data[o['stable_id']]['variant consequence']:
+                    aggregated_data[o['stable_id']]['variant consequence'].append(o['lgdvariantgenccconsequence__variant_consequence__term'])
+                if o['lgdvarianttype__variant_type_ot__term'] not in aggregated_data[o['stable_id']]['variant type'] and o['lgdvarianttype__variant_type_ot__term'] is not None:
+                    aggregated_data[o['stable_id']]['variant type'].append(o['lgdvarianttype__variant_type_ot__term'])
+
+        return aggregated_data.values()
+
+    class Meta:
+        model = Locus
+        fields = ['sequence', 'start', 'end', 'strand', 'name']
 
 class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     locus = serializers.CharField(source="locus.name")

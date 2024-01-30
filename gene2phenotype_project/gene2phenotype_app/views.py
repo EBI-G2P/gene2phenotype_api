@@ -1,5 +1,6 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
 from django.shortcuts import get_object_or_404
+from django.http import Http404
 from rest_framework.response import Response
 
 from gene2phenotype_app.serializers import (PanelSerializer,
@@ -7,9 +8,10 @@ from gene2phenotype_app.serializers import (PanelSerializer,
                                             PanelDetailSerializer,
                                             AttribTypeSerializer,
                                             AttribSerializer,
-                                            LocusGenotypeDiseaseSerializer)
+                                            LocusGenotypeDiseaseSerializer,
+                                            LocusGeneSerializer)
 
-from gene2phenotype_app.models import Panel, User, AttribType, Attrib, LocusGenotypeDisease
+from gene2phenotype_app.models import Panel, User, AttribType, Attrib, LocusGenotypeDisease, Locus
 
 
 class PanelList(generics.ListAPIView):
@@ -47,6 +49,60 @@ class PanelRecordsSummary(generics.ListAPIView):
         }
 
         return Response(response_data)
+
+class LocusGene(generics.ListAPIView):
+    lookup_field = 'name'
+    serializer_class = LocusGeneSerializer
+
+    def get_queryset(self):
+        name = self.kwargs['name']
+        attrib_type = AttribType.objects.filter(code='locus_type')
+        attrib = Attrib.objects.filter(type=attrib_type[0].id, value='gene')
+        queryset = Locus.objects.filter(name=name, type=attrib[0].id)
+
+        if not queryset.exists():
+            self.handle_no_permission(name)
+
+        return queryset
+
+    def handle_no_permission(self, name):
+        raise Http404(f"No matching Gene found for symbol: {name}")
+
+    def handle_exception(self, exc):
+        if isinstance(exc, Http404):
+            return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        return super().handle_exception(exc)
+
+class LocusGeneSummary(generics.ListAPIView):
+    lookup_field = 'name'
+    serializer_class = LocusGeneSerializer
+
+    def get(self, request, name, *args, **kwargs):
+        attrib_type = AttribType.objects.filter(code='locus_type')
+        attrib = Attrib.objects.filter(type=attrib_type[0].id, value='gene')
+        queryset = Locus.objects.filter(name=name, type=attrib[0].id)
+
+        if not queryset.exists():
+            self.handle_no_permission(name)
+
+        serializer = LocusGeneSerializer
+        summmary = serializer.records_summary(queryset[0])
+        response_data = {
+            'panel_name': queryset[0].name,
+            'records_summary': summmary,
+        }
+
+        return Response(response_data)
+
+    def handle_no_permission(self, name):
+        raise Http404(f"No matching Gene found for symbol: {name}")
+
+    def handle_exception(self, exc):
+        if isinstance(exc, Http404):
+            return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        return super().handle_exception(exc)
 
 class UserList(generics.ListAPIView):
     queryset = User.objects.all()
