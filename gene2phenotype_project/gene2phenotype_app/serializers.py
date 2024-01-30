@@ -3,7 +3,8 @@ from rest_framework import serializers
 from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      LGDPanel, LocusGenotypeDisease, LGDVariantGenccConsequence,
                      LGDCrossCuttingModifier, LGDPublication,
-                     LGDPhenotype, LGDVariantType, Locus)
+                     LGDPhenotype, LGDVariantType, Locus, Disease,
+                     DiseaseOntology, LocusGenotypeDiseaseHistory)
 
 class PanelSerializer(serializers.ModelSerializer):
     name = serializers.CharField(read_only=True)
@@ -156,7 +157,26 @@ class LGDPanelSerializer(serializers.ModelSerializer):
         model = LGDPanel
         fields = ['panel']
 
-class LocusGeneSerializer(PanelSerializer):
+class LocusSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Locus
+        fields = ['name', 'sequence', 'start', 'end', 'strand']
+
+class LocusGeneSerializer(LocusSerializer):
+    last_updated = serializers.SerializerMethodField()
+
+    def get_last_updated(self, id):
+        dates = []
+        lgds = LocusGenotypeDisease.objects.filter(locus=id)
+        for lgd in lgds:
+            if lgd.date_review is not None and lgd.is_reviewed == 1 and lgd.is_deleted == 0:
+                dates.append(lgd.date_review)
+                dates.sort()
+        if len(dates) > 0:
+            return dates[-1]
+        else:
+            return []
 
     def records_summary(self):
         lgd_list = LocusGenotypeDisease.objects.filter(locus=self.id)
@@ -204,19 +224,29 @@ class LocusGeneSerializer(PanelSerializer):
 
     class Meta:
         model = Locus
-        fields = ['sequence', 'start', 'end', 'strand', 'name']
+        fields = LocusSerializer.Meta.fields + ['last_updated']
 
 class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
-    locus = serializers.CharField(source="locus.name")
+    locus = serializers.SerializerMethodField()
     genotype = serializers.CharField(source="genotype.value")
     mechanism = serializers.SerializerMethodField()
-    disease = serializers.CharField(source="disease.name")
+    disease = serializers.SerializerMethodField()
     confidence = serializers.CharField(source="confidence.value")
     publications = serializers.SerializerMethodField()
     panels = serializers.SerializerMethodField()
     cross_cutting_modifier = serializers.SerializerMethodField()
     variant_type = serializers.SerializerMethodField()
-    phenotypes  = serializers.SerializerMethodField()
+    phenotypes = serializers.SerializerMethodField()
+    last_updated = serializers.CharField(source="date_review")
+    created = serializers.SerializerMethodField()
+
+    def get_locus(self, id):
+        locus = LocusSerializer(id.locus).data
+        return locus
+
+    def get_disease(self, id):
+        disease = DiseaseSerializer(id.disease).data
+        return disease
 
     def get_mechanism(self, id):
         x = LGDVariantGenccConsequence.objects.filter(lgd_id=id)
@@ -242,9 +272,16 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         x = LGDPanel.objects.filter(lgd_id=id)
         return LGDPanelSerializer(x, many=True).data
 
+    # This method depends on the history table
+    # Leave it for now
+    def get_created(self, id):
+        x = LocusGenotypeDiseaseHistory.objects.filter(lgd_id=id.id)
+
+        return ""
+
     class Meta:
         model = LocusGenotypeDisease
-        exclude = ['id', 'is_deleted']
+        exclude = ['id', 'is_deleted', 'date_review']
         read_only_fields = ['stable_id']
 
 class MechanismSerializer(serializers.ModelSerializer):
@@ -270,6 +307,28 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = LGDPublication
         fields = ['pmid', 'title']
+
+class DiseaseSerializer(serializers.ModelSerializer):
+    name = serializers.CharField()
+    mim = serializers.CharField()
+    ontology_terms = serializers.SerializerMethodField()
+
+    def get_ontology_terms(self, id):
+        disease_ontologies = DiseaseOntology.objects.filter(disease=id)
+        return DiseaseOntologySerializer(disease_ontologies, many=True).data
+
+    class Meta:
+        model = Disease
+        fields = ['name', 'mim', 'ontology_terms']
+
+class DiseaseOntologySerializer(serializers.ModelSerializer):
+    accession = serializers.CharField(source="ontology_term.accession")
+    term = serializers.CharField(source="ontology_term.term")
+    description = serializers.CharField(source="ontology_term.description")
+
+    class Meta:
+        model = DiseaseOntology
+        fields = ['accession', 'term', 'description']
 
 class LGDPhenotypeSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="phenotype.term")
