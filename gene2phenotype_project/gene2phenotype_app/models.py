@@ -276,10 +276,27 @@ class LGDPanelHistory(models.Model):
     class Meta:
         db_table = "lgd_panel_history"
 
+class Meta(models.Model):
+    id = models.AutoField(primary_key=True)
+    key = models.CharField(max_length=100, null=False)
+    version = models.CharField(max_length=100, null=False)
+    date_update = models.DateTimeField(null=False)
+
+    class Meta:
+        db_table = "meta"
+
+class Sequence(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100, null=False)
+    reference = models.ForeignKey("Attrib", on_delete=models.PROTECT)
+
+    class Meta:
+        db_table = "sequence"
+
 class Locus(models.Model):
     id = models.AutoField(primary_key=True)
     type = models.ForeignKey("Attrib", on_delete=models.PROTECT)
-    sequence = models.CharField(max_length=100, null=False) # TODO: update to FK
+    sequence = models.ForeignKey("Sequence", on_delete=models.PROTECT)
     start = models.IntegerField(null=False)
     end = models.IntegerField(null=False)
     strand = models.SmallIntegerField(null=False, default=1)
@@ -300,9 +317,36 @@ class LocusHistory(models.Model):
     end = models.IntegerField()
     strand = models.SmallIntegerField()
     name = models.CharField(max_length=255)
+    date = models.DateTimeField(null=False)
+    user_id = models.IntegerField(null=False)
+    action = models.CharField(max_length=10)
 
     class Meta:
         db_table = "locus_history"
+
+class LocusIdentifier(models.Model):
+    id = models.AutoField(primary_key=True)
+    locus = models.ForeignKey("Locus", on_delete=models.PROTECT)
+    identifier = models.CharField(max_length=100, null=False)
+    source = models.ForeignKey("Source", on_delete=models.PROTECT)
+
+    class Meta:
+        db_table = "locus_identifier"
+        indexes = [
+            models.Index(fields=['identifier'])
+        ]
+
+class LocusIdentifierHistory(models.Model):
+    locus_identifier_id = models.IntegerField()
+    locus = models.IntegerField()
+    identifier = models.CharField(max_length=100)
+    source = models.IntegerField()
+    date = models.DateTimeField(null=False)
+    user_id = models.IntegerField(null=False)
+    action = models.CharField(max_length=10)
+
+    class Meta:
+        db_table = "locus_identifier_history"
 
 class LocusAttrib(models.Model):
     id = models.AutoField(primary_key=True)

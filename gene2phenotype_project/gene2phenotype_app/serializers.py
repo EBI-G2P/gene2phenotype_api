@@ -4,7 +4,8 @@ from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      LGDPanel, LocusGenotypeDisease, LGDVariantGenccConsequence,
                      LGDCrossCuttingModifier, LGDPublication,
                      LGDPhenotype, LGDVariantType, Locus, Disease,
-                     DiseaseOntology, LocusGenotypeDiseaseHistory)
+                     DiseaseOntology, LocusGenotypeDiseaseHistory,
+                     LocusIdentifier)
 
 class PanelSerializer(serializers.ModelSerializer):
     name = serializers.CharField(read_only=True)
@@ -158,10 +159,21 @@ class LGDPanelSerializer(serializers.ModelSerializer):
         fields = ['panel']
 
 class LocusSerializer(serializers.ModelSerializer):
+    sequence = serializers.CharField(read_only=True, source="sequence.name")
+    reference = serializers.CharField(read_only=True, source="sequence.reference.value")
+    ids = serializers.SerializerMethodField()
+
+    def get_ids(self, id):
+        locus_ids = LocusIdentifier.objects.filter(locus=id)
+        data = {}
+        for id in locus_ids:
+            data[id.source.name] = id.identifier
+
+        return data
 
     class Meta:
         model = Locus
-        fields = ['name', 'sequence', 'start', 'end', 'strand']
+        fields = ['name', 'sequence', 'start', 'end', 'strand', 'reference', 'ids']
 
 class LocusGeneSerializer(LocusSerializer):
     last_updated = serializers.SerializerMethodField()
