@@ -5,7 +5,8 @@ from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      LGDCrossCuttingModifier, LGDPublication,
                      LGDPhenotype, LGDVariantType, Locus, Disease,
                      DiseaseOntology, LocusGenotypeDiseaseHistory,
-                     LocusIdentifier)
+                     LocusIdentifier, PublicationComment, LGDComment,
+                     DiseasePublication)
 
 class PanelSerializer(serializers.ModelSerializer):
     name = serializers.CharField(read_only=True)
@@ -251,6 +252,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     phenotypes = serializers.SerializerMethodField()
     last_updated = serializers.CharField(source="date_review")
     created = serializers.SerializerMethodField()
+    comments = serializers.SerializerMethodField()
 
     def get_locus(self, id):
         locus = LocusSerializer(id.locus).data
@@ -284,6 +286,16 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         x = LGDPanel.objects.filter(lgd_id=id)
         return LGDPanelSerializer(x, many=True).data
 
+    def get_comments(self, id):
+        lgd_comments = LGDComment.objects.filter(lgd_id=id)
+        data = []
+        for comment in lgd_comments:
+            text = { 'text':comment.comment,
+                     'date':comment.date }
+            data.append(text)
+
+        return data
+
     # This method depends on the history table
     # Leave it for now
     def get_created(self, id):
@@ -315,23 +327,50 @@ class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
 class LGDPublicationSerializer(serializers.ModelSerializer):
     pmid = serializers.CharField(source="publication.pmid")
     title = serializers.CharField(source="publication.title")
+    publication_comments = serializers.SerializerMethodField()
+
+    def get_publication_comments(self, id):
+        data = []
+        comments = PublicationComment.objects.filter(publication=id.publication.id)
+        for comment in comments:
+            text = { 'text':comment.comment,
+                     'date':comment.date }
+            data.append(text)
+
+        return data
 
     class Meta:
         model = LGDPublication
-        fields = ['pmid', 'title']
+        fields = ['pmid', 'title', 'publication_comments']
 
 class DiseaseSerializer(serializers.ModelSerializer):
     name = serializers.CharField()
     mim = serializers.CharField()
     ontology_terms = serializers.SerializerMethodField()
+    publications = serializers.SerializerMethodField()
 
     def get_ontology_terms(self, id):
         disease_ontologies = DiseaseOntology.objects.filter(disease=id)
         return DiseaseOntologySerializer(disease_ontologies, many=True).data
 
+    def get_publications(self, id):
+        disease_publications = DiseasePublication.objects.filter(disease=id)
+        return DiseasePublicationSerializer(disease_publications, many=True).data
+
     class Meta:
         model = Disease
-        fields = ['name', 'mim', 'ontology_terms']
+        fields = ['name', 'mim', 'ontology_terms', 'publications']
+
+class DiseasePublicationSerializer(serializers.ModelSerializer):
+    pmid = serializers.CharField(source="publication.pmid")
+    title = serializers.CharField(source="publication.title")
+    number_families = serializers.IntegerField(source="families")
+    consanguinity = serializers.CharField()
+    ethnicity = serializers.CharField()
+
+    class Meta:
+        model = DiseasePublication
+        fields = ['pmid', 'title', 'number_families', 'consanguinity', 'ethnicity']
 
 class DiseaseOntologySerializer(serializers.ModelSerializer):
     accession = serializers.CharField(source="ontology_term.accession")
