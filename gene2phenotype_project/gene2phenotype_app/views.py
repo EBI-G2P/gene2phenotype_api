@@ -9,9 +9,11 @@ from gene2phenotype_app.serializers import (PanelSerializer,
                                             AttribTypeSerializer,
                                             AttribSerializer,
                                             LocusGenotypeDiseaseSerializer,
-                                            LocusGeneSerializer)
+                                            LocusGeneSerializer, DiseaseSerializer)
 
-from gene2phenotype_app.models import Panel, User, AttribType, Attrib, LocusGenotypeDisease, Locus
+from gene2phenotype_app.models import (Panel, User, AttribType, Attrib,
+                                       LocusGenotypeDisease, Locus, OntologyTerm,
+                                       DiseaseOntology, Disease)
 
 
 class PanelList(generics.ListAPIView):
@@ -57,8 +59,8 @@ class LocusGene(generics.ListAPIView):
     def get_queryset(self):
         name = self.kwargs['name']
         attrib_type = AttribType.objects.filter(code='locus_type')
-        attrib = Attrib.objects.filter(type=attrib_type[0].id, value='gene')
-        queryset = Locus.objects.filter(name=name, type=attrib[0].id)
+        attrib = Attrib.objects.filter(type=attrib_type.first().id, value='gene')
+        queryset = Locus.objects.filter(name=name, type=attrib.first().id)
 
         if not queryset.exists():
             self.handle_no_permission(name)
@@ -80,16 +82,16 @@ class LocusGeneSummary(generics.ListAPIView):
 
     def get(self, request, name, *args, **kwargs):
         attrib_type = AttribType.objects.filter(code='locus_type')
-        attrib = Attrib.objects.filter(type=attrib_type[0].id, value='gene')
-        queryset = Locus.objects.filter(name=name, type=attrib[0].id)
+        attrib = Attrib.objects.filter(type=attrib_type.first().id, value='gene')
+        queryset = Locus.objects.filter(name=name, type=attrib.first().id)
 
         if not queryset.exists():
             self.handle_no_permission(name)
 
         serializer = LocusGeneSerializer
-        summmary = serializer.records_summary(queryset[0])
+        summmary = serializer.records_summary(queryset.first())
         response_data = {
-            'panel_name': queryset[0].name,
+            'panel_name': queryset.first().name,
             'records_summary': summmary,
         }
 
@@ -97,6 +99,38 @@ class LocusGeneSummary(generics.ListAPIView):
 
     def handle_no_permission(self, name):
         raise Http404(f"No matching Gene found for symbol: {name}")
+
+    def handle_exception(self, exc):
+        if isinstance(exc, Http404):
+            return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        return super().handle_exception(exc)
+
+class DiseaseDetail(generics.ListAPIView):
+    # lookup_field = 'name'
+    serializer_class = DiseaseSerializer
+
+    def get_queryset(self):
+        id = self.kwargs['id']
+        ontology_term = OntologyTerm.objects.filter(accession=id)
+
+        if not ontology_term.exists():
+            self.handle_no_permission(id)
+
+        disease_ontology = DiseaseOntology.objects.filter(ontology_term_id=ontology_term.first().id)
+
+        if not disease_ontology.exists():
+            self.handle_no_permission(id)
+
+        queryset = Disease.objects.filter(id=disease_ontology.first().disease_id)
+
+        if not queryset.exists():
+            self.handle_no_permission(id)
+
+        return queryset
+
+    def handle_no_permission(self, id):
+        raise Http404(f"No matching Disease found for: {id}")
 
     def handle_exception(self, exc):
         if isinstance(exc, Http404):
