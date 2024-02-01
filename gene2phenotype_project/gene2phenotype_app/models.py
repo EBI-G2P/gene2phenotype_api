@@ -1,6 +1,5 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.db.models.constraints import UniqueConstraint
 from django.db.models import Q
 
 class LocusGenotypeDisease(models.Model):
@@ -48,8 +47,7 @@ class LGDCrossCuttingModifier(models.Model):
 
     class Meta:
         db_table = "lgd_cross_cutting_modifier"
-        UniqueConstraint(fields=["lgd", "ccm", "publication"], name='unique_with_publication')
-        UniqueConstraint(fields=["lgd", "ccm"], condition=Q(publication=None), name='unique_without_publication')
+        unique_together = ["lgd", "ccm", "publication"]
         indexes = [
             models.Index(fields=['lgd', 'ccm']),
         ]
@@ -76,8 +74,7 @@ class LGDPhenotype(models.Model):
 
     class Meta:
         db_table = "lgd_phenotype"
-        UniqueConstraint(fields=["lgd", "phenotype", "publication"], name='unique_with_publication')
-        UniqueConstraint(fields=["lgd", "phenotype"], condition=Q(publication=None), name='unique_without_publication')
+        unique_together = ["lgd", "phenotype", "publication"]
         indexes = [
             models.Index(fields=['lgd', 'phenotype']),
         ]
@@ -118,8 +115,7 @@ class LGDVariantType(models.Model):
 
     class Meta:
         db_table = "lgd_variant_type"
-        UniqueConstraint(fields=["lgd","variant_type_ot", "publication"], name='unique_with_publication')
-        UniqueConstraint(fields=["lgd","variant_type_ot"], condition=Q(publication=None), name='unique_without_publication')
+        unique_together = ["lgd","variant_type_ot", "publication"]
         indexes = [
             models.Index(fields=['lgd', 'variant_type_ot']),
         ]
@@ -164,8 +160,7 @@ class LGDVariantGenccConsequence(models.Model):
 
     class Meta:
         db_table = "lgd_variant_gencc_consequence"
-        UniqueConstraint(fields=["lgd","variant_consequence", "support", "publication"], name='unique_with_publication')
-        UniqueConstraint(fields=["lgd","variant_consequence", "support"], condition=Q(publication=None), name='unique_without_publication')
+        unique_together = ["lgd", "variant_consequence", "support", "publication"]
 
 class LGDVariantGenccConsequenceHistory(models.Model):
     lgd_var_gencc_id = models.IntegerField()
@@ -279,8 +274,10 @@ class LGDPanelHistory(models.Model):
 class Meta(models.Model):
     id = models.AutoField(primary_key=True)
     key = models.CharField(max_length=100, null=False)
-    version = models.CharField(max_length=100, null=False)
+    source = models.ForeignKey("Source", on_delete=models.PROTECT)
     date_update = models.DateTimeField(null=False)
+    is_public = models.SmallIntegerField(null=False, default=False)
+    description = models.TextField(null=True)
 
     class Meta:
         db_table = "meta"
@@ -484,8 +481,7 @@ class DiseasePhenotype(models.Model):
 
     class Meta:
         db_table = "disease_phenotype"
-        UniqueConstraint(fields=["disease", "phenotype", "publication"], name='unique_with_publication')
-        UniqueConstraint(fields=["disease", "phenotype"], condition=Q(publication=None), name='unique_without_publication')
+        unique_together = ["disease", "phenotype", "publication"]
 
 class DiseasePhenotypeHistory(models.Model):
     disease = models.IntegerField()
@@ -540,8 +536,9 @@ class PublicationComment(models.Model):
 class Source(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100, unique=True, null=False)
-    description = models.CharField(max_length=255, null=False)
-    url = models.CharField(max_length=255, null=False)
+    description = models.CharField(max_length=255, null=True)
+    version = models.CharField(max_length=50, null=True)
+    url = models.CharField(max_length=255, null=True)
 
     class Meta:
         db_table = "source"
