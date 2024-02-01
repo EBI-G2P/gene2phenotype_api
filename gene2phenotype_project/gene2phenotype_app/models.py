@@ -562,8 +562,8 @@ class User(AbstractUser):
     is_deleted = models.BooleanField(default=False)
     date_joined = models.DateField(null=True)
     is_superuser = models.SmallIntegerField(default=False)
-    first_name = models.CharField(max_length=100, null=True, default=False)
-    last_name = models.CharField(max_length=100, null=True, default=False)
+    first_name = models.CharField(max_length=100, null=True, default=None)
+    last_name = models.CharField(max_length=100, null=True, default=None)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]

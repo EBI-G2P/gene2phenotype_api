@@ -164,10 +164,9 @@ class AttribList(generics.ListAPIView):
         code_list = [attrib.value for attrib in queryset]
         return Response(code_list)
 
-class LocusGenotypeDiseaseDetail(generics.RetrieveUpdateDestroyAPIView):
+class LocusGenotypeDiseaseDetail(generics.ListAPIView):
     lookup_field = 'stable_id'
     serializer_class = LocusGenotypeDiseaseSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
         stable_id = self.kwargs['stable_id']

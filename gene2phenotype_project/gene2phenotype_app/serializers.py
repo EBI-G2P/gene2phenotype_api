@@ -241,18 +241,19 @@ class LocusGeneSerializer(LocusSerializer):
 
 class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     locus = serializers.SerializerMethodField()
-    genotype = serializers.CharField(source="genotype.value")
+    genotype = serializers.CharField(source="genotype.value", read_only=True)
     mechanism = serializers.SerializerMethodField()
     disease = serializers.SerializerMethodField()
-    confidence = serializers.CharField(source="confidence.value")
+    confidence = serializers.CharField(source="confidence.value", read_only=True)
     publications = serializers.SerializerMethodField()
     panels = serializers.SerializerMethodField()
     cross_cutting_modifier = serializers.SerializerMethodField()
     variant_type = serializers.SerializerMethodField()
     phenotypes = serializers.SerializerMethodField()
-    last_updated = serializers.CharField(source="date_review")
+    last_updated = serializers.CharField(source="date_review", read_only=True)
     created = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField()
+    is_reviewed = serializers.IntegerField(read_only=True)
 
     def get_locus(self, id):
         locus = LocusSerializer(id.locus).data
