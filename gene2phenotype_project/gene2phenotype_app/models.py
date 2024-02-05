@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.db.models import Q
+from simple_history.models import HistoricalRecords
 
 class LocusGenotypeDisease(models.Model):
     id = models.AutoField(primary_key=True)
@@ -12,6 +12,7 @@ class LocusGenotypeDisease(models.Model):
     date_review = models.DateTimeField(null=True)
     is_reviewed = models.SmallIntegerField(null=False)
     is_deleted = models.SmallIntegerField(null=False, default=False)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "locus_genotype_disease"
@@ -21,29 +22,13 @@ class LocusGenotypeDisease(models.Model):
             models.Index(fields=['disease'])
         ]
 
-class LocusGenotypeDiseaseHistory(models.Model):
-    lgd_id = models.IntegerField()
-    stable_id = models.CharField(max_length=100)
-    locus_id = models.IntegerField()
-    genotype_id = models.IntegerField()
-    disease_id = models.IntegerField()
-    confidence_id = models.IntegerField()
-    date_review = models.DateTimeField(null=True)
-    is_reviewed = models.SmallIntegerField(null=False)
-    is_deleted = models.SmallIntegerField(null=False, default=False)
-    date = models.DateTimeField(null=False)
-    user_id = models.IntegerField(null=False)
-    action = models.CharField(max_length=10)
-
-    class Meta:
-        db_table = "locus_genotype_disease_history"
-
 class LGDCrossCuttingModifier(models.Model):
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     ccm = models.ForeignKey("Attrib", on_delete=models.PROTECT)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "lgd_cross_cutting_modifier"
@@ -52,25 +37,13 @@ class LGDCrossCuttingModifier(models.Model):
             models.Index(fields=['lgd', 'ccm']),
         ]
 
-class LGDCrossCuttingModifierHistory(models.Model):
-    lgd_cccm_id = models.IntegerField()
-    lgd = models.IntegerField()
-    ccm = models.IntegerField()
-    publication = models.IntegerField()
-    is_deleted = models.SmallIntegerField(null=False, default=False)
-    date = models.DateTimeField(null=False)
-    user_id = models.IntegerField(null=False)
-    action = models.CharField(max_length=10)
-
-    class Meta:
-        db_table = "lgd_cross_cutting_modifier_history"
-
 class LGDPhenotype(models.Model):
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     phenotype = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "lgd_phenotype"
@@ -78,19 +51,6 @@ class LGDPhenotype(models.Model):
         indexes = [
             models.Index(fields=['lgd', 'phenotype']),
         ]
-
-class LGDPhenotypeHistory(models.Model):
-    lgd_phenotype_id = models.IntegerField()
-    lgd = models.IntegerField()
-    phenotype = models.IntegerField()
-    publication = models.IntegerField()
-    is_deleted = models.SmallIntegerField()
-    date = models.DateTimeField(null=False)
-    user_id = models.IntegerField(null=False)
-    action = models.CharField(max_length=10)
-
-    class Meta:
-        db_table = "lgd_phenotype_history"
 
 class LGDPhenotypeComment(models.Model):
     id = models.AutoField(primary_key=True)
@@ -112,6 +72,7 @@ class LGDVariantType(models.Model):
     inheritance = models.ForeignKey("Attrib", on_delete=models.PROTECT, null=True)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "lgd_variant_type"
@@ -119,20 +80,6 @@ class LGDVariantType(models.Model):
         indexes = [
             models.Index(fields=['lgd', 'variant_type_ot']),
         ]
-
-class LGDVariantTypeHistory(models.Model):
-    lgd_var_type_id = models.IntegerField()
-    lgd = models.IntegerField()
-    variant_type_ot = models.IntegerField()
-    inheritance = models.IntegerField(null=True)
-    publication = models.IntegerField(null=True)
-    is_deleted = models.SmallIntegerField(null=False, default=False)
-    date = models.DateTimeField(null=False)
-    user_id = models.IntegerField(null=False)
-    action = models.CharField(max_length=10)
-
-    class Meta:
-        db_table = "lgd_variant_type_history"
 
 # Comment on NMD triggering/escaping
 class LGDVariantTypeComment(models.Model):
@@ -157,25 +104,11 @@ class LGDVariantGenccConsequence(models.Model):
     panel = models.ForeignKey("Panel", on_delete=models.PROTECT, null=True, default=None)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "lgd_variant_gencc_consequence"
         unique_together = ["lgd", "variant_consequence", "support", "publication"]
-
-class LGDVariantGenccConsequenceHistory(models.Model):
-    lgd_var_gencc_id = models.IntegerField()
-    lgd = models.IntegerField()
-    variant_consequence = models.IntegerField()
-    support = models.IntegerField()
-    panel = models.IntegerField(null=True)
-    publication = models.IntegerField(null=True)
-    is_deleted = models.SmallIntegerField(null=False, default=False)
-    date = models.DateTimeField(null=False)
-    user_id = models.IntegerField(null=False)
-    action = models.CharField(max_length=10)
-
-    class Meta:
-        db_table = "lgd_variant_gencc_consequence_history"
 
 class LGDMolecularMechanism(models.Model):
     id = models.AutoField(primary_key=True)
@@ -187,27 +120,11 @@ class LGDMolecularMechanism(models.Model):
     mechanism_description = models.TextField(null=True)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "lgd_molecular_mechanism"
         unique_together = ["lgd", "mechanism"]
-
-class LGDMolecularMechanismHistory(models.Model):
-    lgd_mol_mechanism_id = models.IntegerField()
-    lgd = models.IntegerField()
-    mechanism = models.IntegerField()
-    mechanism_support = models.IntegerField()
-    synopsis = models.IntegerField(null=True)
-    synopsis_support = models.IntegerField(null=True)
-    mechanism_description = models.TextField(null=True)
-    publication = models.IntegerField(null=True)
-    is_deleted = models.SmallIntegerField(null=False, default=False)
-    date = models.DateTimeField(null=False)
-    user_id = models.IntegerField(null=False)
-    action = models.CharField(max_length=10)
-
-    class Meta:
-        db_table = "lgd_molecular_mechanism_history"
 
 class LGDComment(models.Model):
     id = models.AutoField(primary_key=True)
@@ -225,21 +142,11 @@ class LGDPublication(models.Model):
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT)
     is_deleted = models.SmallIntegerField(null=False, default=False)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "lgd_publication"
         unique_together = ["lgd", "publication"]
-
-class LGDPublicationHistory(models.Model):
-    lgd = models.IntegerField()
-    publication = models.IntegerField()
-    is_deleted = models.SmallIntegerField(null=False, default=False)
-    date = models.DateTimeField(null=False)
-    user_id = models.IntegerField(null=False)
-    action = models.CharField(max_length=10)
-
-    class Meta:
-        db_table = "lgd_publication_history"
 
 class LGDPanel(models.Model):
     id = models.AutoField(primary_key=True)
@@ -248,6 +155,7 @@ class LGDPanel(models.Model):
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     relevance = models.ForeignKey("Attrib", on_delete=models.PROTECT)
     is_deleted = models.SmallIntegerField(null=False, default=False)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "lgd_panel"
@@ -256,20 +164,6 @@ class LGDPanel(models.Model):
             models.Index(fields=['panel']),
             models.Index(fields=['lgd', 'panel'])
         ]
-
-class LGDPanelHistory(models.Model):
-    lgd_panel_id = models.IntegerField()
-    lgd_id = models.IntegerField()
-    panel_id = models.IntegerField()
-    publication_id = models.IntegerField()
-    relevance_id = models.IntegerField()
-    is_deleted = models.SmallIntegerField(null=False, default=False)
-    date = models.DateTimeField(null=False)
-    user_id = models.IntegerField(null=False)
-    action = models.CharField(max_length=10)
-
-    class Meta:
-        db_table = "lgd_panel_history"
 
 class Meta(models.Model):
     id = models.AutoField(primary_key=True)
@@ -298,6 +192,7 @@ class Locus(models.Model):
     end = models.IntegerField(null=False)
     strand = models.SmallIntegerField(null=False, default=1)
     name = models.CharField(max_length=255)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "locus"
@@ -306,44 +201,18 @@ class Locus(models.Model):
             models.Index(fields=['type'])
         ]
 
-class LocusHistory(models.Model):
-    locus_id = models.IntegerField()
-    type = models.IntegerField()
-    sequence = models.CharField(max_length=100)
-    start = models.IntegerField()
-    end = models.IntegerField()
-    strand = models.SmallIntegerField()
-    name = models.CharField(max_length=255)
-    date = models.DateTimeField(null=False)
-    user_id = models.IntegerField(null=False)
-    action = models.CharField(max_length=10)
-
-    class Meta:
-        db_table = "locus_history"
-
 class LocusIdentifier(models.Model):
     id = models.AutoField(primary_key=True)
     locus = models.ForeignKey("Locus", on_delete=models.PROTECT)
     identifier = models.CharField(max_length=100, null=False)
     source = models.ForeignKey("Source", on_delete=models.PROTECT)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "locus_identifier"
         indexes = [
             models.Index(fields=['identifier'])
         ]
-
-class LocusIdentifierHistory(models.Model):
-    locus_identifier_id = models.IntegerField()
-    locus = models.IntegerField()
-    identifier = models.CharField(max_length=100)
-    source = models.IntegerField()
-    date = models.DateTimeField(null=False)
-    user_id = models.IntegerField(null=False)
-    action = models.CharField(max_length=10)
-
-    class Meta:
-        db_table = "locus_identifier_history"
 
 class LocusAttrib(models.Model):
     id = models.AutoField(primary_key=True)
@@ -352,28 +221,18 @@ class LocusAttrib(models.Model):
     value = models.CharField(max_length=255, null=False)
     source = models.ForeignKey("Source", on_delete=models.PROTECT)
     is_deleted = models.SmallIntegerField(null=False, default=False)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "locus_attrib"
-
-class LocusAttribHistory(models.Model):
-    locus_attrib_id = models.IntegerField()
-    locus = models.IntegerField()
-    attrib_type = models.IntegerField()
-    value = models.CharField(max_length=255, null=False)
-    source = models.IntegerField()
-    is_deleted = models.SmallIntegerField(null=False, default=False)
-    date = models.DateTimeField(null=False)
-    user_id = models.IntegerField(null=False)
-    action = models.CharField(max_length=10)
-
-    class Meta:
-        db_table = "locus_attrib_history"
 
 class Attrib(models.Model):
     id = models.AutoField(primary_key=True)
     type = models.ForeignKey("AttribType", on_delete=models.PROTECT)
     value = models.CharField(max_length=255, null=False)
+
+    def __str__(self):
+        return self.value
 
     class Meta:
         db_table = "attrib"
@@ -409,23 +268,13 @@ class Disease(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255, unique=True, null=False)
     mim = models.IntegerField(null=True)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "disease"
         indexes = [
             models.Index(fields=['name'])
         ]
-
-class DiseaseHistory(models.Model):
-    disease_id = models.IntegerField()
-    name = models.CharField(max_length=255)
-    mim = models.IntegerField(null=True)
-    date = models.DateTimeField(null=False)
-    user_id = models.IntegerField(null=False)
-    action = models.CharField(max_length=10)
-
-    class Meta:
-        db_table = "disease_history"
 
 class DiseaseSynonym(models.Model):
     id = models.AutoField(primary_key=True)
@@ -445,23 +294,10 @@ class DiseasePublication(models.Model):
     consanguinity = models.ForeignKey("Attrib", related_name='consanguinity', on_delete=models.PROTECT, null=True)
     ethnicity = models.ForeignKey("Attrib", related_name='ethnicity', on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "disease_publication"
-
-class DiseasePublicationHistory(models.Model):
-    disease = models.IntegerField()
-    publication = models.IntegerField()
-    families = models.IntegerField(null=True)
-    consanguinity = models.IntegerField(null=True)
-    ethnicity = models.IntegerField(null=True)
-    is_deleted = models.SmallIntegerField(null=False, default=False)
-    date = models.DateTimeField(null=False)
-    user_id = models.IntegerField(null=False)
-    action = models.CharField(max_length=10)
-
-    class Meta:
-        db_table = "disease_publication_history"
 
 class DiseaseOntology(models.Model):
     id = models.AutoField(primary_key=True)
@@ -478,22 +314,11 @@ class DiseasePhenotype(models.Model):
     phenotype = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     score = models.DecimalField(max_digits=10, decimal_places=6 , null=False)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "disease_phenotype"
         unique_together = ["disease", "phenotype", "publication"]
-
-class DiseasePhenotypeHistory(models.Model):
-    disease = models.IntegerField()
-    phenotype = models.IntegerField()
-    publication = models.IntegerField()
-    score = models.DecimalField(max_digits=10, decimal_places=6)
-    date = models.DateTimeField(null=False)
-    user_id = models.IntegerField(null=False)
-    action = models.CharField(max_length=10)
-
-    class Meta:
-        db_table = "disease_phenotype_history"
 
 class DiseasePhenotypeComment(models.Model):
     id = models.AutoField(primary_key=True)
@@ -548,6 +373,9 @@ class Panel(models.Model):
     name = models.CharField(max_length=100, unique=True, null=False)
     description = models.CharField(max_length=255, null=True)
     is_visible = models.SmallIntegerField(null=False)
+
+    def __str__(self):
+        return self.name
 
     class Meta:
         db_table = "panel"
