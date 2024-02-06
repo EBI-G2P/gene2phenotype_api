@@ -61,12 +61,12 @@ class PanelDetailSerializer(PanelSerializer):
         for lgd_panel in lgd_panels:
             if lgd_panel.is_deleted == 0:
                 num_records += 1
-            if lgd_panel.lgd.locus.type.id == attrib_id and lgd_panel.lgd.locus.name not in uniq_genes:
-                genes += 1
-                uniq_genes = { lgd_panel.lgd.locus.name:1 }
-            if lgd_panel.lgd.disease_id not in uniq_diseases:
-                diseases += 1
-                uniq_diseases = { lgd_panel.lgd.disease_id:1 }
+                if lgd_panel.lgd.locus.type.id == attrib_id and lgd_panel.lgd.locus.name not in uniq_genes:
+                    genes += 1
+                    uniq_genes = { lgd_panel.lgd.locus.name:1 }
+                if lgd_panel.lgd.disease_id not in uniq_diseases:
+                    diseases += 1
+                    uniq_diseases = { lgd_panel.lgd.disease_id:1 }
 
         stats = {
             'number of records': num_records,
@@ -80,7 +80,7 @@ class PanelDetailSerializer(PanelSerializer):
         lgd_panels = LGDPanel.objects.filter(panel=panel.id).filter(is_deleted=0)
 
         lgd_panels_sel = lgd_panels.select_related('lgd', 'lgd__locus', 'lgd__disease', 'lgd__genotype', 'lgd__confidence'
-                                               ).prefetch_related('lgd__lgd_variant_gencc_consequence', 'lgd__lgd_variant_type').order_by('-lgd__date_review')[:100]
+                                               ).prefetch_related('lgd__lgd_variant_gencc_consequence', 'lgd__lgd_variant_type').order_by('-lgd__date_review').filter(lgd__is_deleted=0)[:100]
 
         lgd_objects_list = list(lgd_panels_sel.values('lgd__locus__name',
                                                       'lgd__disease__name',
@@ -192,7 +192,7 @@ class LocusGeneSerializer(LocusSerializer):
             return []
 
     def records_summary(self):
-        lgd_list = LocusGenotypeDisease.objects.filter(locus=self.id)
+        lgd_list = LocusGenotypeDisease.objects.filter(locus=self.id, is_deleted=0)
         lgd_select = lgd_list.select_related('disease', 'genotype', 'confidence'
                                                ).prefetch_related('lgd_panel', 'panel', 'lgd_variant_gencc_consequence', 'lgd_variant_type'
                                                                   ).order_by('-date_review')
@@ -251,7 +251,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     variant_type = serializers.SerializerMethodField()
     phenotypes = serializers.SerializerMethodField()
     last_updated = serializers.CharField(source="date_review", read_only=True)
-    created = serializers.SerializerMethodField()
+    date_created = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField()
     is_reviewed = serializers.IntegerField(read_only=True)
 
@@ -298,7 +298,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         return data
 
     # This method depends on the history table
-    def get_created(self, id):
+    # Entries that were migrated from the old db don't have the date when they were created
+    def get_date_created(self, id):
         date = None
         lgd_obj = self.instance.first()
         history_records = lgd_obj.history.all().order_by('history_date').filter(history_type='+') # insertion is represented by '+'

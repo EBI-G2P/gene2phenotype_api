@@ -170,4 +170,16 @@ class LocusGenotypeDiseaseDetail(generics.ListAPIView):
 
     def get_queryset(self):
         stable_id = self.kwargs['stable_id']
-        return LocusGenotypeDisease.objects.filter(stable_id=stable_id)
+        user = self.request.user
+        queryset = LocusGenotypeDisease.objects.filter(stable_id=stable_id)
+
+        if queryset.exists():
+            obj = queryset.first()
+            if user.is_authenticated and obj.is_deleted == 0:
+                return LocusGenotypeDisease.objects.filter(stable_id=stable_id)
+            elif obj.is_deleted == 0 and obj.is_reviewed == 1:
+                return LocusGenotypeDisease.objects.filter(stable_id=stable_id)
+            else:
+                raise Http404('Entry not found in G2P')
+        else:
+            raise Http404('Entry not found in G2P')
