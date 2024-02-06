@@ -4,7 +4,7 @@ from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      LGDPanel, LocusGenotypeDisease, LGDVariantGenccConsequence,
                      LGDCrossCuttingModifier, LGDPublication,
                      LGDPhenotype, LGDVariantType, Locus, Disease,
-                     DiseaseOntology, LocusGenotypeDiseaseHistory,
+                     DiseaseOntology,
                      LocusIdentifier, PublicationComment, LGDComment,
                      DiseasePublication)
 
@@ -298,11 +298,14 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         return data
 
     # This method depends on the history table
-    # Leave it for now
     def get_created(self, id):
-        x = LocusGenotypeDiseaseHistory.objects.filter(lgd_id=id.id)
+        date = None
+        lgd_obj = self.instance.first()
+        history_records = lgd_obj.history.all().order_by('history_date').filter(history_type='+') # insertion is represented by '+'
+        if history_records:
+            date = history_records.first().history_date.date()
 
-        return ""
+        return date
 
     class Meta:
         model = LocusGenotypeDisease

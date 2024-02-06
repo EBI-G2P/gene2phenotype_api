@@ -84,7 +84,7 @@ class LGDVariantType(models.Model):
 # Comment on NMD triggering/escaping
 class LGDVariantTypeComment(models.Model):
     id = models.AutoField(primary_key=True)
-    variant_type = models.ForeignKey("LGDVariantType", on_delete=models.PROTECT)
+    lgd_variant_type = models.ForeignKey("LGDVariantType", on_delete=models.PROTECT)
     comment = models.TextField(null=False)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     user = models.ForeignKey("User", on_delete=models.PROTECT)
@@ -281,8 +281,7 @@ class DiseaseSynonym(models.Model):
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
     synonym = models.CharField(max_length=255, unique=True, null=False)
     synonym_type = models.ForeignKey("Attrib", on_delete=models.PROTECT)
-    date_created = models.DateTimeField()
-    user = models.ForeignKey("User", on_delete=models.PROTECT)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "disease_synonym"
@@ -326,6 +325,7 @@ class DiseasePhenotypeComment(models.Model):
     comment = models.TextField()
     date_created = models.DateField()
     user = models.ForeignKey("User", on_delete=models.PROTECT)
+    is_public = models.SmallIntegerField(null=False)
     is_deleted = models.SmallIntegerField(null=False, default=False)
 
     class Meta:
@@ -414,6 +414,34 @@ class UserPanel(models.Model):
         indexes = [
             models.Index(fields=['user', 'panel']),
         ]
+
+class UniprotAnnotation(models.Model):
+    id = models.AutoField(primary_key=True)
+    uniprot_accession = models.CharField(max_length=100, null=False)
+    gene = models.ForeignKey("Locus", on_delete=models.PROTECT)
+    hgnc = models.IntegerField()
+    gene_symbol = models.CharField(max_length=100, null=False)
+    mim = models.CharField(max_length=100, null=True)
+    protein_function = models.TextField(null=False)
+    source = models.ForeignKey("Source", on_delete=models.PROTECT)
+
+    class Meta:
+        db_table = "uniprot_annotation"
+        indexes = [
+            models.Index(fields=['uniprot_accession']),
+            models.Index(fields=['hgnc'])
+        ]
+
+class gene_stats(models.Model):
+    id = models.AutoField(primary_key=True)
+    gene = models.ForeignKey("Locus", on_delete=models.PROTECT)
+    gene_symbol = models.CharField(max_length=100, null=False)
+    hgnc = models.IntegerField()
+    statistic = models.ForeignKey("Publication", on_delete=models.PROTECT)
+    source = models.ForeignKey("Source", on_delete=models.PROTECT)
+
+    class Meta:
+        db_table = "gene_stats"
 
 ### Legacy data ###
 class Organ(models.Model):
