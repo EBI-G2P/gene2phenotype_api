@@ -57,6 +57,7 @@ class LGDPhenotypeComment(models.Model):
     lgd_phenotype = models.ForeignKey("LGDPhenotype", on_delete=models.PROTECT)
     comment = models.TextField(null=False)
     date_created = models.DateTimeField(null=False)
+    is_public = models.SmallIntegerField(null=False, default=True)
     user = models.ForeignKey("User", on_delete=models.PROTECT)
     is_deleted = models.SmallIntegerField(null=False, default=False)
 
@@ -86,6 +87,7 @@ class LGDVariantTypeComment(models.Model):
     id = models.AutoField(primary_key=True)
     lgd_variant_type = models.ForeignKey("LGDVariantType", on_delete=models.PROTECT)
     comment = models.TextField(null=False)
+    is_public = models.SmallIntegerField(null=False, default=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     user = models.ForeignKey("User", on_delete=models.PROTECT)
     date = models.DateTimeField(null=False)
@@ -102,7 +104,7 @@ class LGDVariantGenccConsequence(models.Model):
     variant_consequence = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
     support = models.ForeignKey("Attrib", on_delete=models.PROTECT)
     panel = models.ForeignKey("Panel", on_delete=models.PROTECT, null=True, default=None)
-    publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
+    publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True, default=None)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 
@@ -130,7 +132,7 @@ class LGDComment(models.Model):
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     comment = models.TextField(null=False)
-    is_public = models.SmallIntegerField(null=False)
+    is_public = models.SmallIntegerField(null=False, default=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     user = models.ForeignKey("User", on_delete=models.PROTECT)
     date = models.DateTimeField(null=False)
@@ -285,6 +287,7 @@ class DiseaseSynonym(models.Model):
 
     class Meta:
         db_table = "disease_synonym"
+        unique_together = ['disease', 'synonym']
 
 class DiseasePublication(models.Model):
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
@@ -297,6 +300,7 @@ class DiseasePublication(models.Model):
 
     class Meta:
         db_table = "disease_publication"
+        unique_together = ['disease', 'publication']
 
 class DiseaseOntology(models.Model):
     id = models.AutoField(primary_key=True)
@@ -325,7 +329,7 @@ class DiseasePhenotypeComment(models.Model):
     comment = models.TextField()
     date_created = models.DateField()
     user = models.ForeignKey("User", on_delete=models.PROTECT)
-    is_public = models.SmallIntegerField(null=False)
+    is_public = models.SmallIntegerField(null=False, default=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
 
     class Meta:
@@ -350,7 +354,7 @@ class PublicationComment(models.Model):
     id = models.AutoField(primary_key=True)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT)
     comment = models.TextField(null=False)
-    is_public = models.SmallIntegerField(null=False)
+    is_public = models.SmallIntegerField(null=False, default=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     user = models.ForeignKey("User", on_delete=models.PROTECT)
     date = models.DateTimeField(null=False)
@@ -442,6 +446,9 @@ class gene_stats(models.Model):
 
     class Meta:
         db_table = "gene_stats"
+        indexes = [
+            models.Index(fields=['gene'])
+        ]
 
 ### Legacy data ###
 class Organ(models.Model):

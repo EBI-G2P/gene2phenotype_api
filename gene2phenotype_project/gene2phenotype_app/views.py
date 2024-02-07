@@ -20,6 +20,15 @@ class PanelList(generics.ListAPIView):
     queryset = Panel.objects.filter()
     serializer_class = PanelSerializer
 
+    def list(self, request, *args, **kwargs):
+        user = self.request.user
+        queryset = self.get_queryset()
+        panel_list = []
+        for panel in queryset:
+            if panel.is_visible == 1 or (user.is_authenticated and panel.is_visible == 0):
+                panel_list.append(panel.name)
+        return Response(panel_list)
+
 class PanelDetail(generics.ListAPIView):
     lookup_field = 'name'
     serializer_class = PanelDetailSerializer
@@ -139,7 +148,7 @@ class DiseaseDetail(generics.ListAPIView):
         return super().handle_exception(exc)
 
 class UserList(generics.ListAPIView):
-    queryset = User.objects.all()
+    queryset = User.objects.filter(is_active=1, is_staff=0)
     serializer_class = UserSerializer
 
 class AttribTypeList(generics.ListAPIView):

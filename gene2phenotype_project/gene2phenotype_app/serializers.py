@@ -9,34 +9,23 @@ from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      DiseasePublication)
 
 class PanelSerializer(serializers.ModelSerializer):
-    name = serializers.CharField(read_only=True)
-    description = serializers.CharField(read_only=True)
-
     class Meta:
         model = Panel
-        fields = ['name', 'description']
+        fields = ['name']
 
 class PanelDetailSerializer(PanelSerializer):
     curators = serializers.SerializerMethodField()
     last_updated = serializers.SerializerMethodField()
 
+    # Returns the curators
+    # Exclude staff members
     def get_curators(self, id):
-        x = UserPanel.objects.filter(panel=id)
+        user_panels = UserPanel.objects.filter(panel=id)
         users = []
-        for u in x:
-            if u.user.is_active == 1:
+        for u in user_panels:
+            if u.user.is_active == 1 and u.user.is_staff == 0:
                 users.append(u.user.username)
         return users
-
-    def get_diseases(self, id):
-        diseases = 0
-        uniq_diseases = {}
-        x = LGDPanel.objects.filter(panel=id)
-        for lgd_panel in x:
-            if lgd_panel.lgd.disease_id not in uniq_diseases:
-                diseases += 1
-                uniq_diseases = { lgd_panel.lgd.disease_id:1 }
-        return diseases
 
     def get_last_updated(self, id):
         dates = []
@@ -123,7 +112,7 @@ class PanelDetailSerializer(PanelSerializer):
 
     class Meta:
         model = Panel
-        fields = PanelSerializer.Meta.fields + ['curators', 'last_updated']
+        fields = PanelSerializer.Meta.fields + ['description', 'curators', 'last_updated']
 
 class UserSerializer(serializers.ModelSerializer):
     user = serializers.CharField(read_only=True, source="username")
@@ -132,9 +121,9 @@ class UserSerializer(serializers.ModelSerializer):
     is_active = serializers.CharField(read_only=True)
 
     def get_panels(self, id):
-        x = UserPanel.objects.filter(user=id)
+        user_panels = UserPanel.objects.filter(user=id)
         panels_list = []
-        for p in x:
+        for p in user_panels:
             panels_list.append(p.panel.name)
         return panels_list
 
