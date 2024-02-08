@@ -17,14 +17,13 @@ class PanelDetailSerializer(PanelSerializer):
     curators = serializers.SerializerMethodField()
     last_updated = serializers.SerializerMethodField()
 
-    # Returns the curators
-    # Exclude staff members
+    # Returns only the curators excluding staff members
     def get_curators(self, id):
         user_panels = UserPanel.objects.filter(panel=id)
         users = []
-        for u in user_panels:
-            if u.user.is_active == 1 and u.user.is_staff == 0:
-                users.append(u.user.username)
+        for user_panel in user_panels:
+            if user_panel.user.is_active == 1 and user_panel.user.is_staff == 0:
+                users.append(user_panel.user.username)
         return users
 
     def get_last_updated(self, id):
@@ -125,12 +124,12 @@ class UserSerializer(serializers.ModelSerializer):
         user_panels = UserPanel.objects.filter(user=id)
         panels_list = []
 
-        for p in user_panels:
+        for user_panel in user_panels:
             # Authenticated users can view all panels
             if user.is_authenticated:
-                panels_list.append(p.panel.name)
-            elif p.panel.is_visible == 1:
-                panels_list.append(p.panel.name)
+                panels_list.append(user_panel.panel.name)
+            elif user_panel.panel.is_visible == 1:
+                panels_list.append(user_panel.panel.name)
 
         return panels_list
 
@@ -202,32 +201,32 @@ class LocusGeneSerializer(LocusSerializer):
                                                   'lgdvarianttype__variant_type_ot__term'))
 
         aggregated_data = {}
-        for o in lgd_objects_list:
-            if o['stable_id'] not in aggregated_data.keys():
+        for lgd_obj in lgd_objects_list:
+            if lgd_obj['stable_id'] not in aggregated_data.keys():
                 variant_consequences = []
                 variant_types = []
                 panels = []
 
-                panels.append(o['lgdpanel__panel__name'])
-                variant_consequences.append(o['lgdvariantgenccconsequence__variant_consequence__term'])
-                if o['lgdvarianttype__variant_type_ot__term'] is not None:
-                    variant_types.append(o['lgdvarianttype__variant_type_ot__term'])
+                panels.append(lgd_obj['lgdpanel__panel__name'])
+                variant_consequences.append(lgd_obj['lgdvariantgenccconsequence__variant_consequence__term'])
+                if lgd_obj['lgdvarianttype__variant_type_ot__term'] is not None:
+                    variant_types.append(lgd_obj['lgdvarianttype__variant_type_ot__term'])
 
-                aggregated_data[o['stable_id']] = { 'disease':o['disease__name'],
-                                                     'genotype':o['genotype__value'],
-                                                     'confidence':o['confidence__value'],
+                aggregated_data[lgd_obj['stable_id']] = { 'disease':lgd_obj['disease__name'],
+                                                     'genotype':lgd_obj['genotype__value'],
+                                                     'confidence':lgd_obj['confidence__value'],
                                                      'panels':panels,
                                                      'variant consequence':variant_consequences,
                                                      'variant type':variant_types,
-                                                     'stable id':o['stable_id'] }
+                                                     'stable id':lgd_obj['stable_id'] }
 
             else:
-                if o['lgdpanel__panel__name'] not in aggregated_data[o['stable_id']]['panels']:
-                    aggregated_data[o['stable_id']]['panels'].append(o['lgdpanel__panel__name'])
-                if o['lgdvariantgenccconsequence__variant_consequence__term'] not in aggregated_data[o['stable_id']]['variant consequence']:
-                    aggregated_data[o['stable_id']]['variant consequence'].append(o['lgdvariantgenccconsequence__variant_consequence__term'])
-                if o['lgdvarianttype__variant_type_ot__term'] not in aggregated_data[o['stable_id']]['variant type'] and o['lgdvarianttype__variant_type_ot__term'] is not None:
-                    aggregated_data[o['stable_id']]['variant type'].append(o['lgdvarianttype__variant_type_ot__term'])
+                if lgd_obj['lgdpanel__panel__name'] not in aggregated_data[lgd_obj['stable_id']]['panels']:
+                    aggregated_data[o['stable_id']]['panels'].append(lgd_obj['lgdpanel__panel__name'])
+                if lgd_obj['lgdvariantgenccconsequence__variant_consequence__term'] not in aggregated_data[lgd_obj['stable_id']]['variant consequence']:
+                    aggregated_data[o['stable_id']]['variant consequence'].append(lgd_obj['lgdvariantgenccconsequence__variant_consequence__term'])
+                if lgd_obj['lgdvarianttype__variant_type_ot__term'] not in aggregated_data[lgd_obj['stable_id']]['variant type'] and lgd_obj['lgdvarianttype__variant_type_ot__term'] is not None:
+                    aggregated_data[o['stable_id']]['variant type'].append(lgd_obj['lgdvarianttype__variant_type_ot__term'])
 
         return aggregated_data.values()
 
@@ -260,28 +259,28 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         return disease
 
     def get_mechanism(self, id):
-        x = LGDVariantGenccConsequence.objects.filter(lgd_id=id)
-        return MechanismSerializer(x, many=True).data
+        queryset = LGDVariantGenccConsequence.objects.filter(lgd_id=id)
+        return MechanismSerializer(queryset, many=True).data
 
     def get_cross_cutting_modifier(self, id):
-        x = LGDCrossCuttingModifier.objects.filter(lgd_id=id)
-        return LGDCrossCuttingModifierSerializer(x, many=True).data
+        queryset = LGDCrossCuttingModifier.objects.filter(lgd_id=id)
+        return LGDCrossCuttingModifierSerializer(queryset, many=True).data
 
     def get_publications(self, id):
-        x = LGDPublication.objects.filter(lgd_id=id)
-        return LGDPublicationSerializer(x, many=True).data
+        queryset = LGDPublication.objects.filter(lgd_id=id)
+        return LGDPublicationSerializer(queryset, many=True).data
 
     def get_phenotypes(self, id):
-        x = LGDPhenotype.objects.filter(lgd_id=id)
-        return LGDPhenotypeSerializer(x, many=True).data
+        queryset = LGDPhenotype.objects.filter(lgd_id=id)
+        return LGDPhenotypeSerializer(queryset, many=True).data
 
     def get_variant_type(self, id):
-        x = LGDVariantType.objects.filter(lgd_id=id)
-        return VariantTypeSerializer(x, many=True).data
+        queryset = LGDVariantType.objects.filter(lgd_id=id)
+        return VariantTypeSerializer(queryset, many=True).data
 
     def get_panels(self, id):
-        x = LGDPanel.objects.filter(lgd_id=id)
-        return LGDPanelSerializer(x, many=True).data
+        queryset = LGDPanel.objects.filter(lgd_id=id)
+        return LGDPanelSerializer(queryset, many=True).data
 
     def get_comments(self, id):
         lgd_comments = LGDComment.objects.filter(lgd_id=id)
@@ -298,7 +297,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     def get_date_created(self, id):
         date = None
         lgd_obj = self.instance.first()
-        history_records = lgd_obj.history.all().order_by('history_date').filter(history_type='+') # insertion is represented by '+'
+        insertion_history_type = '+'
+        history_records = lgd_obj.history.all().order_by('history_date').filter(history_type=insertion_history_type)
         if history_records:
             date = history_records.first().history_date.date()
 
