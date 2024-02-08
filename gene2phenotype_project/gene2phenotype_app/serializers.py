@@ -121,10 +121,17 @@ class UserSerializer(serializers.ModelSerializer):
     is_active = serializers.CharField(read_only=True)
 
     def get_panels(self, id):
+        user = self.context.get('user')
         user_panels = UserPanel.objects.filter(user=id)
         panels_list = []
+
         for p in user_panels:
-            panels_list.append(p.panel.name)
+            # Authenticated users can view all panels
+            if user.is_authenticated:
+                panels_list.append(p.panel.name)
+            elif p.panel.is_visible == 1:
+                panels_list.append(p.panel.name)
+
         return panels_list
 
     class Meta:

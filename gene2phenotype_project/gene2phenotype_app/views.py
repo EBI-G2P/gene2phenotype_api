@@ -16,6 +16,16 @@ from gene2phenotype_app.models import (Panel, User, AttribType, Attrib,
                                        DiseaseOntology, Disease)
 
 
+class BaseView(generics.ListAPIView):
+    def handle_no_permission(self, name_type, name):
+        raise Http404(f"No matching {name_type} found for: {name}")
+
+    def handle_exception(self, exc):
+        if isinstance(exc, Http404):
+            return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        return super().handle_exception(exc)
+
 class PanelList(generics.ListAPIView):
     queryset = Panel.objects.filter()
     serializer_class = PanelSerializer
@@ -29,13 +39,18 @@ class PanelList(generics.ListAPIView):
                 panel_list.append(panel.name)
         return Response(panel_list)
 
-class PanelDetail(generics.ListAPIView):
+class PanelDetail(BaseView):
     lookup_field = 'name'
     serializer_class = PanelDetailSerializer
 
     def get_queryset(self):
         name = self.kwargs['name']
-        return Panel.objects.filter(name=name)
+        queryset = Panel.objects.filter(name=name)
+
+        if not queryset.exists():
+            self.handle_no_permission('Panel', name)
+
+        return queryset
 
 class PanelStats(generics.ListAPIView):
     def get(self, request, name, *args, **kwargs):
@@ -61,7 +76,7 @@ class PanelRecordsSummary(generics.ListAPIView):
 
         return Response(response_data)
 
-class LocusGene(generics.ListAPIView):
+class LocusGene(BaseView):
     lookup_field = 'name'
     serializer_class = LocusGeneSerializer
 
@@ -72,20 +87,11 @@ class LocusGene(generics.ListAPIView):
         queryset = Locus.objects.filter(name=name, type=attrib.first().id)
 
         if not queryset.exists():
-            self.handle_no_permission(name)
+            self.handle_no_permission('Gene', name)
 
         return queryset
 
-    def handle_no_permission(self, name):
-        raise Http404(f"No matching Gene found for symbol: {name}")
-
-    def handle_exception(self, exc):
-        if isinstance(exc, Http404):
-            return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
-
-        return super().handle_exception(exc)
-
-class LocusGeneSummary(generics.ListAPIView):
+class LocusGeneSummary(BaseView):
     lookup_field = 'name'
     serializer_class = LocusGeneSerializer
 
@@ -95,7 +101,7 @@ class LocusGeneSummary(generics.ListAPIView):
         queryset = Locus.objects.filter(name=name, type=attrib.first().id)
 
         if not queryset.exists():
-            self.handle_no_permission(name)
+            self.handle_no_permission('Gene', name)
 
         serializer = LocusGeneSerializer
         summmary = serializer.records_summary(queryset.first())
@@ -106,17 +112,7 @@ class LocusGeneSummary(generics.ListAPIView):
 
         return Response(response_data)
 
-    def handle_no_permission(self, name):
-        raise Http404(f"No matching Gene found for symbol: {name}")
-
-    def handle_exception(self, exc):
-        if isinstance(exc, Http404):
-            return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
-
-        return super().handle_exception(exc)
-
-class DiseaseDetail(generics.ListAPIView):
-    # lookup_field = 'name'
+class DiseaseDetail(BaseView):
     serializer_class = DiseaseSerializer
 
     def get_queryset(self):
@@ -124,32 +120,28 @@ class DiseaseDetail(generics.ListAPIView):
         ontology_term = OntologyTerm.objects.filter(accession=id)
 
         if not ontology_term.exists():
-            self.handle_no_permission(id)
+            self.handle_no_permission('Disease', id)
 
         disease_ontology = DiseaseOntology.objects.filter(ontology_term_id=ontology_term.first().id)
 
         if not disease_ontology.exists():
-            self.handle_no_permission(id)
+            self.handle_no_permission('Disease', id)
 
         queryset = Disease.objects.filter(id=disease_ontology.first().disease_id)
 
         if not queryset.exists():
-            self.handle_no_permission(id)
+            self.handle_no_permission('Disease', id)
 
         return queryset
-
-    def handle_no_permission(self, id):
-        raise Http404(f"No matching Disease found for: {id}")
-
-    def handle_exception(self, exc):
-        if isinstance(exc, Http404):
-            return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
-
-        return super().handle_exception(exc)
 
 class UserList(generics.ListAPIView):
     queryset = User.objects.filter(is_active=1, is_staff=0)
     serializer_class = UserSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({'user':self.request.user})
+        return context
 
 class AttribTypeList(generics.ListAPIView):
     queryset = AttribType.objects.all()
@@ -173,7 +165,7 @@ class AttribList(generics.ListAPIView):
         code_list = [attrib.value for attrib in queryset]
         return Response(code_list)
 
-class LocusGenotypeDiseaseDetail(generics.ListAPIView):
+class LocusGenotypeDiseaseDetail(BaseView):
     lookup_field = 'stable_id'
     serializer_class = LocusGenotypeDiseaseSerializer
 
@@ -189,6 +181,6 @@ class LocusGenotypeDiseaseDetail(generics.ListAPIView):
             elif obj.is_deleted == 0 and obj.is_reviewed == 1:
                 return LocusGenotypeDisease.objects.filter(stable_id=stable_id)
             else:
-                raise Http404('Entry not found in G2P')
+                self.handle_no_permission('Entry', stable_id)
         else:
-            raise Http404('Entry not found in G2P')
+            self.handle_no_permission('Entry', stable_id)
