@@ -29,8 +29,8 @@ class PanelDetailSerializer(PanelSerializer):
 
     def get_last_updated(self, id):
         dates = []
-        x = LGDPanel.objects.filter(panel=id)
-        for lgd_panel in x:
+        lgd_panels = LGDPanel.objects.filter(panel=id)
+        for lgd_panel in lgd_panels:
             if lgd_panel.lgd.date_review is not None and lgd_panel.lgd.is_reviewed == 1 and lgd_panel.lgd.is_deleted == 0:
                 dates.append(lgd_panel.lgd.date_review)
                 dates.sort()
@@ -82,31 +82,31 @@ class PanelDetailSerializer(PanelSerializer):
 
         aggregated_data = {}
         n_keys = 0
-        for o in lgd_objects_list:
-            if o['lgd__stable_id'] not in aggregated_data.keys() and n_keys < 10:
+        for lgd_obj in lgd_objects_list:
+            if lgd_obj['lgd__stable_id'] not in aggregated_data.keys() and n_keys < 10:
                 variant_consequences = []
                 variant_types = []
 
-                variant_consequences.append(o['lgd__lgdvariantgenccconsequence__variant_consequence__term'])
+                variant_consequences.append(lgd_obj['lgd__lgdvariantgenccconsequence__variant_consequence__term'])
                 # Some records do not have variant types
-                if o['lgd__lgdvarianttype__variant_type_ot__term'] is not None:
-                    variant_types.append(o['lgd__lgdvarianttype__variant_type_ot__term'])
+                if lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'] is not None:
+                    variant_types.append(lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'])
 
-                aggregated_data[o['lgd__stable_id']] = { 'locus':o['lgd__locus__name'],
-                                                         'disease':o['lgd__disease__name'],
-                                                         'genotype':o['lgd__genotype__value'],
-                                                         'confidence':o['lgd__confidence__value'],
+                aggregated_data[lgd_obj['lgd__stable_id']] = { 'locus':lgd_obj['lgd__locus__name'],
+                                                         'disease':lgd_obj['lgd__disease__name'],
+                                                         'genotype':lgd_obj['lgd__genotype__value'],
+                                                         'confidence':lgd_obj['lgd__confidence__value'],
                                                          'variant consequence':variant_consequences,
                                                          'variant type':variant_types,
-                                                         'date review':o['lgd__date_review'],
-                                                         'stable id':o['lgd__stable_id'] }
+                                                         'date review':lgd_obj['lgd__date_review'],
+                                                         'stable id':lgd_obj['lgd__stable_id'] }
                 n_keys += 1
 
             elif n_keys < 10:
-                if o['lgd__lgdvariantgenccconsequence__variant_consequence__term'] not in aggregated_data[o['lgd__stable_id']]['variant consequence']:
-                    aggregated_data[o['lgd__stable_id']]['variant consequence'].append(o['lgd__lgdvariantgenccconsequence__variant_consequence__term'])
-                if o['lgd__lgdvarianttype__variant_type_ot__term'] not in aggregated_data[o['lgd__stable_id']]['variant type'] and o['lgd__lgdvarianttype__variant_type_ot__term'] is not None:
-                    aggregated_data[o['lgd__stable_id']]['variant type'].append(o['lgd__lgdvarianttype__variant_type_ot__term'])
+                if lgd_obj['lgd__lgdvariantgenccconsequence__variant_consequence__term'] not in aggregated_data[lgd_obj['lgd__stable_id']]['variant consequence']:
+                    aggregated_data[o['lgd__stable_id']]['variant consequence'].append(lgd_obj['lgd__lgdvariantgenccconsequence__variant_consequence__term'])
+                if lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'] not in aggregated_data[lgd_obj['lgd__stable_id']]['variant type'] and lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'] is not None:
+                    aggregated_data[o['lgd__stable_id']]['variant type'].append(lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'])
 
         return aggregated_data.values()
 
