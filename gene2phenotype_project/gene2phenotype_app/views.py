@@ -1,7 +1,8 @@
-from rest_framework import generics, permissions, status
+from rest_framework import generics, status
 from django.shortcuts import get_object_or_404
 from django.http import Http404
 from rest_framework.response import Response
+from django.db.models import Q
 
 from gene2phenotype_app.serializers import (PanelSerializer,
                                             UserSerializer,
@@ -13,12 +14,15 @@ from gene2phenotype_app.serializers import (PanelSerializer,
 
 from gene2phenotype_app.models import (Panel, User, AttribType, Attrib,
                                        LocusGenotypeDisease, Locus, OntologyTerm,
-                                       DiseaseOntology, Disease)
+                                       DiseaseOntology, Disease, LGDPanel)
 
 
 class BaseView(generics.ListAPIView):
     def handle_no_permission(self, name_type, name):
-        raise Http404(f"No matching {name_type} found for: {name}")
+        if name is None:
+            raise Http404(f"{name_type}")
+        else:
+            raise Http404(f"No matching {name_type} found for: {name}")
 
     def handle_exception(self, exc):
         if isinstance(exc, Http404):
@@ -184,3 +188,122 @@ class LocusGenotypeDiseaseDetail(BaseView):
                 self.handle_no_permission('Entry', stable_id)
         else:
             self.handle_no_permission('Entry', stable_id)
+
+class SearchView(BaseView):
+    serializer_class = LocusGenotypeDiseaseSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        search_type = self.request.query_params.get('type', None)
+        search_query = self.request.query_params.get('query', None)
+        search_panel = self.request.query_params.get('panel', None)
+
+        if not search_query:
+            return LocusGenotypeDisease.objects.none()
+
+        # Generic search
+        if not search_type:
+            if search_panel:
+                queryset = LocusGenotypeDisease.objects.filter(
+                    Q(locus__name=search_query, is_deleted=0, lgdpanel__panel__name=search_panel) |
+                    Q(locus__locusidentifier__isnull=False, locus__locusidentifier__identifier=search_query, lgdpanel__panel__name=search_panel) |
+                    Q(disease__name__icontains=search_query, is_deleted=0, lgdpanel__panel__name=search_panel) |
+                    Q(disease__diseaseontology__ontology_term__accession=search_query, is_deleted=0, lgdpanel__panel__name=search_panel) |
+                    Q(lgdphenotype__phenotype__term__icontains=search_query, lgdphenotype__isnull=False, is_deleted=0, lgdpanel__panel__name=search_panel) |
+                    Q(lgdphenotype__phenotype__accession=search_query, lgdphenotype__isnull=False, is_deleted=0, lgdpanel__panel__name=search_panel)
+                ).order_by('locus__name', 'stable_id').distinct()
+            else:
+                queryset = LocusGenotypeDisease.objects.filter(
+                    Q(locus__name=search_query, is_deleted=0) |
+                    Q(locus__locusidentifier__isnull=False, locus__locusidentifier__identifier=search_query) |
+                    Q(disease__name__icontains=search_query, is_deleted=0) |
+                    Q(disease__diseaseontology__ontology_term__accession=search_query, is_deleted=0) |
+                    Q(lgdphenotype__phenotype__term__icontains=search_query, lgdphenotype__isnull=False, is_deleted=0) |
+                    Q(lgdphenotype__phenotype__accession=search_query, lgdphenotype__isnull=False, is_deleted=0)
+                ).order_by('locus__name', 'stable_id').distinct()
+
+            if not queryset.exists():
+                self.handle_no_permission('results', search_query)
+
+            if user.is_authenticated == False:
+                for lgd in queryset:
+                    lgdpanel_select = LGDPanel.objects.filter(lgd=lgd, panel__is_visible=1)
+                    if lgdpanel_select.exists() == False:
+                        queryset = queryset.exclude(id=lgd.id)
+
+            return queryset
+
+        queryset = LocusGenotypeDisease.objects.none()
+
+        if search_type == 'gene':
+            if search_panel:
+                queryset = LocusGenotypeDisease.objects.filter(
+                    Q(locus__name=search_query, is_deleted=0, lgdpanel__panel__name=search_panel) |
+                    Q(locus__locusidentifier__isnull=False, locus__locusidentifier__identifier=search_query, lgdpanel__panel__name=search_panel)
+                ).order_by('locus__name', 'stable_id').distinct()
+            else:
+                queryset = LocusGenotypeDisease.objects.filter(
+                    Q(locus__name=search_query, is_deleted=0) |
+                    Q(locus__locusidentifier__isnull=False, locus__locusidentifier__identifier=search_query)
+                ).order_by('locus__name', 'stable_id').distinct()
+
+            if not queryset.exists():
+                self.handle_no_permission('Gene', search_query)
+
+        elif search_type == 'disease':
+            if search_panel:
+                queryset = LocusGenotypeDisease.objects.filter(
+                    Q(disease__name__icontains=search_query, is_deleted=0, lgdpanel__panel__name=search_panel) |
+                    Q(disease__diseaseontology__ontology_term__accession=search_query, is_deleted=0, lgdpanel__panel__name=search_panel)
+                ).order_by('locus__name', 'stable_id').distinct()
+            else:
+                queryset = LocusGenotypeDisease.objects.filter(
+                    Q(disease__name__icontains=search_query, is_deleted=0) |
+                    Q(disease__diseaseontology__ontology_term__accession=search_query, is_deleted=0)
+                ).order_by('locus__name', 'stable_id').distinct()
+
+            if not queryset.exists():
+                self.handle_no_permission('Disease', search_query)
+
+        elif search_type == 'phenotype':
+            if search_panel:
+                queryset = LocusGenotypeDisease.objects.filter(
+                    Q(lgdphenotype__phenotype__term__icontains=search_query, lgdphenotype__isnull=False, is_deleted=0, lgdpanel__panel__name=search_panel) |
+                    Q(lgdphenotype__phenotype__accession=search_query, lgdphenotype__isnull=False, is_deleted=0, lgdpanel__panel__name=search_panel)
+                ).order_by('locus__name', 'stable_id').distinct()
+            else:
+                queryset = LocusGenotypeDisease.objects.filter(
+                    Q(lgdphenotype__phenotype__term__icontains=search_query, lgdphenotype__isnull=False, is_deleted=0) |
+                    Q(lgdphenotype__phenotype__accession=search_query, lgdphenotype__isnull=False, is_deleted=0)
+                ).order_by('locus__name', 'stable_id').distinct()
+
+            if not queryset.exists():
+                self.handle_no_permission('Phenotype', search_query)
+
+        else:
+            self.handle_no_permission('Search type is not valid', None)
+
+        # If the user is not logged in, only show visible panels
+        if queryset.exists():
+            if user.is_authenticated == False:
+                for lgd in queryset:
+                    lgdpanel_select = LGDPanel.objects.filter(lgd=lgd, panel__is_visible=1)
+                    if lgdpanel_select.exists() == False:
+                        queryset = queryset.exclude(id=lgd.id)
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        list_output = []
+
+        for lgd in queryset:
+            panels = LGDPanel.objects.filter(lgd=lgd.id)
+            data = { 'id':lgd.stable_id,
+                     'gene':lgd.locus.name,
+                     'genotype':lgd.genotype.value,
+                     'disease':lgd.disease.name,
+                     'panel':[panel_obj.panel.name for panel_obj in panels] }
+            list_output.append(data)
+
+        return Response(list_output)
