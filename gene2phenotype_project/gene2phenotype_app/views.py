@@ -4,8 +4,7 @@ from django.http import Http404
 from rest_framework.response import Response
 from django.db.models import Q
 
-from gene2phenotype_app.serializers import (PanelSerializer,
-                                            UserSerializer,
+from gene2phenotype_app.serializers import (UserSerializer,
                                             PanelDetailSerializer,
                                             AttribTypeSerializer,
                                             AttribSerializer,
@@ -32,7 +31,7 @@ class BaseView(generics.ListAPIView):
 
 class PanelList(generics.ListAPIView):
     queryset = Panel.objects.filter()
-    serializer_class = PanelSerializer
+    serializer_class = PanelDetailSerializer
 
     def list(self, request, *args, **kwargs):
         user = self.request.user

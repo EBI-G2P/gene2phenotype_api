@@ -8,12 +8,8 @@ from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      LocusIdentifier, PublicationComment, LGDComment,
                      DiseasePublication)
 
-class PanelSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Panel
-        fields = ['name']
 
-class PanelDetailSerializer(PanelSerializer):
+class PanelDetailSerializer(serializers.ModelSerializer):
     curators = serializers.SerializerMethodField()
     last_updated = serializers.SerializerMethodField()
 
@@ -103,15 +99,15 @@ class PanelDetailSerializer(PanelSerializer):
 
             elif n_keys < 10:
                 if lgd_obj['lgd__lgdvariantgenccconsequence__variant_consequence__term'] not in aggregated_data[lgd_obj['lgd__stable_id']]['variant consequence']:
-                    aggregated_data[o['lgd__stable_id']]['variant consequence'].append(lgd_obj['lgd__lgdvariantgenccconsequence__variant_consequence__term'])
+                    aggregated_data[lgd_obj['lgd__stable_id']]['variant consequence'].append(lgd_obj['lgd__lgdvariantgenccconsequence__variant_consequence__term'])
                 if lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'] not in aggregated_data[lgd_obj['lgd__stable_id']]['variant type'] and lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'] is not None:
-                    aggregated_data[o['lgd__stable_id']]['variant type'].append(lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'])
+                    aggregated_data[lgd_obj['lgd__stable_id']]['variant type'].append(lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'])
 
         return aggregated_data.values()
 
     class Meta:
         model = Panel
-        fields = PanelSerializer.Meta.fields + ['description', 'curators', 'last_updated']
+        fields = ['name', 'description', 'curators', 'last_updated']
 
 class UserSerializer(serializers.ModelSerializer):
     user = serializers.CharField(read_only=True, source="username")
@@ -126,9 +122,7 @@ class UserSerializer(serializers.ModelSerializer):
 
         for user_panel in user_panels:
             # Authenticated users can view all panels
-            if user.is_authenticated:
-                panels_list.append(user_panel.panel.name)
-            elif user_panel.panel.is_visible == 1:
+            if user.is_authenticated or user_panel.panel.is_visible == 1:
                 panels_list.append(user_panel.panel.name)
 
         return panels_list
