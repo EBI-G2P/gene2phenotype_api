@@ -4,7 +4,7 @@ from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      LGDPanel, LocusGenotypeDisease, LGDVariantGenccConsequence,
                      LGDCrossCuttingModifier, LGDPublication,
                      LGDPhenotype, LGDVariantType, Locus, Disease,
-                     DiseaseOntology,
+                     DiseaseOntology, LocusAttrib,
                      LocusIdentifier, PublicationComment, LGDComment,
                      DiseasePublication)
 
@@ -152,6 +152,7 @@ class LocusSerializer(serializers.ModelSerializer):
     sequence = serializers.CharField(read_only=True, source="sequence.name")
     reference = serializers.CharField(read_only=True, source="sequence.reference.value")
     ids = serializers.SerializerMethodField()
+    synonyms = serializers.SerializerMethodField()
 
     def get_ids(self, id):
         locus_ids = LocusIdentifier.objects.filter(locus=id)
@@ -161,9 +162,18 @@ class LocusSerializer(serializers.ModelSerializer):
 
         return data
 
+    def get_synonyms(self, id):
+        attrib_type_obj = AttribType.objects.filter(code='gene_synonym')
+        locus_attribs = LocusAttrib.objects.filter(locus=id, attrib_type=attrib_type_obj.first().id, is_deleted=0)
+        data = []
+        for locus_atttrib in locus_attribs:
+            data.append(locus_atttrib.value)
+
+        return data
+
     class Meta:
         model = Locus
-        fields = ['name', 'sequence', 'start', 'end', 'strand', 'reference', 'ids']
+        fields = ['name', 'sequence', 'start', 'end', 'strand', 'reference', 'ids', 'synonyms']
 
 class LocusGeneSerializer(LocusSerializer):
     last_updated = serializers.SerializerMethodField()

@@ -206,6 +206,7 @@ class SearchView(BaseView):
                 queryset = LocusGenotypeDisease.objects.filter(
                     Q(locus__name=search_query, is_deleted=0, lgdpanel__panel__name=search_panel) |
                     Q(locus__locusidentifier__isnull=False, locus__locusidentifier__identifier=search_query, lgdpanel__panel__name=search_panel) |
+                    Q(locus__locusattrib__isnull=False, locus__locusattrib__value=search_query, locus__locusattrib__is_deleted=0, lgdpanel__panel__name=search_panel) |
                     Q(disease__name__icontains=search_query, is_deleted=0, lgdpanel__panel__name=search_panel) |
                     Q(disease__diseaseontology__ontology_term__accession=search_query, is_deleted=0, lgdpanel__panel__name=search_panel) |
                     Q(lgdphenotype__phenotype__term__icontains=search_query, lgdphenotype__isnull=False, is_deleted=0, lgdpanel__panel__name=search_panel) |
@@ -215,6 +216,7 @@ class SearchView(BaseView):
                 queryset = LocusGenotypeDisease.objects.filter(
                     Q(locus__name=search_query, is_deleted=0) |
                     Q(locus__locusidentifier__isnull=False, locus__locusidentifier__identifier=search_query) |
+                    Q(locus__locusattrib__isnull=False, locus__locusattrib__value=search_query, locus__locusattrib__is_deleted=0) |
                     Q(disease__name__icontains=search_query, is_deleted=0) |
                     Q(disease__diseaseontology__ontology_term__accession=search_query, is_deleted=0) |
                     Q(lgdphenotype__phenotype__term__icontains=search_query, lgdphenotype__isnull=False, is_deleted=0) |
@@ -238,12 +240,14 @@ class SearchView(BaseView):
             if search_panel:
                 queryset = LocusGenotypeDisease.objects.filter(
                     Q(locus__name=search_query, is_deleted=0, lgdpanel__panel__name=search_panel) |
-                    Q(locus__locusidentifier__isnull=False, locus__locusidentifier__identifier=search_query, lgdpanel__panel__name=search_panel)
+                    Q(locus__locusidentifier__isnull=False, locus__locusidentifier__identifier=search_query, lgdpanel__panel__name=search_panel) |
+                    Q(locus__locusattrib__isnull=False, locus__locusattrib__value=search_query, locus__locusattrib__is_deleted=0, lgdpanel__panel__name=search_panel)
                 ).order_by('locus__name', 'stable_id').distinct()
             else:
                 queryset = LocusGenotypeDisease.objects.filter(
                     Q(locus__name=search_query, is_deleted=0) |
-                    Q(locus__locusidentifier__isnull=False, locus__locusidentifier__identifier=search_query)
+                    Q(locus__locusidentifier__isnull=False, locus__locusidentifier__identifier=search_query) |
+                    Q(locus__locusattrib__isnull=False, locus__locusattrib__value=search_query, locus__locusattrib__is_deleted=0)
                 ).order_by('locus__name', 'stable_id').distinct()
 
             if not queryset.exists():
