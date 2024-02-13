@@ -216,11 +216,11 @@ class LocusGeneSerializer(LocusSerializer):
 
             else:
                 if lgd_obj['lgdpanel__panel__name'] not in aggregated_data[lgd_obj['stable_id']]['panels']:
-                    aggregated_data[o['stable_id']]['panels'].append(lgd_obj['lgdpanel__panel__name'])
+                    aggregated_data[lgd_obj['stable_id']]['panels'].append(lgd_obj['lgdpanel__panel__name'])
                 if lgd_obj['lgdvariantgenccconsequence__variant_consequence__term'] not in aggregated_data[lgd_obj['stable_id']]['variant consequence']:
-                    aggregated_data[o['stable_id']]['variant consequence'].append(lgd_obj['lgdvariantgenccconsequence__variant_consequence__term'])
+                    aggregated_data[lgd_obj['stable_id']]['variant consequence'].append(lgd_obj['lgdvariantgenccconsequence__variant_consequence__term'])
                 if lgd_obj['lgdvarianttype__variant_type_ot__term'] not in aggregated_data[lgd_obj['stable_id']]['variant type'] and lgd_obj['lgdvarianttype__variant_type_ot__term'] is not None:
-                    aggregated_data[o['stable_id']]['variant type'].append(lgd_obj['lgdvarianttype__variant_type_ot__term'])
+                    aggregated_data[lgd_obj['stable_id']]['variant type'].append(lgd_obj['lgdvarianttype__variant_type_ot__term'])
 
         return aggregated_data.values()
 
