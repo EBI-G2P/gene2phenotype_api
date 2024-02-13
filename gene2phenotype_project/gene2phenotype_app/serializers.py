@@ -87,14 +87,14 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                 if lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'] is not None:
                     variant_types.append(lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'])
 
-                aggregated_data[lgd_obj['lgd__stable_id']] = { 'locus':lgd_obj['lgd__locus__name'],
-                                                         'disease':lgd_obj['lgd__disease__name'],
-                                                         'genotype':lgd_obj['lgd__genotype__value'],
-                                                         'confidence':lgd_obj['lgd__confidence__value'],
-                                                         'variant consequence':variant_consequences,
-                                                         'variant type':variant_types,
-                                                         'date review':lgd_obj['lgd__date_review'],
-                                                         'stable id':lgd_obj['lgd__stable_id'] }
+                aggregated_data[lgd_obj['lgd__stable_id']] = {  'locus':lgd_obj['lgd__locus__name'],
+                                                                'disease':lgd_obj['lgd__disease__name'],
+                                                                'genotype':lgd_obj['lgd__genotype__value'],
+                                                                'confidence':lgd_obj['lgd__confidence__value'],
+                                                                'variant_consequence':variant_consequences,
+                                                                'variant_type':variant_types,
+                                                                'date_review':lgd_obj['lgd__date_review'],
+                                                                'stable_id':lgd_obj['lgd__stable_id'] }
                 n_keys += 1
 
             elif n_keys < 10:
@@ -207,12 +207,12 @@ class LocusGeneSerializer(LocusSerializer):
                     variant_types.append(lgd_obj['lgdvarianttype__variant_type_ot__term'])
 
                 aggregated_data[lgd_obj['stable_id']] = { 'disease':lgd_obj['disease__name'],
-                                                     'genotype':lgd_obj['genotype__value'],
-                                                     'confidence':lgd_obj['confidence__value'],
-                                                     'panels':panels,
-                                                     'variant consequence':variant_consequences,
-                                                     'variant type':variant_types,
-                                                     'stable id':lgd_obj['stable_id'] }
+                                                          'genotype':lgd_obj['genotype__value'],
+                                                          'confidence':lgd_obj['confidence__value'],
+                                                          'panels':panels,
+                                                          'variant_consequence':variant_consequences,
+                                                          'variant_type':variant_types,
+                                                          'stable_id':lgd_obj['stable_id'] }
 
             else:
                 if lgd_obj['lgdpanel__panel__name'] not in aggregated_data[lgd_obj['stable_id']]['panels']:
