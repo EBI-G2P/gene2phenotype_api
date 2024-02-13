@@ -4,7 +4,7 @@ from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      LGDPanel, LocusGenotypeDisease, LGDVariantGenccConsequence,
                      LGDCrossCuttingModifier, LGDPublication,
                      LGDPhenotype, LGDVariantType, Locus, Disease,
-                     DiseaseOntology, LocusAttrib,
+                     DiseaseOntology, LocusAttrib, DiseaseSynonym, 
                      LocusIdentifier, PublicationComment, LGDComment,
                      DiseasePublication)
 
@@ -98,10 +98,10 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                 n_keys += 1
 
             elif n_keys < 10:
-                if lgd_obj['lgd__lgdvariantgenccconsequence__variant_consequence__term'] not in aggregated_data[lgd_obj['lgd__stable_id']]['variant consequence']:
-                    aggregated_data[lgd_obj['lgd__stable_id']]['variant consequence'].append(lgd_obj['lgd__lgdvariantgenccconsequence__variant_consequence__term'])
-                if lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'] not in aggregated_data[lgd_obj['lgd__stable_id']]['variant type'] and lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'] is not None:
-                    aggregated_data[lgd_obj['lgd__stable_id']]['variant type'].append(lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'])
+                if lgd_obj['lgd__lgdvariantgenccconsequence__variant_consequence__term'] not in aggregated_data[lgd_obj['lgd__stable_id']]['variant_consequence']:
+                    aggregated_data[lgd_obj['lgd__stable_id']]['variant_consequence'].append(lgd_obj['lgd__lgdvariantgenccconsequence__variant_consequence__term'])
+                if lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'] not in aggregated_data[lgd_obj['lgd__stable_id']]['variant_type'] and lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'] is not None:
+                    aggregated_data[lgd_obj['lgd__stable_id']]['variant_type'].append(lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'])
 
         return aggregated_data.values()
 
@@ -227,10 +227,10 @@ class LocusGeneSerializer(LocusSerializer):
             else:
                 if lgd_obj['lgdpanel__panel__name'] not in aggregated_data[lgd_obj['stable_id']]['panels']:
                     aggregated_data[lgd_obj['stable_id']]['panels'].append(lgd_obj['lgdpanel__panel__name'])
-                if lgd_obj['lgdvariantgenccconsequence__variant_consequence__term'] not in aggregated_data[lgd_obj['stable_id']]['variant consequence']:
-                    aggregated_data[lgd_obj['stable_id']]['variant consequence'].append(lgd_obj['lgdvariantgenccconsequence__variant_consequence__term'])
-                if lgd_obj['lgdvarianttype__variant_type_ot__term'] not in aggregated_data[lgd_obj['stable_id']]['variant type'] and lgd_obj['lgdvarianttype__variant_type_ot__term'] is not None:
-                    aggregated_data[lgd_obj['stable_id']]['variant type'].append(lgd_obj['lgdvarianttype__variant_type_ot__term'])
+                if lgd_obj['lgdvariantgenccconsequence__variant_consequence__term'] not in aggregated_data[lgd_obj['stable_id']]['variant_consequence']:
+                    aggregated_data[lgd_obj['stable_id']]['variant_consequence'].append(lgd_obj['lgdvariantgenccconsequence__variant_consequence__term'])
+                if lgd_obj['lgdvarianttype__variant_type_ot__term'] not in aggregated_data[lgd_obj['stable_id']]['variant_type'] and lgd_obj['lgdvarianttype__variant_type_ot__term'] is not None:
+                    aggregated_data[lgd_obj['stable_id']]['variant_type'].append(lgd_obj['lgdvarianttype__variant_type_ot__term'])
 
         return aggregated_data.values()
 
@@ -353,6 +353,7 @@ class DiseaseSerializer(serializers.ModelSerializer):
     mim = serializers.CharField()
     ontology_terms = serializers.SerializerMethodField()
     publications = serializers.SerializerMethodField()
+    synonyms = serializers.SerializerMethodField()
 
     def get_ontology_terms(self, id):
         disease_ontologies = DiseaseOntology.objects.filter(disease=id)
@@ -362,9 +363,16 @@ class DiseaseSerializer(serializers.ModelSerializer):
         disease_publications = DiseasePublication.objects.filter(disease=id)
         return DiseasePublicationSerializer(disease_publications, many=True).data
 
+    def get_synonyms(self, id):
+        synonyms = []
+        disease_synonyms = DiseaseSynonym.objects.filter(disease=id)
+        for d_synonym in disease_synonyms:
+            synonyms.append(d_synonym.synonym)
+        return synonyms
+
     class Meta:
         model = Disease
-        fields = ['name', 'mim', 'ontology_terms', 'publications']
+        fields = ['name', 'mim', 'ontology_terms', 'publications', 'synonyms']
 
 class DiseasePublicationSerializer(serializers.ModelSerializer):
     pmid = serializers.CharField(source="publication.pmid")
