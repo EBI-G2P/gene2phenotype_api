@@ -13,7 +13,8 @@ from gene2phenotype_app.serializers import (UserSerializer,
 
 from gene2phenotype_app.models import (Panel, User, AttribType, Attrib,
                                        LocusGenotypeDisease, Locus, OntologyTerm,
-                                       DiseaseOntology, Disease, LGDPanel)
+                                       DiseaseOntology, Disease, LGDPanel,
+                                       LocusAttrib)
 
 
 class BaseView(generics.ListAPIView):
@@ -90,12 +91,18 @@ class LocusGene(BaseView):
         queryset = Locus.objects.filter(name=name, type=attrib.first().id)
 
         if not queryset.exists():
-            self.handle_no_permission('Gene', name)
+            # Try to find gene in locus_attrib (gene synonyms)
+            attrib_type = AttribType.objects.filter(code='gene_synonym')
+            queryset = LocusAttrib.objects.filter(value=name, attrib_type=attrib_type.first().id, is_deleted=0)
+
+            if not queryset.exists():
+                self.handle_no_permission('Gene', name)
+
+            queryset = Locus.objects.filter(id=queryset.first().locus.id)
 
         return queryset
 
 class LocusGeneSummary(BaseView):
-    lookup_field = 'name'
     serializer_class = LocusGeneSerializer
 
     def get(self, request, name, *args, **kwargs):
@@ -104,7 +111,14 @@ class LocusGeneSummary(BaseView):
         queryset = Locus.objects.filter(name=name, type=attrib.first().id)
 
         if not queryset.exists():
-            self.handle_no_permission('Gene', name)
+            # Try to find gene in locus_attrib (gene synonyms)
+            attrib_type = AttribType.objects.filter(code='gene_synonym')
+            queryset = LocusAttrib.objects.filter(value=name, attrib_type=attrib_type.first().id, is_deleted=0)
+
+            if not queryset.exists():
+                self.handle_no_permission('Gene', name)
+
+            queryset = Locus.objects.filter(id=queryset.first().locus.id)
 
         serializer = LocusGeneSerializer
         summmary = serializer.records_summary(queryset.first())
