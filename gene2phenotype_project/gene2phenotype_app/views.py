@@ -123,7 +123,7 @@ class LocusGeneSummary(BaseView):
         serializer = LocusGeneSerializer
         summmary = serializer.records_summary(queryset.first())
         response_data = {
-            'panel_name': queryset.first().name,
+            'gene_symbol': queryset.first().name,
             'records_summary': summmary,
         }
 

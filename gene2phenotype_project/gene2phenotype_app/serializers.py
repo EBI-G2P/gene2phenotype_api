@@ -149,6 +149,7 @@ class LGDPanelSerializer(serializers.ModelSerializer):
         fields = ['panel']
 
 class LocusSerializer(serializers.ModelSerializer):
+    gene_symbol = serializers.CharField(read_only=True, source="name")
     sequence = serializers.CharField(read_only=True, source="sequence.name")
     reference = serializers.CharField(read_only=True, source="sequence.reference.value")
     ids = serializers.SerializerMethodField()
@@ -173,7 +174,7 @@ class LocusSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Locus
-        fields = ['name', 'sequence', 'start', 'end', 'strand', 'reference', 'ids', 'synonyms']
+        fields = ['gene_symbol', 'sequence', 'start', 'end', 'strand', 'reference', 'ids', 'synonyms']
 
 class LocusGeneSerializer(LocusSerializer):
     last_updated = serializers.SerializerMethodField()
