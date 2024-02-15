@@ -31,7 +31,7 @@ class BaseView(generics.ListAPIView):
         return super().handle_exception(exc)
 
 class PanelList(generics.ListAPIView):
-    queryset = Panel.objects.filter()
+    queryset = Panel.objects.all()
     serializer_class = PanelDetailSerializer
 
     def list(self, request, *args, **kwargs):
@@ -49,36 +49,63 @@ class PanelDetail(BaseView):
 
     def get_queryset(self):
         name = self.kwargs['name']
+        user = self.request.user
         queryset = Panel.objects.filter(name=name)
 
-        if not queryset.exists():
+        flag = 0
+        for panel in queryset:
+            if panel.is_visible == 1 or (user.is_authenticated and panel.is_visible == 0):
+                flag = 1
+
+        # Panel doesn't exist or user has no permission to view it
+        if flag == 0:
+            self.handle_no_permission('Panel', name)
+        else:
+            return queryset
+
+class PanelStats(BaseView):
+    def get(self, request, name, *args, **kwargs):
+        user = self.request.user
+        queryset = Panel.objects.filter(name=name)
+
+        flag = 0
+        for panel in queryset:
+            if panel.is_visible == 1 or (user.is_authenticated and panel.is_visible == 0):
+                flag = 1
+
+        if flag == 1:
+            serializer = PanelDetailSerializer()
+            stats = serializer.calculate_stats(queryset.first())
+            response_data = {
+                'panel_name': queryset.first().name,
+                'stats': stats,
+            }
+            return Response(response_data)
+
+        else:
             self.handle_no_permission('Panel', name)
 
-        return queryset
-
-class PanelStats(generics.ListAPIView):
+class PanelRecordsSummary(BaseView):
     def get(self, request, name, *args, **kwargs):
-        panel = get_object_or_404(Panel, name=name)
-        serializer = PanelDetailSerializer()
-        stats = serializer.calculate_stats(panel)
-        response_data = {
-            'panel_name': panel.name,
-            'stats': stats,
-        }
+        user = self.request.user
+        queryset = Panel.objects.filter(name=name)
 
-        return Response(response_data)
+        flag = 0
+        for panel in queryset:
+            if panel.is_visible == 1 or (user.is_authenticated and panel.is_visible == 0):
+                flag = 1
 
-class PanelRecordsSummary(generics.ListAPIView):
-    def get(self, request, name, *args, **kwargs):
-        panel = get_object_or_404(Panel, name=name)
-        serializer = PanelDetailSerializer()
-        summmary = serializer.records_summary(panel)
-        response_data = {
-            'panel_name': panel.name,
-            'records_summary': summmary,
-        }
+        if flag == 1:
+            serializer = PanelDetailSerializer()
+            summary = serializer.records_summary(queryset.first())
+            response_data = {
+                'panel_name': queryset.first().name,
+                'records_summary': summary,
+            }
+            return Response(response_data)
 
-        return Response(response_data)
+        else:
+            self.handle_no_permission('Panel', name)
 
 class LocusGene(BaseView):
     lookup_field = 'name'
@@ -121,7 +148,7 @@ class LocusGeneSummary(BaseView):
             queryset = Locus.objects.filter(id=queryset.first().locus.id)
 
         serializer = LocusGeneSerializer
-        summmary = serializer.records_summary(queryset.first())
+        summmary = serializer.records_summary(queryset.first(), self.request.user)
         response_data = {
             'gene_symbol': queryset.first().name,
             'records_summary': summmary,
@@ -183,24 +210,21 @@ class AttribList(generics.ListAPIView):
         return Response(code_list)
 
 class LocusGenotypeDiseaseDetail(BaseView):
-    lookup_field = 'stable_id'
     serializer_class = LocusGenotypeDiseaseSerializer
 
     def get_queryset(self):
         stable_id = self.kwargs['stable_id']
         user = self.request.user
-        queryset = LocusGenotypeDisease.objects.filter(stable_id=stable_id)
 
-        if queryset.exists():
-            obj = queryset.first()
-            if user.is_authenticated and obj.is_deleted == 0:
-                return LocusGenotypeDisease.objects.filter(stable_id=stable_id)
-            elif obj.is_deleted == 0 and obj.is_reviewed == 1:
-                return LocusGenotypeDisease.objects.filter(stable_id=stable_id)
-            else:
-                self.handle_no_permission('Entry', stable_id)
+        if user.is_authenticated:
+            queryset = LocusGenotypeDisease.objects.filter(stable_id=stable_id, is_deleted=0)
         else:
+            queryset = LocusGenotypeDisease.objects.filter(stable_id=stable_id, is_reviewed=1, is_deleted=0, lgdpanel__panel__is_visible=1)
+
+        if not queryset.exists():
             self.handle_no_permission('Entry', stable_id)
+        else:
+            return queryset
 
 class SearchView(BaseView):
     serializer_class = LocusGenotypeDiseaseSerializer

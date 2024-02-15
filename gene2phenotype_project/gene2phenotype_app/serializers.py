@@ -191,11 +191,18 @@ class LocusGeneSerializer(LocusSerializer):
         else:
             return []
 
-    def records_summary(self):
+    def records_summary(self, user):
         lgd_list = LocusGenotypeDisease.objects.filter(locus=self.id, is_deleted=0)
-        lgd_select = lgd_list.select_related('disease', 'genotype', 'confidence'
+
+        if user.is_authenticated:
+            lgd_select = lgd_list.select_related('disease', 'genotype', 'confidence'
                                                ).prefetch_related('lgd_panel', 'panel', 'lgd_variant_gencc_consequence', 'lgd_variant_type'
                                                                   ).order_by('-date_review')
+
+        else:
+            lgd_select = lgd_list.select_related('disease', 'genotype', 'confidence'
+                                               ).prefetch_related('lgd_panel', 'panel', 'lgd_variant_gencc_consequence', 'lgd_variant_type'
+                                                                  ).order_by('-date_review').filter(lgdpanel__panel__is_visible=1)
 
         lgd_objects_list = list(lgd_select.values('disease__name',
                                                   'lgdpanel__panel__name',

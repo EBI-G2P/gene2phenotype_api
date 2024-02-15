@@ -220,13 +220,14 @@ class LocusAttrib(models.Model):
     id = models.AutoField(primary_key=True)
     locus = models.ForeignKey("Locus", on_delete=models.PROTECT)
     attrib_type = models.ForeignKey("AttribType", on_delete=models.PROTECT)
-    value = models.CharField(max_length=255, null=False, unique=True)
+    value = models.CharField(max_length=255, null=False)
     source = models.ForeignKey("Source", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 
     class Meta:
         db_table = "locus_attrib"
+        unique_together = ["locus", "value", "attrib_type"]
         indexes = [
             models.Index(fields=["value"]),
             models.Index(fields=["attrib_type"])
