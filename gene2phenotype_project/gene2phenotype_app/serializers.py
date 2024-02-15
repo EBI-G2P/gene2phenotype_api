@@ -6,7 +6,7 @@ from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      LGDPhenotype, LGDVariantType, Locus, Disease,
                      DiseaseOntology, LocusAttrib, DiseaseSynonym, 
                      LocusIdentifier, PublicationComment, LGDComment,
-                     DiseasePublication)
+                     DiseasePublication, LGDMolecularMechanism)
 
 
 class PanelDetailSerializer(serializers.ModelSerializer):
@@ -249,7 +249,8 @@ class LocusGeneSerializer(LocusSerializer):
 class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     locus = serializers.SerializerMethodField()
     genotype = serializers.CharField(source="genotype.value", read_only=True)
-    mechanism = serializers.SerializerMethodField()
+    variant_consequence = serializers.SerializerMethodField()
+    molecular_mechanism = serializers.SerializerMethodField()
     disease = serializers.SerializerMethodField()
     confidence = serializers.CharField(source="confidence.value", read_only=True)
     publications = serializers.SerializerMethodField()
@@ -270,9 +271,13 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         disease = DiseaseSerializer(id.disease).data
         return disease
 
-    def get_mechanism(self, id):
+    def get_variant_consequence(self, id):
         queryset = LGDVariantGenccConsequence.objects.filter(lgd_id=id)
-        return MechanismSerializer(queryset, many=True).data
+        return VariantConsequenceSerializer(queryset, many=True).data
+
+    def get_molecular_mechanism(self, id):
+        queryset = LGDMolecularMechanism.objects.filter(lgd_id=id)
+        return LGDMolecularMechanismSerializer(queryset, many=True).data
 
     def get_cross_cutting_modifier(self, id):
         queryset = LGDCrossCuttingModifier.objects.filter(lgd_id=id)
@@ -321,7 +326,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         exclude = ['id', 'is_deleted', 'date_review']
         read_only_fields = ['stable_id']
 
-class MechanismSerializer(serializers.ModelSerializer):
+class VariantConsequenceSerializer(serializers.ModelSerializer):
     variant_consequence = serializers.CharField(source="variant_consequence.term")
     support = serializers.CharField(source="support.value")
     publication = serializers.CharField(source="publication.title", allow_null=True)
@@ -329,6 +334,18 @@ class MechanismSerializer(serializers.ModelSerializer):
     class Meta:
         model = LGDVariantGenccConsequence
         fields = ['variant_consequence', 'support', 'publication']
+
+class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
+    mechanism = serializers.CharField(source="mechanism.value")
+    support = serializers.CharField(source="mechanism_support.value")
+    description = serializers.CharField(source="mechanism_description", allow_null=True)
+    synopsis = serializers.CharField(source="synopsis.value", allow_null=True)
+    synopsis_support = serializers.CharField(source="synopsis_support.value", allow_null=True)
+    publication = serializers.CharField(source="publication.title", allow_null=True)
+
+    class Meta:
+        model = LGDVariantGenccConsequence
+        fields = ['mechanism', 'support', 'description', 'synopsis', 'synopsis_support', 'publication']
 
 class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
     term = serializers.CharField(source="ccm.value")
