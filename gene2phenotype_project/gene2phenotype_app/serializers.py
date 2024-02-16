@@ -30,7 +30,7 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                 dates.append(lgd_panel.lgd.date_review)
                 dates.sort()
         if len(dates) > 0:
-            return dates[-1]
+            return dates[-1].date()
         else:
             return []
 
@@ -187,7 +187,7 @@ class LocusGeneSerializer(LocusSerializer):
                 dates.append(lgd.date_review)
                 dates.sort()
         if len(dates) > 0:
-            return dates[-1]
+            return dates[-1].date()
         else:
             return []
 
@@ -258,7 +258,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     cross_cutting_modifier = serializers.SerializerMethodField()
     variant_type = serializers.SerializerMethodField()
     phenotypes = serializers.SerializerMethodField()
-    last_updated = serializers.CharField(source="date_review", read_only=True)
+    last_updated = serializers.SerializerMethodField()
     date_created = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField()
     is_reviewed = serializers.IntegerField(read_only=True)
@@ -270,6 +270,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     def get_disease(self, id):
         disease = DiseaseSerializer(id.disease).data
         return disease
+
+    def get_last_updated(self, obj):
+        return obj.date_review.strftime("%Y-%m-%d")
 
     def get_variant_consequence(self, id):
         queryset = LGDVariantGenccConsequence.objects.filter(lgd_id=id)
