@@ -1,8 +1,9 @@
 from rest_framework import generics, status
-from django.shortcuts import get_object_or_404
 from django.http import Http404
 from rest_framework.response import Response
 from django.db.models import Q
+from rest_framework.pagination import PageNumberPagination
+
 
 from gene2phenotype_app.serializers import (UserSerializer,
                                             PanelDetailSerializer,
@@ -253,6 +254,7 @@ class LocusGenotypeDiseaseDetail(BaseView):
 
 class SearchView(BaseView):
     serializer_class = LocusGenotypeDiseaseSerializer
+    pagination_class = PageNumberPagination
 
     def get_queryset(self):
         user = self.request.user
@@ -356,6 +358,10 @@ class SearchView(BaseView):
                     lgdpanel_select = LGDPanel.objects.filter(lgd=lgd, panel__is_visible=1)
                     if lgdpanel_select.exists() == False:
                         queryset = queryset.exclude(id=lgd.id)
+                    lgd_panels = []
+                    for lp in lgdpanel_select:
+                        lgd_panels.append(lp.panel.name)
+                    lgd.panels = lgd_panels
 
         return queryset
 
@@ -364,12 +370,16 @@ class SearchView(BaseView):
         list_output = []
 
         for lgd in queryset:
-            panels = LGDPanel.objects.filter(lgd=lgd.id)
             data = { 'id':lgd.stable_id,
                      'gene':lgd.locus.name,
                      'genotype':lgd.genotype.value,
                      'disease':lgd.disease.name,
-                     'panel':[panel_obj.panel.name for panel_obj in panels] }
+                     'panel':lgd.panels }
             list_output.append(data)
+
+        paginated_output = self.paginate_queryset(list_output)
+
+        if paginated_output is not None:
+            return self.get_paginated_response(paginated_output)
 
         return Response({"results": list_output, "count": len(list_output)})
