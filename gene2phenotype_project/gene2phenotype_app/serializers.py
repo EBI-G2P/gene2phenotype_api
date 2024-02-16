@@ -116,13 +116,13 @@ class UserSerializer(serializers.ModelSerializer):
     is_active = serializers.CharField(read_only=True)
 
     def get_panels(self, id):
-        user = self.context.get('user')
+        user_login = self.context.get('user_login')
         user_panels = UserPanel.objects.filter(user=id)
         panels_list = []
 
         for user_panel in user_panels:
             # Authenticated users can view all panels
-            if user.is_authenticated or user_panel.panel.is_visible == 1:
+            if (user_login and user_login.is_authenticated) or user_panel.panel.is_visible == 1:
                 panels_list.append(user_panel.panel.name)
 
         return panels_list
@@ -313,7 +313,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     # Entries that were migrated from the old db don't have the date when they were created
     def get_date_created(self, id):
         date = None
-        lgd_obj = self.instance.first()
+        lgd_obj = self.instance
         insertion_history_type = '+'
         history_records = lgd_obj.history.all().order_by('history_date').filter(history_type=insertion_history_type)
         if history_records:

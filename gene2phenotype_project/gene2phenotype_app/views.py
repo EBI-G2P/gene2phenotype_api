@@ -26,7 +26,7 @@ class BaseView(generics.ListAPIView):
 
     def handle_exception(self, exc):
         if isinstance(exc, Http404):
-            return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         return super().handle_exception(exc)
 
@@ -41,10 +41,9 @@ class PanelList(generics.ListAPIView):
         for panel in queryset:
             if panel.is_visible == 1 or (user.is_authenticated and panel.is_visible == 0):
                 panel_list.append(panel.name)
-        return Response(panel_list)
+        return Response({'results':panel_list, 'count':len(panel_list)})
 
 class PanelDetail(BaseView):
-    lookup_field = 'name'
     serializer_class = PanelDetailSerializer
 
     def get_queryset(self):
@@ -62,6 +61,11 @@ class PanelDetail(BaseView):
             self.handle_no_permission('Panel', name)
         else:
             return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset().first()
+        serializer = PanelDetailSerializer(queryset)
+        return Response(serializer.data)
 
 class PanelStats(BaseView):
     def get(self, request, name, *args, **kwargs):
@@ -129,6 +133,11 @@ class LocusGene(BaseView):
 
         return queryset
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset().first()
+        serializer = LocusGeneSerializer(queryset)
+        return Response(serializer.data)
+
 class LocusGeneSummary(BaseView):
     serializer_class = LocusGeneSerializer
 
@@ -178,14 +187,25 @@ class DiseaseDetail(BaseView):
 
         return queryset
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset().first()
+        serializer = DiseaseSerializer(queryset)
+        return Response(serializer.data)
+
 class UserList(generics.ListAPIView):
     queryset = User.objects.filter(is_active=1, is_staff=0)
     serializer_class = UserSerializer
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context.update({'user':self.request.user})
+        context.update({'user_login':self.request.user})
         return context
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = UserSerializer(queryset, many=True)
+
+        return Response({'results': serializer.data, 'count':len(serializer.data)})
 
 class AttribTypeList(generics.ListAPIView):
     queryset = AttribType.objects.all()
@@ -194,7 +214,7 @@ class AttribTypeList(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         code_list = [attrib.code for attrib in queryset]
-        return Response(code_list)
+        return Response({'results':code_list, 'count':len(code_list)})
 
 class AttribList(generics.ListAPIView):
     lookup_field = 'type'
@@ -207,7 +227,7 @@ class AttribList(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         code_list = [attrib.value for attrib in queryset]
-        return Response(code_list)
+        return Response({'results':code_list, 'count':len(code_list)})
 
 class LocusGenotypeDiseaseDetail(BaseView):
     serializer_class = LocusGenotypeDiseaseSerializer
@@ -225,6 +245,11 @@ class LocusGenotypeDiseaseDetail(BaseView):
             self.handle_no_permission('Entry', stable_id)
         else:
             return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset().first()
+        serializer = LocusGenotypeDiseaseSerializer(queryset)
+        return Response(serializer.data)
 
 class SearchView(BaseView):
     serializer_class = LocusGenotypeDiseaseSerializer
@@ -347,4 +372,4 @@ class SearchView(BaseView):
                      'panel':[panel_obj.panel.name for panel_obj in panels] }
             list_output.append(data)
 
-        return Response(list_output)
+        return Response({"results": list_output, "count": len(list_output)})
