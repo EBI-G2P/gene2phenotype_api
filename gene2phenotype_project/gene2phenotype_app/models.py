@@ -11,7 +11,7 @@ class LocusGenotypeDisease(models.Model):
     confidence = models.ForeignKey("Attrib", related_name='confidence', on_delete=models.PROTECT)
     date_review = models.DateTimeField(null=True)
     is_reviewed = models.SmallIntegerField(null=False)
-    is_deleted = models.SmallIntegerField(null=False, default=False)
+    is_deleted = models.SmallIntegerField(null=False, default=False) # TODO: change to Boolean
     history = HistoricalRecords()
 
     class Meta:
@@ -174,6 +174,7 @@ class Meta(models.Model):
     date_update = models.DateTimeField(null=False)
     is_public = models.SmallIntegerField(null=False, default=False)
     description = models.TextField(null=True)
+    version = models.CharField(max_length=20, null=False)
 
     class Meta:
         db_table = "meta"

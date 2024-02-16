@@ -357,6 +357,8 @@ class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
 class LGDPublicationSerializer(serializers.ModelSerializer):
     pmid = serializers.CharField(source="publication.pmid")
     title = serializers.CharField(source="publication.title")
+    authors = serializers.CharField(source="publication.authors")
+    year = serializers.CharField(source="publication.year")
     publication_comments = serializers.SerializerMethodField()
 
     def get_publication_comments(self, id):
@@ -371,7 +373,7 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LGDPublication
-        fields = ['pmid', 'title', 'publication_comments']
+        fields = ['pmid', 'title', 'authors', 'year', 'publication_comments']
 
 class DiseaseSerializer(serializers.ModelSerializer):
     name = serializers.CharField()
