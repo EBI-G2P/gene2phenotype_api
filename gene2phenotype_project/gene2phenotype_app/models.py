@@ -264,6 +264,7 @@ class OntologyTerm(models.Model):
     term = models.CharField(max_length=255, null=False, unique=True)
     description = models.TextField(null=True)
     source = models.ForeignKey("Source", on_delete=models.PROTECT)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "ontology_term"
@@ -313,6 +314,7 @@ class DiseaseOntology(models.Model):
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
     ontology_term = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
     mapped_by_attrib = models.ForeignKey("Attrib", on_delete=models.PROTECT)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "disease_ontology"
@@ -349,6 +351,7 @@ class Publication(models.Model):
     source = models.CharField(max_length=255, null=True)
     doi = models.CharField(max_length=255, null=True)
     year = models.IntegerField(null=True)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "publication"
@@ -454,6 +457,21 @@ class gene_stats(models.Model):
         db_table = "gene_stats"
         indexes = [
             models.Index(fields=['gene'])
+        ]
+
+class gene_disease(models.Model):
+    id = models.AutoField(primary_key=True)
+    gene = models.ForeignKey("Locus", on_delete=models.PROTECT)
+    disease = models.CharField(max_length=255, null=False)
+    identifier = models.CharField(max_length=50, null=False)
+    source = models.ForeignKey("Source", on_delete=models.PROTECT)
+
+    class Meta:
+        db_table = "gene_disease"
+        unique_together = ['gene', 'disease', 'source']
+        indexes = [
+            models.Index(fields=['gene']),
+            models.Index(fields=['disease'])
         ]
 
 ### Legacy data ###

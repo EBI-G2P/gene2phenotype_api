@@ -63,22 +63,22 @@ class PanelDetailSerializer(serializers.ModelSerializer):
     def records_summary(self, panel):
         lgd_panels = LGDPanel.objects.filter(panel=panel.id).filter(is_deleted=0)
 
-        lgd_panels_sel = lgd_panels.select_related('lgd', 'lgd__locus', 'lgd__disease', 'lgd__genotype', 'lgd__confidence'
+        lgd_panels_selected = lgd_panels.select_related('lgd', 'lgd__locus', 'lgd__disease', 'lgd__genotype', 'lgd__confidence'
                                                ).prefetch_related('lgd__lgd_variant_gencc_consequence', 'lgd__lgd_variant_type').order_by('-lgd__date_review').filter(lgd__is_deleted=0)[:100]
 
-        lgd_objects_list = list(lgd_panels_sel.values('lgd__locus__name',
-                                                      'lgd__disease__name',
-                                                      'lgd__genotype__value',
-                                                      'lgd__confidence__value',
-                                                      'lgd__lgdvariantgenccconsequence__variant_consequence__term',
-                                                      'lgd__lgdvarianttype__variant_type_ot__term',
-                                                      'lgd__date_review',
-                                                      'lgd__stable_id'))
+        lgd_objects_list = list(lgd_panels_selected.values('lgd__locus__name',
+                                                           'lgd__disease__name',
+                                                           'lgd__genotype__value',
+                                                           'lgd__confidence__value',
+                                                           'lgd__lgdvariantgenccconsequence__variant_consequence__term',
+                                                           'lgd__lgdvarianttype__variant_type_ot__term',
+                                                           'lgd__date_review',
+                                                           'lgd__stable_id'))
 
         aggregated_data = {}
-        n_keys = 0
+        number_keys = 0
         for lgd_obj in lgd_objects_list:
-            if lgd_obj['lgd__stable_id'] not in aggregated_data.keys() and n_keys < 10:
+            if lgd_obj['lgd__stable_id'] not in aggregated_data.keys() and number_keys < 10:
                 variant_consequences = []
                 variant_types = []
 
@@ -95,9 +95,9 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                                                                 'variant_type':variant_types,
                                                                 'date_review':lgd_obj['lgd__date_review'],
                                                                 'stable_id':lgd_obj['lgd__stable_id'] }
-                n_keys += 1
+                number_keys += 1
 
-            elif n_keys < 10:
+            elif number_keys < 10:
                 if lgd_obj['lgd__lgdvariantgenccconsequence__variant_consequence__term'] not in aggregated_data[lgd_obj['lgd__stable_id']]['variant_consequence']:
                     aggregated_data[lgd_obj['lgd__stable_id']]['variant_consequence'].append(lgd_obj['lgd__lgdvariantgenccconsequence__variant_consequence__term'])
                 if lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'] not in aggregated_data[lgd_obj['lgd__stable_id']]['variant_type'] and lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'] is not None:
