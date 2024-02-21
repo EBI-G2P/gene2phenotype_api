@@ -8,7 +8,7 @@ class LocusGenotypeDisease(models.Model):
     locus = models.ForeignKey("Locus", on_delete=models.PROTECT)
     genotype = models.ForeignKey("Attrib", related_name='genotype', on_delete=models.PROTECT)
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
-    confidence = models.ForeignKey("Attrib", related_name='confidence', on_delete=models.PROTECT)
+    confidence = models.ForeignKey("Attrib", related_name='confidence', on_delete=models.PROTECT) # TODO: create separate table
     date_review = models.DateTimeField(null=True)
     is_reviewed = models.SmallIntegerField(null=False)
     is_deleted = models.SmallIntegerField(null=False, default=False) # TODO: change to Boolean
@@ -445,7 +445,7 @@ class UniprotAnnotation(models.Model):
             models.Index(fields=['hgnc'])
         ]
 
-class gene_stats(models.Model):
+class GeneStats(models.Model):
     id = models.AutoField(primary_key=True)
     gene = models.ForeignKey("Locus", on_delete=models.PROTECT)
     gene_symbol = models.CharField(max_length=100, null=False)
@@ -459,7 +459,7 @@ class gene_stats(models.Model):
             models.Index(fields=['gene'])
         ]
 
-class gene_disease(models.Model):
+class GeneDisease(models.Model):
     id = models.AutoField(primary_key=True)
     gene = models.ForeignKey("Locus", on_delete=models.PROTECT)
     disease = models.CharField(max_length=255, null=False)

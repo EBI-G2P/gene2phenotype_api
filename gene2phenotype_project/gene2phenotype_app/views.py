@@ -1,4 +1,4 @@
-from rest_framework import generics, status
+from rest_framework import generics, status, permissions
 from django.http import Http404
 from rest_framework.response import Response
 from django.db.models import Q
@@ -10,12 +10,14 @@ from gene2phenotype_app.serializers import (UserSerializer,
                                             AttribTypeSerializer,
                                             AttribSerializer,
                                             LocusGenotypeDiseaseSerializer,
-                                            LocusGeneSerializer, DiseaseSerializer)
+                                            LocusGeneSerializer, DiseaseSerializer,
+                                            CreateDiseaseSerializer, GeneDiseaseSerializer,
+                                            LocusSerializer, PublicationSerializer)
 
 from gene2phenotype_app.models import (Panel, User, AttribType, Attrib,
                                        LocusGenotypeDisease, Locus, OntologyTerm,
                                        DiseaseOntology, Disease, LGDPanel,
-                                       LocusAttrib)
+                                       LocusAttrib, GeneDisease)
 
 
 class BaseView(generics.ListAPIView):
@@ -165,6 +167,30 @@ class LocusGeneSummary(BaseView):
         }
 
         return Response(response_data)
+
+class GeneDiseaseView(BaseView):
+    serializer_class = GeneDiseaseSerializer
+
+    def get_queryset(self):
+        name = self.kwargs['name']
+        gene_obj = Locus.objects.filter(name=name)
+        queryset = GeneDisease.objects.filter(gene=gene_obj.first())
+
+        if not queryset.exists():
+            # Try to find gene in locus_attrib (gene synonyms)
+            attrib_type = AttribType.objects.filter(code='gene_synonym')
+            queryset = LocusAttrib.objects.filter(value=name, attrib_type=attrib_type.first().id, is_deleted=0)
+
+            if not queryset.exists():
+                self.handle_no_permission('Gene', name)
+
+            gene_obj = Locus.objects.filter(id=queryset.first().locus.id)
+            queryset = GeneDisease.objects.filter(gene=gene_obj.first())
+
+            if not queryset.exists():
+                self.handle_no_permission('Gene-Disease association', name)
+
+        return queryset
 
 class DiseaseDetail(BaseView):
     serializer_class = DiseaseSerializer
@@ -376,7 +402,8 @@ class SearchView(BaseView):
                      'gene':lgd.locus.name,
                      'genotype':lgd.genotype.value,
                      'disease':lgd.disease.name,
-                     'panel':lgd.panels }
+                     'panel':lgd.panels
+                   }
             list_output.append(data)
 
         paginated_output = self.paginate_queryset(list_output)
@@ -385,3 +412,39 @@ class SearchView(BaseView):
             return self.get_paginated_response(paginated_output)
 
         return Response({"results": list_output, "count": len(list_output)})
+
+
+### Add data
+class BaseAdd(generics.CreateAPIView):
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+class AddDisease(BaseAdd):
+    serializer_class = CreateDiseaseSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get(self, request, *args, **kwargs):
+        user = self.request.user
+        if user.is_authenticated:
+            response = Response({"message": "This endpoint is for creating diseases. Use POST to submit data."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        else:
+            response = Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        return response
+
+class AddPublication(BaseAdd):
+    serializer_class = PublicationSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get(self, request, *args, **kwargs):
+        user = self.request.user
+        if user.is_authenticated:
+            response = Response({"message": "This endpoint is for creating publications. Use POST to submit data."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        else:
+            response = Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        return response

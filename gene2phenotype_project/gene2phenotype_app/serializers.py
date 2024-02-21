@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db import connection, transaction
 
 from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      LGDPanel, LocusGenotypeDisease, LGDVariantGenccConsequence,
@@ -6,7 +7,12 @@ from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      LGDPhenotype, LGDVariantType, Locus, Disease,
                      DiseaseOntology, LocusAttrib, DiseaseSynonym, 
                      LocusIdentifier, PublicationComment, LGDComment,
-                     DiseasePublication, LGDMolecularMechanism)
+                     DiseasePublication, LGDMolecularMechanism,
+                     OntologyTerm, Source, Publication, GeneDisease,
+                     Sequence)
+
+from .utils import clean_string, get_mondo, get_publication, get_authors, validate_gene
+import re
 
 
 class PanelDetailSerializer(serializers.ModelSerializer):
@@ -149,8 +155,8 @@ class LGDPanelSerializer(serializers.ModelSerializer):
         fields = ['panel']
 
 class LocusSerializer(serializers.ModelSerializer):
-    gene_symbol = serializers.CharField(read_only=True, source="name")
-    sequence = serializers.CharField(read_only=True, source="sequence.name")
+    gene_symbol = serializers.CharField(source="name")
+    sequence = serializers.CharField(source="sequence.name")
     reference = serializers.CharField(read_only=True, source="sequence.reference.value")
     ids = serializers.SerializerMethodField()
     synonyms = serializers.SerializerMethodField()
@@ -171,6 +177,73 @@ class LocusSerializer(serializers.ModelSerializer):
             data.append(locus_atttrib.value)
 
         return data
+
+    @transaction.atomic
+    def create(self, validated_data):
+        gene_symbol = validated_data.get('name')
+        sequence_name = validated_data.get('sequence')['name']
+        start = validated_data.get('start')
+        end = validated_data.get('end')
+        strand = validated_data.get('strand')
+
+        locus_obj = None
+        try:
+            locus_obj = Locus.objects.get(name=gene_symbol)
+            raise serializers.ValidationError({"message": f"gene already exists",
+                                               "please select existing gene": f"{locus_obj.name} {locus_obj.sequence.name}:{locus_obj.start}-{locus_obj.end}"})
+        except Locus.DoesNotExist:
+            try:
+                # Check if gene symbol is a synonym
+                synonym_obj = LocusAttrib.objects.get(value=gene_symbol)
+                raise serializers.ValidationError({"message": f"gene already exists as a synonym",
+                                               "please select existing gene": f"{synonym_obj.locus.name} {synonym_obj.locus.sequence.name}:{synonym_obj.locus.start}-{synonym_obj.locus.end}"})
+            except LocusAttrib.DoesNotExist:
+                # Validate gene before insertion
+                validated = validate_gene(gene_symbol)
+                if validated == None:
+                    raise serializers.ValidationError({"message": f"invalid gene symbol",
+                                                       "please check symbol": gene_symbol})
+
+                # Insert locus gene
+                sequence = Sequence.objects.filter(name=sequence_name)
+                type = Attrib.objects.filter(value='gene')
+
+                locus_obj = Locus.objects.create(name = gene_symbol,
+                                                 sequence = sequence.first(),
+                                                 start = start,
+                                                 end = end,
+                                                 strand = strand,
+                                                 type = type.first())
+
+                # Insert gene-disease associations from OMIM
+                source_omim = Source.objects.filter(name='OMIM')
+                if 'mim' in validated.keys():
+                    for mim in validated['mim']:
+                        gene_disease_obj = GeneDisease.objects.create(disease=mim['disease'],
+                                                                      gene=locus_obj,
+                                                                      source=source_omim.first(),
+                                                                      identifier=mim['id'])
+
+                # Insert locus gene synonyms
+                if 'synonyms' in validated.keys():
+                    attrib_type_obj = AttribType.objects.filter(code='gene_synonym')
+                    for synonym in validated['synonyms']:
+                        locus_attrib_obj = LocusAttrib.objects.create(value=synonym,
+                                                                      locus=locus_obj,
+                                                                      attrib_type=attrib_type_obj.first(),
+                                                                      is_deleted=0)
+
+                # Insert locus gene ids
+                source_hgnc = Source.objects.filter(name='HGNC')
+                source_ensembl = Source.objects.filter(name='Ensembl')
+                locus_identifier_obj = LocusIdentifier.objects.create(identifier=validated['primary_id'],
+                                                                      locus=locus_obj,
+                                                                      source=source_hgnc.first())
+                locus_identifier_obj = LocusIdentifier.objects.create(identifier=validated['ensembl_id'],
+                                                                      locus=locus_obj,
+                                                                      source=source_ensembl.first())
+
+        return locus_obj
 
     class Meta:
         model = Locus
@@ -245,6 +318,15 @@ class LocusGeneSerializer(LocusSerializer):
     class Meta:
         model = Locus
         fields = LocusSerializer.Meta.fields + ['last_updated']
+
+class GeneDiseaseSerializer(serializers.ModelSerializer):
+    disease = serializers.CharField()
+    identifier = serializers.CharField()
+    source = serializers.CharField(source="source.name")
+
+    class Meta:
+        model = GeneDisease
+        fields = ['disease', 'identifier', 'source']
 
 class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     locus = serializers.SerializerMethodField()
@@ -357,16 +439,16 @@ class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
         model = LGDCrossCuttingModifier
         fields = ['term']
 
-class LGDPublicationSerializer(serializers.ModelSerializer):
-    pmid = serializers.CharField(source="publication.pmid")
-    title = serializers.CharField(source="publication.title")
-    authors = serializers.CharField(source="publication.authors")
-    year = serializers.CharField(source="publication.year")
-    publication_comments = serializers.SerializerMethodField()
+class PublicationSerializer(serializers.ModelSerializer):
+    pmid = serializers.CharField()
+    title = serializers.CharField(read_only=True)
+    authors = serializers.CharField(read_only=True)
+    year = serializers.CharField(read_only=True)
+    comments = serializers.SerializerMethodField()
 
-    def get_publication_comments(self, id):
+    def get_comments(self, id):
         data = []
-        comments = PublicationComment.objects.filter(publication=id.publication.id)
+        comments = PublicationComment.objects.filter(publication=id)
         for comment in comments:
             text = { 'text':comment.comment,
                      'date':comment.date }
@@ -374,9 +456,70 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
 
         return data
 
+    def create(self, validated_data):
+        pmid = validated_data.get('pmid')
+
+        try:
+            publication_obj = Publication.objects.get(pmid=pmid)
+            raise serializers.ValidationError({"message": f"publication already exists",
+                                                "please check publication":
+                                                f"PMID: {pmid}, Title: {publication_obj.title}"})
+        except Publication.DoesNotExist:
+            response = get_publication(pmid)
+
+            if response['hitCount'] == 0:
+                raise serializers.ValidationError({"message": f"invalid pmid",
+                                                   "please check id": pmid})
+
+            authors = get_authors(response)
+            year = None
+            doi = None
+            publication_info = response['result']
+            title = publication_info['title']
+            if 'doi' in publication_info:
+                doi = publication_info['doi']
+            if 'pubYear' in publication_info:
+                year = publication_info['pubYear']
+
+            # Insert publication
+            publication_obj = Publication.objects.create(pmid = pmid,
+                                                         title = title,
+                                                         authors = authors,
+                                                         year = year,
+                                                         doi = doi)
+
+        return publication_obj
+
+    class Meta:
+        model = Publication
+        fields = ['pmid', 'title', 'authors', 'year', 'comments']
+
+class LGDPublicationSerializer(serializers.ModelSerializer):
+    publication = PublicationSerializer()
+
     class Meta:
         model = LGDPublication
-        fields = ['pmid', 'title', 'authors', 'year', 'publication_comments']
+        fields = ['publication']
+
+class DiseasePublicationSerializer(serializers.ModelSerializer):
+    pmid = serializers.CharField(source="publication.pmid")
+    title = serializers.CharField(source="publication.title", allow_null=True)
+    number_families = serializers.IntegerField(source="families", allow_null=True)
+    consanguinity = serializers.CharField(allow_null=True)
+    ethnicity = serializers.CharField(allow_null=True)
+
+    class Meta:
+        model = DiseasePublication
+        fields = ['pmid', 'title', 'number_families', 'consanguinity', 'ethnicity']
+
+class DiseaseOntologySerializer(serializers.ModelSerializer):
+    accession = serializers.CharField(source="ontology_term.accession")
+    term = serializers.CharField(source="ontology_term.term")
+    description = serializers.CharField(source="ontology_term.description", allow_null=True)
+
+    class Meta:
+        model = DiseaseOntology
+        fields = ['accession', 'term', 'description']
 
 class DiseaseSerializer(serializers.ModelSerializer):
     name = serializers.CharField()
@@ -404,25 +547,128 @@ class DiseaseSerializer(serializers.ModelSerializer):
         model = Disease
         fields = ['name', 'mim', 'ontology_terms', 'publications', 'synonyms']
 
-class DiseasePublicationSerializer(serializers.ModelSerializer):
-    pmid = serializers.CharField(source="publication.pmid")
-    title = serializers.CharField(source="publication.title")
-    number_families = serializers.IntegerField(source="families")
-    consanguinity = serializers.CharField()
-    ethnicity = serializers.CharField()
+class CreateDiseaseSerializer(serializers.ModelSerializer):
+    ontology_terms = DiseaseOntologySerializer(required=False)
+    publications = DiseasePublicationSerializer(required=False)
+
+    @transaction.atomic
+    def create(self, validated_data):
+        disease_name = validated_data.get('name')
+        mim = validated_data.get('mim')
+        ontology = validated_data.get('ontology_terms')
+        ontology_accession = ontology['ontology_term']['accession']
+        ontology_term = ontology['ontology_term']['term']
+        ontology_desc = ontology['ontology_term']['description']
+        publications = validated_data.get('publications')
+        publication_pmid = publications['publication']['pmid']
+        publication_title = publications['publication']['title']
+        n_families = publications['families']
+        consanguinity = publications['consanguinity']
+        ethnicity = publications['ethnicity']
+
+        disease_obj = None
+
+        # Clean disease name
+        disease_name_clean = clean_string(str(disease_name))
+        # Check if name already exists
+        all_disease_names = Disease.objects.all()
+        for disease_db in all_disease_names:
+            disease_db_clean = clean_string(str(disease_db.name))
+            if disease_db_clean == disease_name_clean:
+                disease_obj = disease_db
+        all_disease_synonyms = DiseaseSynonym.objects.all()
+        for disease_synonym in all_disease_synonyms:
+            disease_db_clean = clean_string(str(disease_synonym.synonym))
+            if disease_db_clean == disease_name_clean:
+                disease_obj = disease_synonym.disease
+
+        if disease_obj is None:
+            # TODO: check if MIM is valid - need OMIM API access
+            # TODO: give disease suggestions
+
+            disease_obj = Disease.objects.create(
+                name = disease_name,
+                mim = mim
+            )
+
+            # Check if ontology is in db
+            if ontology_accession is not None and ontology_term is not None:
+                try:
+                    ontology_obj = OntologyTerm.objects.get(accession=ontology_accession)
+                except OntologyTerm.DoesNotExist:
+                    # Check if ontology accession is valid
+                    mondo_disease = get_mondo(ontology_accession)
+                    if mondo_disease is None:
+                        raise serializers.ValidationError({"message": f"invalid mondo id",
+                                                           "please check id": ontology_accession})
+
+                    source = Source.objects.get(name="Mondo")
+
+                    # Insert ontology
+                    ontology_accession = re.sub(r'\_', ':', ontology_accession)
+                    ontology_term = re.sub(r'\_', ':', ontology_term)
+                    if ontology_desc is None and len(mondo_disease['description']) > 0:
+                        ontology_desc = mondo_disease['description'][0]
+                    ontology_obj = OntologyTerm.objects.create(
+                        accession = ontology_accession,
+                        term = ontology_term,
+                        description = ontology_desc,
+                        source = source
+                    )
+
+                # Insert disease ontology
+                attrib = Attrib.objects.get(value="Data source")
+                disease_ontology_obj = DiseaseOntology.objects.create(
+                    disease = disease_obj,
+                    ontology_term = ontology_obj,
+                    mapped_by_attrib = attrib
+                )
+
+            # Insert disease publication info
+            try:
+                publication_obj = Publication.objects.get(pmid=publication_pmid)
+            except Publication.DoesNotExist:
+                publication = get_publication(publication_pmid)
+                if publication['hitCount'] == 0:
+                    raise serializers.ValidationError({"message": f"invalid pmid",
+                                                                   "please check id": publication_pmid})
+
+                # Insert publication
+                if publication_title is None:
+                    publication_title = publication['result']['title']
+                publication_authors = get_authors(publication)
+                publication_doi = publication['result']['doi']
+                publication_year = publication['result']['pubYear']
+                publication_obj = Publication.objects.create(
+                    pmid = publication_pmid,
+                    title = publication_title,
+                    authors = publication_authors,
+                    doi = publication_doi,
+                    year = publication_year
+                )
+
+            # Insert disease_publication
+            try:
+                disease_publication_obj = DiseasePublication.objects.get(disease=disease_obj, publication=publication_obj)
+            except DiseasePublication.DoesNotExist:
+                disease_publication_obj = DiseasePublication.objects.create(
+                    disease = disease_obj,
+                    publication = publication_obj,
+                    families = n_families,
+                    consanguinity = consanguinity,
+                    ethnicity = ethnicity,
+                    is_deleted = 0
+                )
+
+        else:
+            raise serializers.ValidationError({"message": f"disease already exists",
+                                               "please select existing disease": disease_obj.name})
+
+        return disease_obj
 
     class Meta:
-        model = DiseasePublication
-        fields = ['pmid', 'title', 'number_families', 'consanguinity', 'ethnicity']
-
-class DiseaseOntologySerializer(serializers.ModelSerializer):
-    accession = serializers.CharField(source="ontology_term.accession")
-    term = serializers.CharField(source="ontology_term.term")
-    description = serializers.CharField(source="ontology_term.description")
-
-    class Meta:
-        model = DiseaseOntology
-        fields = ['accession', 'term', 'description']
+        model = Disease
+        fields = ['name', 'mim', 'ontology_terms', 'publications']
 
 class LGDPhenotypeSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="phenotype.term")
