@@ -547,6 +547,25 @@ class DiseaseSerializer(serializers.ModelSerializer):
         model = Disease
         fields = ['name', 'mim', 'ontology_terms', 'publications', 'synonyms']
 
+class DiseaseDetailSerializer(DiseaseSerializer):
+    last_updated = serializers.SerializerMethodField()
+
+    def get_last_updated(self, id):
+        dates = []
+        lgds = LocusGenotypeDisease.objects.filter(disease=id)
+        for lgd in lgds:
+            if lgd.date_review is not None and lgd.is_reviewed == 1 and lgd.is_deleted == 0:
+                dates.append(lgd.date_review)
+                dates.sort()
+        if len(dates) > 0:
+            return dates[-1].date()
+        else:
+            return []
+
+    class Meta:
+        model = Disease
+        fields = DiseaseSerializer.Meta.fields + ['last_updated']
+
 class CreateDiseaseSerializer(serializers.ModelSerializer):
     ontology_terms = DiseaseOntologySerializer(required=False)
     publications = DiseasePublicationSerializer(required=False)

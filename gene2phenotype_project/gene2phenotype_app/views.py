@@ -12,7 +12,7 @@ from gene2phenotype_app.serializers import (UserSerializer,
                                             LocusGenotypeDiseaseSerializer,
                                             LocusGeneSerializer, DiseaseSerializer,
                                             CreateDiseaseSerializer, GeneDiseaseSerializer,
-                                            LocusSerializer, PublicationSerializer)
+                                            DiseaseDetailSerializer, PublicationSerializer)
 
 from gene2phenotype_app.models import (Panel, User, AttribType, Attrib,
                                        LocusGenotypeDisease, Locus, OntologyTerm,
@@ -193,21 +193,28 @@ class GeneDiseaseView(BaseView):
         return queryset
 
 class DiseaseDetail(BaseView):
-    serializer_class = DiseaseSerializer
+    serializer_class = DiseaseDetailSerializer
 
     def get_queryset(self):
         id = self.kwargs['id']
-        ontology_term = OntologyTerm.objects.filter(accession=id)
 
-        if not ontology_term.exists():
-            self.handle_no_permission('Disease', id)
+        # Fetch disease by MONDO ID
+        if id.startswith('MONDO'):
+            ontology_term = OntologyTerm.objects.filter(accession=id)
 
-        disease_ontology = DiseaseOntology.objects.filter(ontology_term_id=ontology_term.first().id)
+            if not ontology_term.exists():
+                self.handle_no_permission('Disease', id)
 
-        if not disease_ontology.exists():
-            self.handle_no_permission('Disease', id)
+            disease_ontology = DiseaseOntology.objects.filter(ontology_term_id=ontology_term.first().id)
 
-        queryset = Disease.objects.filter(id=disease_ontology.first().disease_id)
+            if not disease_ontology.exists():
+                self.handle_no_permission('Disease', id)
+
+            queryset = Disease.objects.filter(id=disease_ontology.first().disease_id)
+
+        else:
+            # Fetch disease by name
+            queryset = Disease.objects.filter(name=id)
 
         if not queryset.exists():
             self.handle_no_permission('Disease', id)
@@ -216,7 +223,7 @@ class DiseaseDetail(BaseView):
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset().first()
-        serializer = DiseaseSerializer(queryset)
+        serializer = DiseaseDetailSerializer(queryset)
         return Response(serializer.data)
 
 class UserList(generics.ListAPIView):
