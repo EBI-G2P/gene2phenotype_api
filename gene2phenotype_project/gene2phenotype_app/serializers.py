@@ -9,7 +9,7 @@ from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      LocusIdentifier, PublicationComment, LGDComment,
                      DiseasePublication, LGDMolecularMechanism,
                      OntologyTerm, Source, Publication, GeneDisease,
-                     Sequence)
+                     Sequence, UniprotAnnotation)
 
 from .utils import clean_string, get_mondo, get_publication, get_authors, validate_gene
 import re
@@ -314,6 +314,16 @@ class LocusGeneSerializer(LocusSerializer):
                     aggregated_data[lgd_obj['stable_id']]['variant_type'].append(lgd_obj['lgdvarianttype__variant_type_ot__term'])
 
         return aggregated_data.values()
+
+    def function(self):
+        result_data = {}
+        uniprot_annotation_objs = UniprotAnnotation.objects.filter(gene=self.id)
+
+        for function_obj in uniprot_annotation_objs:
+            result_data['protein_function'] = function_obj.protein_function
+            result_data['uniprot_accession'] = function_obj.uniprot_accession
+
+        return result_data
 
     class Meta:
         model = Locus

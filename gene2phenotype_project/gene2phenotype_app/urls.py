@@ -16,6 +16,7 @@ urlpatterns = [
     path('gene2phenotype/api/attrib/<str:code>/', views.AttribList.as_view(), name="list_attribs_by_type"),
     path('gene2phenotype/api/gene/<str:name>/', views.LocusGene.as_view(), name="locus_gene"),
     path('gene2phenotype/api/gene/<str:name>/summary/', views.LocusGeneSummary.as_view(), name="locus_gene_summary"),
+    path('gene2phenotype/api/gene/<str:name>/function/', views.GeneFunction.as_view(), name="locus_gene_function"),
     path('gene2phenotype/api/gene/<str:name>/disease/', views.GeneDiseaseView.as_view(), name="locus_gene_disease"),
     path('gene2phenotype/api/disease/<str:id>/', views.DiseaseDetail.as_view(), name="disease_details"),
     path('gene2phenotype/api/lgd/<str:stable_id>/', views.LocusGenotypeDiseaseDetail.as_view(), name="lgd"),
