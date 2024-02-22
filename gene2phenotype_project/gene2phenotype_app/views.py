@@ -18,7 +18,7 @@ from gene2phenotype_app.serializers import (UserSerializer,
 from gene2phenotype_app.models import (Panel, User, AttribType, Attrib,
                                        LocusGenotypeDisease, Locus, OntologyTerm,
                                        DiseaseOntology, Disease, LGDPanel,
-                                       LocusAttrib, GeneDisease)
+                                       LocusAttrib, GeneDisease, DiseaseSynonym)
 
 
 class BaseView(generics.ListAPIView):
@@ -238,11 +238,11 @@ class DiseaseDetail(BaseView):
             if not disease_ontology.exists():
                 self.handle_no_permission('Disease', id)
 
-            queryset = Disease.objects.filter(id=disease_ontology.first().disease_id)
+            queryset = Disease.objects.get(id=disease_ontology.first().disease_id)
 
         else:
-            # Fetch disease by name
-            queryset = Disease.objects.filter(name=id)
+            # Fetch disease by name or by synonym
+            queryset = Disease.objects.filter(name=id) | Disease.objects.filter(Q(diseasesynonym__synonym=id))
 
         if not queryset.exists():
             self.handle_no_permission('Disease', id)
@@ -330,7 +330,8 @@ class SearchView(BaseView):
         base_locus_2 = Q(locus__locusidentifier__isnull=False, locus__locusidentifier__identifier=search_query)
         base_locus_3 = Q(locus__locusattrib__isnull=False, locus__locusattrib__value=search_query, locus__locusattrib__is_deleted=0)
         base_disease = Q(disease__name__icontains=search_query, is_deleted=0)
-        base_disease_2 = Q(disease__diseaseontology__ontology_term__accession=search_query, is_deleted=0)
+        base_disease_2 = Q(disease__diseasesynonym__synonym__icontains=search_query, is_deleted=0)
+        base_disease_3 = Q(disease__diseaseontology__ontology_term__accession=search_query, is_deleted=0)
         base_phenotype = Q(lgdphenotype__phenotype__term__icontains=search_query, lgdphenotype__isnull=False, is_deleted=0)
         base_phenotype_2 = Q(lgdphenotype__phenotype__accession=search_query, lgdphenotype__isnull=False, is_deleted=0)
 
@@ -345,6 +346,7 @@ class SearchView(BaseView):
                     base_locus_3 & Q(lgdpanel__panel__name=search_panel) |
                     base_disease & Q(lgdpanel__panel__name=search_panel) |
                     base_disease_2 & Q(lgdpanel__panel__name=search_panel) |
+                    base_disease_3 & Q(lgdpanel__panel__name=search_panel) |
                     base_phenotype & Q(lgdpanel__panel__name=search_panel) |
                     base_phenotype_2 & Q(lgdpanel__panel__name=search_panel)
                 ).order_by('locus__name', 'stable_id').distinct()
@@ -355,6 +357,7 @@ class SearchView(BaseView):
                     base_locus_3 |
                     base_disease |
                     base_disease_2 |
+                    base_disease_3 |
                     base_phenotype |
                     base_phenotype_2
                 ).order_by('locus__name', 'stable_id').distinct()
@@ -383,12 +386,14 @@ class SearchView(BaseView):
             if search_panel:
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_disease & Q(lgdpanel__panel__name=search_panel) |
-                    base_disease_2 & Q(lgdpanel__panel__name=search_panel)
+                    base_disease_2 & Q(lgdpanel__panel__name=search_panel) |
+                    base_disease_3 & Q(lgdpanel__panel__name=search_panel)
                 ).order_by('locus__name', 'stable_id').distinct()
             else:
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_disease |
-                    base_disease_2
+                    base_disease_2 |
+                    base_disease_3
                 ).order_by('locus__name', 'stable_id').distinct()
 
             if not queryset.exists():
