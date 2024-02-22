@@ -11,7 +11,7 @@ from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      OntologyTerm, Source, Publication, GeneDisease,
                      Sequence, UniprotAnnotation)
 
-from .utils import clean_string, get_mondo, get_publication, get_authors, validate_gene
+from .utils import clean_string, get_mondo, get_publication, get_authors, validate_gene, validate_phenotype
 import re
 
 
@@ -698,6 +698,41 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Disease
         fields = ['name', 'mim', 'ontology_terms', 'publications']
+
+class PhenotypeSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source="term", read_only=True)
+    description = serializers.CharField(read_only=True)
+
+    @transaction.atomic
+    def create(self, validated_data):
+        phenotype_accession = validated_data.get('accession')
+        phenotype_description = None
+
+        # Check if accession is valid
+        pheno = validate_phenotype(phenotype_accession)
+
+        if not re.match("HP\:\d+", phenotype_accession) or pheno is None:
+            raise serializers.ValidationError({"message": f"invalid phenotype accession",
+                                               "please check id": phenotype_accession})
+
+        if pheno['details']['isObsolete'] == True:
+            raise serializers.ValidationError({"message": f"phenotype accession is obsolete",
+                                               "please check id": phenotype_accession})
+
+        if 'definition' in pheno['details']:
+            phenotype_description = pheno['details']['definition']
+
+        source_obj = Source.objects.filter(name='HPO')
+        pheno_obj = OntologyTerm.objects.create(accession=phenotype_accession,
+                                                term=pheno['details']['name'],
+                                                description=phenotype_description,
+                                                source=source_obj.first())
+
+        return pheno_obj
+
+    class Meta:
+        model = OntologyTerm
+        fields = ['name', 'accession', 'description']
 
 class LGDPhenotypeSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="phenotype.term")

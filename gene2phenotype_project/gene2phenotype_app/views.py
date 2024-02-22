@@ -12,7 +12,8 @@ from gene2phenotype_app.serializers import (UserSerializer,
                                             LocusGenotypeDiseaseSerializer,
                                             LocusGeneSerializer, DiseaseSerializer,
                                             CreateDiseaseSerializer, GeneDiseaseSerializer,
-                                            DiseaseDetailSerializer, PublicationSerializer)
+                                            DiseaseDetailSerializer, PublicationSerializer,
+                                            PhenotypeSerializer)
 
 from gene2phenotype_app.models import (Panel, User, AttribType, Attrib,
                                        LocusGenotypeDisease, Locus, OntologyTerm,
@@ -478,6 +479,19 @@ class AddPublication(BaseAdd):
         user = self.request.user
         if user.is_authenticated:
             response = Response({"message": "This endpoint is for creating publications. Use POST to submit data."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        else:
+            response = Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        return response
+
+class AddPhenotype(BaseAdd):
+    serializer_class = PhenotypeSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get(self, request, *args, **kwargs):
+        user = self.request.user
+        if user.is_authenticated:
+            response = Response({"message": "This endpoint is for creating phenotypes. Use POST to submit data."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
         else:
             response = Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
 
