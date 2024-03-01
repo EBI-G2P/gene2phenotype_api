@@ -25,7 +25,13 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         users = []
         for user_panel in user_panels:
             if user_panel.user.is_active == 1 and user_panel.user.is_staff == 0:
-                users.append(user_panel.user.username)
+                first_name = user_panel.user.first_name
+                last_name = user_panel.user.last_name
+                if first_name is not None and last_name is not None:
+                    name = f"{first_name} {last_name}"
+                else:
+                    name = user_panel.user.username
+                users.append(name)
         return users
 
     def get_last_updated(self, id):
@@ -47,6 +53,7 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         uniq_genes = {}
         diseases = 0
         uniq_diseases = {}
+        stats_by_confidence = {}
         attrib_id = Attrib.objects.get(value='gene').id
         for lgd_panel in lgd_panels:
             if lgd_panel.is_deleted == 0:
@@ -58,10 +65,16 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                     diseases += 1
                     uniq_diseases = { lgd_panel.lgd.disease_id:1 }
 
+                if lgd_panel.lgd.confidence.value not in stats_by_confidence.keys():
+                    stats_by_confidence[lgd_panel.lgd.confidence.value] = 1
+                elif lgd_panel.lgd.confidence.value in stats_by_confidence.keys():
+                    stats_by_confidence[lgd_panel.lgd.confidence.value] += 1
+
         stats = {
-            'number of records': num_records,
-            'number of genes': genes,
-            'number of disease':diseases
+            'total_records': num_records,
+            'total_genes': genes,
+            'total_diseases':diseases,
+            'by_confidence': stats_by_confidence
             }
 
         return stats
@@ -116,10 +129,19 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         fields = ['name', 'description', 'curators', 'last_updated']
 
 class UserSerializer(serializers.ModelSerializer):
-    user = serializers.CharField(read_only=True, source="username")
+    user_name = serializers.SerializerMethodField()
     email = serializers.CharField(read_only=True)
     panels = serializers.SerializerMethodField()
     is_active = serializers.CharField(read_only=True)
+
+    def get_user_name(self, id):
+        user = User.objects.filter(email=id)
+        if user.first().first_name is not None and user.first().last_name is not None:
+            name = f"{user.first().first_name} {user.first().last_name}"
+        else:
+            name = user.first().username
+
+        return name
 
     def get_panels(self, id):
         user_login = self.context.get('user_login')
@@ -135,7 +157,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['user', 'email', 'is_active', 'panels']
+        fields = ['user_name', 'email', 'is_active', 'panels']
 
 class AttribTypeSerializer(serializers.ModelSerializer):
     class Meta:
