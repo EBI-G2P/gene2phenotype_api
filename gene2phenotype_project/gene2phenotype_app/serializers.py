@@ -83,7 +83,7 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         lgd_panels = LGDPanel.objects.filter(panel=panel.id).filter(is_deleted=0)
 
         lgd_panels_selected = lgd_panels.select_related('lgd', 'lgd__locus', 'lgd__disease', 'lgd__genotype', 'lgd__confidence'
-                                               ).prefetch_related('lgd__lgd_variant_gencc_consequence', 'lgd__lgd_variant_type').order_by('-lgd__date_review').filter(lgd__is_deleted=0)[:100]
+                                               ).prefetch_related('lgd__lgd_variant_gencc_consequence', 'lgd__lgd_variant_type', 'lgd__lgd_molecular_mechanism').order_by('-lgd__date_review').filter(lgd__is_deleted=0)[:100]
 
         lgd_objects_list = list(lgd_panels_selected.values('lgd__locus__name',
                                                            'lgd__disease__name',
@@ -91,6 +91,7 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                                                            'lgd__confidence__value',
                                                            'lgd__lgdvariantgenccconsequence__variant_consequence__term',
                                                            'lgd__lgdvarianttype__variant_type_ot__term',
+                                                           'lgd__lgdmolecularmechanism__mechanism__value',
                                                            'lgd__date_review',
                                                            'lgd__stable_id'))
 
@@ -100,11 +101,15 @@ class PanelDetailSerializer(serializers.ModelSerializer):
             if lgd_obj['lgd__stable_id'] not in aggregated_data.keys() and number_keys < 10:
                 variant_consequences = []
                 variant_types = []
+                molecular_mechanism = []
 
                 variant_consequences.append(lgd_obj['lgd__lgdvariantgenccconsequence__variant_consequence__term'])
                 # Some records do not have variant types
                 if lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'] is not None:
                     variant_types.append(lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'])
+                # Some records do not have molecular mechanism
+                if lgd_obj['lgd__lgdmolecularmechanism__mechanism__value'] is not None:
+                    molecular_mechanism.append(lgd_obj['lgd__lgdmolecularmechanism__mechanism__value'])
 
                 aggregated_data[lgd_obj['lgd__stable_id']] = {  'locus':lgd_obj['lgd__locus__name'],
                                                                 'disease':lgd_obj['lgd__disease__name'],
@@ -112,6 +117,7 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                                                                 'confidence':lgd_obj['lgd__confidence__value'],
                                                                 'variant_consequence':variant_consequences,
                                                                 'variant_type':variant_types,
+                                                                'molecular_mechanism':molecular_mechanism,
                                                                 'date_review':lgd_obj['lgd__date_review'],
                                                                 'stable_id':lgd_obj['lgd__stable_id'] }
                 number_keys += 1
@@ -121,6 +127,8 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                     aggregated_data[lgd_obj['lgd__stable_id']]['variant_consequence'].append(lgd_obj['lgd__lgdvariantgenccconsequence__variant_consequence__term'])
                 if lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'] not in aggregated_data[lgd_obj['lgd__stable_id']]['variant_type'] and lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'] is not None:
                     aggregated_data[lgd_obj['lgd__stable_id']]['variant_type'].append(lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'])
+                if lgd_obj['lgd__lgdmolecularmechanism__mechanism__value'] not in aggregated_data[lgd_obj['lgd__stable_id']]['molecular_mechanism'] and lgd_obj['lgd__lgdmolecularmechanism__mechanism__value'] is not None:
+                    aggregated_data[lgd_obj['lgd__stable_id']]['molecular_mechanism'].append(lgd_obj['lgd__lgdmolecularmechanism__mechanism__value'])
 
         return aggregated_data.values()
 
@@ -291,12 +299,12 @@ class LocusGeneSerializer(LocusSerializer):
 
         if user.is_authenticated:
             lgd_select = lgd_list.select_related('disease', 'genotype', 'confidence'
-                                               ).prefetch_related('lgd_panel', 'panel', 'lgd_variant_gencc_consequence', 'lgd_variant_type'
+                                               ).prefetch_related('lgd_panel', 'panel', 'lgd_variant_gencc_consequence', 'lgd_variant_type', 'lgd_molecular_mechanism'
                                                                   ).order_by('-date_review')
 
         else:
             lgd_select = lgd_list.select_related('disease', 'genotype', 'confidence'
-                                               ).prefetch_related('lgd_panel', 'panel', 'lgd_variant_gencc_consequence', 'lgd_variant_type'
+                                               ).prefetch_related('lgd_panel', 'panel', 'lgd_variant_gencc_consequence', 'lgd_variant_type', 'lgd_molecular_mechanism'
                                                                   ).order_by('-date_review').filter(lgdpanel__panel__is_visible=1)
 
         lgd_objects_list = list(lgd_select.values('disease__name',
@@ -305,19 +313,23 @@ class LocusGeneSerializer(LocusSerializer):
                                                   'genotype__value',
                                                   'confidence__value',
                                                   'lgdvariantgenccconsequence__variant_consequence__term',
-                                                  'lgdvarianttype__variant_type_ot__term'))
+                                                  'lgdvarianttype__variant_type_ot__term',
+                                                  'lgdmolecularmechanism__mechanism__value'))
 
         aggregated_data = {}
         for lgd_obj in lgd_objects_list:
             if lgd_obj['stable_id'] not in aggregated_data.keys():
                 variant_consequences = []
                 variant_types = []
+                molecular_mechanism = []
                 panels = []
 
                 panels.append(lgd_obj['lgdpanel__panel__name'])
                 variant_consequences.append(lgd_obj['lgdvariantgenccconsequence__variant_consequence__term'])
                 if lgd_obj['lgdvarianttype__variant_type_ot__term'] is not None:
                     variant_types.append(lgd_obj['lgdvarianttype__variant_type_ot__term'])
+                if lgd_obj['lgdmolecularmechanism__mechanism__value'] is not None:
+                    molecular_mechanism.append(lgd_obj['lgdmolecularmechanism__mechanism__value'])
 
                 aggregated_data[lgd_obj['stable_id']] = { 'disease':lgd_obj['disease__name'],
                                                           'genotype':lgd_obj['genotype__value'],
@@ -325,6 +337,7 @@ class LocusGeneSerializer(LocusSerializer):
                                                           'panels':panels,
                                                           'variant_consequence':variant_consequences,
                                                           'variant_type':variant_types,
+                                                          'molecular_mechanism':molecular_mechanism,
                                                           'stable_id':lgd_obj['stable_id'] }
 
             else:
@@ -334,6 +347,8 @@ class LocusGeneSerializer(LocusSerializer):
                     aggregated_data[lgd_obj['stable_id']]['variant_consequence'].append(lgd_obj['lgdvariantgenccconsequence__variant_consequence__term'])
                 if lgd_obj['lgdvarianttype__variant_type_ot__term'] not in aggregated_data[lgd_obj['stable_id']]['variant_type'] and lgd_obj['lgdvarianttype__variant_type_ot__term'] is not None:
                     aggregated_data[lgd_obj['stable_id']]['variant_type'].append(lgd_obj['lgdvarianttype__variant_type_ot__term'])
+                if lgd_obj['lgdmolecularmechanism__mechanism__value'] not in aggregated_data[lgd_obj['stable_id']]['molecular_mechanism'] and lgd_obj['lgdmolecularmechanism__mechanism__value'] is not None:
+                    aggregated_data[lgd_obj['stable_id']]['molecular_mechanism'].append(lgd_obj['lgdmolecularmechanism__mechanism__value'])
 
         return aggregated_data.values()
 
@@ -733,7 +748,7 @@ class PhenotypeSerializer(serializers.ModelSerializer):
         # Check if accession is valid
         pheno = validate_phenotype(phenotype_accession)
 
-        if not re.match("HP\:\d+", phenotype_accession) or pheno is None:
+        if not re.match("HP:\d+", phenotype_accession) or pheno is None:
             raise serializers.ValidationError({"message": f"invalid phenotype accession",
                                                "please check id": phenotype_accession})
 
