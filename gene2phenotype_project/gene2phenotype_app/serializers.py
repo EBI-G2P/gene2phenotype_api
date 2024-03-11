@@ -599,8 +599,8 @@ class DiseaseDetailSerializer(DiseaseSerializer):
 
     def get_last_updated(self, id):
         dates = []
-        lgds = LocusGenotypeDisease.objects.filter(disease=id)
-        for lgd in lgds:
+        filtered_lgd_list = LocusGenotypeDisease.objects.filter(disease=id)
+        for lgd in filtered_lgd_list:
             if lgd.date_review is not None and lgd.is_reviewed == 1 and lgd.is_deleted == 0:
                 dates.append(lgd.date_review)
                 dates.sort()
@@ -635,17 +635,17 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
         disease_obj = None
 
         # Clean disease name
-        disease_name_clean = clean_string(str(disease_name))
+        cleaned_input_disease_name = clean_string(str(disease_name))
         # Check if name already exists
         all_disease_names = Disease.objects.all()
         for disease_db in all_disease_names:
-            disease_db_clean = clean_string(str(disease_db.name))
-            if disease_db_clean == disease_name_clean:
+            cleaned_db_disease_name = clean_string(str(disease_db.name))
+            if cleaned_db_disease_name == cleaned_input_disease_name:
                 disease_obj = disease_db
         all_disease_synonyms = DiseaseSynonym.objects.all()
         for disease_synonym in all_disease_synonyms:
-            disease_db_clean = clean_string(str(disease_synonym.synonym))
-            if disease_db_clean == disease_name_clean:
+            cleaned_db_disease_syn = clean_string(str(disease_synonym.synonym))
+            if cleaned_db_disease_syn == cleaned_input_disease_name:
                 disease_obj = disease_synonym.disease
 
         if disease_obj is None:
@@ -703,8 +703,12 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
                 if publication_title is None:
                     publication_title = publication['result']['title']
                 publication_authors = get_authors(publication)
-                publication_doi = publication['result']['doi']
-                publication_year = publication['result']['pubYear']
+                publication_doi = None
+                publication_year = None
+                if 'doi' in publication['result']:
+                    publication_doi = publication['result']['doi']
+                if 'pubYear' in publication['result']:
+                    publication_year = publication['result']['pubYear']
                 publication_obj = Publication.objects.create(
                     pmid = publication_pmid,
                     title = publication_title,
@@ -746,26 +750,26 @@ class PhenotypeSerializer(serializers.ModelSerializer):
         phenotype_description = None
 
         # Check if accession is valid
-        pheno = validate_phenotype(phenotype_accession)
+        validated_phenotype = validate_phenotype(phenotype_accession)
 
-        if not re.match("HP:\d+", phenotype_accession) or pheno is None:
+        if not re.match(r'HP\:\d+', phenotype_accession) or validated_phenotype is None:
             raise serializers.ValidationError({"message": f"invalid phenotype accession",
                                                "please check id": phenotype_accession})
 
-        if pheno['details']['isObsolete'] == True:
+        if validated_phenotype['details']['isObsolete'] == True:
             raise serializers.ValidationError({"message": f"phenotype accession is obsolete",
                                                "please check id": phenotype_accession})
 
-        if 'definition' in pheno['details']:
-            phenotype_description = pheno['details']['definition']
+        if 'definition' in validated_phenotype['details']:
+            phenotype_description = validated_phenotype['details']['definition']
 
         source_obj = Source.objects.filter(name='HPO')
-        pheno_obj = OntologyTerm.objects.create(accession=phenotype_accession,
-                                                term=pheno['details']['name'],
-                                                description=phenotype_description,
-                                                source=source_obj.first())
+        phenotype_obj = OntologyTerm.objects.create(accession=phenotype_accession,
+                                                    term=validated_phenotype['details']['name'],
+                                                    description=phenotype_description,
+                                                    source=source_obj.first())
 
-        return pheno_obj
+        return phenotype_obj
 
     class Meta:
         model = OntologyTerm
