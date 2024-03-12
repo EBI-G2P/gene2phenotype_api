@@ -8,7 +8,8 @@ class LocusGenotypeDisease(models.Model):
     locus = models.ForeignKey("Locus", on_delete=models.PROTECT)
     genotype = models.ForeignKey("Attrib", related_name='genotype', on_delete=models.PROTECT)
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
-    confidence = models.ForeignKey("Attrib", related_name='confidence', on_delete=models.PROTECT) # TODO: create separate table
+    confidence = models.ForeignKey("Attrib", related_name='confidence', on_delete=models.PROTECT)
+    confidence_support = models.TextField(null=True, default=False)
     date_review = models.DateTimeField(null=True)
     is_reviewed = models.SmallIntegerField(null=False)
     is_deleted = models.SmallIntegerField(null=False, default=False) # TODO: change to Boolean
@@ -69,8 +70,8 @@ class LGDPhenotypeComment(models.Model):
 class LGDVariantType(models.Model):
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
-    variant_type_ot = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
-    flag_nmd = models.CharField(max_length=20, null=True, default=False)
+    variant_type_ot = models.ForeignKey("OntologyTerm", related_name="variant_type", on_delete=models.PROTECT)
+    nmd_flag_ot = models.ForeignKey("OntologyTerm", related_name="nmd_flag", on_delete=models.PROTECT, null=True)
     inheritance = models.ForeignKey("Attrib", on_delete=models.PROTECT, null=True)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
@@ -83,7 +84,16 @@ class LGDVariantType(models.Model):
             models.Index(fields=['lgd', 'variant_type_ot']),
         ]
 
-# Comment on NMD triggering/escaping
+class LGDVariantTypeDescription(models.Model):
+    id = models.AutoField(primary_key=True)
+    lgd_variant_type = models.ForeignKey("LGDVariantType", on_delete=models.PROTECT)
+    description = models.CharField(max_length=250, null=False)
+    is_deleted = models.SmallIntegerField(null=False, default=False)
+    history = HistoricalRecords()
+
+    class Meta:
+        db_table = "lgd_variant_type_description"
+
 class LGDVariantTypeComment(models.Model):
     id = models.AutoField(primary_key=True)
     lgd_variant_type = models.ForeignKey("LGDVariantType", on_delete=models.PROTECT)
