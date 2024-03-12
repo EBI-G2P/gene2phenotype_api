@@ -50,6 +50,7 @@ class PanelList(generics.ListAPIView):
             if panel.is_visible == 1 or (user.is_authenticated and panel.is_visible == 0):
                 stats = serializer.calculate_stats(panel)
                 panel_info['name'] = panel.name
+                panel_info['description'] = panel.description
                 panel_info['stats'] = stats
                 panel_list.append(panel_info)
 
