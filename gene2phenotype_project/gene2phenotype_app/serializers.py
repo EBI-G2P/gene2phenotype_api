@@ -178,11 +178,50 @@ class AttribSerializer(serializers.ModelSerializer):
         fields = ['value']
 
 class LGDPanelSerializer(serializers.ModelSerializer):
-    panel = serializers.CharField(source="panel.name")
+    name = serializers.CharField(source="panel.name")
+    publications = serializers.CharField(source="publication.pmid", allow_null=True)
+
+    def create(self, validated_data):
+        lgd = self.context['lgd']
+        panel_name = validated_data.get('panel')['name']
+
+        # Check if panel name is valid
+        panel_obj = Panel.objects.filter(name=panel_name)
+
+        if not panel_obj.exists():
+            raise serializers.ValidationError({"message": f"invalid panel name '{panel_name}'"})
+        lgd_panel_obj = LGDPanel.objects.filter(panel=panel_obj.first().id, lgd=lgd.id)
+
+        if lgd_panel_obj.exists():
+            if lgd_panel_obj.first().is_deleted == 0:
+                raise serializers.ValidationError({"message": f"G2P entry {lgd.stable_id} is already linked to panel {panel_name}"})
+            else:
+                # Entry is not deleted anymore
+                lgd_panel_obj.is_deleted = 0
+                return lgd_panel_obj
+
+        # Create LGDPanel
+        lgd_panel_obj = LGDPanel.objects.create(
+            lgd=lgd,
+            panel=panel_obj.first(),
+            is_deleted=0
+        )
+
+        return lgd_panel_obj
 
     class Meta:
         model = LGDPanel
-        fields = ['panel']
+        fields = ['name', 'publications']
+
+    # Only include publication details if defined in context
+    # We want to include the details when creating a new publication
+    def __init__(self, *args, **kwargs):
+        super(LGDPanelSerializer, self).__init__(*args, **kwargs)
+
+        if 'include_details' in self.context:
+            self.fields['publications'].required = self.context['include_details']
+        else:
+            self.fields['publications'].required = False
 
 class LocusSerializer(serializers.ModelSerializer):
     gene_symbol = serializers.CharField(source="name")

@@ -70,6 +70,7 @@ class LGDVariantType(models.Model):
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     variant_type_ot = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
+    flag_nmd = models.CharField(max_length=20, null=True, default=False)
     inheritance = models.ForeignKey("Attrib", on_delete=models.PROTECT, null=True)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
@@ -155,7 +156,7 @@ class LGDPanel(models.Model):
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     panel = models.ForeignKey("Panel", on_delete=models.PROTECT)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
-    relevance = models.ForeignKey("Attrib", on_delete=models.PROTECT)
+    relevance = models.ForeignKey("Attrib", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 
@@ -343,6 +344,20 @@ class DiseasePhenotypeComment(models.Model):
     class Meta:
         db_table = "disease_phenotype_comment"
 
+class PhenotypePublication(models.Model):
+    phenotype = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
+    publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
+    pheno_count = models.IntegerField(null=True)
+    is_deleted = models.SmallIntegerField(null=False, default=False)
+    history = HistoricalRecords()
+
+    class Meta:
+        db_table = "phenotype_publication"
+        indexes = [
+            models.Index(fields=["phenotype"])
+        ]
+        unique_together = ["phenotype", "publication"]
+
 class Publication(models.Model):
     id = models.AutoField(primary_key=True)
     pmid = models.IntegerField(null=False, unique=True)
@@ -357,6 +372,20 @@ class Publication(models.Model):
         db_table = "publication"
         indexes = [
             models.Index(fields=['pmid'])
+        ]
+
+class PublicationFamilies(models.Model):
+    publication = models.ForeignKey("Publication", on_delete=models.PROTECT)
+    families = models.IntegerField(null=False)
+    consanguinity = models.ForeignKey("Attrib", related_name='consanguinity_publication', on_delete=models.PROTECT, null=True)
+    ethnicity = models.ForeignKey("Attrib", related_name='ethnicity_publication', on_delete=models.PROTECT, null=True)
+    is_deleted = models.SmallIntegerField(null=False, default=False)
+    history = HistoricalRecords()
+
+    class Meta:
+        db_table = "publication_families"
+        indexes = [
+            models.Index(fields=["publication"])
         ]
 
 class PublicationComment(models.Model):

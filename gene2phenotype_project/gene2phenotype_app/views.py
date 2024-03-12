@@ -3,6 +3,7 @@ from django.http import Http404
 from rest_framework.response import Response
 from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
+from django.shortcuts import get_object_or_404
 
 
 from gene2phenotype_app.serializers import (UserSerializer,
@@ -13,12 +14,12 @@ from gene2phenotype_app.serializers import (UserSerializer,
                                             LocusGeneSerializer, DiseaseSerializer,
                                             CreateDiseaseSerializer, GeneDiseaseSerializer,
                                             DiseaseDetailSerializer, PublicationSerializer,
-                                            PhenotypeSerializer)
+                                            PhenotypeSerializer, LGDPanelSerializer)
 
 from gene2phenotype_app.models import (Panel, User, AttribType, Attrib,
                                        LocusGenotypeDisease, Locus, OntologyTerm,
                                        DiseaseOntology, Disease, LGDPanel,
-                                       LocusAttrib, GeneDisease, DiseaseSynonym)
+                                       LocusAttrib, GeneDisease, UserPanel)
 
 
 class BaseView(generics.ListAPIView):
@@ -497,6 +498,47 @@ class AddPhenotype(BaseAdd):
         user = self.request.user
         if user.is_authenticated:
             response = Response({"message": "This endpoint is for creating phenotypes. Use POST to submit data."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        else:
+            response = Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        return response
+
+class LocusGenotypeDiseaseAddPanel(BaseAdd):
+    serializer_class = LGDPanelSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get(self, request, *args, **kwargs):
+        user = self.request.user
+        if user.is_authenticated:
+            response = Response({"message": "This endpoint is for adding a panel to an entry. Use POST to submit data."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        else:
+            response = Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        return response
+
+    def post(self, request, stable_id):
+        user = self.request.user
+
+        if not user.is_authenticated:
+            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        # Check if user can update panel
+        user_obj = get_object_or_404(User, email=user)
+        serializer = UserSerializer(user_obj)
+        user_panel_list_lower = [panel.lower() for panel in serializer.get_panels(user_obj)]
+        panel_name_input = request.data.get('name', None)
+
+        if panel_name_input is None:
+            return Response({"message": f"Please enter a panel name"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if panel_name_input.lower() not in user_panel_list_lower:
+            return Response({"message": f"No permission to update panel {panel_name_input}"}, status=status.HTTP_403_FORBIDDEN)
+        lgd = get_object_or_404(LocusGenotypeDisease, stable_id=stable_id)
+        serializer_class = LGDPanelSerializer(data=request.data, context={'lgd': lgd, 'include_details' : True})
+
+        if serializer_class.is_valid():
+            serializer_class.save()
+            response = Response({'message': 'Panel added to the G2P entry successfully.'}, status=status.HTTP_200_OK)
         else:
             response = Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
 
