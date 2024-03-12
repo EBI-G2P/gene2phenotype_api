@@ -42,10 +42,17 @@ class PanelList(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         user = self.request.user
         queryset = self.get_queryset()
+        serializer = PanelDetailSerializer()
         panel_list = []
+
         for panel in queryset:
+            panel_info = {}
             if panel.is_visible == 1 or (user.is_authenticated and panel.is_visible == 0):
-                panel_list.append(panel.name)
+                stats = serializer.calculate_stats(panel)
+                panel_info['name'] = panel.name
+                panel_info['stats'] = stats
+                panel_list.append(panel_info)
+
         return Response({'results':panel_list, 'count':len(panel_list)})
 
 class PanelDetail(BaseView):
