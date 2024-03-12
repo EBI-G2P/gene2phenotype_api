@@ -11,7 +11,7 @@ from gene2phenotype_app.serializers import (UserSerializer,
                                             AttribTypeSerializer,
                                             AttribSerializer,
                                             LocusGenotypeDiseaseSerializer,
-                                            LocusGeneSerializer, DiseaseSerializer,
+                                            LocusGeneSerializer,
                                             CreateDiseaseSerializer, GeneDiseaseSerializer,
                                             DiseaseDetailSerializer, PublicationSerializer,
                                             PhenotypeSerializer, LGDPanelSerializer)
@@ -19,7 +19,7 @@ from gene2phenotype_app.serializers import (UserSerializer,
 from gene2phenotype_app.models import (Panel, User, AttribType, Attrib,
                                        LocusGenotypeDisease, Locus, OntologyTerm,
                                        DiseaseOntology, Disease, LGDPanel,
-                                       LocusAttrib, GeneDisease, UserPanel)
+                                       LocusAttrib, GeneDisease)
 
 
 class BaseView(generics.ListAPIView):
@@ -49,30 +49,6 @@ class PanelList(generics.ListAPIView):
         return Response({'results':panel_list, 'count':len(panel_list)})
 
 class PanelDetail(BaseView):
-    serializer_class = PanelDetailSerializer
-
-    def get_queryset(self):
-        name = self.kwargs['name']
-        user = self.request.user
-        queryset = Panel.objects.filter(name=name)
-
-        flag = 0
-        for panel in queryset:
-            if panel.is_visible == 1 or (user.is_authenticated and panel.is_visible == 0):
-                flag = 1
-
-        # Panel doesn't exist or user has no permission to view it
-        if flag == 0:
-            self.handle_no_permission('Panel', name)
-        else:
-            return queryset
-
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset().first()
-        serializer = PanelDetailSerializer(queryset)
-        return Response(serializer.data)
-
-class PanelStats(BaseView):
     def get(self, request, name, *args, **kwargs):
         user = self.request.user
         queryset = Panel.objects.filter(name=name)
@@ -84,9 +60,14 @@ class PanelStats(BaseView):
 
         if flag == 1:
             serializer = PanelDetailSerializer()
+            curators = serializer.get_curators(queryset.first())
+            last_update = serializer.get_last_updated(queryset.first())
             stats = serializer.calculate_stats(queryset.first())
             response_data = {
-                'panel_name': queryset.first().name,
+                'name': queryset.first().name,
+                'description': queryset.first().description,
+                'curators': curators,
+                'last_updated': last_update,
                 'stats': stats,
             }
             return Response(response_data)
@@ -446,7 +427,6 @@ class SearchView(BaseView):
                      'panel':lgd.panels
                    }
             list_output.append(data)
-
         paginated_output = self.paginate_queryset(list_output)
 
         if paginated_output is not None:

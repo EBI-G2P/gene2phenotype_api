@@ -9,7 +9,6 @@ def perform_create(self, serializer):
 urlpatterns = [
     path('gene2phenotype/api/panels/', views.PanelList.as_view(), name="list_panels"),
     path('gene2phenotype/api/panel/<str:name>/', views.PanelDetail.as_view(), name="panel_details"),
-    path('gene2phenotype/api/panel/<str:name>/stats/', views.PanelStats.as_view(), name="panel_stats"),
     path('gene2phenotype/api/panel/<str:name>/summary/', views.PanelRecordsSummary.as_view(), name="panel_summary"),
     path('gene2phenotype/api/users/', views.UserList.as_view(), name="list_users"),
     path('gene2phenotype/api/attribs/', views.AttribTypeList.as_view(), name="list_attrib_type"),
