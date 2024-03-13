@@ -83,7 +83,7 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         lgd_panels = LGDPanel.objects.filter(panel=panel.id).filter(is_deleted=0)
 
         lgd_panels_selected = lgd_panels.select_related('lgd', 'lgd__locus', 'lgd__disease', 'lgd__genotype', 'lgd__confidence'
-                                               ).prefetch_related('lgd__lgd_variant_gencc_consequence', 'lgd__lgd_variant_type', 'lgd__lgd_molecular_mechanism').order_by('-lgd__date_review').filter(lgd__is_deleted=0)[:100]
+                                               ).prefetch_related('lgd__lgd_variant_gencc_consequence', 'lgd__lgd_variant_type', 'lgd__lgd_molecular_mechanism').order_by('-lgd__date_review').filter(lgd__is_deleted=0)
 
         lgd_objects_list = list(lgd_panels_selected.values('lgd__locus__name',
                                                            'lgd__disease__name',
@@ -648,13 +648,71 @@ class DiseaseDetailSerializer(DiseaseSerializer):
         else:
             return []
 
+    def records_summary(self, id, user):
+        lgd_list = LocusGenotypeDisease.objects.filter(disease=id, is_deleted=0)
+
+        if user.is_authenticated:
+            lgd_select = lgd_list.select_related('disease', 'genotype', 'confidence'
+                                               ).prefetch_related('lgd_panel', 'panel', 'lgd_variant_gencc_consequence', 'lgd_variant_type', 'lgd_molecular_mechanism'
+                                                                  ).order_by('-date_review')
+
+        else:
+            lgd_select = lgd_list.select_related('disease', 'genotype', 'confidence'
+                                               ).prefetch_related('lgd_panel', 'panel', 'lgd_variant_gencc_consequence', 'lgd_variant_type', 'lgd_molecular_mechanism'
+                                                                  ).order_by('-date_review').filter(lgdpanel__panel__is_visible=1)
+
+        lgd_objects_list = list(lgd_select.values('disease__name',
+                                                  'lgdpanel__panel__name',
+                                                  'stable_id',
+                                                  'genotype__value',
+                                                  'confidence__value',
+                                                  'lgdvariantgenccconsequence__variant_consequence__term',
+                                                  'lgdvarianttype__variant_type_ot__term',
+                                                  'lgdmolecularmechanism__mechanism__value'))
+
+        aggregated_data = {}
+        for lgd_obj in lgd_objects_list:
+            if lgd_obj['stable_id'] not in aggregated_data.keys():
+                variant_consequences = []
+                variant_types = []
+                molecular_mechanism = []
+                panels = []
+
+                panels.append(lgd_obj['lgdpanel__panel__name'])
+                variant_consequences.append(lgd_obj['lgdvariantgenccconsequence__variant_consequence__term'])
+                if lgd_obj['lgdvarianttype__variant_type_ot__term'] is not None:
+                    variant_types.append(lgd_obj['lgdvarianttype__variant_type_ot__term'])
+                if lgd_obj['lgdmolecularmechanism__mechanism__value'] is not None:
+                    molecular_mechanism.append(lgd_obj['lgdmolecularmechanism__mechanism__value'])
+
+                aggregated_data[lgd_obj['stable_id']] = { 'disease':lgd_obj['disease__name'],
+                                                          'genotype':lgd_obj['genotype__value'],
+                                                          'confidence':lgd_obj['confidence__value'],
+                                                          'panels':panels,
+                                                          'variant_consequence':variant_consequences,
+                                                          'variant_type':variant_types,
+                                                          'molecular_mechanism':molecular_mechanism,
+                                                          'stable_id':lgd_obj['stable_id'] }
+
+            else:
+                if lgd_obj['lgdpanel__panel__name'] not in aggregated_data[lgd_obj['stable_id']]['panels']:
+                    aggregated_data[lgd_obj['stable_id']]['panels'].append(lgd_obj['lgdpanel__panel__name'])
+                if lgd_obj['lgdvariantgenccconsequence__variant_consequence__term'] not in aggregated_data[lgd_obj['stable_id']]['variant_consequence']:
+                    aggregated_data[lgd_obj['stable_id']]['variant_consequence'].append(lgd_obj['lgdvariantgenccconsequence__variant_consequence__term'])
+                if lgd_obj['lgdvarianttype__variant_type_ot__term'] not in aggregated_data[lgd_obj['stable_id']]['variant_type'] and lgd_obj['lgdvarianttype__variant_type_ot__term'] is not None:
+                    aggregated_data[lgd_obj['stable_id']]['variant_type'].append(lgd_obj['lgdvarianttype__variant_type_ot__term'])
+                if lgd_obj['lgdmolecularmechanism__mechanism__value'] not in aggregated_data[lgd_obj['stable_id']]['molecular_mechanism'] and lgd_obj['lgdmolecularmechanism__mechanism__value'] is not None:
+                    aggregated_data[lgd_obj['stable_id']]['molecular_mechanism'].append(lgd_obj['lgdmolecularmechanism__mechanism__value'])
+
+        return aggregated_data.values()
+
     class Meta:
         model = Disease
         fields = DiseaseSerializer.Meta.fields + ['last_updated']
 
 class CreateDiseaseSerializer(serializers.ModelSerializer):
-    ontology_terms = DiseaseOntologySerializer(required=False)
-    publications = DiseasePublicationSerializer(required=False)
+    ontology_terms = DiseaseOntologySerializer(many=True, required=False)
+    publications = DiseasePublicationSerializer(many=True, required=False)
 
     @transaction.atomic
     def create(self, validated_data):

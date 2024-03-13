@@ -228,7 +228,7 @@ class DiseaseDetail(BaseView):
             if not disease_ontology.exists():
                 self.handle_no_permission('Disease', id)
 
-            queryset = Disease.objects.get(id=disease_ontology.first().disease_id)
+            queryset = Disease.objects.filter(id=disease_ontology.first().disease_id)
 
         else:
             # Fetch disease by name or by synonym
@@ -240,9 +240,22 @@ class DiseaseDetail(BaseView):
         return queryset
 
     def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset().first()
-        serializer = DiseaseDetailSerializer(queryset)
+        disease_obj = self.get_queryset().first()
+        serializer = DiseaseDetailSerializer(disease_obj)
         return Response(serializer.data)
+
+class DiseaseSummary(DiseaseDetail):
+    def list(self, request, *args, **kwargs):
+        disease = kwargs.get('id')
+        disease_obj = self.get_queryset().first()
+        serializer = DiseaseDetailSerializer(disease_obj)
+        summmary = serializer.records_summary(disease_obj.id, self.request.user)
+        response_data = {
+            'disease': disease,
+            'records_summary': summmary,
+        }
+
+        return Response(response_data)
 
 class UserList(generics.ListAPIView):
     queryset = User.objects.filter(is_active=1, is_staff=0)

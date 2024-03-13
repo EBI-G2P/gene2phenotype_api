@@ -71,7 +71,6 @@ class LGDVariantType(models.Model):
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     variant_type_ot = models.ForeignKey("OntologyTerm", related_name="variant_type", on_delete=models.PROTECT)
-    nmd_flag_ot = models.ForeignKey("OntologyTerm", related_name="nmd_flag", on_delete=models.PROTECT, null=True)
     inheritance = models.ForeignKey("Attrib", on_delete=models.PROTECT, null=True)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
@@ -219,6 +218,7 @@ class LocusIdentifier(models.Model):
     id = models.AutoField(primary_key=True)
     locus = models.ForeignKey("Locus", on_delete=models.PROTECT)
     identifier = models.CharField(max_length=100, null=False)
+    description = models.CharField(max_length=255, null=True, default=None)
     source = models.ForeignKey("Source", on_delete=models.PROTECT)
     history = HistoricalRecords()
 
@@ -357,7 +357,7 @@ class DiseasePhenotypeComment(models.Model):
 class PhenotypePublication(models.Model):
     phenotype = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
-    pheno_count = models.IntegerField(null=True)
+    pheno_count = models.IntegerField(null=True) # Probably not necessary - maybe a comment
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 
