@@ -9,10 +9,10 @@ class LocusGenotypeDisease(models.Model):
     genotype = models.ForeignKey("Attrib", related_name='genotype', on_delete=models.PROTECT)
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
     confidence = models.ForeignKey("Attrib", related_name='confidence', on_delete=models.PROTECT)
-    confidence_support = models.TextField(null=True, default=False)
+    confidence_support = models.TextField(null=True, default=None)
     date_review = models.DateTimeField(null=True)
     is_reviewed = models.SmallIntegerField(null=False)
-    is_deleted = models.SmallIntegerField(null=False, default=False) # TODO: change to Boolean
+    is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 
     class Meta:
@@ -355,6 +355,7 @@ class DiseasePhenotypeComment(models.Model):
         db_table = "disease_phenotype_comment"
 
 class PhenotypePublication(models.Model):
+    id = models.AutoField(primary_key=True)
     phenotype = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     pheno_count = models.IntegerField(null=True) # Probably not necessary - maybe a comment
@@ -385,6 +386,7 @@ class Publication(models.Model):
         ]
 
 class PublicationFamilies(models.Model):
+    id = models.AutoField(primary_key=True)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT)
     families = models.IntegerField(null=False)
     consanguinity = models.ForeignKey("Attrib", related_name='consanguinity_publication', on_delete=models.PROTECT, null=True)
