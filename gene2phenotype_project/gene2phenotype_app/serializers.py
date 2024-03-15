@@ -30,7 +30,8 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                 if first_name is not None and last_name is not None:
                     name = f"{first_name} {last_name}"
                 else:
-                    name = user_panel.user.username
+                    user_name = user_panel.user.username.split('_')
+                    name = ' '.join(user_name).title()
                 users.append(name)
         return users
 
@@ -147,7 +148,8 @@ class UserSerializer(serializers.ModelSerializer):
         if user.first().first_name is not None and user.first().last_name is not None:
             name = f"{user.first().first_name} {user.first().last_name}"
         else:
-            name = user.first().username
+            user_name = user.first().username.split('_')
+            name = ' '.join(user_name).title()
 
         return name
 
