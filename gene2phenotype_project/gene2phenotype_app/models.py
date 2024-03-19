@@ -8,8 +8,8 @@ class LocusGenotypeDisease(models.Model):
     locus = models.ForeignKey("Locus", on_delete=models.PROTECT)
     genotype = models.ForeignKey("Attrib", related_name='genotype', on_delete=models.PROTECT)
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
-    confidence = models.ForeignKey("Attrib", related_name='confidence', on_delete=models.PROTECT)
-    confidence_support = models.TextField(null=True, default=None)
+    confidence = models.ForeignKey("Attrib", related_name='confidence', on_delete=models.PROTECT) # confidence value
+    confidence_support = models.TextField(null=True, default=None) # text summary to support the confidence value
     date_review = models.DateTimeField(null=True)
     is_reviewed = models.SmallIntegerField(null=False)
     is_deleted = models.SmallIntegerField(null=False, default=False)
@@ -177,6 +177,7 @@ class LGDPanel(models.Model):
             models.Index(fields=['lgd', 'panel'])
         ]
 
+# Meta table helps to keep track of bulk updates
 class Meta(models.Model):
     id = models.AutoField(primary_key=True)
     key = models.CharField(max_length=100, null=False)

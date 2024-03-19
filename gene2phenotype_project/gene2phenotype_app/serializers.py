@@ -181,6 +181,7 @@ class AttribSerializer(serializers.ModelSerializer):
 
 class LGDPanelSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="panel.name")
+    description = serializers.CharField(source="panel.description")
     publications = serializers.CharField(source="publication.pmid", allow_null=True)
 
     def create(self, validated_data):
@@ -213,7 +214,7 @@ class LGDPanelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LGDPanel
-        fields = ['name', 'publications']
+        fields = ['name', 'description', 'publications']
 
     # Only include publication details if defined in context
     # We want to include the details when creating a new publication
