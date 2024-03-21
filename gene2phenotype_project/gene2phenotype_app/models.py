@@ -8,10 +8,11 @@ class LocusGenotypeDisease(models.Model):
     locus = models.ForeignKey("Locus", on_delete=models.PROTECT)
     genotype = models.ForeignKey("Attrib", related_name='genotype', on_delete=models.PROTECT)
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
-    confidence = models.ForeignKey("Attrib", related_name='confidence', on_delete=models.PROTECT)
+    confidence = models.ForeignKey("Attrib", related_name='confidence', on_delete=models.PROTECT) # confidence value
+    confidence_support = models.TextField(null=True, default=None) # text summary to support the confidence value
     date_review = models.DateTimeField(null=True)
     is_reviewed = models.SmallIntegerField(null=False)
-    is_deleted = models.SmallIntegerField(null=False, default=False) # TODO: change to Boolean
+    is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 
     class Meta:
@@ -69,7 +70,7 @@ class LGDPhenotypeComment(models.Model):
 class LGDVariantType(models.Model):
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
-    variant_type_ot = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
+    variant_type_ot = models.ForeignKey("OntologyTerm", related_name="variant_type", on_delete=models.PROTECT)
     inheritance = models.ForeignKey("Attrib", on_delete=models.PROTECT, null=True)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
@@ -82,7 +83,16 @@ class LGDVariantType(models.Model):
             models.Index(fields=['lgd', 'variant_type_ot']),
         ]
 
-# Comment on NMD triggering/escaping
+class LGDVariantTypeDescription(models.Model):
+    id = models.AutoField(primary_key=True)
+    lgd_variant_type = models.ForeignKey("LGDVariantType", on_delete=models.PROTECT)
+    description = models.CharField(max_length=250, null=False)
+    is_deleted = models.SmallIntegerField(null=False, default=False)
+    history = HistoricalRecords()
+
+    class Meta:
+        db_table = "lgd_variant_type_description"
+
 class LGDVariantTypeComment(models.Model):
     id = models.AutoField(primary_key=True)
     lgd_variant_type = models.ForeignKey("LGDVariantType", on_delete=models.PROTECT)
@@ -155,7 +165,7 @@ class LGDPanel(models.Model):
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     panel = models.ForeignKey("Panel", on_delete=models.PROTECT)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
-    relevance = models.ForeignKey("Attrib", on_delete=models.PROTECT)
+    relevance = models.ForeignKey("Attrib", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 
@@ -167,6 +177,7 @@ class LGDPanel(models.Model):
             models.Index(fields=['lgd', 'panel'])
         ]
 
+# Meta table helps to keep track of bulk updates
 class Meta(models.Model):
     id = models.AutoField(primary_key=True)
     key = models.CharField(max_length=100, null=False)
@@ -208,6 +219,7 @@ class LocusIdentifier(models.Model):
     id = models.AutoField(primary_key=True)
     locus = models.ForeignKey("Locus", on_delete=models.PROTECT)
     identifier = models.CharField(max_length=100, null=False)
+    description = models.CharField(max_length=255, null=True, default=None)
     source = models.ForeignKey("Source", on_delete=models.PROTECT)
     history = HistoricalRecords()
 
@@ -343,6 +355,21 @@ class DiseasePhenotypeComment(models.Model):
     class Meta:
         db_table = "disease_phenotype_comment"
 
+class PhenotypePublication(models.Model):
+    id = models.AutoField(primary_key=True)
+    phenotype = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
+    publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
+    pheno_count = models.IntegerField(null=True) # Probably not necessary - maybe a comment
+    is_deleted = models.SmallIntegerField(null=False, default=False)
+    history = HistoricalRecords()
+
+    class Meta:
+        db_table = "phenotype_publication"
+        indexes = [
+            models.Index(fields=["phenotype"])
+        ]
+        unique_together = ["phenotype", "publication"]
+
 class Publication(models.Model):
     id = models.AutoField(primary_key=True)
     pmid = models.IntegerField(null=False, unique=True)
@@ -357,6 +384,21 @@ class Publication(models.Model):
         db_table = "publication"
         indexes = [
             models.Index(fields=['pmid'])
+        ]
+
+class PublicationFamilies(models.Model):
+    id = models.AutoField(primary_key=True)
+    publication = models.ForeignKey("Publication", on_delete=models.PROTECT)
+    families = models.IntegerField(null=False)
+    consanguinity = models.ForeignKey("Attrib", related_name='consanguinity_publication', on_delete=models.PROTECT, null=True)
+    ethnicity = models.ForeignKey("Attrib", related_name='ethnicity_publication', on_delete=models.PROTECT, null=True)
+    is_deleted = models.SmallIntegerField(null=False, default=False)
+    history = HistoricalRecords()
+
+    class Meta:
+        db_table = "publication_families"
+        indexes = [
+            models.Index(fields=["publication"])
         ]
 
 class PublicationComment(models.Model):
@@ -445,7 +487,7 @@ class UniprotAnnotation(models.Model):
             models.Index(fields=['hgnc'])
         ]
 
-class gene_stats(models.Model):
+class GeneStats(models.Model):
     id = models.AutoField(primary_key=True)
     gene = models.ForeignKey("Locus", on_delete=models.PROTECT)
     gene_symbol = models.CharField(max_length=100, null=False)
@@ -459,7 +501,7 @@ class gene_stats(models.Model):
             models.Index(fields=['gene'])
         ]
 
-class gene_disease(models.Model):
+class GeneDisease(models.Model):
     id = models.AutoField(primary_key=True)
     gene = models.ForeignKey("Locus", on_delete=models.PROTECT)
     disease = models.CharField(max_length=255, null=False)
