@@ -23,12 +23,11 @@ class G2PStableID(models.Model):
                 indexes (list of Index): Defines database indexes for this model. 
                 In this case, an index is created for the stable_id field to optimize queries.
         """
-        db_table = "lgd_stableid"
-        unique_together = ["id", "stable_id"]
+        db_table = "g2p_stableid"
         indexes = [
             models.Index(fields=['stable_id'])
         ]
-        
+
 class LocusGenotypeDisease(models.Model):
     id = models.AutoField(primary_key=True)
     stable_id = models.ForeignKey("G2PStableID", on_delete=models.PROTECT)
