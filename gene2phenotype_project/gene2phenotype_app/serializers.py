@@ -506,7 +506,10 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         return disease
 
     def get_last_updated(self, obj):
-        return obj.date_review.strftime("%Y-%m-%d")
+        if obj.date_review is not None:
+            return obj.date_review.strftime("%Y-%m-%d")
+        else: 
+            return None
 
     def get_variant_consequence(self, id):
         queryset = LGDVariantGenccConsequence.objects.filter(lgd_id=id)

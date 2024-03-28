@@ -301,10 +301,12 @@ class LocusGenotypeDiseaseDetail(BaseView):
         stable_id = self.kwargs['stable_id']
         user = self.request.user
 
+        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
+
         if user.is_authenticated:
-            queryset = LocusGenotypeDisease.objects.filter(stable_id=stable_id, is_deleted=0)
+            queryset = LocusGenotypeDisease.objects.filter(stable_id=g2p_stable_id, is_deleted=0)
         else:
-            queryset = LocusGenotypeDisease.objects.filter(stable_id=stable_id, is_reviewed=1, is_deleted=0, lgdpanel__panel__is_visible=1).distinct()
+            queryset = LocusGenotypeDisease.objects.filter(stable_id=g2p_stable_id, is_reviewed=1, is_deleted=0, lgdpanel__panel__is_visible=1).distinct()
 
         if not queryset.exists():
             self.handle_no_permission('Entry', stable_id)
