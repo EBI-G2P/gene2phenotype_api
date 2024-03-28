@@ -28,9 +28,10 @@ class G2PStableID(models.Model):
             models.Index(fields=['stable_id'])
         ]
 
+
 class LocusGenotypeDisease(models.Model):
     id = models.AutoField(primary_key=True)
-    stable_id = models.ForeignKey("G2PStableID", on_delete=models.PROTECT)
+    stable_id = models.ForeignKey("G2PStableID", on_delete=models.PROTECT, db_column="stable_id")
     locus = models.ForeignKey("Locus", on_delete=models.PROTECT)
     genotype = models.ForeignKey("Attrib", related_name='genotype', on_delete=models.PROTECT)
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
