@@ -261,7 +261,7 @@ class LGDPanelSerializer(serializers.ModelSerializer):
         if lgd_panel_obj.exists():
             if lgd_panel_obj.first().is_deleted == 0:
                 g2p_stable_id = self.get_g2p_stable_id()
-                raise serializers.ValidationError({"message": f"G2P entry {g2p_stable_id} is already linked to panel {panel_name}"})
+                raise serializers.ValidationError({"message": f"G2P entry {lgd.stable_id.stable_id} is already linked to panel {panel_name}"})
             else:
                 # Entry is not deleted anymore
                 lgd_panel_obj.is_deleted = 0
