@@ -513,10 +513,6 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             return obj.date_review.strftime("%Y-%m-%d")
         else: 
             return None
-        
-    def get_stable_id(self, id):
-        stable_id = G2PStableIDSerializer(id.stable_id).data
-        return stable_id
 
     def get_variant_consequence(self, id):
         queryset = LGDVariantGenccConsequence.objects.filter(lgd_id=id)
