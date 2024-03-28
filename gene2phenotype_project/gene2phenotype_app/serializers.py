@@ -260,7 +260,8 @@ class LGDPanelSerializer(serializers.ModelSerializer):
 
         if lgd_panel_obj.exists():
             if lgd_panel_obj.first().is_deleted == 0:
-                raise serializers.ValidationError({"message": f"G2P entry {lgd.stable_id} is already linked to panel {panel_name}"})
+                g2p_stable_id = self.get_g2p_stable_id()
+                raise serializers.ValidationError({"message": f"G2P entry {g2p_stable_id} is already linked to panel {panel_name}"})
             else:
                 # Entry is not deleted anymore
                 lgd_panel_obj.is_deleted = 0
@@ -274,6 +275,25 @@ class LGDPanelSerializer(serializers.ModelSerializer):
         )
 
         return lgd_panel_obj
+    
+    def get_g2p_stable_id(self):
+        """
+        Retrieve the G2PStableID associated with the LocusGenotypeDisease object.
+
+        Returns:
+            str: The stable_id of the G2PStableID object associated with the LocusGenotypeDisease.
+
+        Raises:
+            G2PStableID.DoesNotExist: If the associated G2PStableID object does not exist.
+        """
+
+        lgd = self.context['lgd']
+
+        lgd_id = lgd.id
+        g2p_stable = G2PStableID.objects.get(id=lgd_id)
+
+        return g2p_stable.stable_id
+        
 
     class Meta:
         model = LGDPanel
