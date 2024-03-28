@@ -19,7 +19,7 @@ from gene2phenotype_app.serializers import (UserSerializer,
 from gene2phenotype_app.models import (Panel, User, AttribType, Attrib,
                                        LocusGenotypeDisease, Locus, OntologyTerm,
                                        DiseaseOntology, Disease, LGDPanel,
-                                       LocusAttrib, GeneDisease)
+                                       LocusAttrib, GeneDisease, G2PStableID)
 
 
 class BaseView(generics.ListAPIView):
@@ -534,13 +534,33 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
 
         if panel_name_input.lower() not in user_panel_list_lower:
             return Response({"message": f"No permission to update panel {panel_name_input}"}, status=status.HTTP_403_FORBIDDEN)
-        lgd = get_object_or_404(LocusGenotypeDisease, stable_id=stable_id)
+        
+        g2p_stable_id = self.get_g2p_stable_id(stable_id)
+        lgd = get_object_or_404(LocusGenotypeDisease, stable_id=g2p_stable_id)
         serializer_class = LGDPanelSerializer(data=request.data, context={'lgd': lgd, 'include_details' : True})
 
         if serializer_class.is_valid():
             serializer_class.save()
             response = Response({'message': 'Panel added to the G2P entry successfully.'}, status=status.HTTP_200_OK)
         else:
-            response = Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            response = Response({"message": "Error adding a panel, Description information needs to be given"}, status=status.HTTP_403_FORBIDDEN)
 
         return response
+    
+    def get_g2p_stable_id(self,stable_id):
+        """
+            Retrieve a G2PStableID object with the given stable_id.
+
+            Args:
+                stable_id (str): The stable identifier string to search for.
+
+            Returns:
+                G2PStableID: The G2PStableID object matching the given stable_id.
+
+            Raises:
+                Http404: If no G2PStableID object with the specified stable_id is found.
+        """
+        
+        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
+
+        return g2p_stable_id.id
