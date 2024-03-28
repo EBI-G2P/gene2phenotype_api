@@ -543,6 +543,6 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
             serializer_class.save()
             response = Response({'message': 'Panel added to the G2P entry successfully.'}, status=status.HTTP_200_OK)
         else:
-            response = Response({"message": "Error adding a panel"}, status=status.HTTP_403_FORBIDDEN)
+            response = Response({"message": "Error adding a panel"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return response
