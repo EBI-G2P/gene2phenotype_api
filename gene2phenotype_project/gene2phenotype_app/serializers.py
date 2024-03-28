@@ -244,7 +244,7 @@ class AttribSerializer(serializers.ModelSerializer):
 
 class LGDPanelSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="panel.name")
-    description = serializers.CharField(source="panel.description")
+    description = serializers.CharField(source="panel.description", allow_null=True)
     publications = serializers.CharField(source="publication.pmid", allow_null=True)
 
     def create(self, validated_data):
