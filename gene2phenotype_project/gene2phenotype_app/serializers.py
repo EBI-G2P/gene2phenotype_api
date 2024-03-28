@@ -217,7 +217,7 @@ class UserSerializer(serializers.ModelSerializer):
         return name
 
     def get_panels(self, id):
-        user_login = self.context.get('user_login')
+        user_login = self.context.get('user')
         user_panels = UserPanel.objects.filter(user=id)
         panels_list = []
 
