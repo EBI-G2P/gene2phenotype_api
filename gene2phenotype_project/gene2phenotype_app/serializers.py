@@ -483,7 +483,7 @@ class GeneDiseaseSerializer(serializers.ModelSerializer):
 
 class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     locus = serializers.SerializerMethodField()
-    stable_id = serializers.SerializerMethodField(read_only=True)
+    stable_id = serializers.CharField(source="stable_id.stable_id", read_only=True) #CharField and the source is the stable_id column in the stable_id table
     genotype = serializers.CharField(source="genotype.value", read_only=True)
     variant_consequence = serializers.SerializerMethodField()
     molecular_mechanism = serializers.SerializerMethodField()
