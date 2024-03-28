@@ -535,7 +535,7 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
         if panel_name_input.lower() not in user_panel_list_lower:
             return Response({"message": f"No permission to update panel {panel_name_input}"}, status=status.HTTP_403_FORBIDDEN)
         
-        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
+        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id) #using the g2p stable id information to get the lgd 
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id=g2p_stable_id, is_deleted=0)
         serializer_class = LGDPanelSerializer(data=request.data, context={'lgd': lgd, 'include_details' : True})
 
