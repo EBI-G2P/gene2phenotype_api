@@ -2,9 +2,36 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from simple_history.models import HistoricalRecords
 
+class G2PStableID(models.Model):
+    """
+        Represents a stable identifier for a gene-to-phenotype mapping.
+
+        Attributes:
+            id (AutoField): The primary key for the G2PStableID instance.
+            stable_id (CharField): The stable identifier string, maximum length 100 characters.
+            is_live (BooleanField): Indicates whether the stable identifier is currently in use.
+    """
+    id = models.AutoField(primary_key=True)
+    stable_id = models.CharField(max_length=100, null=False, unique=True)
+    is_live = models.BooleanField(default=False)
+    class Meta:
+        """
+            Meta:
+                db_table (str): The name of the database table for this model.
+                unique_together (list of tuples): Defines constraints to enforce uniqueness of combinations of fields.
+                In this case, ensures the combination of id and stable_id is unique.
+                indexes (list of Index): Defines database indexes for this model. 
+                In this case, an index is created for the stable_id field to optimize queries.
+        """
+        db_table = "g2p_stableid"
+        indexes = [
+            models.Index(fields=['stable_id'])
+        ]
+
+
 class LocusGenotypeDisease(models.Model):
     id = models.AutoField(primary_key=True)
-    stable_id = models.CharField(max_length=100, unique=True, null=False)
+    stable_id = models.ForeignKey("G2PStableID", on_delete=models.PROTECT, db_column="stable_id")
     locus = models.ForeignKey("Locus", on_delete=models.PROTECT)
     genotype = models.ForeignKey("Attrib", related_name='genotype', on_delete=models.PROTECT)
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
@@ -22,6 +49,7 @@ class LocusGenotypeDisease(models.Model):
             models.Index(fields=['locus']),
             models.Index(fields=['disease'])
         ]
+
 
 class LGDCrossCuttingModifier(models.Model):
     id = models.AutoField(primary_key=True)
