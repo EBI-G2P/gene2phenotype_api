@@ -87,8 +87,11 @@ class PanelDetailSerializer(serializers.ModelSerializer):
     def get_curators(self, id):
         user_panels = UserPanel.objects.filter(panel=id)
         users = []
+
         for user_panel in user_panels:
-            if user_panel.user.is_active == 1 and user_panel.user.is_staff == 0:
+            group_queryset = User.groups.through.objects.filter(group__name="curators", user=user_panel.user.id)
+
+            if user_panel.user.is_active == 1 and (user_panel.user.is_staff == 0 or len(group_queryset) > 0):
                 first_name = user_panel.user.first_name
                 last_name = user_panel.user.last_name
                 if first_name is not None and last_name is not None:
@@ -498,8 +501,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     date_created = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField()
     is_reviewed = serializers.IntegerField(read_only=True)
-    
-    
+
     def get_locus(self, id):
         locus = LocusSerializer(id.locus).data
         return locus
@@ -790,16 +792,8 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         disease_name = validated_data.get('name')
         mim = validated_data.get('mim')
-        ontology = validated_data.get('ontology_terms')
-        ontology_accession = ontology['ontology_term']['accession']
-        ontology_term = ontology['ontology_term']['term']
-        ontology_desc = ontology['ontology_term']['description']
-        publications = validated_data.get('publications')
-        publication_pmid = publications['publication']['pmid']
-        publication_title = publications['publication']['title']
-        n_families = publications['families']
-        consanguinity = publications['consanguinity']
-        ethnicity = publications['ethnicity']
+        ontologies_list = validated_data.get('ontology_terms')
+        publications_list = validated_data.get('publications')
 
         disease_obj = None
 
@@ -827,77 +821,90 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
             )
 
             # Check if ontology is in db
-            if ontology_accession is not None and ontology_term is not None:
-                try:
-                    ontology_obj = OntologyTerm.objects.get(accession=ontology_accession)
-                except OntologyTerm.DoesNotExist:
-                    # Check if ontology accession is valid
-                    mondo_disease = get_mondo(ontology_accession)
-                    if mondo_disease is None:
-                        raise serializers.ValidationError({"message": f"invalid mondo id",
-                                                           "please check id": ontology_accession})
+            for ontology in ontologies_list:
+                ontology_accession = ontology['ontology_term']['accession']
+                ontology_term = ontology['ontology_term']['term']
+                ontology_desc = ontology['ontology_term']['description']
 
-                    source = Source.objects.get(name="Mondo")
+                if ontology_accession is not None and ontology_term is not None:
+                    try:
+                        ontology_obj = OntologyTerm.objects.get(accession=ontology_accession)
+                    except OntologyTerm.DoesNotExist:
+                        # Check if ontology accession is valid
+                        mondo_disease = get_mondo(ontology_accession)
+                        if mondo_disease is None:
+                            raise serializers.ValidationError({"message": f"invalid mondo id",
+                                                            "please check id": ontology_accession})
 
-                    # Insert ontology
-                    ontology_accession = re.sub(r'\_', ':', ontology_accession)
-                    ontology_term = re.sub(r'\_', ':', ontology_term)
-                    if ontology_desc is None and len(mondo_disease['description']) > 0:
-                        ontology_desc = mondo_disease['description'][0]
-                    ontology_obj = OntologyTerm.objects.create(
-                        accession = ontology_accession,
-                        term = ontology_term,
-                        description = ontology_desc,
-                        source = source
+                        source = Source.objects.get(name="Mondo")
+
+                        # Insert ontology
+                        ontology_accession = re.sub(r'\_', ':', ontology_accession)
+                        ontology_term = re.sub(r'\_', ':', ontology_term)
+                        if ontology_desc is None and len(mondo_disease['description']) > 0:
+                            ontology_desc = mondo_disease['description'][0]
+                        ontology_obj = OntologyTerm.objects.create(
+                            accession = ontology_accession,
+                            term = ontology_term,
+                            description = ontology_desc,
+                            source = source
+                        )
+
+                    # Insert disease ontology
+                    attrib = Attrib.objects.get(value="Data source")
+                    disease_ontology_obj = DiseaseOntology.objects.create(
+                        disease = disease_obj,
+                        ontology_term = ontology_obj,
+                        mapped_by_attrib = attrib
                     )
 
-                # Insert disease ontology
-                attrib = Attrib.objects.get(value="Data source")
-                disease_ontology_obj = DiseaseOntology.objects.create(
-                    disease = disease_obj,
-                    ontology_term = ontology_obj,
-                    mapped_by_attrib = attrib
-                )
-
             # Insert disease publication info
-            try:
-                publication_obj = Publication.objects.get(pmid=publication_pmid)
-            except Publication.DoesNotExist:
-                publication = get_publication(publication_pmid)
-                if publication['hitCount'] == 0:
-                    raise serializers.ValidationError({"message": f"invalid pmid",
-                                                                   "please check id": publication_pmid})
+            for publication in publications_list:
+                publication_pmid = publication['publication']['pmid']
+                publication_title = publication['publication']['title']
+                n_families = publication['families']
+                consanguinity = publication['consanguinity']
+                ethnicity = publication['ethnicity']
 
-                # Insert publication
-                if publication_title is None:
-                    publication_title = publication['result']['title']
-                publication_authors = get_authors(publication)
-                publication_doi = None
-                publication_year = None
-                if 'doi' in publication['result']:
-                    publication_doi = publication['result']['doi']
-                if 'pubYear' in publication['result']:
-                    publication_year = publication['result']['pubYear']
-                publication_obj = Publication.objects.create(
-                    pmid = publication_pmid,
-                    title = publication_title,
-                    authors = publication_authors,
-                    doi = publication_doi,
-                    year = publication_year
-                )
+                try:
+                    publication_obj = Publication.objects.get(pmid=publication_pmid)
+                except Publication.DoesNotExist:
+                    publication = get_publication(publication_pmid)
+                    if publication['hitCount'] == 0:
+                        raise serializers.ValidationError({"message": f"invalid pmid",
+                                                                    "please check id": publication_pmid})
 
-            # Insert disease_publication
-            try:
-                disease_publication_obj = DiseasePublication.objects.get(disease=disease_obj, publication=publication_obj)
-            except DiseasePublication.DoesNotExist:
-                disease_publication_obj = DiseasePublication.objects.create(
-                    disease = disease_obj,
-                    publication = publication_obj,
-                    families = n_families,
-                    consanguinity = consanguinity,
-                    ethnicity = ethnicity,
-                    is_deleted = 0
-                )
+                    # Insert publication
+                    if publication_title is None:
+                        publication_title = publication['result']['title']
+                    publication_authors = get_authors(publication)
+                    publication_doi = None
+                    publication_year = None
+                    if 'doi' in publication['result']:
+                        publication_doi = publication['result']['doi']
+                    if 'pubYear' in publication['result']:
+                        publication_year = publication['result']['pubYear']
+
+                    publication_obj = Publication.objects.create(
+                        pmid = publication_pmid,
+                        title = publication_title,
+                        authors = publication_authors,
+                        doi = publication_doi,
+                        year = publication_year
+                    )
+
+                # Insert disease_publication
+                try:
+                    disease_publication_obj = DiseasePublication.objects.get(disease=disease_obj, publication=publication_obj)
+                except DiseasePublication.DoesNotExist:
+                    disease_publication_obj = DiseasePublication.objects.create(
+                        disease = disease_obj,
+                        publication = publication_obj,
+                        families = n_families,
+                        consanguinity = consanguinity,
+                        ethnicity = ethnicity,
+                        is_deleted = 0
+                    )
 
         else:
             raise serializers.ValidationError({"message": f"disease already exists",

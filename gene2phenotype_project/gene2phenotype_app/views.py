@@ -258,7 +258,6 @@ class DiseaseSummary(DiseaseDetail):
         return Response(response_data)
 
 class UserList(generics.ListAPIView):
-    queryset = User.objects.filter(is_active=1, is_staff=0)
     serializer_class = UserSerializer
 
     def get_serializer_context(self):
@@ -266,9 +265,17 @@ class UserList(generics.ListAPIView):
         context.update({'user_login':self.request.user})
         return context
 
+    def get_queryset(self):
+        if self.request.user is not None:
+            queryset = User.objects.filter(is_active=1)
+        else:
+            queryset = User.objects.filter(is_active=1, is_staff=0)
+
+        return queryset
+
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        serializer = UserSerializer(queryset, many=True)
+        serializer = UserSerializer(queryset, many=True, context={'user': self.request.user})
 
         return Response({'results': serializer.data, 'count':len(serializer.data)})
 
@@ -354,7 +361,7 @@ class SearchView(BaseView):
                     base_disease_3 & Q(lgdpanel__panel__name=search_panel) |
                     base_phenotype & Q(lgdpanel__panel__name=search_panel) |
                     base_phenotype_2 & Q(lgdpanel__panel__name=search_panel)
-                ).order_by('locus__name', 'stable_id').distinct()
+                ).order_by('locus__name', 'stable_id__stable_id').distinct()
             else:
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_locus |
@@ -365,7 +372,7 @@ class SearchView(BaseView):
                     base_disease_3 |
                     base_phenotype |
                     base_phenotype_2
-                ).order_by('locus__name', 'stable_id').distinct()
+                ).order_by('locus__name', 'stable_id__stable_id').distinct()
 
             if not queryset.exists():
                 self.handle_no_permission('results', search_query)
@@ -376,13 +383,13 @@ class SearchView(BaseView):
                     base_locus & Q(lgdpanel__panel__name=search_panel) |
                     base_locus_2 & Q(lgdpanel__panel__name=search_panel) |
                     base_locus_3 & Q(lgdpanel__panel__name=search_panel)
-                ).order_by('locus__name', 'stable_id').distinct()
+                ).order_by('locus__name', 'stable_id__stable_id').distinct()
             else:
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_locus |
                     base_locus_2 |
                     base_locus_3
-                ).order_by('locus__name', 'stable_id').distinct()
+                ).order_by('locus__name', 'stable_id__stable_id').distinct()
 
             if not queryset.exists():
                 self.handle_no_permission('Gene', search_query)
@@ -393,13 +400,13 @@ class SearchView(BaseView):
                     base_disease & Q(lgdpanel__panel__name=search_panel) |
                     base_disease_2 & Q(lgdpanel__panel__name=search_panel) |
                     base_disease_3 & Q(lgdpanel__panel__name=search_panel)
-                ).order_by('locus__name', 'stable_id').distinct()
+                ).order_by('locus__name', 'stable_id__stable_id').distinct()
             else:
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_disease |
                     base_disease_2 |
                     base_disease_3
-                ).order_by('locus__name', 'stable_id').distinct()
+                ).order_by('locus__name', 'stable_id__stable_id').distinct()
 
             if not queryset.exists():
                 self.handle_no_permission('Disease', search_query)
@@ -409,12 +416,12 @@ class SearchView(BaseView):
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_phenotype & Q(lgdpanel__panel__name=search_panel) |
                     base_phenotype_2 & Q(lgdpanel__panel__name=search_panel)
-                ).order_by('locus__name', 'stable_id').distinct()
+                ).order_by('locus__name', 'stable_id__stable_id').distinct()
             else:
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_phenotype |
                     base_phenotype_2
-                ).order_by('locus__name', 'stable_id').distinct()
+                ).order_by('locus__name', 'stable_id__stable_id').distinct()
 
             if not queryset.exists():
                 self.handle_no_permission('Phenotype', search_query)
@@ -443,7 +450,7 @@ class SearchView(BaseView):
         list_output = []
 
         for lgd in queryset:
-            data = { 'id':lgd.stable_id,
+            data = { 'id':lgd.stable_id.stable_id,
                      'gene':lgd.locus.name,
                      'genotype':lgd.genotype.value,
                      'disease':lgd.disease.name,
