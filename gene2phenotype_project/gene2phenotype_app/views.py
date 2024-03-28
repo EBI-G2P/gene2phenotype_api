@@ -525,7 +525,7 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
 
         # Check if user can update panel
         user_obj = get_object_or_404(User, email=user)
-        serializer = UserSerializer(user_obj)
+        serializer = UserSerializer(user_obj, context={'user' : user})
         user_panel_list_lower = [panel.lower() for panel in serializer.get_panels(user_obj)]
         panel_name_input = request.data.get('name', None)
 
