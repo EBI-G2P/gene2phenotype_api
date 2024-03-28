@@ -60,6 +60,7 @@ class G2PStableIDSerializer(serializers.ModelSerializer):
 
         return stable_id_instance
     
+    
     class Meta:
         """
             Metadata options for the G2PStableIDSerializer class.
@@ -76,7 +77,7 @@ class G2PStableIDSerializer(serializers.ModelSerializer):
                 In this case, the 'id' field is excluded.
         """
         model = G2PStableID
-        exclude = ['id'] 
+        fields = ['stable_id']
 
 class PanelDetailSerializer(serializers.ModelSerializer):
     curators = serializers.SerializerMethodField()
@@ -482,6 +483,7 @@ class GeneDiseaseSerializer(serializers.ModelSerializer):
 
 class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     locus = serializers.SerializerMethodField()
+    stable_id = serializers.SerializerMethodField(read_only=True)
     genotype = serializers.CharField(source="genotype.value", read_only=True)
     variant_consequence = serializers.SerializerMethodField()
     molecular_mechanism = serializers.SerializerMethodField()
@@ -496,7 +498,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     date_created = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField()
     is_reviewed = serializers.IntegerField(read_only=True)
-
+    
+    
     def get_locus(self, id):
         locus = LocusSerializer(id.locus).data
         return locus
@@ -510,6 +513,10 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             return obj.date_review.strftime("%Y-%m-%d")
         else: 
             return None
+        
+    def get_stable_id(self, id):
+        stable_id = G2PStableIDSerializer(id.stable_id).data
+        return stable_id
 
     def get_variant_consequence(self, id):
         queryset = LGDVariantGenccConsequence.objects.filter(lgd_id=id)
@@ -564,7 +571,6 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = LocusGenotypeDisease
         exclude = ['id', 'is_deleted', 'date_review']
-        read_only_fields = ['stable_id']
 
 class VariantConsequenceSerializer(serializers.ModelSerializer):
     variant_consequence = serializers.CharField(source="variant_consequence.term")
