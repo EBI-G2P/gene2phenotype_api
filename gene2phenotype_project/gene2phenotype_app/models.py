@@ -28,8 +28,11 @@ class G2PStableID(models.Model):
             models.Index(fields=['stable_id'])
         ]
 
-
 class LocusGenotypeDisease(models.Model):
+    """
+        Represents a G2P record (LGD).
+        A record is characterised by a locus, genotype (allelic requeriment) and a disease.
+    """
     id = models.AutoField(primary_key=True)
     stable_id = models.ForeignKey("G2PStableID", on_delete=models.PROTECT, db_column="stable_id")
     locus = models.ForeignKey("Locus", on_delete=models.PROTECT)
@@ -47,9 +50,9 @@ class LocusGenotypeDisease(models.Model):
         unique_together = ["locus", "genotype", "disease"]
         indexes = [
             models.Index(fields=['locus']),
-            models.Index(fields=['disease'])
+            models.Index(fields=['disease']),
+            models.Index(fields=['confidence'])
         ]
-
 
 class LGDCrossCuttingModifier(models.Model):
     id = models.AutoField(primary_key=True)

@@ -258,7 +258,6 @@ class DiseaseSummary(DiseaseDetail):
         return Response(response_data)
 
 class UserList(generics.ListAPIView):
-    queryset = User.objects.filter(is_active=1, is_staff=0)
     serializer_class = UserSerializer
 
     def get_serializer_context(self):
@@ -266,9 +265,18 @@ class UserList(generics.ListAPIView):
         context.update({'user_login':self.request.user})
         return context
 
+    def get_queryset(self):
+        user = self.request.user
+        if user and user.is_authenticated:
+            queryset = User.objects.filter(is_active=1)
+        else:
+            queryset = User.objects.filter(is_active=1, is_staff=0)
+
+        return queryset
+
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        serializer = UserSerializer(queryset, many=True)
+        serializer = UserSerializer(queryset, many=True, context={'user': self.request.user})
 
         return Response({'results': serializer.data, 'count':len(serializer.data)})
 
@@ -354,7 +362,7 @@ class SearchView(BaseView):
                     base_disease_3 & Q(lgdpanel__panel__name=search_panel) |
                     base_phenotype & Q(lgdpanel__panel__name=search_panel) |
                     base_phenotype_2 & Q(lgdpanel__panel__name=search_panel)
-                ).order_by('locus__name', 'stable_id').distinct()
+                ).order_by('locus__name', 'stable_id__stable_id').distinct()
             else:
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_locus |
@@ -365,7 +373,7 @@ class SearchView(BaseView):
                     base_disease_3 |
                     base_phenotype |
                     base_phenotype_2
-                ).order_by('locus__name', 'stable_id').distinct()
+                ).order_by('locus__name', 'stable_id__stable_id').distinct()
 
             if not queryset.exists():
                 self.handle_no_permission('results', search_query)
@@ -376,13 +384,13 @@ class SearchView(BaseView):
                     base_locus & Q(lgdpanel__panel__name=search_panel) |
                     base_locus_2 & Q(lgdpanel__panel__name=search_panel) |
                     base_locus_3 & Q(lgdpanel__panel__name=search_panel)
-                ).order_by('locus__name', 'stable_id').distinct()
+                ).order_by('locus__name', 'stable_id__stable_id').distinct()
             else:
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_locus |
                     base_locus_2 |
                     base_locus_3
-                ).order_by('locus__name', 'stable_id').distinct()
+                ).order_by('locus__name', 'stable_id__stable_id').distinct()
 
             if not queryset.exists():
                 self.handle_no_permission('Gene', search_query)
@@ -393,13 +401,13 @@ class SearchView(BaseView):
                     base_disease & Q(lgdpanel__panel__name=search_panel) |
                     base_disease_2 & Q(lgdpanel__panel__name=search_panel) |
                     base_disease_3 & Q(lgdpanel__panel__name=search_panel)
-                ).order_by('locus__name', 'stable_id').distinct()
+                ).order_by('locus__name', 'stable_id__stable_id').distinct()
             else:
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_disease |
                     base_disease_2 |
                     base_disease_3
-                ).order_by('locus__name', 'stable_id').distinct()
+                ).order_by('locus__name', 'stable_id__stable_id').distinct()
 
             if not queryset.exists():
                 self.handle_no_permission('Disease', search_query)
@@ -409,12 +417,12 @@ class SearchView(BaseView):
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_phenotype & Q(lgdpanel__panel__name=search_panel) |
                     base_phenotype_2 & Q(lgdpanel__panel__name=search_panel)
-                ).order_by('locus__name', 'stable_id').distinct()
+                ).order_by('locus__name', 'stable_id__stable_id').distinct()
             else:
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_phenotype |
                     base_phenotype_2
-                ).order_by('locus__name', 'stable_id').distinct()
+                ).order_by('locus__name', 'stable_id__stable_id').distinct()
 
             if not queryset.exists():
                 self.handle_no_permission('Phenotype', search_query)
@@ -443,7 +451,7 @@ class SearchView(BaseView):
         list_output = []
 
         for lgd in queryset:
-            data = { 'id':lgd.stable_id,
+            data = { 'id':lgd.stable_id.stable_id,
                      'gene':lgd.locus.name,
                      'genotype':lgd.genotype.value,
                      'disease':lgd.disease.name,
@@ -467,6 +475,10 @@ class BaseAdd(generics.CreateAPIView):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+"""
+    Add new disease.
+    The create method is in the CreateDiseaseSerializer.
+"""
 class AddDisease(BaseAdd):
     serializer_class = CreateDiseaseSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -480,6 +492,10 @@ class AddDisease(BaseAdd):
 
         return response
 
+"""
+    Add new publication.
+    The create method is in the PublicationSerializer.
+"""
 class AddPublication(BaseAdd):
     serializer_class = PublicationSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -493,6 +509,10 @@ class AddPublication(BaseAdd):
 
         return response
 
+"""
+    Add new phenotype.
+    The create method is in the PhenotypeSerializer.
+"""
 class AddPhenotype(BaseAdd):
     serializer_class = PhenotypeSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -506,6 +526,11 @@ class AddPhenotype(BaseAdd):
 
         return response
 
+
+"""
+    Add panel to an existing G2P record (LGD).
+    A single record can be linked to more than one panel.
+"""
 class LocusGenotypeDiseaseAddPanel(BaseAdd):
     serializer_class = LGDPanelSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -536,7 +561,7 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
 
         if panel_name_input.lower() not in user_panel_list_lower:
             return Response({"message": f"No permission to update panel {panel_name_input}"}, status=status.HTTP_403_FORBIDDEN)
-        
+
         g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id) #using the g2p stable id information to get the lgd 
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id=g2p_stable_id, is_deleted=0)
         serializer_class = LGDPanelSerializer(data=request.data, context={'lgd': lgd, 'include_details' : True})
