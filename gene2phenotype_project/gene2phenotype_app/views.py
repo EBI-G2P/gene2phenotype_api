@@ -266,7 +266,8 @@ class UserList(generics.ListAPIView):
         return context
 
     def get_queryset(self):
-        if self.request.user is not None:
+        user = self.request.user
+        if user and user.is_authenticated:
             queryset = User.objects.filter(is_active=1)
         else:
             queryset = User.objects.filter(is_active=1, is_staff=0)
