@@ -14,7 +14,8 @@ from gene2phenotype_app.serializers import (UserSerializer,
                                             LocusGeneSerializer,
                                             CreateDiseaseSerializer, GeneDiseaseSerializer,
                                             DiseaseDetailSerializer, PublicationSerializer,
-                                            PhenotypeSerializer, LGDPanelSerializer)
+                                            PhenotypeSerializer, LGDPanelSerializer,
+                                            CurationDataSerializer)
 
 from gene2phenotype_app.models import (Panel, User, AttribType, Attrib,
                                        LocusGenotypeDisease, Locus, OntologyTerm,
@@ -571,5 +572,41 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
             response = Response({'message': 'Panel added to the G2P entry successfully.'}, status=status.HTTP_200_OK)
         else:
             response = Response({"message": "Error adding a panel"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return response
+
+class AddCurationData(generics.CreateAPIView):
+    serializer_class = CurationDataSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get(self, request, *args, **kwargs):
+        user = self.request.user
+        if user.is_authenticated:
+            response = Response({"message": "This endpoint is for curation. Use POST to submit data."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        else:
+            response = Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        return response
+
+    def post(self, request):
+        user = self.request.user
+
+        if not user.is_authenticated:
+            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer_class = CurationDataSerializer(data=request.data, context={'user': user})
+        if serializer_class.is_valid():
+
+            # TODO: validate data here
+            # - does JSON have the correct format?
+            # - are the values valid?
+            # - user has permission to edit the panel (if panel available yet)?
+
+            serializer_class.save()
+            response = Response({'message': 'Data saved successfully.'}, status=status.HTTP_200_OK)
+        else:
+            print("ERRORS:", serializer_class.errors)
+            error_message = serializer_class.errors.get('locus', 'Problem saving the data')
+            response = Response({'message': error_message}, status=status.HTTP_400_BAD_REQUEST)
 
         return response

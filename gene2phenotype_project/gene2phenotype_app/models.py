@@ -28,6 +28,26 @@ class G2PStableID(models.Model):
             models.Index(fields=['stable_id'])
         ]
 
+class CurationData(models.Model):
+    """
+        Represents G2P data in the process of being curated.
+    """
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey("User", on_delete=models.PROTECT)
+    stable_id = models.ForeignKey("G2PStableID", on_delete=models.PROTECT, db_column="stable_id")
+    date_created = models.DateTimeField(null=False)
+    date_last_update = models.DateTimeField(null=False)
+    session_name = models.CharField(max_length=100, null=False, unique=True)
+    json_data = models.JSONField(null=False)
+
+    class Meta:
+        db_table = "curation_data"
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["stable_id"]),
+            models.Index(fields=["session_name"])
+        ]
+
 class LocusGenotypeDisease(models.Model):
     """
         Represents a G2P record (LGD).
