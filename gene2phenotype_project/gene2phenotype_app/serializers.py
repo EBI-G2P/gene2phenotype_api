@@ -978,7 +978,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
     publications = PublicationSerializer(many=True) # Use Publication serializer to manage publications
     phenotypes = serializers.ListField(child=serializers.CharField(max_length=255)) # TODO: check
     allelic_requirement = serializers.CharField(max_length=255, allow_blank=True)
-    cross_cutting_modifier = serializers.CharField(max_length=255, allow_blank=True)
+    cross_cutting_modifier = serializers.ListField(child=serializers.CharField(max_length=255, allow_blank=True)) # TODO: check
     variant_types = serializers.ListField(child=serializers.CharField(max_length=255)) # TODO: check
     variant_consequences = serializers.ListField(child=serializers.CharField(max_length=255)) # TODO: check
     molecular_mechanism = serializers.ListField(child=serializers.CharField(max_length=255)) # TODO: check
@@ -988,7 +988,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
     date_last_update = serializers.CharField(read_only=True)
     stable_id = serializers.CharField(source="stable_id.stable_id", read_only=True)
 
-    # Check if two JSON objects have the same data (only compares first layer)
+    # Check if JSON objects have the same data (only compares first layer)
     def compare_curation_data(input_json_data, user_obj):
         user_sessions_queryset = CurationData.objects.filter(user=user_obj.id)
         for curation_data in user_sessions_queryset:
@@ -1016,7 +1016,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         date_created = datetime.now()
         date_reviewed = date_created
         session_name = validated_data.get('session_name')
-        validated_data.pop('session_name') # Remove key from dict
+        validated_data.pop('session_name') # Remove session name from dict (validated_data is going to be the JSON)
 
         # Assuming the user is already validate in the view
         user_email = self.context.get('user')
@@ -1046,7 +1046,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         stable_id = G2PStableIDSerializer.create_stable_id()
 
-        # If curator did not input a name, session name is the G2P stable ID
+        # If curator did not input a session name, then the session name is the G2P stable ID
         if session_name == "":
             session_name = stable_id.stable_id
 
@@ -1062,7 +1062,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
         return new_curation_data
 
         # TODO:
-        # - get: returns an entry under curation
+        # list curation: list all entries being curated by the user
+        # - get: returns an entry under curation - display entry endpoint
         # - update: updates the JSON data in existing session being curated
         # - publish: add the data to the G2P tables. entry will be live
 

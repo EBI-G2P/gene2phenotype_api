@@ -20,7 +20,8 @@ from gene2phenotype_app.serializers import (UserSerializer,
 from gene2phenotype_app.models import (Panel, User, AttribType, Attrib,
                                        LocusGenotypeDisease, Locus, OntologyTerm,
                                        DiseaseOntology, Disease, LGDPanel,
-                                       LocusAttrib, GeneDisease, G2PStableID)
+                                       LocusAttrib, GeneDisease, G2PStableID,
+                                       CurationData)
 
 
 class BaseView(generics.ListAPIView):
@@ -327,6 +328,10 @@ class LocusGenotypeDiseaseDetail(BaseView):
         serializer = LocusGenotypeDiseaseSerializer(queryset)
         return Response(serializer.data)
 
+
+"""
+
+"""
 class SearchView(BaseView):
     serializer_class = LocusGenotypeDiseaseSerializer
     pagination_class = PageNumberPagination
@@ -575,7 +580,11 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
 
         return response
 
-class AddCurationData(generics.CreateAPIView):
+
+"""
+    Add a new curation entry.
+"""
+class AddCurationData(BaseAdd):
     serializer_class = CurationDataSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
@@ -610,3 +619,36 @@ class AddCurationData(generics.CreateAPIView):
             response = Response({'message': error_message}, status=status.HTTP_400_BAD_REQUEST)
 
         return response
+
+
+"""
+    List all the curation entries being curated by the user.
+    Returns:
+            - list of entries
+            - number of entries
+"""
+class ListCurationEntries(BaseView):
+    serializer_class = CurationDataSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = CurationData.objects.filter(user=user)
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        list_data = []
+        for data in queryset:
+            entry = {
+                "locus":data.json_data["locus"],
+                "session_name": data.session_name,
+                "stable_id": data.stable_id.stable_id,
+                "created_on": data.date_created.strftime("%Y-%m-%d %H:%M"),
+                "last_update": data.date_last_update.strftime("%Y-%m-%d %H:%M")
+            }
+
+            list_data.append(entry)
+
+        return Response({'results':list_data, 'count':len(list_data)})

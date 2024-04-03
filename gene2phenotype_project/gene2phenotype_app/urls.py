@@ -26,7 +26,9 @@ urlpatterns = [
     path('gene2phenotype/api/add/phenotype/', views.AddPhenotype.as_view(), name="add_phenotype"),
     path('gene2phenotype/api/add/publication/', views.AddPublication.as_view(), name="add_publication"),
     path('gene2phenotype/api/lgd/<str:stable_id>/add_panel', views.LocusGenotypeDiseaseAddPanel.as_view(), name="lgd_add_panel"),
+
     path('gene2phenotype/api/add/curation/', views.AddCurationData.as_view(), name="add_curation_data"),
+    path('gene2phenotype/api/curation/list', views.ListCurationEntries.as_view(), name="list_curation_entries"),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)
