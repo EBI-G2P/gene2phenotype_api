@@ -973,18 +973,27 @@ class VariantTypeSerializer(serializers.ModelSerializer):
 
 ### Curation data ###
 class CurationDataSerializer(serializers.ModelSerializer):
+    """
+        List of attributes:
+            session_name: optional name
+            date_created: date when the entry was created
+            date_last_update: when entry is created this date is the same as the date_created
+            stable_id: automatically generated when the entry is created
+            the following attribs are saved together in JSON format: locus, publications, phenotypes, allelic_requirement (genotype),
+             cross_cutting_modifier, variant_types, variant_consequences, molecular_mechanism, panel, confidence, disease
+    """
     session_name = serializers.CharField(max_length=100, allow_blank=True) # Optional
-    locus = serializers.CharField(max_length=100)
+    locus = serializers.CharField(max_length=100) # gene name
     publications = serializers.ListField(allow_empty=True)
     phenotypes = serializers.ListField(allow_empty=True)
-    allelic_requirement = serializers.CharField(max_length=255, allow_blank=True)
-    cross_cutting_modifier = serializers.ListField(allow_empty=True) # TODO: check
-    variant_types = serializers.ListField(allow_empty=True) # TODO: check
-    variant_consequences = serializers.ListField(allow_empty=True) # TODO: check
-    molecular_mechanism = serializers.ListField(allow_empty=True) # TODO: check
-    panel = serializers.ListField(child=serializers.CharField(max_length=50)) # TODO: check
-    confidence = serializers.CharField(max_length=50) # can only add one confidence per entry
-    disease = serializers.CharField(max_length=255, allow_blank=True)
+    allelic_requirement = serializers.CharField(max_length=255, allow_blank=True) # it only accepts one value
+    cross_cutting_modifier = serializers.ListField(allow_empty=True)
+    variant_types = serializers.ListField(allow_empty=True)
+    variant_consequences = serializers.ListField(allow_empty=True)
+    molecular_mechanism = serializers.ListField(allow_empty=True)
+    panel = serializers.ListField(allow_empty=True) # it can be associated with more than one panel
+    confidence = serializers.CharField(max_length=50) # it can only have one confidence value
+    disease = serializers.CharField(max_length=255, allow_blank=True) # dyadic disease name
     date_created = serializers.CharField(read_only=True)
     date_last_update = serializers.CharField(read_only=True)
     stable_id = serializers.CharField(source="stable_id.stable_id", read_only=True)
@@ -1005,22 +1014,14 @@ class CurationDataSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         locus = validated_data.get('locus')
-        publications = validated_data.get('publications')
-        phenotypes = validated_data.get('phenotypes')
         allelic_requirement = validated_data.get('allelic_requirement')
-        cross_cutting_modifier = validated_data.get('allelic_requirement')
-        variant_types = validated_data.get('variant_types')
-        variant_consequences = validated_data.get('variant_consequences')
-        molecular_mechanism = validated_data.get('molecular_mechanism')
-        panel = validated_data.get('panel')
-        confidence = validated_data.get('confidence')
         disease = validated_data.get('disease')
         date_created = datetime.now()
         date_reviewed = date_created
         session_name = validated_data.get('session_name')
         validated_data.pop('session_name') # Remove session name from dict (validated_data is going to be the JSON)
 
-        # Assuming the user is already validate in the view
+        # Assuming the user is already validated in the view AddCurationData
         user_email = self.context.get('user')
         user_obj = User.objects.get(email=user_email)
 
