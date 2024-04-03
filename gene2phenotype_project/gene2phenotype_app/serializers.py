@@ -1062,7 +1062,6 @@ class CurationDataSerializer(serializers.ModelSerializer):
         return new_curation_data
 
         # TODO:
-        # list curation: list all entries being curated by the user
         # - get: returns an entry under curation - display entry endpoint
         # - update: updates the JSON data in existing session being curated
         # - publish: add the data to the G2P tables. entry will be live

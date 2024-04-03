@@ -583,10 +583,11 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
 
 """
     Add a new curation entry.
+    It is only available for authenticated users.
 """
 class AddCurationData(BaseAdd):
     serializer_class = CurationDataSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         user = self.request.user
@@ -623,13 +624,14 @@ class AddCurationData(BaseAdd):
 
 """
     List all the curation entries being curated by the user.
+    It is only available for authenticated users.
     Returns:
             - list of entries
             - number of entries
 """
 class ListCurationEntries(BaseView):
     serializer_class = CurationDataSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
@@ -652,3 +654,37 @@ class ListCurationEntries(BaseView):
             list_data.append(entry)
 
         return Response({'results':list_data, 'count':len(list_data)})
+
+
+"""
+    Returns all the data for a specific curation entry.
+    It is only available for authenticated users.
+"""
+class CurationDataDetail(BaseView):
+    serializer_class = CurationDataSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        stable_id = self.kwargs['stable_id']
+        user = self.request.user
+
+        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
+        # Get the entry if the user matches
+        queryset = CurationData.objects.filter(stable_id=g2p_stable_id, user=user)
+
+        if not queryset.exists():
+            self.handle_no_permission('Entry', stable_id)
+        else:
+            return queryset
+
+    def list(self, request, *args, **kwargs):
+        curation_data_obj = self.get_queryset().first()
+
+        response_data = {
+                'session_name': curation_data_obj.session_name,
+                'stable_id': curation_data_obj.stable_id.stable_id,
+                'created_on': curation_data_obj.date_created,
+                'last_updated_on': curation_data_obj.date_last_update,
+                'data': curation_data_obj.json_data,
+            }
+        return Response(response_data)
