@@ -975,14 +975,15 @@ class VariantTypeSerializer(serializers.ModelSerializer):
 class CurationDataSerializer(serializers.ModelSerializer):
     session_name = serializers.CharField(max_length=100, allow_blank=True) # Optional
     locus = serializers.CharField(max_length=100)
-    publications = PublicationSerializer(many=True) # Use Publication serializer to manage publications
-    phenotypes = serializers.ListField(child=serializers.CharField(max_length=255)) # TODO: check
+    publications = serializers.ListField(allow_empty=True)
+    phenotypes = serializers.ListField(allow_empty=True)
     allelic_requirement = serializers.CharField(max_length=255, allow_blank=True)
-    cross_cutting_modifier = serializers.ListField(child=serializers.CharField(max_length=255, allow_blank=True)) # TODO: check
-    variant_types = serializers.ListField(child=serializers.CharField(max_length=255)) # TODO: check
-    variant_consequences = serializers.ListField(child=serializers.CharField(max_length=255)) # TODO: check
-    molecular_mechanism = serializers.ListField(child=serializers.CharField(max_length=255)) # TODO: check
+    cross_cutting_modifier = serializers.ListField(allow_empty=True) # TODO: check
+    variant_types = serializers.ListField(allow_empty=True) # TODO: check
+    variant_consequences = serializers.ListField(allow_empty=True) # TODO: check
+    molecular_mechanism = serializers.ListField(allow_empty=True) # TODO: check
     panel = serializers.ListField(child=serializers.CharField(max_length=50)) # TODO: check
+    confidence = serializers.CharField(max_length=50) # can only add one confidence per entry
     disease = serializers.CharField(max_length=255, allow_blank=True)
     date_created = serializers.CharField(read_only=True)
     date_last_update = serializers.CharField(read_only=True)
@@ -1012,6 +1013,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         variant_consequences = validated_data.get('variant_consequences')
         molecular_mechanism = validated_data.get('molecular_mechanism')
         panel = validated_data.get('panel')
+        confidence = validated_data.get('confidence')
         disease = validated_data.get('disease')
         date_created = datetime.now()
         date_reviewed = date_created
@@ -1062,12 +1064,11 @@ class CurationDataSerializer(serializers.ModelSerializer):
         return new_curation_data
 
         # TODO:
-        # - get: returns an entry under curation - display entry endpoint
-        # - update: updates the JSON data in existing session being curated
-        # - publish: add the data to the G2P tables. entry will be live
+        # - update endpoint: updates the JSON data in existing session being curated
+        # - publish endpoint: add the data to the G2P tables. entry will be live
 
     class Meta:
         model = CurationData
         fields = ["session_name", "locus", "publications", "phenotypes", "allelic_requirement", "cross_cutting_modifier", 
-                  "variant_types", "variant_consequences", "molecular_mechanism", "disease", "panel",
+                  "variant_types", "variant_consequences", "molecular_mechanism", "disease", "panel", "confidence",
                   "date_created", "date_last_update", "stable_id"]
