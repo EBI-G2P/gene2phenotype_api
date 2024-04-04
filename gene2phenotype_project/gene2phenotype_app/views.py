@@ -330,7 +330,9 @@ class LocusGenotypeDiseaseDetail(BaseView):
 
 
 """
-
+    Search G2P entries by three types: gene, disease or phenotype
+    If no search type is specified then performs a generic search.
+    The search can be specific to one panel if using parameter 'panel'
 """
 class SearchView(BaseView):
     serializer_class = LocusGenotypeDiseaseSerializer
@@ -615,7 +617,6 @@ class AddCurationData(BaseAdd):
             serializer_class.save()
             response = Response({'message': 'Data saved successfully.'}, status=status.HTTP_200_OK)
         else:
-            print("ERRORS:", serializer_class.errors)
             error_message = serializer_class.errors.get('locus', 'Problem saving the data')
             response = Response({'message': error_message}, status=status.HTTP_400_BAD_REQUEST)
 
