@@ -1002,6 +1002,64 @@ class CurationDataSerializer(serializers.ModelSerializer):
     date_last_update = serializers.CharField(read_only=True)
     stable_id = serializers.CharField(source="stable_id.stable_id", read_only=True)
 
+    # The HTML form does not send the ListField
+    # Add any missing fields
+    def to_internal_value(self, data):
+        mutable_data = data.copy()
+
+        if 'publications' not in mutable_data:
+            mutable_data['publications'] = []
+        if 'phenotypes' not in mutable_data:
+            mutable_data['phenotypes'] = []
+        if 'cross_cutting_modifier' not in mutable_data:
+            mutable_data['cross_cutting_modifier'] = []
+        if 'variant_types' not in mutable_data:
+            mutable_data['variant_types'] = []
+        if 'variant_consequences' not in mutable_data:
+            mutable_data['variant_consequences'] = []
+        if 'molecular_mechanism' not in mutable_data:
+            mutable_data['molecular_mechanism'] = []
+        if 'panel' not in mutable_data:
+            mutable_data['panel'] = []
+
+        return mutable_data
+
+    # Build the JSON before saving it in the database
+    def format_json(data):
+        data_json_input = {}
+
+        # In the HTML form the locus is a list -> ['CDH11']
+        # With raw data the locus is a string -> 'CDH11'
+        if isinstance(data.get('locus'), list):
+            data_json_input['locus'] = data.get('locus')[0]
+        else:
+            data_json_input['locus'] = data.get('locus')
+
+        # allelic requirement and confidence by default are 'None'
+        # disease by default is ''
+        # This format is consistent between the HTML form and the raw data
+        check_keys = {'allelic_requirement': None, 'disease': '', 'confidence': None}
+
+        for key in check_keys.keys():
+            if isinstance(data.get(key), list):
+                if len(data.get(key)) > 0 and data.get(key)[0] == "":
+                    data_json_input[key] = check_keys[key]
+                else:
+                    data_json_input[key] = data.get(key)[0]
+            else:
+                data_json_input[key] = data.get(key)
+
+        check_from_list = ['publications', 'phenotypes', 'cross_cutting_modifier', 'variant_types',
+                           'variant_consequences', 'molecular_mechanism', 'panel']
+
+        for tag in check_from_list:
+            if len(data.get(tag)) > 0 and isinstance(data.get(tag)[0], list):
+                data_json_input[tag] = data.get(tag)[0]
+            else:
+                data_json_input[tag] = data.get(tag)
+
+        return data_json_input
+
     # Check if JSON objects have the same data (only compares first layer)
     def compare_curation_data(input_json_data, user_obj):
         user_sessions_queryset = CurationData.objects.filter(user=user_obj.id)
@@ -1023,14 +1081,25 @@ class CurationDataSerializer(serializers.ModelSerializer):
         date_created = datetime.now()
         date_reviewed = date_created
         session_name = validated_data.get('session_name')
-        validated_data.pop('session_name') # Remove session name from dict (validated_data is going to be the JSON)
+
+        # In the HTML form the session_name is a list
+        # Change it to a string
+        if isinstance(session_name, list):
+            if session_name[0] == "":
+                session_name = ""
+            else:
+                session_name = session_name[0]
+
+        # Build the JSON
+        # We should not use the 'validated_data' because the data insert by the HTML form could have a different format
+        data_json_input = CurationDataSerializer.format_json(validated_data)
 
         # Assuming the user is already validated in the view AddCurationData
         user_email = self.context.get('user')
         user_obj = User.objects.get(email=user_email)
 
         # Check if JSON is already in the table
-        curation_entry = CurationDataSerializer.compare_curation_data(validated_data, user_obj)
+        curation_entry = CurationDataSerializer.compare_curation_data(data_json_input, user_obj)
         if curation_entry is not None: # Throw error if data is already stored in table
             raise serializers.ValidationError({"message": f"Data already under curation. Please check session '{curation_entry.session_name}'"})
 
@@ -1059,7 +1128,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         new_curation_data = CurationData.objects.create(
             session_name=session_name,
-            json_data=validated_data,
+            json_data=data_json_input,
             stable_id=stable_id,
             date_created=date_created,
             date_last_update=date_reviewed,

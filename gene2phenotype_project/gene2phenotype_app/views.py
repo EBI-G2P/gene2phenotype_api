@@ -606,9 +606,6 @@ class AddCurationData(BaseAdd):
         if not user.is_authenticated:
             return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
 
-        # Check request.data
-        # Add missing keys (if HTML form is used)
-
         serializer_class = CurationDataSerializer(data=request.data, context={'user': user})
         if serializer_class.is_valid():
 
@@ -616,6 +613,7 @@ class AddCurationData(BaseAdd):
             # - does JSON have the correct format?
             # - are the values valid?
             # - user has permission to edit the panel (if panel available yet)?
+            # if session_name is defined - is it already being used
 
             serializer_class.save()
             response = Response({'message': 'Data saved successfully.'}, status=status.HTTP_200_OK)
