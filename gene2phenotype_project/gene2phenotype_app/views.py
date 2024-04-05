@@ -606,6 +606,9 @@ class AddCurationData(BaseAdd):
         if not user.is_authenticated:
             return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
 
+        # Check request.data
+        # Add missing keys (if HTML form is used)
+
         serializer_class = CurationDataSerializer(data=request.data, context={'user': user})
         if serializer_class.is_valid():
 
