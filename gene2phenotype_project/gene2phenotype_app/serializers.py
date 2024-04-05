@@ -986,13 +986,17 @@ class CurationDataSerializer(serializers.ModelSerializer):
     locus = serializers.CharField(max_length=100) # gene name
     publications = serializers.ListField(allow_empty=True)
     phenotypes = serializers.ListField(allow_empty=True)
-    allelic_requirement = serializers.CharField(max_length=255, allow_blank=True) # it only accepts one value
+    allelic_requirement = serializers.SlugRelatedField(slug_field='value',
+                                                       queryset=Attrib.objects.filter(type__code="genotype"),
+                                                       required=False, allow_null=True)
     cross_cutting_modifier = serializers.ListField(allow_empty=True)
     variant_types = serializers.ListField(allow_empty=True)
     variant_consequences = serializers.ListField(allow_empty=True)
     molecular_mechanism = serializers.ListField(allow_empty=True)
     panel = serializers.ListField(allow_empty=True) # it can be associated with more than one panel
-    confidence = serializers.CharField(max_length=50) # it can only have one confidence value
+    confidence = serializers.SlugRelatedField(slug_field='value',
+                                              queryset=Attrib.objects.filter(type__code="confidence_category"),
+                                              required=False, allow_null=True) # it can only have one confidence value
     disease = serializers.CharField(max_length=255, allow_blank=True) # dyadic disease name
     date_created = serializers.CharField(read_only=True)
     date_last_update = serializers.CharField(read_only=True)
