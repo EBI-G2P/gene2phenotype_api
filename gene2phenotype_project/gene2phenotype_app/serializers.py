@@ -983,46 +983,20 @@ class CurationDataSerializer(serializers.ModelSerializer):
              cross_cutting_modifier, variant_types, variant_consequences, molecular_mechanism, panel, confidence, disease
     """
     session_name = serializers.CharField(max_length=100, allow_blank=True) # Optional
-    locus = serializers.CharField(max_length=100) # gene name
+    locus = serializers.CharField(max_length=100, required=True, allow_blank=False) # gene name
     publications = serializers.ListField(allow_empty=True)
     phenotypes = serializers.ListField(allow_empty=True)
-    allelic_requirement = serializers.SlugRelatedField(slug_field='value',
-                                                       queryset=Attrib.objects.filter(type__code="genotype"),
-                                                       required=False, allow_null=True)
-    cross_cutting_modifier = serializers.ListField(allow_empty=True)
+    allelic_requirement = serializers.CharField(max_length=255, allow_blank=True)
+    cross_cutting_modifier = serializers.CharField(max_length=255, allow_blank=True)
     variant_types = serializers.ListField(allow_empty=True)
     variant_consequences = serializers.ListField(allow_empty=True)
     molecular_mechanism = serializers.ListField(allow_empty=True)
     panel = serializers.ListField(allow_empty=True) # it can be associated with more than one panel
-    confidence = serializers.SlugRelatedField(slug_field='value',
-                                              queryset=Attrib.objects.filter(type__code="confidence_category"),
-                                              required=False, allow_null=True) # it can only have one confidence value
+    confidence = serializers.CharField(max_length=255, allow_blank=True) # it can only have one confidence value
     disease = serializers.CharField(max_length=255, allow_blank=True) # dyadic disease name
     date_created = serializers.CharField(read_only=True)
     date_last_update = serializers.CharField(read_only=True)
     stable_id = serializers.CharField(source="stable_id.stable_id", read_only=True)
-
-    # The HTML form does not send the ListField
-    # Add any missing fields
-    def to_internal_value(self, data):
-        mutable_data = data.copy()
-
-        if 'publications' not in mutable_data:
-            mutable_data['publications'] = []
-        if 'phenotypes' not in mutable_data:
-            mutable_data['phenotypes'] = []
-        if 'cross_cutting_modifier' not in mutable_data:
-            mutable_data['cross_cutting_modifier'] = []
-        if 'variant_types' not in mutable_data:
-            mutable_data['variant_types'] = []
-        if 'variant_consequences' not in mutable_data:
-            mutable_data['variant_consequences'] = []
-        if 'molecular_mechanism' not in mutable_data:
-            mutable_data['molecular_mechanism'] = []
-        if 'panel' not in mutable_data:
-            mutable_data['panel'] = []
-
-        return mutable_data
 
     # Build the JSON before saving it in the database
     def format_json(data):

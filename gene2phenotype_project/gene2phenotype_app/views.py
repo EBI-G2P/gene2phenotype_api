@@ -606,7 +606,7 @@ class AddCurationData(BaseAdd):
         if not user.is_authenticated:
             return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
 
-        serializer_class = CurationDataSerializer(data=request.data, context={'user': user})
+        serializer_class = CurationDataSerializer(data=request.data, context={"user": user})
         if serializer_class.is_valid():
 
             # TODO: validate data here
@@ -616,10 +616,10 @@ class AddCurationData(BaseAdd):
             # if session_name is defined - is it already being used
 
             serializer_class.save()
-            response = Response({'message': 'Data saved successfully.'}, status=status.HTTP_200_OK)
+            response = Response({"message": f"Data saved successfully"}, status=status.HTTP_200_OK)
         else:
             error_message = serializer_class.errors.get('locus', 'Problem saving the data')
-            response = Response({'message': error_message}, status=status.HTTP_400_BAD_REQUEST)
+            response = Response({"message": error_message}, status=status.HTTP_400_BAD_REQUEST)
 
         return response
 
