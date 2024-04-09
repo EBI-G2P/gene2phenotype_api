@@ -19,7 +19,10 @@ from gene2phenotype_app.serializers import (UserSerializer,
 from gene2phenotype_app.models import (Panel, User, AttribType, Attrib,
                                        LocusGenotypeDisease, Locus, OntologyTerm,
                                        DiseaseOntology, Disease, LGDPanel,
-                                       LocusAttrib, GeneDisease, G2PStableID)
+                                       LocusAttrib, GeneDisease, G2PStableID,
+                                       Publication)
+
+from .utils import get_publication, get_authors
 
 
 class BaseView(generics.ListAPIView):
@@ -254,6 +257,46 @@ class DiseaseSummary(DiseaseDetail):
             'disease': disease,
             'records_summary': summmary,
         }
+
+        return Response(response_data)
+
+"""
+    Get publication info by PMID.
+    If PMID is found in G2P then return details from G2P.
+    If PMID not found in G2P then returns info from EuropePMC.
+"""
+class PublicationDetail(BaseView):
+    def get(self, request, pmid, *args, **kwargs):
+        queryset = Publication.objects.filter(pmid=pmid)
+        response_data = {}
+
+        if not queryset.exists():
+            # Query EuropePMC
+            response = get_publication(pmid)
+            if response['hitCount'] == 0:
+                self.handle_no_permission('Publication', f'PMID:{pmid}')
+            else:
+                authors = get_authors(response)
+                year = None
+                publication_info = response['result']
+                title = publication_info['title']
+                if 'pubYear' in publication_info:
+                    year = publication_info['pubYear']
+
+                response_data = {
+                'pmid': pmid,
+                'title': title,
+                'authors': authors,
+                'year': year
+            }
+
+        else:
+            response_data = {
+                'pmid': pmid,
+                'title': queryset.first().title,
+                'authors': queryset.first().authors,
+                'year': queryset.first().year
+            }
 
         return Response(response_data)
 
