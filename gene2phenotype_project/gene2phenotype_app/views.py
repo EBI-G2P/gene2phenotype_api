@@ -520,6 +520,8 @@ class SearchView(BaseView):
 
 ### Add data
 class BaseAdd(generics.CreateAPIView):
+    http_method_names = ['post', 'head']
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -535,15 +537,6 @@ class AddDisease(BaseAdd):
     serializer_class = CreateDiseaseSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
-    def get(self, request, *args, **kwargs):
-        user = self.request.user
-        if user.is_authenticated:
-            response = Response({"message": "This endpoint is for creating diseases. Use POST to submit data."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        else:
-            response = Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-
-        return response
-
 """
     Add new publication.
     The create method is in the PublicationSerializer.
@@ -551,15 +544,6 @@ class AddDisease(BaseAdd):
 class AddPublication(BaseAdd):
     serializer_class = PublicationSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    def get(self, request, *args, **kwargs):
-        user = self.request.user
-        if user.is_authenticated:
-            response = Response({"message": "This endpoint is for creating publications. Use POST to submit data."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        else:
-            response = Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-
-        return response
 
 """
     Add new phenotype.
@@ -569,16 +553,6 @@ class AddPhenotype(BaseAdd):
     serializer_class = PhenotypeSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
-    def get(self, request, *args, **kwargs):
-        user = self.request.user
-        if user.is_authenticated:
-            response = Response({"message": "This endpoint is for creating phenotypes. Use POST to submit data."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        else:
-            response = Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-
-        return response
-
-
 """
     Add panel to an existing G2P record (LGD).
     A single record can be linked to more than one panel.
@@ -586,15 +560,6 @@ class AddPhenotype(BaseAdd):
 class LocusGenotypeDiseaseAddPanel(BaseAdd):
     serializer_class = LGDPanelSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    def get(self, request, *args, **kwargs):
-        user = self.request.user
-        if user.is_authenticated:
-            response = Response({"message": "This endpoint is for adding a panel to an entry. Use POST to submit data."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        else:
-            response = Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-
-        return response
 
     def post(self, request, stable_id):
         user = self.request.user
