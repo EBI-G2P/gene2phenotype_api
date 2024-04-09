@@ -264,6 +264,15 @@ class DiseaseSummary(DiseaseDetail):
     Get publication info by PMID.
     If PMID is found in G2P then return details from G2P.
     If PMID not found in G2P then returns info from EuropePMC.
+
+    Input the PMID (example: 3897232)
+    
+    Return:
+            - pmid
+            - title
+            - authors
+            - year
+            If not found return Http404
 """
 class PublicationDetail(BaseView):
     def get(self, request, pmid, *args, **kwargs):
