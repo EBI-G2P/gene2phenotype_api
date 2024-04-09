@@ -1,6 +1,7 @@
 from rest_framework import generics, status, permissions
 from django.http import Http404
 from rest_framework.response import Response
+from rest_framework.decorators import api_view
 from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
@@ -262,53 +263,73 @@ class DiseaseSummary(DiseaseDetail):
         return Response(response_data)
 
 """
-    Get publication info by PMID.
+    Retrieve publication data for a list of PMIDs.
     If PMID is found in G2P then return details from G2P.
     If PMID not found in G2P then returns info from EuropePMC.
 
-    Input the PMID (example: 3897232)
-    
+    Args:
+            request (HttpRequest): HTTP request
+            pmids (str): A comma-separated string of PMIDs
+
     Return:
-            - pmid
-            - title
-            - authors
-            - year
-            If not found return Http404
+            Response object containing publication data for each PMID:
+                - pmid
+                - title
+                - authors
+                - year
+                - source (possible values: 'G2P', 'EuropePMC (PMID not found in G2P)', 'Not found')
+            If a PMID is invalid it returns Http404
 """
-class PublicationDetail(BaseView):
-    def get(self, request, pmid, *args, **kwargs):
-        queryset = Publication.objects.filter(pmid=pmid)
-        response_data = {}
 
-        if not queryset.exists():
-            # Query EuropePMC
-            response = get_publication(pmid)
-            if response['hitCount'] == 0:
-                self.handle_no_permission('Publication', f'PMID:{pmid}')
-            else:
-                authors = get_authors(response)
-                year = None
-                publication_info = response['result']
-                title = publication_info['title']
-                if 'pubYear' in publication_info:
-                    year = publication_info['pubYear']
+@api_view(['GET'])
+def PublicationDetail(request, pmids):
+    id_list = pmids.split(',')
+    data = []
 
-                response_data = {
-                'pmid': pmid,
-                'title': title,
-                'authors': authors,
-                'year': year
-            }
+    for pmid_str in id_list:
+        try:
+            pmid = int(pmid_str)
 
-        else:
-            response_data = {
-                'pmid': pmid,
-                'title': queryset.first().title,
-                'authors': queryset.first().authors,
-                'year': queryset.first().year
-            }
+            try:
+                publication = Publication.objects.get(pmid=pmid)
+                data.append({
+                    'id': int(publication.pmid),
+                    'title': publication.title,
+                    'author': publication.authors,
+                    'year': int(publication.year),
+                    'source': 'G2P'
+                })
+            except Publication.DoesNotExist:
+                # Query EuropePMC
+                response = get_publication(pmid)
+                if response['hitCount'] == 0:
+                    data.append({
+                        'id': int(pmid),
+                        'title': None,
+                        'author': None,
+                        'year': None,
+                        'source': 'Not found'
+                    })
+                else:
+                    authors = get_authors(response)
+                    year = None
+                    publication_info = response['result']
+                    title = publication_info['title']
+                    if 'pubYear' in publication_info:
+                        year = publication_info['pubYear']
 
-        return Response(response_data)
+                    data.append({
+                        'pmid': int(pmid),
+                        'title': title,
+                        'authors': authors,
+                        'year': int(year),
+                        'source': 'EuropePMC (PMID not found in G2P)'
+                    })
+
+        except:
+            raise Http404(f"Invalid PMID:{pmid_str}")
+
+    return Response({'results': data, 'count': len(data)})
 
 class UserList(generics.ListAPIView):
     serializer_class = UserSerializer
