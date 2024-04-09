@@ -14,12 +14,14 @@ from gene2phenotype_app.serializers import (UserSerializer,
                                             LocusGeneSerializer,
                                             CreateDiseaseSerializer, GeneDiseaseSerializer,
                                             DiseaseDetailSerializer, PublicationSerializer,
-                                            PhenotypeSerializer, LGDPanelSerializer)
+                                            PhenotypeSerializer, LGDPanelSerializer,
+                                            CurationDataSerializer)
 
 from gene2phenotype_app.models import (Panel, User, AttribType, Attrib,
                                        LocusGenotypeDisease, Locus, OntologyTerm,
                                        DiseaseOntology, Disease, LGDPanel,
-                                       LocusAttrib, GeneDisease, G2PStableID)
+                                       LocusAttrib, GeneDisease, G2PStableID,
+                                       CurationData)
 
 
 class BaseView(generics.ListAPIView):
@@ -326,6 +328,12 @@ class LocusGenotypeDiseaseDetail(BaseView):
         serializer = LocusGenotypeDiseaseSerializer(queryset)
         return Response(serializer.data)
 
+
+"""
+    Search G2P entries by three types: gene, disease or phenotype
+    If no search type is specified then performs a generic search.
+    The search can be specific to one panel if using parameter 'panel'
+"""
 class SearchView(BaseView):
     serializer_class = LocusGenotypeDiseaseSerializer
     pagination_class = PageNumberPagination
@@ -468,6 +476,8 @@ class SearchView(BaseView):
 
 ### Add data
 class BaseAdd(generics.CreateAPIView):
+    http_method_names = ['post', 'head']
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -573,3 +583,103 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
             response = Response({"message": "Error adding a panel"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return response
+
+
+"""
+    Add a new curation entry.
+    It is only available for authenticated users.
+"""
+class AddCurationData(BaseAdd):
+    serializer_class = CurationDataSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = self.request.user
+
+        if not user.is_authenticated:
+            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer_class = CurationDataSerializer(data=request.data, context={"user": user})
+        if serializer_class.is_valid():
+
+            # TODO: validate data here
+            # - does JSON have the correct format?
+            # - are the values valid?
+            # - user has permission to edit the panel (if panel available yet)?
+            # if session_name is defined - is it already being used
+
+            serializer_class.save()
+            response = Response({"message": f"Data saved successfully"}, status=status.HTTP_200_OK)
+        else:
+            error_message = serializer_class.errors.get('locus', 'Problem saving the data')
+            response = Response({"message": error_message}, status=status.HTTP_400_BAD_REQUEST)
+
+        return response
+
+
+"""
+    List all the curation entries being curated by the user.
+    It is only available for authenticated users.
+    Returns:
+            - list of entries
+            - number of entries
+"""
+class ListCurationEntries(BaseView):
+    serializer_class = CurationDataSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = CurationData.objects.filter(user=user)
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        list_data = []
+        for data in queryset:
+            entry = {
+                "locus":data.json_data["locus"],
+                "session_name": data.session_name,
+                "stable_id": data.stable_id.stable_id,
+                "created_on": data.date_created.strftime("%Y-%m-%d %H:%M"),
+                "last_update": data.date_last_update.strftime("%Y-%m-%d %H:%M")
+            }
+
+            list_data.append(entry)
+
+        return Response({'results':list_data, 'count':len(list_data)})
+
+
+"""
+    Returns all the data for a specific curation entry.
+    It is only available for authenticated users.
+"""
+class CurationDataDetail(BaseView):
+    serializer_class = CurationDataSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        stable_id = self.kwargs['stable_id']
+        user = self.request.user
+
+        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
+        # Get the entry if the user matches
+        queryset = CurationData.objects.filter(stable_id=g2p_stable_id, user=user)
+
+        if not queryset.exists():
+            self.handle_no_permission('Entry', stable_id)
+        else:
+            return queryset
+
+    def list(self, request, *args, **kwargs):
+        curation_data_obj = self.get_queryset().first()
+
+        response_data = {
+                'session_name': curation_data_obj.session_name,
+                'stable_id': curation_data_obj.stable_id.stable_id,
+                'created_on': curation_data_obj.date_created,
+                'last_updated_on': curation_data_obj.date_last_update,
+                'data': curation_data_obj.json_data,
+            }
+        return Response(response_data)
