@@ -292,9 +292,9 @@ def PublicationDetail(request, pmids):
             try:
                 publication = Publication.objects.get(pmid=pmid)
                 data.append({
-                    'id': int(publication.pmid),
+                    'pmid': int(publication.pmid),
                     'title': publication.title,
-                    'author': publication.authors,
+                    'authors': publication.authors,
                     'year': int(publication.year),
                     'source': 'G2P'
                 })
@@ -303,9 +303,9 @@ def PublicationDetail(request, pmids):
                 response = get_publication(pmid)
                 if response['hitCount'] == 0:
                     data.append({
-                        'id': int(pmid),
+                        'pmid': int(pmid),
                         'title': None,
-                        'author': None,
+                        'authors': None,
                         'year': None,
                         'source': 'Not found'
                     })
