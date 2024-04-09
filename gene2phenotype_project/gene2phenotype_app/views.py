@@ -280,7 +280,6 @@ class DiseaseSummary(DiseaseDetail):
                 - source (possible values: 'G2P', 'EuropePMC (PMID not found in G2P)', 'Not found')
             If a PMID is invalid it returns Http404
 """
-
 @api_view(['GET'])
 def PublicationDetail(request, pmids):
     id_list = pmids.split(',')
