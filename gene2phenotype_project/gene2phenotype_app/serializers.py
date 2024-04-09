@@ -1,6 +1,10 @@
 from rest_framework import serializers
 from django.db import connection, transaction
 from django.core.exceptions import ObjectDoesNotExist
+from datetime import datetime
+from django.db.models import Q
+from django.utils.timezone import make_aware
+import json
 
 from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      LGDPanel, LocusGenotypeDisease, LGDVariantGenccConsequence,
@@ -10,7 +14,7 @@ from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      G2PStableID,LocusIdentifier, PublicationComment, LGDComment,
                      DiseasePublication, LGDMolecularMechanism,
                      OntologyTerm, Source, Publication, GeneDisease,
-                     Sequence, UniprotAnnotation)
+                     Sequence, UniprotAnnotation, CurationData)
 
 from .utils import clean_string, get_mondo, get_publication, get_authors, validate_gene, validate_phenotype
 import re
@@ -25,7 +29,7 @@ class G2PStableIDSerializer(serializers.ModelSerializer):
     """
     @transaction.atomic
 
-    def create_stable_id(self):
+    def create_stable_id():
         """
             Creates a new stable identifier instance for gene-to-phenotype mapping.
 
@@ -966,3 +970,153 @@ class VariantTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = LGDVariantType
         fields = ['term', 'accession']
+
+### Curation data ###
+class CurationDataSerializer(serializers.ModelSerializer):
+    """
+        List of attributes:
+            session_name: optional name
+            date_created: date when the entry was created
+            date_last_update: when entry is created this date is the same as the date_created
+            stable_id: automatically generated when the entry is created
+            the following attribs are saved together in JSON format: locus, publications, phenotypes, allelic_requirement (genotype),
+             cross_cutting_modifier, variant_types, variant_consequences, molecular_mechanism, panel, confidence, disease
+    """
+    session_name = serializers.CharField(max_length=100, allow_blank=True) # Optional
+    locus = serializers.CharField(max_length=100, required=True, allow_blank=False) # gene name
+    publications = serializers.ListField(allow_empty=True)
+    phenotypes = serializers.ListField(allow_empty=True)
+    allelic_requirement = serializers.CharField(max_length=255, allow_blank=True)
+    cross_cutting_modifier = serializers.CharField(max_length=255, allow_blank=True)
+    variant_types = serializers.ListField(allow_empty=True)
+    variant_consequences = serializers.ListField(allow_empty=True)
+    molecular_mechanism = serializers.ListField(allow_empty=True)
+    panel = serializers.ListField(allow_empty=True) # it can be associated with more than one panel
+    confidence = serializers.CharField(max_length=255, allow_blank=True) # it can only have one confidence value
+    disease = serializers.CharField(max_length=255, allow_blank=True) # dyadic disease name
+    date_created = serializers.CharField(read_only=True)
+    date_last_update = serializers.CharField(read_only=True)
+    stable_id = serializers.CharField(source="stable_id.stable_id", read_only=True)
+
+    # Build the JSON before saving it in the database
+    def format_json(data):
+        data_json_input = {}
+
+        # In the HTML form the locus is a list -> ['CDH11']
+        # With raw data the locus is a string -> 'CDH11'
+        if isinstance(data.get('locus'), list):
+            data_json_input['locus'] = data.get('locus')[0]
+        else:
+            data_json_input['locus'] = data.get('locus')
+
+        # allelic requirement and confidence by default are 'None'
+        # disease by default is ''
+        # This format is consistent between the HTML form and the raw data
+        check_keys = {'allelic_requirement': None, 'disease': '', 'confidence': None}
+
+        for key in check_keys.keys():
+            if isinstance(data.get(key), list):
+                if len(data.get(key)) > 0 and data.get(key)[0] == "":
+                    data_json_input[key] = check_keys[key]
+                else:
+                    data_json_input[key] = data.get(key)[0]
+            else:
+                data_json_input[key] = data.get(key)
+
+        check_from_list = ['publications', 'phenotypes', 'cross_cutting_modifier', 'variant_types',
+                           'variant_consequences', 'molecular_mechanism', 'panel']
+
+        for tag in check_from_list:
+            if len(data.get(tag)) > 0 and isinstance(data.get(tag)[0], list):
+                data_json_input[tag] = data.get(tag)[0]
+            else:
+                data_json_input[tag] = data.get(tag)
+
+        return data_json_input
+
+    # Check if JSON objects have the same data (only compares first layer)
+    def compare_curation_data(input_json_data, user_obj):
+        user_sessions_queryset = CurationData.objects.filter(user=user_obj.id)
+        for curation_data in user_sessions_queryset:
+            data_json = curation_data.json_data
+            if data_json == input_json_data:
+                return curation_data
+        
+        return None
+
+    # Method to create an entry in the curation data table
+    # This method is used once to create the entry, other updates are done in the endpoint to update the entry
+    # 'validated_data' contains the data already validated
+    @transaction.atomic
+    def create(self, validated_data):
+        locus = validated_data.get('locus')
+        allelic_requirement = validated_data.get('allelic_requirement')
+        disease = validated_data.get('disease')
+        date_created = datetime.now()
+        date_reviewed = date_created
+        session_name = validated_data.get('session_name')
+
+        # In the HTML form the session_name is a list
+        # Change it to a string
+        if isinstance(session_name, list):
+            if session_name[0] == "":
+                session_name = ""
+            else:
+                session_name = session_name[0]
+
+        # Build the JSON
+        # We should not use the 'validated_data' because the data insert by the HTML form could have a different format
+        data_json_input = CurationDataSerializer.format_json(validated_data)
+
+        # Assuming the user is already validated in the view AddCurationData
+        user_email = self.context.get('user')
+        user_obj = User.objects.get(email=user_email)
+
+        # Check if JSON is already in the table
+        curation_entry = CurationDataSerializer.compare_curation_data(data_json_input, user_obj)
+        if curation_entry is not None: # Throw error if data is already stored in table
+            raise serializers.ValidationError({"message": f"Data already under curation. Please check session '{curation_entry.session_name}'"})
+
+        # Check if entry already exists in G2P
+        # An entry is made of: a locus, a genotype (allele requirement) and a disease
+        if locus and allelic_requirement and disease:
+            locus_queryset = Locus.objects.filter(name=locus) # Get locus
+            genotype_queryset = Attrib.objects.filter(value=allelic_requirement) # Get genotype value from attrib table
+            disease_queryset = Disease.objects.filter(name=disease) # TODO: improve
+
+            # Get LGD: deleted entries are also returned
+            # If LGD is deleted then we should warn the curator
+            lgd_obj = LocusGenotypeDisease.objects.filter(locus=locus_queryset.first(), genotype=genotype_queryset.first(), disease=disease_queryset.first())
+
+            if len(lgd_obj) > 0:
+                if lgd_obj.first().is_deleted == 0:
+                    raise serializers.ValidationError({"message": f"Data already submited to G2P '{lgd_obj.stable_id.stable_id}'"})
+                else:
+                    raise serializers.ValidationError({"message": f"This is an old G2P record '{lgd_obj.stable_id.stable_id}'"})
+
+        stable_id = G2PStableIDSerializer.create_stable_id()
+
+        # If curator did not input a session name, then the session name is the G2P stable ID
+        if session_name == "":
+            session_name = stable_id.stable_id
+
+        new_curation_data = CurationData.objects.create(
+            session_name=session_name,
+            json_data=data_json_input,
+            stable_id=stable_id,
+            date_created=date_created,
+            date_last_update=date_reviewed,
+            user=user_obj
+        )
+
+        return new_curation_data
+
+        # TODO:
+        # - update endpoint: updates the JSON data in existing session being curated
+        # - publish endpoint: add the data to the G2P tables. entry will be live
+
+    class Meta:
+        model = CurationData
+        fields = ["session_name", "locus", "publications", "phenotypes", "allelic_requirement", "cross_cutting_modifier", 
+                  "variant_types", "variant_consequences", "molecular_mechanism", "disease", "panel", "confidence",
+                  "date_created", "date_last_update", "stable_id"]
