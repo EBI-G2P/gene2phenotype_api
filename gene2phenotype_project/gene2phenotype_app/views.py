@@ -304,6 +304,25 @@ class AttribList(generics.ListAPIView):
         code_list = [attrib.value for attrib in queryset]
         return Response({'results':code_list, 'count':len(code_list)})
 
+"""
+    Retrives a list of all variant consequences terms by type.
+"""
+class VariantConsequenceList(generics.ListAPIView):
+    def get_queryset(self):
+        group = Attrib.objects.filter(value="variant_consequence", type__code="ontology_term_group")
+        return OntologyTerm.objects.filter(group_type=group.first().id)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        list_nmd = []
+        list = []
+        for obj in queryset:
+            if "NMD" in obj.term:
+                list_nmd.append({"term": obj.term, "accession":obj.accession})
+            else:
+                list.append({"term": obj.term, "accession":obj.accession})
+        return Response({'NMD_consequences':list_nmd, 'other_consequences': list})
+
 class LocusGenotypeDiseaseDetail(BaseView):
     serializer_class = LocusGenotypeDiseaseSerializer
 

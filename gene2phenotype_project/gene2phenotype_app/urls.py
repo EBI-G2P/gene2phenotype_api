@@ -13,6 +13,7 @@ urlpatterns = [
     path('gene2phenotype/api/users/', views.UserList.as_view(), name="list_users"),
     path('gene2phenotype/api/attribs/', views.AttribTypeList.as_view(), name="list_attrib_type"),
     path('gene2phenotype/api/attrib/<str:code>/', views.AttribList.as_view(), name="list_attribs_by_type"),
+    path('gene2phenotype/api/ontology_terms/variant_consequences/', views.VariantConsequenceList.as_view(), name="list_variant_consequences"),
     path('gene2phenotype/api/gene/<str:name>/', views.LocusGene.as_view(), name="locus_gene"),
     path('gene2phenotype/api/gene/<str:name>/summary/', views.LocusGeneSummary.as_view(), name="locus_gene_summary"),
     path('gene2phenotype/api/gene/<str:name>/function/', views.GeneFunction.as_view(), name="locus_gene_function"),
