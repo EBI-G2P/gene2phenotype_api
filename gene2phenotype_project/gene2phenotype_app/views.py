@@ -278,7 +278,7 @@ class DiseaseSummary(DiseaseDetail):
                                     - title
                                     - authors
                                     - year
-                                    - source (possible values: 'G2P', 'EuropePMC (PMID not found in G2P)', 'Not found')
+                                    - source (possible values: 'G2P', 'EuropePMC', 'Not found')
                 - count (int): number of PMIDs in the response
             If a PMID is invalid it returns Http404
 """
@@ -324,7 +324,7 @@ def PublicationDetail(request, pmids):
                         'title': title,
                         'authors': authors,
                         'year': int(year),
-                        'source': 'EuropePMC (PMID not found in G2P)'
+                        'source': 'EuropePMC'
                     })
 
         except:
