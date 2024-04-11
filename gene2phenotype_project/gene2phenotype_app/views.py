@@ -437,10 +437,16 @@ class LocusGenotypeDiseaseDetail(BaseView):
 
         g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
 
+        # Authenticated users (curators) can see all entries:
+        #   - in visible and non-visible panels
+        #   - entries flagged as not reviewed (is_reviewed=0)
+        #   - entries with 'refuted' and 'disputed' confidence category
         if user.is_authenticated:
             queryset = LocusGenotypeDisease.objects.filter(stable_id=g2p_stable_id, is_deleted=0)
         else:
             queryset = LocusGenotypeDisease.objects.filter(stable_id=g2p_stable_id, is_reviewed=1, is_deleted=0, lgdpanel__panel__is_visible=1).distinct()
+            # Remove entries with 'refuted' abd 'disputed' confidence category
+            queryset = queryset.filter(~Q(confidence__value='refuted') & ~Q(confidence__value='disputed'))
 
         if not queryset.exists():
             self.handle_no_permission('Entry', stable_id)
