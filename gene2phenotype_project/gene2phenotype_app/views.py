@@ -744,8 +744,6 @@ class UpdateCurationData(generics.UpdateAPIView):
     def update(self, request, *args, **kwargs):
         curation_obj = self.get_queryset().first()
 
-        print("Request data:", request.data)
-
         serializer = CurationDataSerializer(curation_obj, data=request.data)
 
         if serializer.is_valid():

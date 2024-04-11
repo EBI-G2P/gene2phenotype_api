@@ -1114,7 +1114,6 @@ class CurationDataSerializer(serializers.ModelSerializer):
         # - publish endpoint: add the data to the G2P tables. entry will be live
 
     def update(self, instance, validated_data):
-
         data_json_input = CurationDataSerializer.format_json(validated_data)
 
         instance.json_data = data_json_input
