@@ -1,9 +1,8 @@
 from rest_framework import serializers
 from django.db import connection, transaction
 from django.core.exceptions import ObjectDoesNotExist
-from datetime import datetime
+from django.utils import timezone
 from django.db.models import Q
-from django.utils.timezone import make_aware
 import json
 
 from .models import (Panel, User, UserPanel, AttribType, Attrib,
@@ -987,7 +986,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
     publications = serializers.ListField(allow_empty=True)
     phenotypes = serializers.ListField(allow_empty=True)
     allelic_requirement = serializers.CharField(max_length=255, allow_blank=True)
-    cross_cutting_modifier = serializers.CharField(max_length=255, allow_blank=True)
+    cross_cutting_modifier = serializers.ListField(allow_empty=True)
     variant_types = serializers.ListField(allow_empty=True)
     variant_consequences = serializers.ListField(allow_empty=True)
     molecular_mechanism = serializers.ListField(allow_empty=True)
@@ -1052,7 +1051,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         locus = validated_data.get('locus')
         allelic_requirement = validated_data.get('allelic_requirement')
         disease = validated_data.get('disease')
-        date_created = datetime.now()
+        date_created = timezone.now()
         date_reviewed = date_created
         session_name = validated_data.get('session_name')
 
@@ -1112,8 +1111,17 @@ class CurationDataSerializer(serializers.ModelSerializer):
         return new_curation_data
 
         # TODO:
-        # - update endpoint: updates the JSON data in existing session being curated
         # - publish endpoint: add the data to the G2P tables. entry will be live
+
+    def update(self, instance, validated_data):
+
+        data_json_input = CurationDataSerializer.format_json(validated_data)
+
+        instance.json_data = data_json_input
+        instance.date_last_update = timezone.now()
+        instance.save()
+
+        return super().update(instance, validated_data)
 
     class Meta:
         model = CurationData

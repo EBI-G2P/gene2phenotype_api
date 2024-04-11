@@ -719,3 +719,38 @@ class CurationDataDetail(BaseView):
                 'data': curation_data_obj.json_data,
             }
         return Response(response_data)
+
+"""
+    Updates the JSON data for the stable_id
+"""
+class UpdateCurationData(generics.UpdateAPIView):
+    http_method_names = ['put', 'options']
+    serializer_class = CurationDataSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        stable_id = self.kwargs['stable_id']
+        user = self.request.user
+
+        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
+        # Get the entry if the user matches
+        queryset = CurationData.objects.filter(stable_id=g2p_stable_id, user=user)
+
+        if not queryset.exists():
+            self.handle_no_permission('Entry', stable_id)
+        else:
+            return queryset
+
+    def update(self, request, *args, **kwargs):
+        curation_obj = self.get_queryset().first()
+
+        print("Request data:", request.data)
+
+        serializer = CurationDataSerializer(curation_obj, data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Data updated successfully"})
+
+        else:
+            return Response({"message": "failed", "details": serializer.errors})
