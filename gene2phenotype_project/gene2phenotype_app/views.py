@@ -420,13 +420,26 @@ class VariantConsequenceList(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         list_nmd = []
+        list_splice = []
+        list_regulatory = []
+        list_protein = []
         list = []
         for obj in queryset:
             if "NMD" in obj.term:
                 list_nmd.append({"term": obj.term, "accession":obj.accession})
+            elif "splice_" in obj.term:
+                list_splice.append({"term": obj.term, "accession":obj.accession})
+            elif "regulatory" in obj.term or "UTR" in obj.term:
+                list_regulatory.append({"term": obj.term, "accession":obj.accession})
+            elif "missense" in obj.term or "frame" in obj.term:
+                list_protein.append({"term": obj.term, "accession":obj.accession})
             else:
                 list.append({"term": obj.term, "accession":obj.accession})
-        return Response({'NMD_consequences':list_nmd, 'other_consequences': list})
+        return Response({'NMD_consequences': list_nmd,
+                         'splice_consequences': list_splice,
+                         'regulatory_consequences': list_regulatory,
+                         'protein_changing_consequences': list_protein,
+                         'other_consequences': list})
 
 class LocusGenotypeDiseaseDetail(BaseView):
     serializer_class = LocusGenotypeDiseaseSerializer
