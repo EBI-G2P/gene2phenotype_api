@@ -445,7 +445,7 @@ class LocusGenotypeDiseaseDetail(BaseView):
             queryset = LocusGenotypeDisease.objects.filter(stable_id=g2p_stable_id, is_deleted=0)
         else:
             queryset = LocusGenotypeDisease.objects.filter(stable_id=g2p_stable_id, is_reviewed=1, is_deleted=0, lgdpanel__panel__is_visible=1).distinct()
-            # Remove entries with 'refuted' abd 'disputed' confidence category
+            # Remove entries with 'refuted' and 'disputed' confidence category
             queryset = queryset.filter(~Q(confidence__value='refuted') & ~Q(confidence__value='disputed'))
 
         if not queryset.exists():
