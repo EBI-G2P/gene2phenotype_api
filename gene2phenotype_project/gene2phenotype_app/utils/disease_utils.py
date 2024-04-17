@@ -57,8 +57,8 @@ def clean_string(name):
     return " ".join(disease_tokens)
 
 # Clean OMIM disease name
-# Removes the gene and subtype from the end of the disease name
-# Example: "BLEPHAROCHEILODONTIC SYNDROME 1; BCDS1" -> "BLEPHAROCHEILODONTIC SYNDROME"
+# Removes the gene and subtype from the disease name
+# Example: "BLEPHAROCHEILODONTIC SYNDROME 1; BCDS1" -> "blepharocheilodontic syndrome"
 def clean_omim_disease(name):
     disease_name = name.split(";")[0]
     disease_name = re.sub(r',*\s*(TYPE)*,*\s+([0-9]+[A-Z]{0,2}|[IVX]{0,3})$', '', disease_name)
@@ -67,7 +67,7 @@ def clean_omim_disease(name):
     # Remove the integers but keep the word 'syndrome'
     # Example: "ALPORT SYNDROME 2, AUTOSOMAL RECESSIVE; ATS2"
     disease_name = re.sub(r'SYNDROME\s+[0-9]+,*', 'SYNDROME', disease_name)
-    # After: "ALPORT SYNDROME AUTOSOMAL RECESSIVE"
+    # After: "alport syndrome autosomal recessive"
 
     # If the integer is preceded by 'type' then remove both
     # Example before: "TYPE 1 DIABETES MELLITUS; T1D"
