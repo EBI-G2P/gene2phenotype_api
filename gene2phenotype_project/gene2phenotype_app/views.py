@@ -410,11 +410,11 @@ class AttribList(generics.ListAPIView):
         return Response({'results':code_list, 'count':len(code_list)})
 
 """
-    Retrives a list of all variant consequences terms by type.
+    Retrives a list of all variant types.
 """
-class VariantConsequenceList(generics.ListAPIView):
+class VariantTypesList(generics.ListAPIView):
     def get_queryset(self):
-        group = Attrib.objects.filter(value="variant_consequence", type__code="ontology_term_group")
+        group = Attrib.objects.filter(value="variant_type", type__code="ontology_term_group")
         return OntologyTerm.objects.filter(group_type=group.first().id)
 
     def list(self, request, *args, **kwargs):
@@ -435,11 +435,11 @@ class VariantConsequenceList(generics.ListAPIView):
                 list_protein.append({"term": obj.term, "accession":obj.accession})
             else:
                 list.append({"term": obj.term, "accession":obj.accession})
-        return Response({'NMD_consequences': list_nmd,
-                         'splice_consequences': list_splice,
-                         'regulatory_consequences': list_regulatory,
-                         'protein_changing_consequences': list_protein,
-                         'other_consequences': list})
+        return Response({'NMD_variants': list_nmd,
+                         'splice_variants': list_splice,
+                         'regulatory_variants': list_regulatory,
+                         'protein_changing_variants': list_protein,
+                         'other_variants': list})
 
 class LocusGenotypeDiseaseDetail(BaseView):
     serializer_class = LocusGenotypeDiseaseSerializer
