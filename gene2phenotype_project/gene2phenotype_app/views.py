@@ -431,7 +431,7 @@ class VariantConsequenceList(generics.ListAPIView):
                 list_splice.append({"term": obj.term, "accession":obj.accession})
             elif "regulatory" in obj.term or "UTR" in obj.term:
                 list_regulatory.append({"term": obj.term, "accession":obj.accession})
-            elif "missense" in obj.term or "frame" in obj.term:
+            elif "missense" in obj.term or "frame" in obj.term or "start" in obj.term or "stop" in obj.term:
                 list_protein.append({"term": obj.term, "accession":obj.accession})
             else:
                 list.append({"term": obj.term, "accession":obj.accession})

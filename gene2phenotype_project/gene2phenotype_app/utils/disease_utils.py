@@ -68,7 +68,7 @@ def clean_omim_disease(name):
     disease_name = re.sub(r'SYNDROME\s+[0-9]+,*', 'SYNDROME', disease_name)
     # After: "ALPORT SYNDROME AUTOSOMAL RECESSIVE"
 
-    return disease_name
+    return disease_name.lower()
 
 def get_mondo(id):
     url = f"https://www.ebi.ac.uk/ols4/api/search?q={id}&ontology=mondo&exact=1"
