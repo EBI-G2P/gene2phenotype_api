@@ -993,7 +993,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
     publications = serializers.ListField(allow_empty=True)
     phenotypes = serializers.ListField(allow_empty=True)
     allelic_requirement = serializers.CharField(max_length=255, allow_blank=True)
-    cross_cutting_modifier = serializers.CharField(max_length=255, allow_blank=True)
+    cross_cutting_modifier = serializers.ListField(allow_empty=True)
     variant_types = serializers.ListField(allow_empty=True)
     variant_consequences = serializers.ListField(allow_empty=True)
     molecular_mechanism = serializers.ListField(allow_empty=True)
