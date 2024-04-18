@@ -241,6 +241,12 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['user_name', 'email', 'is_active', 'panels']
 
 class AttribTypeSerializer(serializers.ModelSerializer):
+
+    def get_all_attribs(self, id):
+        queryset = Attrib.objects.filter(type=id)
+        code_list = [attrib.value for attrib in queryset]
+        return code_list
+
     class Meta:
         model = AttribType
         fields = ['code']
