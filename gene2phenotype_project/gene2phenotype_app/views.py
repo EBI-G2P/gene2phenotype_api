@@ -357,12 +357,16 @@ class UserList(generics.ListAPIView):
 
 class AttribTypeList(generics.ListAPIView):
     queryset = AttribType.objects.all()
-    serializer_class = AttribTypeSerializer
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        code_list = [attrib.code for attrib in queryset]
-        return Response({'results':code_list, 'count':len(code_list)})
+        result = {}
+        for attrib_type in queryset:
+            serializer = AttribTypeSerializer(attrib_type)
+            all_attribs = serializer.get_all_attribs(attrib_type.id)
+            result[attrib_type.code] = all_attribs
+
+        return Response({'results':result, 'count':len(result)})
 
 class AttribList(generics.ListAPIView):
     lookup_field = 'type'
