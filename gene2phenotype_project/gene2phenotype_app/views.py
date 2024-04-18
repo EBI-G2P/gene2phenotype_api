@@ -366,7 +366,7 @@ class AttribTypeList(generics.ListAPIView):
             all_attribs = serializer.get_all_attribs(attrib_type.id)
             result[attrib_type.code] = all_attribs
 
-        return Response({'results':result, 'count':len(result)})
+        return Response(result)
 
 class AttribList(generics.ListAPIView):
     lookup_field = 'type'
