@@ -1056,7 +1056,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         # for locus part 
         #check if locus entry is correct 
-        if dumped_json.get('locus'):
+        if dumped_json.get('locus') and dumped_json.get("locus"): # come back to this 
             locus = Locus.objects.filter(name=dumped_json.get('locus'))
             if locus: 
                 validated_dict[locus] = locus
@@ -1083,7 +1083,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         # for the disease part 
         if dumped_json.get("disease"):
             disease_details = dumped_json.get("disease")
-            if disease_details.get("disease_name"):
+            if disease_details.get("disease_name") and disease_details.get("disease_name") is not "":
                 validated_dict[disease][disease_name] = disease_details.get("disease_name")
                 disease_crossref = disease_details.get("cross_references")
                 for cross_ref in disease_crossref:
@@ -1100,6 +1100,30 @@ class CurationDataSerializer(serializers.ModelSerializer):
             
                             
         # for panel 
+        if dumped_json.get("panel") and len(panel) >= 1 :
+            panel = []
+            for i in dumped_json.get("panel"):
+                panel.append(i)
+            validated_dict[panel] = panel
+        else: 
+            validated_dict[panel] = []
+        
+        # for confidence 
+        if dumped_json.get("confidence"):
+            confidence_info = dumped_json.get("confidence")
+            if confidence_info.get("justification"):
+                validated_dict[confidence][justification] = confidence_info.get("justification")
+            if confidence_info.get(level):
+                validated_dict[confidence][level] = confidence_info.get("level")
+        else:
+            validated_dict[confidence][justification] = ""
+            validated_dict[confidence][level] = ""
+                
+            
+
+            
+
+
         """
         {
 	publications: [
