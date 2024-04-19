@@ -14,7 +14,7 @@ from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      G2PStableID,LocusIdentifier, PublicationComment, LGDComment,
                      DiseasePublication, LGDMolecularMechanism,
                      OntologyTerm, Source, Publication, GeneDisease,
-                     Sequence, UniprotAnnotation, CurationData)
+                     Sequence, UniprotAnnotation, CurationData, PublicationFamilies)
 
 from .utils import clean_string, get_mondo, get_publication, get_authors, validate_gene, validate_phenotype
 import re
@@ -1019,13 +1019,18 @@ class CurationDataSerializer(serializers.ModelSerializer):
         # disease by default is ''
         # This format is consistent between the HTML form and the raw data
         check_keys = {'allelic_requirement': None, 'disease': '', 'confidence': None}
-
-        for key in check_keys.keys():
+        
+        # Loop through keys to check in the provided data and map them to corresponding values in data_json_input.
+        # If the value associated with a key in data is a list and is not empty, the first element of the list is used as the value.
+        # If the value is an empty string, it is replaced with the corresponding value from check_keys.
+        for key, value in check_keys.items():
+        # Check if the value associated with the key is a list.
             if isinstance(data.get(key), list):
+                # Check if the list is not empty and the first element is an empty string.
                 if len(data.get(key)) > 0 and data.get(key)[0] == "":
-                    data_json_input[key] = check_keys[key]
+                    data_json_input[key] = value  # Use default value from check_keys.
                 else:
-                    data_json_input[key] = data.get(key)[0]
+                    data_json_input[key] = data.get(key)[0]  # Use the first element of the list as the value.
             else:
                 data_json_input[key] = data.get(key)
 
@@ -1039,9 +1044,99 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 data_json_input[tag] = data.get(tag)
 
         return data_json_input
+    
+    def create_validate_json(self, front_json):
+        #receives a json 
+        #change to a dictionary 
+        #return a json 
+
+        dumped_json = front_json.loads(front_json) # to convert to a dictionary
+
+        validated_dict = {}
+
+        # for locus part 
+        #check if locus entry is correct 
+        if dumped_json.get('locus'):
+            locus = Locus.objects.filter(name=dumped_json.get('locus'))
+            if locus: 
+                validated_dict[locus] = locus
+            else:
+                raise serializers.ValidationError({"message": "This Gene does not exist in our database"})
+        else: 
+            raise serializers.ValidationError({"message": "To save a Draft, a gene needs to be given"})
+
+        """
+        
+        if dumped_json.get('publications'):
+            for pub_details in dumped_json.get('publications'): #we are in one dictionary
+                if pub_details.get("pmid"):
+                    if not int(pub_details.get("families")): #this is for the meantime 
+                        raise serializers.ValidationError({"message" : "At least one family information needs to be added, Family needs to be an integer"})
+                    else:
+                        if not int(pub_details.get("affectedIndividuals")) and pub_details.get("affectedIndividuals") is not None: # this is for the meantime 
+                            raise serializers.ValidationError({"message" : "At least one individual information needs to be added"})
+                        else:
+                            if not str(pub_details.get("comments")):
+            
+        """
+
+        # for the disease part 
+        if dumped_json.get("disease"):
+            disease_details = dumped_json.get("disease")
+            if disease_details.get("disease_name"):
+                validated_dict[disease][disease_name] = disease_details.get("disease_name")
+                disease_crossref = disease_details.get("cross_references")
+                for cross_ref in disease_crossref:
+                    if cross_ref.get("original_disease_name"):
+                        validated_dict[disease][cross_reference][original_disease_name] = cross_ref.get("original_disease_name")
+                    if cross_ref.get("disease_name"):
+                        validated_dict[disease][cross_reference][disease_name] = cross_ref.get("disease_name")
+                    if cross_ref.get("identifier"):
+                        validated_dict[disease][cross_reference][identifier] = cross_ref.get("identifier")
+                    if cross_ref.get("source"):
+                        validated_dict[disease][cross_reference][identifier] = cross_ref.get("source")
+            else:
+                validated_dict[disease][disease_name] = ""
+            
+                            
+        # for panel 
+        """
+        {
+	publications: [
+      	{.   "pmid" : 12344543,   
+      		"families": 1,
+      		"affectedIndividuals": 1,
+      		"consanguineous": "Yes",
+      		"ancestries": ""
+      		"comment": ""
+      	}, 
+       { "pmid" : 12768386386,  
+      	  "families": 1,
+      	  "affectedIndividuals": 1,
+      	  "consanguineous": "Yes",
+      	  "ancestries": ""
+      	  "comment": ""
+        } 
+	]
+}
+      """
+
+                    
+
+            
 
     # Check if JSON objects have the same data (only compares first layer)
-    def compare_curation_data(input_json_data, user_obj):
+    def compare_curation_data(self, input_json_data, user_obj):
+        """"
+            Function to compare provided JSON data against JSON data stored in CurationData instances associated with a specific user.
+            Only compares the first layer of JSON objects.
+                Parameters:
+                    input_json_data: JSON data to compare against.
+                    user_obj: User object whose associated CurationData instances are to be checked.
+                 Returns:
+                    If a match is found, returns the corresponding CurationData instance.
+                    If no match is found, returns None.
+        """
         user_sessions_queryset = CurationData.objects.filter(user=user_obj.id)
         for curation_data in user_sessions_queryset:
             data_json = curation_data.json_data
@@ -1079,7 +1174,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         user_obj = User.objects.get(email=user_email)
 
         # Check if JSON is already in the table
-        curation_entry = CurationDataSerializer.compare_curation_data(data_json_input, user_obj)
+        curation_entry = CurationDataSerializer.compare_curation_data(self, data_json_input, user_obj)
         if curation_entry is not None: # Throw error if data is already stored in table
             raise serializers.ValidationError({"message": f"Data already under curation. Please check session '{curation_entry.session_name}'"})
 
