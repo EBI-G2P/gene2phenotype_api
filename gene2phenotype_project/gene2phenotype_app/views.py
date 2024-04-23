@@ -704,9 +704,11 @@ class AddCurationData(BaseAdd):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        print(request)
         user = self.request.user
-
+        user = 23
         if not user.is_authenticated:
+            print("I am here")
             return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
 
         serializer_class = CurationDataSerializer(data=request.data, context={"user": user})
@@ -736,10 +738,12 @@ class AddCurationData(BaseAdd):
 """
 class ListCurationEntries(BaseView):
     serializer_class = CurationDataSerializer
+
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
+        user = 23
         queryset = CurationData.objects.filter(user=user)
 
         return queryset

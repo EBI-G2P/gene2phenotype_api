@@ -986,17 +986,16 @@ class CurationDataSerializer(serializers.ModelSerializer):
             date_created: date when the entry was created
             date_last_update: when entry is created this date is the same as the date_created
             stable_id: automatically generated when the entry is created
-            curation_json : We are receiving a json file
+            json_data : We are receiving a json file
     """
     session_name = serializers.CharField(max_length=100, allow_blank=True) # Optional
-    json_data = serializers.JSONField(required=True)
+    json_data = serializers.JSONField()
     date_created = serializers.CharField(read_only=True)
     date_last_update = serializers.CharField(read_only=True)
     stable_id = serializers.CharField(source="stable_id.stable_id", read_only=True)
 
-    """
     
-    def create_validate_json(self, front_json):
+    def validate_json(self, front_json):
         #receives a json 
         #change to a dictionary 
         #return a json 
@@ -1017,26 +1016,37 @@ class CurationDataSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"message": "To save a Draft, a gene needs to be given"})
 
         # for the disease part 
-        if dumped_json.get("disease"):
+        if dumped_json.get("disease") is not None:
             disease_details = dumped_json.get("disease")
-            if disease_details.get("disease_name") and disease_details.get("disease_name") is not "":
+            if disease_details.get("disease_name") and disease_details.get("disease_name") is not None:
                 validated_dict[disease][disease_name] = disease_details.get("disease_name")
                 disease_crossref = disease_details.get("cross_references")
-                for cross_ref in disease_crossref:
-                    if cross_ref.get("original_disease_name"):
-                        validated_dict[disease][cross_reference][original_disease_name] = cross_ref.get("original_disease_name")
-                    if cross_ref.get("disease_name"):
-                        validated_dict[disease][cross_reference][disease_name] = cross_ref.get("disease_name")
-                    if cross_ref.get("identifier"):
-                        validated_dict[disease][cross_reference][identifier] = cross_ref.get("identifier")
-                    if cross_ref.get("source"):
-                        validated_dict[disease][cross_reference][identifier] = cross_ref.get("source")
+                if disease_crossref >= 1:
+                    for cross_ref in disease_crossref:
+                        if cross_ref.get("original_disease_name"):
+                            validated_dict[disease][cross_reference][original_disease_name] = cross_ref.get("original_disease_name")
+                        if cross_ref.get("disease_name"):
+                            validated_dict[disease][cross_reference][disease_name] = cross_ref.get("disease_name")
+                        if cross_ref.get("identifier"):
+                            validated_dict[disease][cross_reference][identifier] = cross_ref.get("identifier")
+                        if cross_ref.get("source"):
+                            validated_dict[disease][cross_reference][identifier] = cross_ref.get("source")
             else:
                 validated_dict[disease][disease_name] = ""
-            
+                disease_crossref = disease_details.get("cross_references")
+                if disease_crossref >= 1:
+                    for cross_ref in disease_crossref:
+                        if cross_ref.get("original_disease_name"):
+                            validated_dict[disease][cross_reference][original_disease_name] = cross_ref.get("original_disease_name")
+                        if cross_ref.get("disease_name"):
+                            validated_dict[disease][cross_reference][disease_name] = cross_ref.get("disease_name")
+                        if cross_ref.get("identifier"):
+                            validated_dict[disease][cross_reference][identifier] = cross_ref.get("identifier")
+                        if cross_ref.get("source"):
+                            validated_dict[disease][cross_reference][identifier] = cross_ref.get("source")            
                             
         # for panel 
-        if dumped_json.get("panel") and len(panel) >= 1 :
+        if dumped_json.get("panel") and len(dumped_json.get("panel")) >= 1 :
             panel = []
             for i in dumped_json.get("panel"):
                 panel.append(i)
@@ -1045,7 +1055,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             validated_dict[panel] = []
         
         # for confidence 
-        if dumped_json.get("confidence"):
+        if dumped_json.get("confidence") is not None:
             confidence_info = dumped_json.get("confidence")
             if confidence_info.get("justification"):
                 validated_dict[confidence][justification] = confidence_info.get("justification")
@@ -1055,7 +1065,23 @@ class CurationDataSerializer(serializers.ModelSerializer):
             validated_dict[confidence][justification] = ""
             validated_dict[confidence][level] = "" 
 
-    """                     
+        #for allelic_requirement 
+        if dumped_json.get("allelic_requirement") is not None:
+            validated_dict[allelic_requirement] = dumped_json.get("allelic_requirement")
+        else:
+            validated_dict[allelic_requirement] = ""
+
+        #cross_cutting_modifier 
+        if dumped_json.get("cross_cutting_modifier") and  len(dumped_json.get("cross_cutting_modifier")) >= 1:
+            cross_cutting_modifier = []
+            for i in dumped_json.get("cross_cutting_modifier"):
+                cross_cutting_modifier.append(i)
+            validated_dict[cross_cutting_modifier] = cross_cutting_modifier
+        else:
+            validated_dict[cross_cutting_modifier] = [] # an empty list
+
+        
+             
 
     #using the Deepdiff module, compare JSON data 
     def compare_curation_data(self, input_json_data, user_obj):
@@ -1099,6 +1125,9 @@ class CurationDataSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError({"message": f"Data already submited to G2P '{lgd_obj.stable_id.stable_id}'"})
                 else:
                     raise serializers.ValidationError({"message": f"This is an old G2P record '{lgd_obj.stable_id.stable_id}'"})
+        
+        else:
+            raise serializers.ValidationError({"message" : "To publish a curated entry, locus, allelic requirement and disease are neccessary"})
                                     
     
 
