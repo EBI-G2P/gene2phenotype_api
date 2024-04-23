@@ -980,109 +980,7 @@ class VariantTypeSerializer(serializers.ModelSerializer):
 
 ### Curation data ###
 class CurationDataSerializer(serializers.ModelSerializer):
-    """
-        List of attributes:
-            session_name: optional name
-            date_created: date when the entry was created
-            date_last_update: when entry is created this date is the same as the date_created
-            stable_id: automatically generated when the entry is created
-            json_data : We are receiving a json file
-    """
-    session_name = serializers.CharField(max_length=100, allow_blank=True) # Optional
-    json_data = serializers.JSONField()
-    date_created = serializers.CharField(read_only=True)
-    date_last_update = serializers.CharField(read_only=True)
-    stable_id = serializers.CharField(source="stable_id.stable_id", read_only=True)
-
     
-    def validate_json(self, front_json):
-        #receives a json 
-        #change to a dictionary 
-        #return a json 
-
-        dumped_json = front_json.loads() # to convert to a dictionary
-
-        validated_dict = {}
-
-        # for locus part 
-        #check if locus entry is correct 
-        if dumped_json.get('locus'): # come back to this 
-            locus = Locus.objects.filter(name=dumped_json.get('locus'))
-            if locus: 
-                validated_dict[locus] = locus
-            else:
-                raise serializers.ValidationError({"message": "This Gene does not exist in our database"})
-        else: 
-            raise serializers.ValidationError({"message": "To save a Draft, a gene needs to be given"})
-
-        # for the disease part 
-        if dumped_json.get("disease") is not None:
-            disease_details = dumped_json.get("disease")
-            if disease_details.get("disease_name") and disease_details.get("disease_name") is not None:
-                validated_dict[disease][disease_name] = disease_details.get("disease_name")
-                disease_crossref = disease_details.get("cross_references")
-                if disease_crossref >= 1:
-                    for cross_ref in disease_crossref:
-                        if cross_ref.get("original_disease_name"):
-                            validated_dict[disease][cross_reference][original_disease_name] = cross_ref.get("original_disease_name")
-                        if cross_ref.get("disease_name"):
-                            validated_dict[disease][cross_reference][disease_name] = cross_ref.get("disease_name")
-                        if cross_ref.get("identifier"):
-                            validated_dict[disease][cross_reference][identifier] = cross_ref.get("identifier")
-                        if cross_ref.get("source"):
-                            validated_dict[disease][cross_reference][identifier] = cross_ref.get("source")
-            else:
-                validated_dict[disease][disease_name] = ""
-                disease_crossref = disease_details.get("cross_references")
-                if disease_crossref >= 1:
-                    for cross_ref in disease_crossref:
-                        if cross_ref.get("original_disease_name"):
-                            validated_dict[disease][cross_reference][original_disease_name] = cross_ref.get("original_disease_name")
-                        if cross_ref.get("disease_name"):
-                            validated_dict[disease][cross_reference][disease_name] = cross_ref.get("disease_name")
-                        if cross_ref.get("identifier"):
-                            validated_dict[disease][cross_reference][identifier] = cross_ref.get("identifier")
-                        if cross_ref.get("source"):
-                            validated_dict[disease][cross_reference][identifier] = cross_ref.get("source")            
-                            
-        # for panel 
-        if dumped_json.get("panel") and len(dumped_json.get("panel")) >= 1 :
-            panel = []
-            for i in dumped_json.get("panel"):
-                panel.append(i)
-            validated_dict[panel] = panel
-        else: 
-            validated_dict[panel] = []
-        
-        # for confidence 
-        if dumped_json.get("confidence") is not None:
-            confidence_info = dumped_json.get("confidence")
-            if confidence_info.get("justification"):
-                validated_dict[confidence][justification] = confidence_info.get("justification")
-            if confidence_info.get(level):
-                validated_dict[confidence][level] = confidence_info.get("level")
-        else:
-            validated_dict[confidence][justification] = ""
-            validated_dict[confidence][level] = "" 
-
-        #for allelic_requirement 
-        if dumped_json.get("allelic_requirement") is not None:
-            validated_dict[allelic_requirement] = dumped_json.get("allelic_requirement")
-        else:
-            validated_dict[allelic_requirement] = ""
-
-        #cross_cutting_modifier 
-        if dumped_json.get("cross_cutting_modifier") and  len(dumped_json.get("cross_cutting_modifier")) >= 1:
-            cross_cutting_modifier = []
-            for i in dumped_json.get("cross_cutting_modifier"):
-                cross_cutting_modifier.append(i)
-            validated_dict[cross_cutting_modifier] = cross_cutting_modifier
-        else:
-            validated_dict[cross_cutting_modifier] = [] # an empty list
-
-        
-             
-
     #using the Deepdiff module, compare JSON data 
     def compare_curation_data(self, input_json_data, user_obj):
        """"
@@ -1103,9 +1001,10 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 return curation_data
        return None
     
+    #I think this should be in the publish part 
     def check_entry(self, input_json_data):
         "Returns None, just raises error"
-        input_dictionary = input_json_data.loads()
+        input_dictionary = input_json_data
 
         locus = input_dictionary["locus"]
         allelic_requirement = input_dictionary["allelic_requirement"]
@@ -1139,29 +1038,22 @@ class CurationDataSerializer(serializers.ModelSerializer):
         json_data = validated_data.get("json_data")
         date_created = datetime.now()
         date_reviewed = date_created
-        session_name = validated_data.get('session_name')
-
-        # In the HTML form the session_name is a list
-        # Change it to a string
-        if isinstance(session_name, list):
-            if session_name[0] == "":
-                session_name = ""
-            else:
-                session_name = session_name[0]
+        session_name = json_data.get('session_name')
 
         # Build the JSON
         # We should not use the 'validated_data' because the data insert by the HTML form could have a different format
 
         # Assuming the user is already validated in the view AddCurationData
-        user_email = self.context.get('user')
-        user_obj = User.objects.get(email=user_email)
+        #user_email = self.context.get('user')
+        user_email = "olaaustine@ebi.ac.uk"
+        user_obj = User.objects.get(id=23)
 
         # Check if JSON is already in the table
-        curation_entry = self.compare_curation_data(json_data, user_obj)
-        if curation_entry: # Throw error if data is already stored in table
-            raise serializers.ValidationError({"message": f"Data already under curation. Please check session '{curation_entry.session_name}'"})
+        #curation_entry = self.compare_curation_data(json_data, user_obj)
+   
+        #if curation_entry: # Throw error if data is already stored in table
+        #    raise serializers.ValidationError({"message": f"Data already under curation. Please check session '{curation_entry.session_name}'"})
         
-        self.check_entry(json_data)
         
         # Check if entry already exists in G2P
         # An entry is made of: a locus, a genotype (allele requirement) and a disease
@@ -1169,7 +1061,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         stable_id = G2PStableIDSerializer.create_stable_id()
 
         # If curator did not input a session name, then the session name is the G2P stable ID
-        if session_name == "":
+        if session_name is "":
             session_name = stable_id.stable_id
 
         new_curation_data = CurationData.objects.create(
@@ -1189,5 +1081,5 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CurationData
-        fields = ["session_name", "json_data", "date_created", "date_last_update", "stable_id"]
+        fields = ["json_data"]
 

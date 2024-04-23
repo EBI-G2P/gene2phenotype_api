@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view
 from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
+import json
 
 
 from gene2phenotype_app.serializers import (UserSerializer,
@@ -701,32 +702,26 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
 """
 class AddCurationData(BaseAdd):
     serializer_class = CurationDataSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    #permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        print(request)
-        user = self.request.user
-        user = 23
-        if not user.is_authenticated:
-            print("I am here")
-            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-
-        serializer_class = CurationDataSerializer(data=request.data, context={"user": user})
-        if serializer_class.is_valid():
+       #user = self.request.user
+       #if not user.is_authenticated:
+       serializer_class = CurationDataSerializer(data=request.data)
+       if serializer_class.is_valid():
 
             # TODO: validate data here
             # - does JSON have the correct format?
             # - are the values valid?
             # - user has permission to edit the panel (if panel available yet)?
             # if session_name is defined - is it already being used
-
             serializer_class.save()
             response = Response({"message": f"Data saved successfully"}, status=status.HTTP_200_OK)
-        else:
-            error_message = serializer_class.errors.get('locus', 'Problem saving the data')
+       else:
+            error_message = serializer_class.errors.get('json_data', 'Problem saving the data')
             response = Response({"message": error_message}, status=status.HTTP_400_BAD_REQUEST)
 
-        return response
+       return response
 
 
 """
@@ -738,13 +733,12 @@ class AddCurationData(BaseAdd):
 """
 class ListCurationEntries(BaseView):
     serializer_class = CurationDataSerializer
-
-    permission_classes = [permissions.IsAuthenticated]
+    #permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        user = 23
-        queryset = CurationData.objects.filter(user=user)
+        #user = 23
+        queryset = CurationData.objects.all()
 
         return queryset
 
