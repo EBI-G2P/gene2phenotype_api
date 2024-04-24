@@ -1053,7 +1053,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         stable_id = G2PStableIDSerializer.create_stable_id()
 
-        if session_name is "":
+        if session_name == "":
             session_name = stable_id.stable_id
             json_data["session_name"] = session_name
         # Check if JSON is already in the table

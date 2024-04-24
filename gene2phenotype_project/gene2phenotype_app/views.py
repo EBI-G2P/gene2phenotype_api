@@ -7,7 +7,10 @@ from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
 import json
 import jsonschema
-from jsonschema import Draft7Validator
+from jsonschema import validate
+from django.conf import settings 
+
+
 
 
 from gene2phenotype_app.serializers import (UserSerializer,
@@ -707,26 +710,26 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
 class AddCurationData(BaseAdd):
     serializer_class = CurationDataSerializer
     #permission_classes = [permissions.IsAuthenticated]
-
     def post(self, request):
-       #user = self.request.user
-       #if not user.is_authenticated:
-       serializer_class = CurationDataSerializer(data=request.data)
-       if serializer_class.is_valid():
+        json_file_path = settings.BASE_DIR.joinpath("gene2phenotype_app", "utils", "curation_schema.json")
+        try:
+            with open(json_file_path, 'r') as file:
+                schema = json.load(file)
+        except FileNotFoundError:
+            return Response({"message": "Schema file not found"}, status=status.HTTP_404_NOT_FOUND)
 
-            # TODO: validate data here
-            # - does JSON have the correct format?
-            # - are the values valid?
-            # - user has permission to edit the panel (if panel available yet)?
-            # if session_name is defined - is it already being used
-            serializer_class.save()
-            response = Response({"message": f"Data saved successfully"}, status=status.HTTP_200_OK)
-       else:
-            error_message = serializer_class.errors.get('json_data', 'Problem saving the data')
-            response = Response({"message": error_message}, status=status.HTTP_400_BAD_REQUEST)
+        # Validate the JSON data against the schema
+        try:
+            validate(instance=request.data, schema=schema)
+        except Exception as e:
+            return Response({"message": "Problem with the data"}, status=status.HTTP_400_BAD_REQUEST)
 
-       return response
-
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Data saved successfully"}, status=status.HTTP_200_OK)
+        else:
+            return Response({"message": "Problem saving the data", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 """
     List all the curation entries being curated by the user.
