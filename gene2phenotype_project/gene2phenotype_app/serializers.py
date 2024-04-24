@@ -118,6 +118,9 @@ class PanelDetailSerializer(serializers.ModelSerializer):
             return dates[-1].date()
         else:
             return []
+    
+    def stats_from_db(self, panel):
+        return panel.stats
 
     def calculate_stats(self, panel):
         lgd_panels = LGDPanel.objects.filter(panel=panel.id)
@@ -1048,6 +1051,11 @@ class CurationDataSerializer(serializers.ModelSerializer):
         user_email = "olaaustine@ebi.ac.uk"
         user_obj = User.objects.get(id=23)
 
+        stable_id = G2PStableIDSerializer.create_stable_id()
+
+        if session_name is "":
+            session_name = stable_id.stable_id
+            json_data["session_name"] = session_name
         # Check if JSON is already in the table
         #curation_entry = self.compare_curation_data(json_data, user_obj)
    
@@ -1058,11 +1066,9 @@ class CurationDataSerializer(serializers.ModelSerializer):
         # Check if entry already exists in G2P
         # An entry is made of: a locus, a genotype (allele requirement) and a disease
 
-        stable_id = G2PStableIDSerializer.create_stable_id()
 
         # If curator did not input a session name, then the session name is the G2P stable ID
-        if session_name is "":
-            session_name = stable_id.stable_id
+    
 
         new_curation_data = CurationData.objects.create(
             session_name=session_name,
