@@ -722,7 +722,7 @@ class AddCurationData(BaseAdd):
         try:
             validate(instance=request.data, schema=schema)
         except Exception as e:
-            return Response({"message": "Problem with the data"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Problem with the data" + e}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
