@@ -118,44 +118,49 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         else:
             return []
 
+    # Calculates the stats on the fly
+    # Returns a JSON object
     def calculate_stats(self, panel):
-        lgd_panels = LGDPanel.objects.filter(panel=panel.id)
-        num_records = 0
-        genes = 0
-        uniq_genes = {}
-        diseases = 0
-        uniq_diseases = {}
-        stats_by_confidence = {}
+        lgd_panels = LGDPanel.objects.filter(
+            panel=panel.id,
+            is_deleted=0
+        ).select_related()
+
+        genes = set()
+        diseases = set()
+        confidences = {}
         attrib_id = Attrib.objects.get(value='gene').id
         for lgd_panel in lgd_panels:
-            if lgd_panel.is_deleted == 0:
-                num_records += 1
-                if lgd_panel.lgd.locus.type.id == attrib_id and lgd_panel.lgd.locus.name not in uniq_genes:
-                    genes += 1
-                    uniq_genes = { lgd_panel.lgd.locus.name:1 }
-                if lgd_panel.lgd.disease_id not in uniq_diseases:
-                    diseases += 1
-                    uniq_diseases = { lgd_panel.lgd.disease_id:1 }
+            if lgd_panel.lgd.locus.type.id == attrib_id:
+                genes.add(lgd_panel.lgd.locus.name)
 
-                if lgd_panel.lgd.confidence.value not in stats_by_confidence.keys():
-                    stats_by_confidence[lgd_panel.lgd.confidence.value] = 1
-                elif lgd_panel.lgd.confidence.value in stats_by_confidence.keys():
-                    stats_by_confidence[lgd_panel.lgd.confidence.value] += 1
+            diseases.add(lgd_panel.lgd.disease_id)
 
-        stats = {
-            'total_records': num_records,
-            'total_genes': genes,
-            'total_diseases':diseases,
-            'by_confidence': stats_by_confidence
-            }
+            try:
+                confidences[lgd_panel.lgd.confidence.value] += 1
+            except KeyError:
+                confidences[lgd_panel.lgd.confidence.value] = 1
 
-        return stats
+        return {
+            'total_records': len(lgd_panels),
+            'total_genes': len(genes),
+            'total_diseases':len(diseases),
+            'by_confidence': confidences
+        }
 
     def records_summary(self, panel):
         lgd_panels = LGDPanel.objects.filter(panel=panel.id).filter(is_deleted=0)
 
-        lgd_panels_selected = lgd_panels.select_related('lgd', 'lgd__locus', 'lgd__disease', 'lgd__genotype', 'lgd__confidence'
-                                               ).prefetch_related('lgd__lgd_variant_gencc_consequence', 'lgd__lgd_variant_type', 'lgd__lgd_molecular_mechanism').order_by('-lgd__date_review').filter(lgd__is_deleted=0)
+        lgd_panels_selected = lgd_panels.select_related('lgd',
+                                                        'lgd__locus',
+                                                        'lgd__disease',
+                                                        'lgd__genotype',
+                                                        'lgd__confidence'
+                                                    ).prefetch_related(
+                                                        'lgd__lgd_variant_gencc_consequence',
+                                                        'lgd__lgd_variant_type',
+                                                        'lgd__lgd_molecular_mechanism'
+                                                    ).order_by('-lgd__date_review').filter(lgd__is_deleted=0)
 
         lgd_objects_list = list(lgd_panels_selected.values('lgd__locus__name',
                                                            'lgd__disease__name',
