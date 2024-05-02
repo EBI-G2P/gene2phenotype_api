@@ -985,6 +985,7 @@ class VariantTypeSerializer(serializers.ModelSerializer):
 class CurationDataSerializer(serializers.ModelSerializer):
     
     #using the Deepdiff module, compare JSON data 
+    # this still needs to be worked on when we have fixed the user permission issue 
     def compare_curation_data(self, input_json_data, user_obj):
        """"
             Function to compare provided JSON data against JSON data stored in CurationData instances associated with a specific user.
@@ -1004,7 +1005,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 return curation_data
        return None
     
-    #I think this should be in the publish part 
+    #I think this should be in the publish part but going to leave it here for now
+    # We can move this to the publish part
     def check_entry(self, input_json_data):
         "Returns None, just raises error"
         input_dictionary = input_json_data
@@ -1035,18 +1037,15 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
     # Method to create an entry in the curation data table
     # This method is used once to create the entry, other updates are done in the endpoint to update the entry
-    # 'validated_data' contains the data already validated
+    # 'validated_data' contains the data already validated which is the json_data we receive from the frontend 
     @transaction.atomic
     def create(self, validated_data):
         json_data = validated_data.get("json_data")
+       
         date_created = datetime.now()
         date_reviewed = date_created
         session_name = json_data.get('session_name')
 
-        # Build the JSON
-        # We should not use the 'validated_data' because the data insert by the HTML form could have a different format
-
-        # Assuming the user is already validated in the view AddCurationData
         #user_email = self.context.get('user')
         user_email = "olaaustine@ebi.ac.uk"
         user_obj = User.objects.get(id=23)
@@ -1060,15 +1059,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         #curation_entry = self.compare_curation_data(json_data, user_obj)
    
         #if curation_entry: # Throw error if data is already stored in table
-        #    raise serializers.ValidationError({"message": f"Data already under curation. Please check session '{curation_entry.session_name}'"})
-        
-        
-        # Check if entry already exists in G2P
-        # An entry is made of: a locus, a genotype (allele requirement) and a disease
-
-
-        # If curator did not input a session name, then the session name is the G2P stable ID
-    
+         #   raise serializers.ValidationError({"message": f"Data already under curation. Please check session '{curation_entry.session_name}'"})
 
         new_curation_data = CurationData.objects.create(
             session_name=session_name,

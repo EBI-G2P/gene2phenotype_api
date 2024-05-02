@@ -7,7 +7,7 @@ from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
 import json
 import jsonschema
-from jsonschema import validate
+from jsonschema import validate, exceptions
 from django.conf import settings 
 
 
@@ -709,7 +709,8 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
 """
 class AddCurationData(BaseAdd):
     serializer_class = CurationDataSerializer
-    #permission_classes = [permissions.IsAuthenticated]
+    #permission_classes = [permissions.IsAuthenticated] - # this will be added after we fix the user management issue 
+    
     def post(self, request):
         json_file_path = settings.BASE_DIR.joinpath("gene2phenotype_app", "utils", "curation_schema.json")
         try:
@@ -721,15 +722,16 @@ class AddCurationData(BaseAdd):
         # Validate the JSON data against the schema
         try:
             validate(instance=request.data, schema=schema)
-        except Exception as e:
-            return Response({"message": e}, status=status.HTTP_400_BAD_REQUEST)
+        except exceptions.ValidationError as e:
+            return Response({"message": "JSON data does not follow the required format, Required format is" + str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
+            
             serializer.save()
             return Response({"message": "Data saved successfully"}, status=status.HTTP_200_OK)
         else:
-            return Response({"message": "Problem saving the data", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Problem saving the data" + str(serializer.errors) , "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 """
     List all the curation entries being curated by the user.
