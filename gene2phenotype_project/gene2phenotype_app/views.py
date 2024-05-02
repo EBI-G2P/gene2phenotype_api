@@ -702,16 +702,24 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
 
         return response
 
-
-"""
-    Add a new curation entry.
-    It is only available for authenticated users.
-"""
 class AddCurationData(BaseAdd):
+    """
+        Add a new curation entry.
+        It is only available for authenticated users.
+        We do not need to check for authenticated users because of the user management issues.
+    """
     serializer_class = CurationDataSerializer
-    #permission_classes = [permissions.IsAuthenticated] - # this will be added after we fix the user management issue 
     
     def post(self, request):
+        """
+            Handle POST requests.
+
+            Args:
+                request: The HTTP request object.
+
+            Returns:
+                A Response object with appropriate status and message.
+        """
         json_file_path = settings.BASE_DIR.joinpath("gene2phenotype_app", "utils", "curation_schema.json")
         try:
             with open(json_file_path, 'r') as file:
@@ -733,25 +741,44 @@ class AddCurationData(BaseAdd):
         else:
             return Response({"message": "Problem saving the data" + str(serializer.errors) , "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-"""
-    List all the curation entries being curated by the user.
-    It is only available for authenticated users.
-    Returns:
+
+class ListCurationEntries(BaseView):
+    """
+        List all the curation entries being curated by the user.
+        It is only available for authenticated users.
+        Returns:
             - list of entries
             - number of entries
-"""
-class ListCurationEntries(BaseView):
+    """
     serializer_class = CurationDataSerializer
-    #permission_classes = [permissions.IsAuthenticated]
+    
 
     def get_queryset(self):
-        user = self.request.user
-        #user = 23
+        """
+            Retrieve the queryset of CurationData objects.
+
+            Returns:
+                Queryset of CurationData objects.
+            Future:
+
+                user = self.request.user commenting this out for now we should user to filter the Curation objects we are getting for the future
+        """
         queryset = CurationData.objects.all()
 
         return queryset
 
     def list(self, request, *args, **kwargs):
+        """
+            List the CurationData objects.
+
+            Args:
+                request: The HTTP request object.
+                *args: Additional positional arguments.
+                **kwargs: Additional keyword arguments.
+
+            Returns:
+                Response containing the list of CurationData objects with specified fields.
+        """
         queryset = self.get_queryset()
         list_data = []
         for data in queryset:
@@ -768,11 +795,12 @@ class ListCurationEntries(BaseView):
         return Response({'results':list_data, 'count':len(list_data)})
 
 
-"""
-    Returns all the data for a specific curation entry.
-    It is only available for authenticated users.
-"""
+
 class CurationDataDetail(BaseView):
+    """
+        Returns all the data for a specific curation entry.
+        It is only available for authenticated users.
+    """
     serializer_class = CurationDataSerializer
     permission_classes = [permissions.IsAuthenticated]
 
