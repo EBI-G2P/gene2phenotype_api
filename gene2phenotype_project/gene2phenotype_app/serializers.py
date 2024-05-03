@@ -1131,7 +1131,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         new_curation_data = CurationData.objects.create(
             session_name=session_name,
             json_data=json_data,
-            stable_id=self.stable_id,
+            stable_id=stable_id,
             date_created=date_created,
             date_last_update=date_reviewed,
             user=user_obj
