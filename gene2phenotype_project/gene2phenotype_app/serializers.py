@@ -1,11 +1,13 @@
+import json
+from deepdiff import DeepDiff
+import copy
+from collections import OrderedDict
 from rest_framework import serializers
 from django.db import connection, transaction
 from django.core.exceptions import ObjectDoesNotExist
 from datetime import datetime
 from django.db.models import Q
 from django.utils.timezone import make_aware
-import json
-from deepdiff import DeepDiff
 
 from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      LGDPanel, LocusGenotypeDisease, LGDVariantGenccConsequence,
@@ -983,6 +985,51 @@ class VariantTypeSerializer(serializers.ModelSerializer):
 
 ### Curation data ###
 class CurationDataSerializer(serializers.ModelSerializer):
+    """
+        Serializer for CurationData model
+    """
+    stable_id = G2PStableIDSerializer.create_stable_id()
+    
+    def validate(self, data):
+
+        data_copy = copy.deepcopy(data) # making a copy of this so any changes to this are only to this 
+        
+        data_dict = self.convert_to_dict(data_copy)
+
+        user_email = self.context.get('user')
+        user_obj = User.objects.get(email=user_email)
+        
+        # Check if JSON is already in the table
+        curation_entry = self.compare_curation_data(data_dict, user_obj.id)
+   
+        if curation_entry: # Throw error if data is already stored in table
+            raise serializers.ValidationError({"message": f"Data already under curation. Please check session '{curation_entry.session_name}'"})
+        else:
+            if len(data_dict["json_data"]["panels"]) >= 1:
+                panels = UserSerializer.get_panels(self,user_obj.id)
+                panels = ['Developmental disorders' if panel == "DD" else panel for panel in panels] # turning DD to developmental disorders
+                 # Check if any panel in data_dict["json_data"]["panels"] is not in the updated panels list
+                unauthorized_panels = [panel for panel in data_dict["json_data"]["panels"] if panel.replace(' disorders', '') not in panels]
+                if unauthorized_panels:
+                    unauthorized_panels_str = "', '".join(unauthorized_panels)
+                    print(unauthorized_panels)
+                    raise serializers.ValidationError({"message" : f"You do not have permission to curate on these panels: '{unauthorized_panels_str}'"})
+
+        return data
+
+    def convert_to_dict(self, data):
+        """
+            Convert data to a regular dictionary if it is an OrderedDict.
+
+            Parameters:
+                data: Data to convert (can be OrderedDict or dict).
+
+            Returns:
+                Converted data as a dict.
+        """
+        if isinstance(data, OrderedDict):
+            return dict(data)
+        return data
     
     #using the Deepdiff module, compare JSON data 
     # this still needs to be worked on when we have fixed the user permission issue 
@@ -997,18 +1044,28 @@ class CurationDataSerializer(serializers.ModelSerializer):
                     If a match is found, returns the corresponding CurationData instance.
                     If no match is found, returns None.
         """
-       user_sessions_queryset = CurationData.objects.filter(user=user_obj.id)
+       user_sessions_queryset = CurationData.objects.filter(user=user_obj)
        for curation_data in user_sessions_queryset:
             data_json = curation_data.json_data
-            result = DeepDiff(input_json_data, data_json) # to compare curation data 
-            if result:
+            input_json_data["json_data"].pop('session_name', None)
+            data_json.pop('session_name', None)
+            result = DeepDiff(input_json_data["json_data"], data_json) # to compare curation data
+            
+            if not result:
                 return curation_data
-       return None
     
-    #I think this should be in the publish part but going to leave it here for now
-    # We can move this to the publish part
     def check_entry(self, input_json_data):
-        "Returns None, just raises error"
+        """
+            Check the validity of the provided JSON data for publishing a curated entry.
+        
+            Parameters:
+                input_json_data (dict): JSON data to be checked.
+        
+            Raises:
+                serializers.ValidationError: If the JSON data is invalid for publishing.
+            Future: 
+                This is for the publish and will be done differently 
+        """
         input_dictionary = input_json_data
 
         locus = input_dictionary["locus"]
@@ -1033,48 +1090,42 @@ class CurationDataSerializer(serializers.ModelSerializer):
         else:
             raise serializers.ValidationError({"message" : "To publish a curated entry, locus, allelic requirement and disease are neccessary"})
                                     
-    
 
-    # Method to create an entry in the curation data table
-    # This method is used once to create the entry, other updates are done in the endpoint to update the entry
-    # 'validated_data' contains the data already validated which is the json_data we receive from the frontend 
     @transaction.atomic
     def create(self, validated_data):
+        """
+            Create a new entry in the CurationData table.
+        
+            Parameters:
+                validated_data (dict): Validated data containing the JSON data to be stored.
+        
+            Returns:
+                CurationData: The newly created CurationData instance.
+            Future:
+                - update endpoint: updates the JSON data in existing session being curated
+                - publish endpoint: add the data to the G2P tables. entry will be live
+        """
         json_data = validated_data.get("json_data")
        
         date_created = datetime.now()
         date_reviewed = date_created
         session_name = json_data.get('session_name')
-
-        #user_email = self.context.get('user')
-        user_email = "olaaustine@ebi.ac.uk"
-        user_obj = User.objects.get(id=23)
-
-        stable_id = G2PStableIDSerializer.create_stable_id()
-
         if session_name == "":
-            session_name = stable_id.stable_id
-            json_data["session_name"] = session_name
-        # Check if JSON is already in the table
-        #curation_entry = self.compare_curation_data(json_data, user_obj)
-   
-        #if curation_entry: # Throw error if data is already stored in table
-         #   raise serializers.ValidationError({"message": f"Data already under curation. Please check session '{curation_entry.session_name}'"})
+            session_name = self.stable_id
+
+        user_obj = User.objects.get(email="olaaustine@ebi.ac.uk")
+
 
         new_curation_data = CurationData.objects.create(
             session_name=session_name,
             json_data=json_data,
-            stable_id=stable_id,
+            stable_id=self.stable_id,
             date_created=date_created,
             date_last_update=date_reviewed,
             user=user_obj
         )
 
         return new_curation_data
-
-        # TODO:
-        # - update endpoint: updates the JSON data in existing session being curated
-        # - publish endpoint: add the data to the G2P tables. entry will be live
 
     class Meta:
         model = CurationData
