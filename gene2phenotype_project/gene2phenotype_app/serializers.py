@@ -988,9 +988,20 @@ class CurationDataSerializer(serializers.ModelSerializer):
     """
         Serializer for CurationData model
     """
-    stable_id = G2PStableIDSerializer.create_stable_id()
     
     def validate(self, data):
+        """
+            Validate the input data for curation.
+
+            Args:
+                data: The data to be validated.
+
+            Returns:
+                The validated data.
+
+            Raises:
+                serializers.ValidationError: If the data is already under curation or if the user does not have permission to curate on certain panels.
+        """
 
         data_copy = copy.deepcopy(data) # making a copy of this so any changes to this are only to this 
         
@@ -1012,7 +1023,6 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 unauthorized_panels = [panel for panel in data_dict["json_data"]["panels"] if panel.replace(' disorders', '') not in panels]
                 if unauthorized_panels:
                     unauthorized_panels_str = "', '".join(unauthorized_panels)
-                    print(unauthorized_panels)
                     raise serializers.ValidationError({"message" : f"You do not have permission to curate on these panels: '{unauthorized_panels_str}'"})
 
         return data
@@ -1047,8 +1057,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
        user_sessions_queryset = CurationData.objects.filter(user=user_obj)
        for curation_data in user_sessions_queryset:
             data_json = curation_data.json_data
-            input_json_data["json_data"].pop('session_name', None)
-            data_json.pop('session_name', None)
+            input_json_data["json_data"].pop('session_name', None) # removed to allow for proper comparison with both of them
+            data_json.pop('session_name', None) # removed to allow for proper comparison with both of them
             result = DeepDiff(input_json_data["json_data"], data_json) # to compare curation data
             
             if not result:
@@ -1110,12 +1120,14 @@ class CurationDataSerializer(serializers.ModelSerializer):
         date_created = datetime.now()
         date_reviewed = date_created
         session_name = json_data.get('session_name')
+        stable_id = G2PStableIDSerializer.create_stable_id()
         if session_name == "":
-            session_name = self.stable_id
+            session_name = stable_id
 
-        user_obj = User.objects.get(email="olaaustine@ebi.ac.uk")
-
-
+         
+        user_email = self.context.get('user') # this needs to be looked at 
+        user_obj = User.objects.get(email=user_email)
+            
         new_curation_data = CurationData.objects.create(
             session_name=session_name,
             json_data=json_data,
