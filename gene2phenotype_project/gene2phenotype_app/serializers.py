@@ -1012,7 +1012,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         user_email = self.context.get('user')
         user_obj = User.objects.get(email=user_email)
 
-        if data_dict["json_data"]["locus"] == "":
+        if data_dict["json_data"]["locus"] == "" or data_dict["json_data"]["locus"] is None:
             raise serializers.ValidationError({"message" : "To save a draft, the minimum requirement is a locus entry, Please save this draft with locus information"})
         
         # Check if JSON is already in the table
