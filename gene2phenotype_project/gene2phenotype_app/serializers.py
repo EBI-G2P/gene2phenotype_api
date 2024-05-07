@@ -1048,7 +1048,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             Returns:
                 Converted data as a dict.
             Reason:
-                If the data is an OrderedDict, which is how Python is reading the JSON, it is turned to a regular dictionary which is what is returned
+                If the data is an OrderedDict, which is how Python is reading the JSON, it is turned to a regular dictionary which is what is returned, otherwise it just returns the data gotten
         """
         if isinstance(data, OrderedDict):
             return dict(data)
