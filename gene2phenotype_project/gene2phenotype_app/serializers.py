@@ -1011,13 +1011,16 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         user_email = self.context.get('user')
         user_obj = User.objects.get(email=user_email)
+
+        if data_dict["json_data"]["locus"] == "":
+            raise serializers.ValidationError({"message" : "To save a draft, the minimum requirement is a locus entry, Please save this draft with locus information"})
         
         # Check if JSON is already in the table
         curation_entry = self.compare_curation_data(data_dict, user_obj.id)
    
         if curation_entry: # Throw error if data is already stored in table
             raise serializers.ValidationError({"message": f"Data already under curation. Please check session '{curation_entry.session_name}'"})
-        elif len(data_dict["json_data"]["panels"]) >= 1:
+        if len(data_dict["json_data"]["panels"]) >= 1:
             panels = UserSerializer.get_panels(self,user_obj.id)
             panels = ['Developmental disorders' if panel == "DD" else panel for panel in panels] # turning DD to developmental disorders
             # Check if any panel in data_dict["json_data"]["panels"] is not in the updated panels list
