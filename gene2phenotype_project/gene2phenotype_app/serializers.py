@@ -1042,6 +1042,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
         """
         if isinstance(data, OrderedDict):
             return dict(data)
+        
+        return data
     
     #using the Deepdiff module, compare JSON data 
     # this still needs to be worked on when we have fixed the user permission issue 
@@ -1123,6 +1125,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         date_reviewed = date_created
         session_name = json_data.get('session_name')
         stable_id = G2PStableIDSerializer.create_stable_id()
+
         if session_name == "":
             session_name = stable_id.stable_id
 
