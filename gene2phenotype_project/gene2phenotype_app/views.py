@@ -593,21 +593,25 @@ class SearchView(BaseView):
         else:
             self.handle_no_permission('Search type is not valid', None)
 
+        new_queryset = []
         if queryset.exists():
             for lgd in queryset:
                 # If the user is not logged in, only show visible panels
                 if user.is_authenticated == False:
                     lgdpanel_select = LGDPanel.objects.filter(lgd=lgd, panel__is_visible=1, is_deleted=0)
-                    if lgdpanel_select.exists() == False:
-                        queryset = queryset.exclude(id=lgd.id)
                 else:
                     lgdpanel_select = LGDPanel.objects.filter(lgd=lgd, is_deleted=0)
+
                 lgd_panels = []
                 for lp in lgdpanel_select:
                     lgd_panels.append(lp.panel.name)
-                lgd.panels = lgd_panels
 
-        return queryset
+                # Add new property to LGD object
+                lgd.panels = lgd_panels
+                if lgd_panels:
+                    new_queryset.append(lgd)
+
+        return new_queryset
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
