@@ -59,8 +59,7 @@ class PanelList(generics.ListAPIView):
         for panel in queryset:
             panel_info = {}
             if panel.is_visible == 1 or (user.is_authenticated and panel.is_visible == 0):
-                #stats = serializer.calculate_stats(panel)
-                stats = serializer.stats_from_db(panel)
+                stats = serializer.calculate_stats(panel)
                 panel_info['name'] = panel.name
                 panel_info['description'] = panel.description
                 panel_info['stats'] = stats
@@ -82,8 +81,7 @@ class PanelDetail(BaseView):
             serializer = PanelDetailSerializer()
             curators = serializer.get_curators(queryset.first())
             last_update = serializer.get_last_updated(queryset.first())
-            #stats = serializer.calculate_stats(queryset.first())
-            stats = serializer.stats_from_db(queryset.first())
+            stats = serializer.calculate_stats(queryset.first())
             response_data = {
                 'name': queryset.first().name,
                 'description': queryset.first().description,

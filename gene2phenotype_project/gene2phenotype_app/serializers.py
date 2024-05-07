@@ -120,9 +120,6 @@ class PanelDetailSerializer(serializers.ModelSerializer):
             return dates[-1].date()
         else:
             return []
-    
-    def stats_from_db(self, panel):
-        return panel.stats
 
     # Calculates the stats on the fly
     # Returns a JSON object
@@ -1020,15 +1017,14 @@ class CurationDataSerializer(serializers.ModelSerializer):
    
         if curation_entry: # Throw error if data is already stored in table
             raise serializers.ValidationError({"message": f"Data already under curation. Please check session '{curation_entry.session_name}'"})
-        else:
-            if len(data_dict["json_data"]["panels"]) >= 1:
-                panels = UserSerializer.get_panels(self,user_obj.id)
-                panels = ['Developmental disorders' if panel == "DD" else panel for panel in panels] # turning DD to developmental disorders
-                 # Check if any panel in data_dict["json_data"]["panels"] is not in the updated panels list
-                unauthorized_panels = [panel for panel in data_dict["json_data"]["panels"] if panel.replace(' disorders', '') not in panels]
-                if unauthorized_panels:
-                    unauthorized_panels_str = "', '".join(unauthorized_panels)
-                    raise serializers.ValidationError({"message" : f"You do not have permission to curate on these panels: '{unauthorized_panels_str}'"})
+        elif len(data_dict["json_data"]["panels"]) >= 1:
+            panels = UserSerializer.get_panels(self,user_obj.id)
+            panels = ['Developmental disorders' if panel == "DD" else panel for panel in panels] # turning DD to developmental disorders
+            # Check if any panel in data_dict["json_data"]["panels"] is not in the updated panels list
+            unauthorized_panels = [panel for panel in data_dict["json_data"]["panels"] if panel.replace(' disorders', '') not in panels]
+            if unauthorized_panels:
+                unauthorized_panels_str = "', '".join(unauthorized_panels)
+                raise serializers.ValidationError({"message" : f"You do not have permission to curate on these panels: '{unauthorized_panels_str}'"})
 
         return data
 
@@ -1041,10 +1037,11 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
             Returns:
                 Converted data as a dict.
+            Reason:
+                If the data is an OrderedDict, which is how Python is reading the JSON, it is turned to a regular dictionary which is what is returned
         """
         if isinstance(data, OrderedDict):
             return dict(data)
-        return data
     
     #using the Deepdiff module, compare JSON data 
     # this still needs to be worked on when we have fixed the user permission issue 
@@ -1127,7 +1124,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         session_name = json_data.get('session_name')
         stable_id = G2PStableIDSerializer.create_stable_id()
         if session_name == "":
-            session_name = stable_id
+            session_name = stable_id.stable_id
 
          
         user_email = self.context.get('user') # this needs to be looked at 

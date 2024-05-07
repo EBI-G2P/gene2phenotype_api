@@ -483,7 +483,6 @@ class Panel(models.Model):
     name = models.CharField(max_length=100, unique=True, null=False)
     description = models.CharField(max_length=255, null=True)
     is_visible = models.SmallIntegerField(null=False)
-    stats = models.JSONField(null=True, default=None)
 
     def __str__(self):
         return self.name
