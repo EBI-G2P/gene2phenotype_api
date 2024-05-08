@@ -1,3 +1,6 @@
+import json
+import jsonschema
+from jsonschema import validate, exceptions
 from rest_framework import generics, status, permissions
 from django.http import Http404
 from rest_framework.response import Response
@@ -5,9 +8,6 @@ from rest_framework.decorators import api_view
 from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
-import json
-import jsonschema
-from jsonschema import validate, exceptions
 from django.conf import settings 
 
 
