@@ -483,9 +483,13 @@ class LocusGenotypeDiseaseDetail(BaseView):
 
 
 """
-    Search G2P entries by three types: gene, disease or phenotype
-    If no search type is specified then performs a generic search.
-    The search can be specific to one panel if using parameter 'panel'
+    Search G2P entries by different types:
+                                        - gene
+                                        - disease
+                                        - phenotype
+                                        - G2P ID
+    If no search type is specified then it performs a generic search.
+    The search can be specific to one panel if using parameter 'panel'.
 """
 class SearchView(BaseView):
     serializer_class = LocusGenotypeDiseaseSerializer
@@ -508,6 +512,7 @@ class SearchView(BaseView):
         base_disease_3 = Q(disease__diseaseontology__ontology_term__accession=search_query, is_deleted=0)
         base_phenotype = Q(lgdphenotype__phenotype__term__icontains=search_query, lgdphenotype__isnull=False, is_deleted=0)
         base_phenotype_2 = Q(lgdphenotype__phenotype__accession=search_query, lgdphenotype__isnull=False, is_deleted=0)
+        base_g2p_id = Q(stable_id__stable_id=search_query, is_deleted=0)
 
         queryset = LocusGenotypeDisease.objects.none()
 
@@ -522,7 +527,8 @@ class SearchView(BaseView):
                     base_disease_2 & Q(lgdpanel__panel__name=search_panel) |
                     base_disease_3 & Q(lgdpanel__panel__name=search_panel) |
                     base_phenotype & Q(lgdpanel__panel__name=search_panel) |
-                    base_phenotype_2 & Q(lgdpanel__panel__name=search_panel)
+                    base_phenotype_2 & Q(lgdpanel__panel__name=search_panel) |
+                    base_g2p_id & Q(lgdpanel__panel__name=search_panel)
                 ).order_by('locus__name', 'stable_id__stable_id').distinct()
             else:
                 queryset = LocusGenotypeDisease.objects.filter(
@@ -533,7 +539,8 @@ class SearchView(BaseView):
                     base_disease_2 |
                     base_disease_3 |
                     base_phenotype |
-                    base_phenotype_2
+                    base_phenotype_2 |
+                    base_g2p_id
                 ).order_by('locus__name', 'stable_id__stable_id').distinct()
 
             if not queryset.exists():
@@ -587,6 +594,19 @@ class SearchView(BaseView):
 
             if not queryset.exists():
                 self.handle_no_permission('Phenotype', search_query)
+
+        elif search_type == 'g2p_id':
+            if search_panel:
+                queryset = LocusGenotypeDisease.objects.filter(
+                    base_g2p_id & Q(lgdpanel__panel__name=search_panel)
+                ).order_by('locus__name', 'stable_id__stable_id').distinct()
+            else:
+                queryset = LocusGenotypeDisease.objects.filter(
+                    base_g2p_id
+                ).order_by('locus__name', 'stable_id__stable_id').distinct()
+
+            if not queryset.exists():
+                self.handle_no_permission('g2p_id', search_query)
 
         else:
             self.handle_no_permission('Search type is not valid', None)
