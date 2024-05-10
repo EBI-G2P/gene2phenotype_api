@@ -1071,9 +1071,10 @@ class CurationDataSerializer(serializers.ModelSerializer):
        user_sessions_queryset = CurationData.objects.filter(user=user_obj)
        for curation_data in user_sessions_queryset:
             data_json = curation_data.json_data
-            input_json_data["json_data"].pop('session_name', None) # removed to allow for proper comparison with both of them
-            data_json.pop('session_name', None) # removed to allow for proper comparison with both of them
-            result = DeepDiff(input_json_data["json_data"], data_json) # to compare curation data
+            # remove session_name field from input json and compare input json with existing curation json
+            input_json_data["json_data"].pop('session_name', None)
+            data_json.pop('session_name', None)
+            result = DeepDiff(input_json_data["json_data"], data_json)
             
             if not result:
                 return curation_data
