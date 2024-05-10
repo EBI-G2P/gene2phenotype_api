@@ -999,7 +999,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 data: The data to be validated.
             
             Validation extension step:
-                This step is called in L739 of the views.py
+                This step is called in AddCurationData of the views.py
                 The steps of the validation for the save is
                     -Locus is the minimum requirement needed to save a draft
                     -Draft does not already exist as a draft 

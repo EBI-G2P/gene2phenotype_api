@@ -761,7 +761,7 @@ class AddCurationData(BaseAdd):
             serializer.save()
             return Response({"message": "Data saved successfully"}, status=status.HTTP_200_OK)
         else:
-            return Response({"message": "Problem saving the data" + str(serializer.errors) , "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ListCurationEntries(BaseView):
