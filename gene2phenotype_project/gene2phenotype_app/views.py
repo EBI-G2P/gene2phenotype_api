@@ -731,7 +731,8 @@ class AddCurationData(BaseAdd):
         We do not need to check for authenticated users because of the user management issues.
     """
     serializer_class = CurationDataSerializer
-    
+    permission_classes = [permissions.IsAuthenticated]
+
     def post(self, request):
         """
             Handle POST requests.
@@ -773,7 +774,7 @@ class ListCurationEntries(BaseView):
             - number of entries
     """
     serializer_class = CurationDataSerializer
-    
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         """
@@ -815,7 +816,6 @@ class ListCurationEntries(BaseView):
             list_data.append(entry)
 
         return Response({'results':list_data, 'count':len(list_data)})
-
 
 
 class CurationDataDetail(BaseView):
@@ -865,7 +865,7 @@ class UpdateCurationData(generics.UpdateAPIView):
 
         g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
         # Get the entry if the user matches
-        queryset = CurationData.objects.filter(stable_id=g2p_stable_id, user=user)
+        queryset = CurationData.objects.filter(stable_id=g2p_stable_id, user__email=user)
 
         if not queryset.exists():
             self.handle_no_permission('Entry', stable_id)
@@ -875,7 +875,7 @@ class UpdateCurationData(generics.UpdateAPIView):
     def update(self, request, *args, **kwargs):
         curation_obj = self.get_queryset().first()
 
-        serializer = CurationDataSerializer(curation_obj, data=request.data)
+        serializer = CurationDataSerializer(curation_obj, data=request.data, context={'user': self.request.user})
 
         if serializer.is_valid():
             serializer.save()
