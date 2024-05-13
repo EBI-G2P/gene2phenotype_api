@@ -24,7 +24,7 @@ from gene2phenotype_app.models import (Panel, User, AttribType, Attrib,
                                        LocusAttrib, GeneDisease, G2PStableID,
                                        CurationData, Publication)
 
-from .utils import get_publication, get_authors
+from .utils import get_publication, get_authors, clean_omim_disease
 
 
 class BaseView(generics.ListAPIView):
@@ -191,6 +191,21 @@ class GeneFunction(BaseView):
 
         return Response(response_data)
 
+"""
+    Retrieves all diseases associated with a specific gene.
+
+    Args:
+            gene_name (str): gene symbol or the synonym symbol
+
+    Return:
+            Response object includes:
+                - results (list): contains disease data
+                                    - original_disease_name
+                                    - disease_name
+                                    - identifier
+                                    - source name
+                - count (int): number of diseases associated with the gene
+"""
 class GeneDiseaseView(BaseView):
     serializer_class = GeneDiseaseSerializer
 
@@ -214,6 +229,23 @@ class GeneDiseaseView(BaseView):
                 self.handle_no_permission('Gene-Disease association', name)
 
         return queryset
+
+    def get(self, request, name, *args, **kwargs):
+        queryset = self.get_queryset()
+        results = []
+        for gene_disease_obj in queryset:
+            # Return the original disease name and the clean version (without subtype)
+            # In the future, we will import diseases from other sources (Mondo, GenCC)
+            new_disease_name = clean_omim_disease(gene_disease_obj.disease)
+            results.append({
+                            'original_disease_name': gene_disease_obj.disease,
+                            'disease_name': new_disease_name,
+                            'identifier': gene_disease_obj.identifier,
+                            'source': gene_disease_obj.source.name
+                           })
+
+        return Response({'results': results, 'count': len(results)})
+
 
 class DiseaseDetail(BaseView):
     serializer_class = DiseaseDetailSerializer
@@ -357,12 +389,16 @@ class UserList(generics.ListAPIView):
 
 class AttribTypeList(generics.ListAPIView):
     queryset = AttribType.objects.all()
-    serializer_class = AttribTypeSerializer
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        code_list = [attrib.code for attrib in queryset]
-        return Response({'results':code_list, 'count':len(code_list)})
+        result = {}
+        for attrib_type in queryset:
+            serializer = AttribTypeSerializer(attrib_type)
+            all_attribs = serializer.get_all_attribs(attrib_type.id)
+            result[attrib_type.code] = all_attribs
+
+        return Response(result)
 
 class AttribList(generics.ListAPIView):
     lookup_field = 'type'
@@ -377,6 +413,38 @@ class AttribList(generics.ListAPIView):
         code_list = [attrib.value for attrib in queryset]
         return Response({'results':code_list, 'count':len(code_list)})
 
+"""
+    Retrives a list of all variant types.
+"""
+class VariantTypesList(generics.ListAPIView):
+    def get_queryset(self):
+        group = Attrib.objects.filter(value="variant_type", type__code="ontology_term_group")
+        return OntologyTerm.objects.filter(group_type=group.first().id)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        list_nmd = []
+        list_splice = []
+        list_regulatory = []
+        list_protein = []
+        list = []
+        for obj in queryset:
+            if "NMD" in obj.term:
+                list_nmd.append({"term": obj.term, "accession":obj.accession})
+            elif "splice_" in obj.term:
+                list_splice.append({"term": obj.term, "accession":obj.accession})
+            elif "regulatory" in obj.term or "UTR" in obj.term:
+                list_regulatory.append({"term": obj.term, "accession":obj.accession})
+            elif "missense" in obj.term or "frame" in obj.term or "start" in obj.term or "stop" in obj.term:
+                list_protein.append({"term": obj.term, "accession":obj.accession})
+            else:
+                list.append({"term": obj.term, "accession":obj.accession})
+        return Response({'NMD_variants': list_nmd,
+                         'splice_variants': list_splice,
+                         'regulatory_variants': list_regulatory,
+                         'protein_changing_variants': list_protein,
+                         'other_variants': list})
+
 class LocusGenotypeDiseaseDetail(BaseView):
     serializer_class = LocusGenotypeDiseaseSerializer
 
@@ -386,10 +454,16 @@ class LocusGenotypeDiseaseDetail(BaseView):
 
         g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
 
+        # Authenticated users (curators) can see all entries:
+        #   - in visible and non-visible panels
+        #   - entries flagged as not reviewed (is_reviewed=0)
+        #   - entries with 'refuted' and 'disputed' confidence category
         if user.is_authenticated:
             queryset = LocusGenotypeDisease.objects.filter(stable_id=g2p_stable_id, is_deleted=0)
         else:
             queryset = LocusGenotypeDisease.objects.filter(stable_id=g2p_stable_id, is_reviewed=1, is_deleted=0, lgdpanel__panel__is_visible=1).distinct()
+            # Remove entries with 'refuted' and 'disputed' confidence category
+            queryset = queryset.filter(~Q(confidence__value='refuted') & ~Q(confidence__value='disputed'))
 
         if not queryset.exists():
             self.handle_no_permission('Entry', stable_id)
@@ -403,9 +477,13 @@ class LocusGenotypeDiseaseDetail(BaseView):
 
 
 """
-    Search G2P entries by three types: gene, disease or phenotype
-    If no search type is specified then performs a generic search.
-    The search can be specific to one panel if using parameter 'panel'
+    Search G2P entries by different types:
+                                        - gene
+                                        - disease
+                                        - phenotype
+                                        - G2P ID
+    If no search type is specified then it performs a generic search.
+    The search can be specific to one panel if using parameter 'panel'.
 """
 class SearchView(BaseView):
     serializer_class = LocusGenotypeDiseaseSerializer
@@ -428,6 +506,7 @@ class SearchView(BaseView):
         base_disease_3 = Q(disease__diseaseontology__ontology_term__accession=search_query, is_deleted=0)
         base_phenotype = Q(lgdphenotype__phenotype__term__icontains=search_query, lgdphenotype__isnull=False, is_deleted=0)
         base_phenotype_2 = Q(lgdphenotype__phenotype__accession=search_query, lgdphenotype__isnull=False, is_deleted=0)
+        base_g2p_id = Q(stable_id__stable_id=search_query, is_deleted=0)
 
         queryset = LocusGenotypeDisease.objects.none()
 
@@ -442,7 +521,8 @@ class SearchView(BaseView):
                     base_disease_2 & Q(lgdpanel__panel__name=search_panel) |
                     base_disease_3 & Q(lgdpanel__panel__name=search_panel) |
                     base_phenotype & Q(lgdpanel__panel__name=search_panel) |
-                    base_phenotype_2 & Q(lgdpanel__panel__name=search_panel)
+                    base_phenotype_2 & Q(lgdpanel__panel__name=search_panel) |
+                    base_g2p_id & Q(lgdpanel__panel__name=search_panel)
                 ).order_by('locus__name', 'stable_id__stable_id').distinct()
             else:
                 queryset = LocusGenotypeDisease.objects.filter(
@@ -453,7 +533,8 @@ class SearchView(BaseView):
                     base_disease_2 |
                     base_disease_3 |
                     base_phenotype |
-                    base_phenotype_2
+                    base_phenotype_2 |
+                    base_g2p_id
                 ).order_by('locus__name', 'stable_id__stable_id').distinct()
 
             if not queryset.exists():
@@ -508,24 +589,41 @@ class SearchView(BaseView):
             if not queryset.exists():
                 self.handle_no_permission('Phenotype', search_query)
 
+        elif search_type == 'g2p_id':
+            if search_panel:
+                queryset = LocusGenotypeDisease.objects.filter(
+                    base_g2p_id & Q(lgdpanel__panel__name=search_panel)
+                ).order_by('locus__name', 'stable_id__stable_id').distinct()
+            else:
+                queryset = LocusGenotypeDisease.objects.filter(
+                    base_g2p_id
+                ).order_by('locus__name', 'stable_id__stable_id').distinct()
+
+            if not queryset.exists():
+                self.handle_no_permission('g2p_id', search_query)
+
         else:
             self.handle_no_permission('Search type is not valid', None)
 
+        new_queryset = []
         if queryset.exists():
             for lgd in queryset:
                 # If the user is not logged in, only show visible panels
                 if user.is_authenticated == False:
                     lgdpanel_select = LGDPanel.objects.filter(lgd=lgd, panel__is_visible=1, is_deleted=0)
-                    if lgdpanel_select.exists() == False:
-                        queryset = queryset.exclude(id=lgd.id)
                 else:
                     lgdpanel_select = LGDPanel.objects.filter(lgd=lgd, is_deleted=0)
+
                 lgd_panels = []
                 for lp in lgdpanel_select:
                     lgd_panels.append(lp.panel.name)
-                lgd.panels = lgd_panels
 
-        return queryset
+                # Add new property to LGD object
+                lgd.panels = lgd_panels
+                if lgd_panels:
+                    new_queryset.append(lgd)
+
+        return new_queryset
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()

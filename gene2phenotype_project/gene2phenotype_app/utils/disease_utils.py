@@ -56,6 +56,26 @@ def clean_string(name):
 
     return " ".join(disease_tokens)
 
+# Clean OMIM disease name
+# Removes the gene and subtype from the disease name
+# Example: "BLEPHAROCHEILODONTIC SYNDROME 1; BCDS1" -> "blepharocheilodontic syndrome"
+def clean_omim_disease(name):
+    disease_name = name.split(";")[0]
+    disease_name = re.sub(r',*\s*(TYPE)*,*\s+([0-9]+[A-Z]{0,2}|[IVX]{0,3})$', '', disease_name)
+
+    # Some disease names have the subtype in the middle
+    # Remove the integers but keep the word 'syndrome'
+    # Example: "ALPORT SYNDROME 2, AUTOSOMAL RECESSIVE; ATS2"
+    disease_name = re.sub(r'SYNDROME\s+[0-9]+,*', 'SYNDROME', disease_name)
+    # After: "alport syndrome autosomal recessive"
+
+    # If the integer is preceded by 'type' then remove both
+    # Example before: "TYPE 1 DIABETES MELLITUS; T1D"
+    disease_name = re.sub(r'TYPE\s+[0-9]+,*', '', disease_name)
+    # After: "diabetes mellitus"
+
+    return disease_name.lower().strip()
+
 def get_mondo(id):
     url = f"https://www.ebi.ac.uk/ols4/api/search?q={id}&ontology=mondo&exact=1"
 

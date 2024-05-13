@@ -328,13 +328,15 @@ class OntologyTerm(models.Model):
     term = models.CharField(max_length=255, null=False, unique=True)
     description = models.TextField(null=True)
     source = models.ForeignKey("Source", on_delete=models.PROTECT)
+    group_type = models.ForeignKey("Attrib", on_delete=models.PROTECT)
     history = HistoricalRecords()
 
     class Meta:
         db_table = "ontology_term"
         indexes = [
             models.Index(fields=['accession']),
-            models.Index(fields=['term'])
+            models.Index(fields=['term']),
+            models.Index(fields=['group_type'])
         ]
 
 class Disease(models.Model):
