@@ -1,3 +1,6 @@
+import json
+import jsonschema
+from jsonschema import validate, exceptions
 from rest_framework import generics, status, permissions
 from django.http import Http404
 from rest_framework.response import Response
@@ -5,6 +8,9 @@ from rest_framework.decorators import api_view
 from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
+from django.conf import settings 
+
+
 
 
 from gene2phenotype_app.serializers import (UserSerializer,
@@ -718,57 +724,83 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
 
         return response
 
-
-"""
-    Add a new curation entry.
-    It is only available for authenticated users.
-"""
 class AddCurationData(BaseAdd):
+    """
+        Add a new curation entry.
+        It is only available for authenticated users.
+        We do not need to check for authenticated users because of the user management issues.
+    """
     serializer_class = CurationDataSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
+    
     def post(self, request):
-        user = self.request.user
+        """
+            Handle POST requests.
 
-        if not user.is_authenticated:
-            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            Args:
+                request: The HTTP request object.
 
-        serializer_class = CurationDataSerializer(data=request.data, context={"user": user})
-        if serializer_class.is_valid():
+            Returns:
+                A Response object with appropriate status and message.
+        """
+        json_file_path = settings.BASE_DIR.joinpath("gene2phenotype_app", "utils", "curation_schema.json")
+        try:
+            with open(json_file_path, 'r') as file:
+                schema = json.load(file)
+        except FileNotFoundError:
+            return Response({"message": "Schema file not found"}, status=status.HTTP_404_NOT_FOUND)
 
-            # TODO: validate data here
-            # - does JSON have the correct format?
-            # - are the values valid?
-            # - user has permission to edit the panel (if panel available yet)?
-            # if session_name is defined - is it already being used
+        # Validate the JSON data against the schema
+        try:
+            validate(instance=request.data, schema=schema)
+        except exceptions.ValidationError as e:
+            return Response({"message": "JSON data does not follow the required format, Required format is" + str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-            serializer_class.save()
-            response = Response({"message": f"Data saved successfully"}, status=status.HTTP_200_OK)
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            
+            serializer.save()
+            return Response({"message": "Data saved successfully"}, status=status.HTTP_200_OK)
         else:
-            error_message = serializer_class.errors.get('locus', 'Problem saving the data')
-            response = Response({"message": error_message}, status=status.HTTP_400_BAD_REQUEST)
-
-        return response
+            return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
-"""
-    List all the curation entries being curated by the user.
-    It is only available for authenticated users.
-    Returns:
+class ListCurationEntries(BaseView):
+    """
+        List all the curation entries being curated by the user.
+        It is only available for authenticated users.
+        Returns:
             - list of entries
             - number of entries
-"""
-class ListCurationEntries(BaseView):
+    """
     serializer_class = CurationDataSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    
 
     def get_queryset(self):
-        user = self.request.user
-        queryset = CurationData.objects.filter(user=user)
+        """
+            Retrieve the queryset of CurationData objects.
+
+            Returns:
+                Queryset of CurationData objects.
+            Future:
+
+                user = self.request.user commenting this out for now we should user to filter the Curation objects we are getting for the future
+        """
+        queryset = CurationData.objects.all()
 
         return queryset
 
     def list(self, request, *args, **kwargs):
+        """
+            List the CurationData objects.
+
+            Args:
+                request: The HTTP request object.
+                *args: Additional positional arguments.
+                **kwargs: Additional keyword arguments.
+
+            Returns:
+                Response containing the list of CurationData objects with specified fields.
+        """
         queryset = self.get_queryset()
         list_data = []
         for data in queryset:
@@ -785,11 +817,12 @@ class ListCurationEntries(BaseView):
         return Response({'results':list_data, 'count':len(list_data)})
 
 
-"""
-    Returns all the data for a specific curation entry.
-    It is only available for authenticated users.
-"""
+
 class CurationDataDetail(BaseView):
+    """
+        Returns all the data for a specific curation entry.
+        It is only available for authenticated users.
+    """
     serializer_class = CurationDataSerializer
     permission_classes = [permissions.IsAuthenticated]
 

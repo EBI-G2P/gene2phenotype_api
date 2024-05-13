@@ -1,0 +1,231 @@
+{   
+    "type": "object",
+    "properties": {
+        "session_name": {
+            "description": "The session name of the curation process, given by the user or created by Stable ID",
+            "type": "string"
+        },
+        "locus": {
+            "description": "Gene name",
+            "type": "string"
+        },
+        "publications": {
+            "description": "Publication attached to this LGD",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "pmid": {
+                        "type": "number"
+                    },
+                    "families":{
+                        "type": "number"
+                    },
+                    "affectedIndividuals": {
+                        "type": "number"
+                    },
+                    "ancestries": {
+                        "type": "number"
+                    },
+                    "comment": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "phenotypes": {
+            "description" : "Phenotypes attached to this LGD using the publication",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "pmid": {
+                        "type": "number"
+                    },
+                    "summary": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "allelic_requirement": {
+            "description" : "Allelic requirement/genotype associated with this LGD",
+            "type": "string"
+        },
+        "cross_cutting_modifier": {
+            "description": "Inheritance modifiers",
+            "type": "array"
+        },
+        "variant_types": {
+            "description": "The variant types associated with this LGD",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "primary_type": {
+                        "type": "string"
+                    },
+                    "secondary_type": {
+                        "type": "string"
+                    },
+                    "nmd_escape": {
+                        "type": "string"
+                    },
+                    "denovo": {
+                        "type": "string"
+                    },
+                    "inherited": {
+                        "type": "string"
+                    },
+                    "unknown_inheritance": {
+                        "type": "string"
+                    },
+                    "supporting_papers": {
+                        "type": "array",
+                        "items": {
+                            "type": "number"
+                        }
+                    },
+                    "comment": {
+                        "type": "string" 
+                    }
+                }
+            }
+        },
+        "variant_description": {
+            "description": "Variant description",
+            "type" : "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "pmid": {
+                        "type": "number"
+                    }, 
+                    "description":{
+                        "type": "string"
+                    }
+                }
+            }
+        },
+
+        "variant_consequence": {
+            "description": "Variant consequence associated with this description",
+            "type": "array",
+            "items":{
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "support": {
+                        "type": "string"
+                   }
+                }
+            }
+        },
+
+        "molecular_mechanism": {
+            "description": "Molecular mechanism",
+            "type": "object",
+            "properties":{
+                "name": {
+                    "type": "string"
+                },
+                "support" :{
+                    "type": "string"
+                }
+            }
+        },
+        "mechanism_synopsis": {
+            "description": "Synopsis of the mechanism",
+            "type": "object",
+            "properties":{
+                "name":  {
+                    "type": "string"
+                },
+                "support": {
+                    "type": "string"
+                }
+            }
+        },
+        "mechanism_evidence": {
+            "description": "Evidence of the mechanism associated with this record",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "pmid": {
+                        "type": "number"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "evidence_types" : {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "primary_type": {
+                                    "type": "string"
+                                },
+                                "secondary_type": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        } 
+                    }
+                }
+            } 
+        },
+        "disease": {
+            "type": "object",
+            "properties": {
+                "disease_name": {
+                    "type": "string" 
+                },
+                "cross_references": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "original_disease_name": {
+                                "type": "string"
+                            },
+                            "disease_name": {
+                                "type": "string"
+                            },
+                            "identifier": {
+                                "type": "number"
+                            },
+                            "source": {
+                                "type": "string"
+                            }
+                        }
+                    } 
+
+                }
+            } 
+        },
+        "panel": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        }, 
+        "confidence": {
+            "type": "object",
+            "properties": {
+                "justification": {
+                    "type": "string"
+                },
+                "level": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+    
+}

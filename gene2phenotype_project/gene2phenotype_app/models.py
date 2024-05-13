@@ -446,6 +446,7 @@ class PublicationFamilies(models.Model):
     families = models.IntegerField(null=False)
     consanguinity = models.ForeignKey("Attrib", related_name='consanguinity_publication', on_delete=models.PROTECT, null=True)
     ethnicity = models.ForeignKey("Attrib", related_name='ethnicity_publication', on_delete=models.PROTECT, null=True)
+    ancestries = models.CharField(max_length=500, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 
@@ -454,6 +455,7 @@ class PublicationFamilies(models.Model):
         indexes = [
             models.Index(fields=["publication"])
         ]
+        unique_together = ["publication", "families", "consanguinity", "ethnicity"]
 
 class PublicationComment(models.Model):
     id = models.AutoField(primary_key=True)
