@@ -6,6 +6,7 @@ from rest_framework import serializers
 from django.db import connection, transaction
 from django.core.exceptions import ObjectDoesNotExist
 from datetime import datetime
+from django.utils import timezone
 from django.db.models import Q
 from django.utils.timezone import make_aware
 
@@ -1013,7 +1014,6 @@ class CurationDataSerializer(serializers.ModelSerializer):
         """
 
         data_copy = copy.deepcopy(data) # making a copy of this so any changes to this are only to this 
-        
         data_dict = self.convert_to_dict(data_copy)
 
         user_email = self.context.get('user')
@@ -1021,7 +1021,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         if data_dict["json_data"]["locus"] == "" or data_dict["json_data"]["locus"] is None:
             raise serializers.ValidationError({"message" : "To save a draft, the minimum requirement is a locus entry, Please save this draft with locus information"})
-        
+
         # Check if JSON is already in the table
         curation_entry = self.compare_curation_data(data_dict, user_obj.id)
    
@@ -1114,7 +1114,6 @@ class CurationDataSerializer(serializers.ModelSerializer):
         
         else:
             raise serializers.ValidationError({"message" : "To publish a curated entry, locus, allelic requirement and disease are neccessary"})
-                                    
 
     @transaction.atomic
     def create(self, validated_data):
@@ -1155,7 +1154,25 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         return new_curation_data
 
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        instance.json_data = validated_data['json_data']
+        instance.date_last_update = timezone.now()
+        instance.save()
+
+        return super().update(instance, validated_data)
+
+    def publish(data):
+        """
+            Publish a record under curation.
+            Args:
+                data: CurationData object to publish
+        """
+        print('Data to publish:', data)
+
+        # Check if we have the necessary data to publish the record
+        
+
     class Meta:
         model = CurationData
         fields = ["json_data"]
-

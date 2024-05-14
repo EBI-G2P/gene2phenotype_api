@@ -8,9 +8,8 @@ from rest_framework.decorators import api_view
 from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
-from django.conf import settings 
-
-
+from django.conf import settings
+from rest_framework.views import APIView
 
 
 from gene2phenotype_app.serializers import (UserSerializer,
@@ -724,6 +723,8 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
 
         return response
 
+
+### Curation data
 class AddCurationData(BaseAdd):
     """
         Add a new curation entry.
@@ -731,7 +732,8 @@ class AddCurationData(BaseAdd):
         We do not need to check for authenticated users because of the user management issues.
     """
     serializer_class = CurationDataSerializer
-    
+    permission_classes = [permissions.IsAuthenticated]
+
     def post(self, request):
         """
             Handle POST requests.
@@ -773,7 +775,7 @@ class ListCurationEntries(BaseView):
             - number of entries
     """
     serializer_class = CurationDataSerializer
-    
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         """
@@ -817,7 +819,6 @@ class ListCurationEntries(BaseView):
         return Response({'results':list_data, 'count':len(list_data)})
 
 
-
 class CurationDataDetail(BaseView):
     """
         Returns all the data for a specific curation entry.
@@ -850,3 +851,52 @@ class CurationDataDetail(BaseView):
                 'data': curation_data_obj.json_data,
             }
         return Response(response_data)
+
+"""
+    Updates the JSON data for the specific G2P ID
+"""
+class UpdateCurationData(generics.UpdateAPIView):
+    http_method_names = ['put', 'options']
+    serializer_class = CurationDataSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        stable_id = self.kwargs['stable_id']
+        user = self.request.user
+
+        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
+        # Get the entry for this user
+        queryset = CurationData.objects.filter(stable_id=g2p_stable_id, user__email=user)
+
+        if not queryset.exists():
+            self.handle_no_permission('Entry', stable_id)
+        else:
+            return queryset
+
+    def update(self, request, *args, **kwargs):
+        curation_obj = self.get_queryset().first()
+
+        serializer = CurationDataSerializer(curation_obj, data=request.data, context={'user': self.request.user})
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Data updated successfully"})
+
+        else:
+            return Response({"message": "failed", "details": serializer.errors})
+
+class PublishRecord(APIView):
+    http_method_names = ['post', 'head']
+    serializer_class = CurationDataSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, stable_id, *args, **kwargs):
+        user = self.request.user
+        # Get curation record
+        try:
+            curation_obj = CurationData.objects.get(stable_id__stable_id=stable_id,
+                                                    user__email=user)
+            self.serializer_class.publish(curation_obj)
+        except CurationData.DoesNotExist:
+            return Response({"message": f"Curation data not found for ID {stable_id}"},
+                             status=status.HTTP_404_NOT_FOUND)
