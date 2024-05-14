@@ -852,10 +852,12 @@ class CurationDataDetail(BaseView):
             }
         return Response(response_data)
 
-"""
-    Updates the JSON data for the specific G2P ID
-"""
+
 class UpdateCurationData(generics.UpdateAPIView):
+    """
+        Updates the JSON data for the specific G2P ID.
+    """
+
     http_method_names = ['put', 'options']
     serializer_class = CurationDataSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -875,6 +877,19 @@ class UpdateCurationData(generics.UpdateAPIView):
 
     def update(self, request, *args, **kwargs):
         curation_obj = self.get_queryset().first()
+
+        json_file_path = settings.BASE_DIR.joinpath("gene2phenotype_app", "utils", "curation_schema.json")
+        try:
+            with open(json_file_path, 'r') as file:
+                schema = json.load(file)
+        except FileNotFoundError:
+            return Response({"message": "Schema file not found"}, status=status.HTTP_404_NOT_FOUND)
+        # Validate the JSON data against the schema
+        try:
+            print(request.data)
+            validate(instance=request.data, schema=schema)
+        except exceptions.ValidationError as e:
+            return Response({"message": "JSON data does not follow the required format, Required format is" + str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = CurationDataSerializer(curation_obj, data=request.data, context={'user': self.request.user})
 
