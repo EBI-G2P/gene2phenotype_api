@@ -1154,6 +1154,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         return new_curation_data
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         instance.json_data = validated_data['json_data']
         instance.date_last_update = timezone.now()

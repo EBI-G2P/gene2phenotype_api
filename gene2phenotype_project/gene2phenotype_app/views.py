@@ -8,9 +8,8 @@ from rest_framework.decorators import api_view
 from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
-from django.conf import settings 
-
-
+from django.conf import settings
+from rest_framework.views import APIView
 
 
 from gene2phenotype_app.serializers import (UserSerializer,
@@ -854,7 +853,7 @@ class CurationDataDetail(BaseView):
         return Response(response_data)
 
 """
-    Updates the JSON data for the stable_id
+    Updates the JSON data for the specific G2P ID
 """
 class UpdateCurationData(generics.UpdateAPIView):
     http_method_names = ['put', 'options']
@@ -866,7 +865,7 @@ class UpdateCurationData(generics.UpdateAPIView):
         user = self.request.user
 
         g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
-        # Get the entry if the user matches
+        # Get the entry for this user
         queryset = CurationData.objects.filter(stable_id=g2p_stable_id, user__email=user)
 
         if not queryset.exists():
@@ -885,33 +884,3 @@ class UpdateCurationData(generics.UpdateAPIView):
 
         else:
             return Response({"message": "failed", "details": serializer.errors})
-
-
-### Publish data
-class PublishRecord(generics.ListAPIView):
-    serializer_class = CurationData
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        stable_id = self.kwargs['stable_id']
-        user = self.request.user
-
-        print("User:", user)
-
-        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
-
-        queryset = CurationData.objects.filter(stable_id=g2p_stable_id, user__email=user)
-
-        if not queryset.exists():
-            self.handle_no_permission('Curation entry', stable_id)
-        else:
-            return queryset
-
-    def post(self, request, id, *args, **kwargs):
-        queryset = self.get_queryset().first()
-
-        # try:
-        #     curation_data_instance = CurationData.objects.get(stable_id__stable_id=id)
-        #     print(curation_data_instance)
-        # except CurationData.DoesNotExist:
-        #     return Response({"message": f"G2P ID {id} not found under curation"}, status=status.HTTP_404_NOT_FOUND)
