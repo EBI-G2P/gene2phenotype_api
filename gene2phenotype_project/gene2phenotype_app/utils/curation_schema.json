@@ -18,6 +18,9 @@
                     "pmid": {
                         "type": "number"
                     },
+                    "source": {
+                        "type": "string"
+                    },
                     "families":{
                         "type": "number"
                     },
