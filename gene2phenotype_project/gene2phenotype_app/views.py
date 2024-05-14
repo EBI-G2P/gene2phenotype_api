@@ -883,4 +883,4 @@ class UpdateCurationData(generics.UpdateAPIView):
             return Response({"message": "Data updated successfully"})
 
         else:
-            return Response({"message": "failed", "details": serializer.errors})
+            return Response({"message": "Failed to update data", "details": serializer.errors})
