@@ -724,6 +724,8 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
 
         return response
 
+
+### Curation data
 class AddCurationData(BaseAdd):
     """
         Add a new curation entry.
@@ -883,3 +885,33 @@ class UpdateCurationData(generics.UpdateAPIView):
 
         else:
             return Response({"message": "failed", "details": serializer.errors})
+
+
+### Publish data
+class PublishRecord(generics.ListAPIView):
+    serializer_class = CurationData
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        stable_id = self.kwargs['stable_id']
+        user = self.request.user
+
+        print("User:", user)
+
+        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
+
+        queryset = CurationData.objects.filter(stable_id=g2p_stable_id, user__email=user)
+
+        if not queryset.exists():
+            self.handle_no_permission('Curation entry', stable_id)
+        else:
+            return queryset
+
+    def post(self, request, id, *args, **kwargs):
+        queryset = self.get_queryset().first()
+
+        # try:
+        #     curation_data_instance = CurationData.objects.get(stable_id__stable_id=id)
+        #     print(curation_data_instance)
+        # except CurationData.DoesNotExist:
+        #     return Response({"message": f"G2P ID {id} not found under curation"}, status=status.HTTP_404_NOT_FOUND)
