@@ -1173,7 +1173,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         instance.date_last_update = timezone.now()
         instance.save()
 
-        return super().update(instance, validated_data)
+        return instance
 
     class Meta:
         model = CurationData
