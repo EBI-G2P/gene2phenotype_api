@@ -886,7 +886,6 @@ class UpdateCurationData(generics.UpdateAPIView):
             return Response({"message": "Schema file not found"}, status=status.HTTP_404_NOT_FOUND)
         # Validate the JSON data against the schema
         try:
-            print(request.data)
             validate(instance=request.data, schema=schema)
         except exceptions.ValidationError as e:
             return Response({"message": "JSON data does not follow the required format, Required format is" + str(e)}, status=status.HTTP_400_BAD_REQUEST)
