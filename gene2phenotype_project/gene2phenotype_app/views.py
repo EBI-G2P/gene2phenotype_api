@@ -899,39 +899,6 @@ class UpdateCurationData(generics.UpdateAPIView):
         else:
             return Response({"message": "Failed to update data", "details": serializer.errors})
 
-"""
-    Updates the JSON data for the specific G2P ID
-"""
-class UpdateCurationData(generics.UpdateAPIView):
-    http_method_names = ['put', 'options']
-    serializer_class = CurationDataSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        stable_id = self.kwargs['stable_id']
-        user = self.request.user
-
-        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
-        # Get the entry for this user
-        queryset = CurationData.objects.filter(stable_id=g2p_stable_id, user__email=user)
-
-        if not queryset.exists():
-            self.handle_no_permission('Entry', stable_id)
-        else:
-            return queryset
-
-    def update(self, request, *args, **kwargs):
-        curation_obj = self.get_queryset().first()
-
-        serializer = CurationDataSerializer(curation_obj, data=request.data, context={'user': self.request.user})
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Data updated successfully"})
-
-        else:
-            return Response({"message": "failed", "details": serializer.errors})
-
 class PublishRecord(APIView):
     http_method_names = ['post', 'head']
     serializer_class = CurationDataSerializer
