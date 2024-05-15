@@ -810,6 +810,7 @@ class DiseaseDetailSerializer(DiseaseSerializer):
 class CreateDiseaseSerializer(serializers.ModelSerializer):
     ontology_terms = DiseaseOntologySerializer(many=True, required=False)
     publications = DiseasePublicationSerializer(many=True, required=False)
+    # Add synonyms
 
     @transaction.atomic
     def create(self, validated_data):
@@ -1046,7 +1047,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             Second step to validate the JSON data.
             This validation is done before a record is published.
             There are mandatory fields to publish a record:
-                - locus (validate in the first validation step)
+                - locus (validated in the first validation step)
                 - disease
                 - genotype/allelic requirement
                 - mutations consequence
@@ -1059,7 +1060,6 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         json_data = data.json_data
         missing_data = []
-        print("Validate json data:", json_data)
 
         if len(json_data["disease"]) == 0:
             missing_data.append("disease")
@@ -1067,13 +1067,27 @@ class CurationDataSerializer(serializers.ModelSerializer):
         if len(json_data["confidence"]) == 0:
             missing_data.append("confidence")
         
+        if len(json_data["publications"]) == 0:
+            missing_data.append("publication")
+        
         if not json_data["panels"]:
             missing_data.append("panel")
+        
+        if json_data["allelic_requirement"] == "":
+            missing_data.append("allelic_requirement")
 
         if missing_data:
             raise serializers.ValidationError({"message" : f"The following mandatory fields are missing: {missing_data}"})
 
-        return data
+        # Check if data is stored in G2P
+        # Locus - we only accept locus already stored in G2P
+        try:
+            locus_obj = Locus.objects.get(name=json_data["locus"])
+        except Locus.DoesNotExist:
+            raise serializers.ValidationError({"message" : f"Invalid locus {json_data["locus"]}"})
+
+        return locus_obj
+
 
     def convert_to_dict(self, data):
         """
@@ -1192,23 +1206,6 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        instance.json_data = validated_data['json_data']
-        instance.date_last_update = timezone.now()
-        instance.save()
-
-        return super().update(instance, validated_data)
-
-    def publish(data):
-        """
-            Publish a record under curation.
-            Args:
-                data: CurationData object to publish
-        """
-        print('Data to publish:', data)
-
-
-    @transaction.atomic
-    def update(self, instance, validated_data):
         """
             Update an entry in the curation table.
             It replaces the json data object with the latest data and updates the 'date_last_update'. 
@@ -1225,6 +1222,38 @@ class CurationDataSerializer(serializers.ModelSerializer):
         instance.save()
 
         return super().update(instance, validated_data)
+
+    @transaction.atomic
+    def publish(data, locus):
+        """
+            Publish a record under curation.
+            Args:
+                data: CurationData object to publish
+        """
+        print('Data to publish:', data.json_data)
+
+        # Disease
+        # Use CreateDiseaseSerializer to get or create disease
+        if "cross_references" in data.json_data["disease"]:
+            """ cross_references element example:
+                    {
+                        "source": "OMIM",
+                        "identifier": "114480",
+                        "disease_name": "breast cancer",
+                        "original_disease_name": "BREAST CANCER"
+                    }
+            """
+
+        disease = { "name": data.json_data["disease"]["disease_name"],
+                    "mim": None, # we need to get the OMIM ID
+                    "ontology_terms": [], # we need to get the MONDO ID
+                    "publications": []  }
+
+        disease_obj = CreateDiseaseSerializer().create(disease) 
+
+        # Update stable_id.is_live to 1
+        # Update curation_data - delete entry
+
 
     class Meta:
         model = CurationData

@@ -946,10 +946,10 @@ class PublishRecord(APIView):
             curation_obj = CurationData.objects.get(stable_id__stable_id=stable_id,
                                                     user__email=user)
             # Check if there is enough data to publish the record
-            validated_data = self.serializer_class().validate_to_publish(curation_obj)
+            locus_obj = self.serializer_class().validate_to_publish(curation_obj)
 
             # Publish record
-            self.serializer_class.publish(curation_obj)
+            self.serializer_class.publish(curation_obj, locus_obj)
 
         except CurationData.DoesNotExist:
             return Response({"message": f"Curation data not found for ID {stable_id}"},
