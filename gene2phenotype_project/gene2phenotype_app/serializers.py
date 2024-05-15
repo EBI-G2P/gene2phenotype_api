@@ -1038,6 +1038,40 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         return data
 
+    def validate_to_publish(self, data):
+        """
+            Second step to validate the JSON data.
+            This validation is done before a record is published.
+            There are mandatory fields to publish a record:
+                - locus (validate in the first validation step)
+                - disease
+                - genotype/allelic requirement
+                - mutations consequence
+                - panel(s)
+                - confidence
+                - publication(s)
+            
+            data (CurationData obj): data to be validated
+        """
+
+        json_data = data.json_data
+        missing_data = []
+        print("Validate json data:", json_data)
+
+        if len(json_data["disease"]) == 0:
+            missing_data.append("disease")
+        
+        if len(json_data["confidence"]) == 0:
+            missing_data.append("confidence")
+        
+        if not json_data["panels"]:
+            missing_data.append("panel")
+
+        if missing_data:
+            raise serializers.ValidationError({"message" : f"The following mandatory fields are missing: {missing_data}"})
+
+        return data
+
     def convert_to_dict(self, data):
         """
             Convert data to a regular dictionary if it is an OrderedDict.
@@ -1170,8 +1204,6 @@ class CurationDataSerializer(serializers.ModelSerializer):
         """
         print('Data to publish:', data)
 
-        # Check if we have the necessary data to publish the record
-        
 
     class Meta:
         model = CurationData

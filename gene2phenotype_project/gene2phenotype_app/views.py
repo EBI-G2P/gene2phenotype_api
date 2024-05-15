@@ -892,11 +892,17 @@ class PublishRecord(APIView):
 
     def post(self, request, stable_id, *args, **kwargs):
         user = self.request.user
-        # Get curation record
+
         try:
+            # Get curation record
             curation_obj = CurationData.objects.get(stable_id__stable_id=stable_id,
                                                     user__email=user)
+            # Check if there is enough data to publish the record
+            validated_data = self.serializer_class().validate_to_publish(curation_obj)
+
+            # Publish record
             self.serializer_class.publish(curation_obj)
+
         except CurationData.DoesNotExist:
             return Response({"message": f"Curation data not found for ID {stable_id}"},
                              status=status.HTTP_404_NOT_FOUND)
