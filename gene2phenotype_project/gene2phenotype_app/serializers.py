@@ -234,6 +234,10 @@ class UserSerializer(serializers.ModelSerializer):
         return name
 
     def get_panels(self, id):
+        """
+            Get a list of panels the user has permission to edit.
+            Output example: ["Developmental disorders", "Ear disorders"]
+        """
         user_login = self.context.get('user')
         user_panels = UserPanel.objects.filter(user=id)
         panels_list = []
@@ -241,8 +245,8 @@ class UserSerializer(serializers.ModelSerializer):
         for user_panel in user_panels:
             # Authenticated users can view all panels
             if (user_login and user_login.is_authenticated) or user_panel.panel.is_visible == 1:
-                panels_list.append(user_panel.panel.name)
-
+                panels_list.append(user_panel.panel.description)
+        
         return panels_list
 
     class Meta:
@@ -1029,9 +1033,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"message": f"Data already under curation. Please check session '{curation_entry.session_name}'"})
         if len(data_dict["json_data"]["panels"]) >= 1:
             panels = UserSerializer.get_panels(self,user_obj.id)
-            panels = ['Developmental disorders' if panel == "DD" else panel for panel in panels] # turning DD to developmental disorders
             # Check if any panel in data_dict["json_data"]["panels"] is not in the updated panels list
-            unauthorized_panels = [panel for panel in data_dict["json_data"]["panels"] if panel.replace(' disorders', '') not in panels]
+            unauthorized_panels = [panel for panel in data_dict["json_data"]["panels"] if panel not in panels]
             if unauthorized_panels:
                 unauthorized_panels_str = "', '".join(unauthorized_panels)
                 raise serializers.ValidationError({"message" : f"You do not have permission to curate on these panels: '{unauthorized_panels_str}'"})
@@ -1160,7 +1163,6 @@ class CurationDataSerializer(serializers.ModelSerializer):
             Returns:
                 CurationData: The newly created CurationData instance.
             Future:
-                - update endpoint: updates the JSON data in existing session being curated
                 - publish endpoint: add the data to the G2P tables. entry will be live
         """
         json_data = validated_data.get("json_data")
@@ -1204,6 +1206,25 @@ class CurationDataSerializer(serializers.ModelSerializer):
         """
         print('Data to publish:', data)
 
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        """
+            Update an entry in the curation table.
+            It replaces the json data object with the latest data and updates the 'date_last_update'. 
+
+            Parameters:
+                instance
+                validated_data (dict): Validated data containing the updated JSON data to be stored.
+
+            Returns:
+                CurationData: The updated CurationData instance.
+        """
+        instance.json_data = validated_data.get('json_data')
+        instance.date_last_update = timezone.now()
+        instance.save()
+
+        return super().update(instance, validated_data)
 
     class Meta:
         model = CurationData

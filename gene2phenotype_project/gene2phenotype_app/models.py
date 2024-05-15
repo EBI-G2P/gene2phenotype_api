@@ -39,6 +39,7 @@ class CurationData(models.Model):
     date_last_update = models.DateTimeField(null=False)
     session_name = models.CharField(max_length=100, null=False, unique=True)
     json_data = models.JSONField(null=False)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "curation_data"

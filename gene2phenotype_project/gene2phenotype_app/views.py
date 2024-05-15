@@ -852,6 +852,54 @@ class CurationDataDetail(BaseView):
             }
         return Response(response_data)
 
+
+class UpdateCurationData(generics.UpdateAPIView):
+    """
+        Updates the JSON data for the specific G2P ID.
+    """
+
+    http_method_names = ['put', 'options']
+    serializer_class = CurationDataSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        stable_id = self.kwargs['stable_id']
+        user = self.request.user
+
+        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
+        # Get the entry for this user
+        queryset = CurationData.objects.filter(stable_id=g2p_stable_id, user__email=user)
+
+        if not queryset.exists():
+            self.handle_no_permission('Entry', stable_id)
+        else:
+            return queryset
+
+    def update(self, request, *args, **kwargs):
+        curation_obj = self.get_queryset().first()
+
+        json_file_path = settings.BASE_DIR.joinpath("gene2phenotype_app", "utils", "curation_schema.json")
+        try:
+            with open(json_file_path, 'r') as file:
+                schema = json.load(file)
+        except FileNotFoundError:
+            return Response({"message": "Schema file not found"}, status=status.HTTP_404_NOT_FOUND)
+        # Validate the JSON data against the schema
+        try:
+            print(request.data)
+            validate(instance=request.data, schema=schema)
+        except exceptions.ValidationError as e:
+            return Response({"message": "JSON data does not follow the required format, Required format is" + str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = CurationDataSerializer(curation_obj, data=request.data, context={'user': self.request.user})
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Data updated successfully"})
+
+        else:
+            return Response({"message": "Failed to update data", "details": serializer.errors})
+
 """
     Updates the JSON data for the specific G2P ID
 """

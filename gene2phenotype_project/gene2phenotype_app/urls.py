@@ -32,7 +32,7 @@ urlpatterns = [
     ### Curation endpoints ###
     path('gene2phenotype/api/add/curation/', views.AddCurationData.as_view(), name="add_curation_data"),
     path('gene2phenotype/api/curations/', views.ListCurationEntries.as_view(), name="list_curation_entries"),
-    path('gene2phenotype/api/curation/<str:stable_id>', views.CurationDataDetail.as_view(), name="curation_details"),
+    path('gene2phenotype/api/curation/<str:stable_id>/', views.CurationDataDetail.as_view(), name="curation_details"),
     path('gene2phenotype/api/curation/<str:stable_id>/update/', views.UpdateCurationData.as_view(), name="update_curation"),
 
     ### Publish data
