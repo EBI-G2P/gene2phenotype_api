@@ -27,12 +27,13 @@ urlpatterns = [
     path('gene2phenotype/api/add/disease/', views.AddDisease.as_view(), name="add_disease"),
     path('gene2phenotype/api/add/phenotype/', views.AddPhenotype.as_view(), name="add_phenotype"),
     path('gene2phenotype/api/add/publication/', views.AddPublication.as_view(), name="add_publication"),
-    path('gene2phenotype/api/lgd/<str:stable_id>/add_panel', views.LocusGenotypeDiseaseAddPanel.as_view(), name="lgd_add_panel"),
+    path('gene2phenotype/api/lgd/<str:stable_id>/add_panel/', views.LocusGenotypeDiseaseAddPanel.as_view(), name="lgd_add_panel"),
 
     ### Curation endpoints ###
     path('gene2phenotype/api/add/curation/', views.AddCurationData.as_view(), name="add_curation_data"),
     path('gene2phenotype/api/curations/', views.ListCurationEntries.as_view(), name="list_curation_entries"),
-    path('gene2phenotype/api/curation/<str:stable_id>', views.CurationDataDetail.as_view(), name="curation_details"),
+    path('gene2phenotype/api/curation/<str:stable_id>/', views.CurationDataDetail.as_view(), name="curation_details"),
+    path('gene2phenotype/api/curation/<str:stable_id>/update/', views.UpdateCurationData.as_view(), name="update_curation"),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)

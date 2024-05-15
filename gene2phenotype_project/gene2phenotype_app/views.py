@@ -8,9 +8,8 @@ from rest_framework.decorators import api_view
 from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
-from django.conf import settings 
-
-
+from django.conf import settings
+from rest_framework.views import APIView
 
 
 from gene2phenotype_app.serializers import (UserSerializer,
@@ -724,6 +723,8 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
 
         return response
 
+
+### Curation data
 class AddCurationData(BaseAdd):
     """
         Add a new curation entry.
@@ -731,7 +732,8 @@ class AddCurationData(BaseAdd):
         We do not need to check for authenticated users because of the user management issues.
     """
     serializer_class = CurationDataSerializer
-    
+    permission_classes = [permissions.IsAuthenticated]
+
     def post(self, request):
         """
             Handle POST requests.
@@ -773,7 +775,7 @@ class ListCurationEntries(BaseView):
             - number of entries
     """
     serializer_class = CurationDataSerializer
-    
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         """
@@ -817,7 +819,6 @@ class ListCurationEntries(BaseView):
         return Response({'results':list_data, 'count':len(list_data)})
 
 
-
 class CurationDataDetail(BaseView):
     """
         Returns all the data for a specific curation entry.
@@ -850,3 +851,50 @@ class CurationDataDetail(BaseView):
                 'data': curation_data_obj.json_data,
             }
         return Response(response_data)
+
+
+class UpdateCurationData(generics.UpdateAPIView):
+    """
+        Updates the JSON data for the specific G2P ID.
+    """
+
+    http_method_names = ['put', 'options']
+    serializer_class = CurationDataSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        stable_id = self.kwargs['stable_id']
+        user = self.request.user
+
+        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
+        # Get the entry for this user
+        queryset = CurationData.objects.filter(stable_id=g2p_stable_id, user__email=user)
+
+        if not queryset.exists():
+            self.handle_no_permission('Entry', stable_id)
+        else:
+            return queryset
+
+    def update(self, request, *args, **kwargs):
+        curation_obj = self.get_queryset().first()
+
+        json_file_path = settings.BASE_DIR.joinpath("gene2phenotype_app", "utils", "curation_schema.json")
+        try:
+            with open(json_file_path, 'r') as file:
+                schema = json.load(file)
+        except FileNotFoundError:
+            return Response({"message": "Schema file not found"}, status=status.HTTP_404_NOT_FOUND)
+        # Validate the JSON data against the schema
+        try:
+            validate(instance=request.data, schema=schema)
+        except exceptions.ValidationError as e:
+            return Response({"message": "JSON data does not follow the required format, Required format is" + str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = CurationDataSerializer(curation_obj, data=request.data, context={'user': self.request.user})
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Data updated successfully"})
+
+        else:
+            return Response({"message": "Failed to update data", "details": serializer.errors})
