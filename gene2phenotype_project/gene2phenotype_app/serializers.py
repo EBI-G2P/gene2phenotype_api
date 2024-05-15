@@ -8,7 +8,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from datetime import datetime
 from django.utils import timezone
 from django.db.models import Q
-from django.utils.timezone import make_aware
+import pytz
 
 from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      LGDPanel, LocusGenotypeDisease, LGDVariantGenccConsequence,
@@ -1218,10 +1218,10 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 CurationData: The updated CurationData instance.
         """
         instance.json_data = validated_data.get('json_data')
-        instance.date_last_update = timezone.now()
+        instance.date_last_update = timezone.now().astimezone(pytz.timezone("Europe/London"))
         instance.save()
 
-        return super().update(instance, validated_data)
+        return instance
 
     @transaction.atomic
     def publish(data, locus):
