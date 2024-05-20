@@ -20,7 +20,8 @@ from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      OntologyTerm, Source, Publication, GeneDisease,
                      Sequence, UniprotAnnotation, CurationData, PublicationFamilies)
 
-from .utils import clean_string, get_mondo, get_publication, get_authors, validate_gene, validate_phenotype
+from .utils import (clean_string, get_mondo, get_publication, get_authors, validate_gene,
+                    validate_phenotype, get_ontology_source)
 import re
 
 class G2PStableIDSerializer(serializers.ModelSerializer):
@@ -698,14 +699,14 @@ class DiseaseOntologySerializer(serializers.ModelSerializer):
     accession = serializers.CharField(source="ontology_term.accession")
     term = serializers.CharField(source="ontology_term.term")
     description = serializers.CharField(source="ontology_term.description", allow_null=True)
+    source = serializers.CharField(source="ontology_term.source.name")
 
     class Meta:
         model = DiseaseOntology
-        fields = ['accession', 'term', 'description']
+        fields = ['accession', 'term', 'description', 'source']
 
 class DiseaseSerializer(serializers.ModelSerializer):
     name = serializers.CharField()
-    mim = serializers.CharField()
     ontology_terms = serializers.SerializerMethodField()
     publications = serializers.SerializerMethodField()
     synonyms = serializers.SerializerMethodField()
@@ -727,7 +728,7 @@ class DiseaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Disease
-        fields = ['name', 'mim', 'ontology_terms', 'publications', 'synonyms']
+        fields = ['name', 'ontology_terms', 'publications', 'synonyms']
 
 class DiseaseDetailSerializer(DiseaseSerializer):
     last_updated = serializers.SerializerMethodField()
@@ -814,7 +815,6 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         disease_name = validated_data.get('name')
-        mim = validated_data.get('mim')
         ontologies_list = validated_data.get('ontology_terms')
         publications_list = validated_data.get('publications')
 
@@ -839,11 +839,11 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
             # TODO: give disease suggestions
 
             disease_obj = Disease.objects.create(
-                name = disease_name,
-                mim = mim
+                name = disease_name
             )
 
             # Check if ontology is in db
+            # The disease ontology is saved in the db as attrib type 'disease'
             for ontology in ontologies_list:
                 ontology_accession = ontology['ontology_term']['accession']
                 ontology_term = ontology['ontology_term']['term']
@@ -853,24 +853,33 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
                     try:
                         ontology_obj = OntologyTerm.objects.get(accession=ontology_accession)
                     except OntologyTerm.DoesNotExist:
-                        # Check if ontology accession is valid
-                        mondo_disease = get_mondo(ontology_accession)
-                        if mondo_disease is None:
-                            raise serializers.ValidationError({"message": f"invalid mondo id",
-                                                            "please check id": ontology_accession})
+                        # Check if ontology is from OMIM or Mondo
+                        source = get_ontology_source(ontology_accession)
 
-                        source = Source.objects.get(name="Mondo")
+                        if source == "Mondo":
+                            # Check if ontology accession is valid
+                            mondo_disease = get_mondo(ontology_accession)
+                            if mondo_disease is None:
+                                raise serializers.ValidationError({"message": "invalid mondo id",
+                                                                   "please check id": ontology_accession})
 
-                        # Insert ontology
-                        ontology_accession = re.sub(r'\_', ':', ontology_accession)
-                        ontology_term = re.sub(r'\_', ':', ontology_term)
-                        if ontology_desc is None and len(mondo_disease['description']) > 0:
-                            ontology_desc = mondo_disease['description'][0]
+                            # Replace '_' from mondo ID
+                            ontology_accession = re.sub(r'\_', ':', ontology_accession)
+                            ontology_term = re.sub(r'\_', ':', ontology_term)
+                            # Insert ontology
+                            if ontology_desc is None and len(mondo_disease['description']) > 0:
+                                ontology_desc = mondo_disease['description'][0]
+
+                        source = Source.objects.get(name=source)
+                        # Get attrib 'disease'
+                        attrib_disease = Attrib.objects.get(value="disease")
+
                         ontology_obj = OntologyTerm.objects.create(
                             accession = ontology_accession,
                             term = ontology_term,
                             description = ontology_desc,
-                            source = source
+                            source = source,
+                            group_type = attrib_disease
                         )
 
                     # Insert disease ontology
@@ -878,7 +887,7 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
                     disease_ontology_obj = DiseaseOntology.objects.create(
                         disease = disease_obj,
                         ontology_term = ontology_obj,
-                        mapped_by_attrib = attrib
+                        mapped_by_attrib = attrib,
                     )
 
             # Insert disease publication info
@@ -937,7 +946,7 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Disease
-        fields = ['name', 'mim', 'ontology_terms', 'publications']
+        fields = ['name', 'ontology_terms', 'publications']
 
 class PhenotypeSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="term", read_only=True)

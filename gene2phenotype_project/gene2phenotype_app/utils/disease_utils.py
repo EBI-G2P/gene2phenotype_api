@@ -93,3 +93,17 @@ def get_mondo(id):
         name = None
 
     return name
+
+"""
+    Input: disease ID
+    Output: source of the disease ID (Mondo or OMIM)
+"""
+def get_ontology_source(id):
+    source = None
+
+    if id.startswith("MONDO"):
+        source = "Mondo"
+    elif id.isdigit():
+        source = 'OMIM'
+
+    return source

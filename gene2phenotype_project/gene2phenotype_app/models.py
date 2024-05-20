@@ -72,7 +72,8 @@ class LocusGenotypeDisease(models.Model):
         indexes = [
             models.Index(fields=['locus']),
             models.Index(fields=['disease']),
-            models.Index(fields=['confidence'])
+            models.Index(fields=['confidence']),
+            models.Index(fields=['is_deleted'])
         ]
 
 class LGDCrossCuttingModifier(models.Model):
@@ -323,6 +324,12 @@ class AttribType(models.Model):
         db_table = "attrib_type"
 
 class OntologyTerm(models.Model):
+    """
+        Ontology term can be of different types:
+            - disease (Mondo, OMIM)
+            - phenotype (HPO)
+            - variant type (SO)
+    """
     id = models.AutoField(primary_key=True)
     accession = models.CharField(max_length=255, null=False, unique=True)
     term = models.CharField(max_length=255, null=False, unique=True)
@@ -342,7 +349,6 @@ class OntologyTerm(models.Model):
 class Disease(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255, unique=True, null=False)
-    mim = models.IntegerField(null=True)
     history = HistoricalRecords()
 
     class Meta:
@@ -361,6 +367,9 @@ class DiseaseSynonym(models.Model):
     class Meta:
         db_table = "disease_synonym"
         unique_together = ['disease', 'synonym']
+        indexes = [
+            models.Index(fields=['synonym'])
+        ]
 
 class DiseasePublication(models.Model):
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
