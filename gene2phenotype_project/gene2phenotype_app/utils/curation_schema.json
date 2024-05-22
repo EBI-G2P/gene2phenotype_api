@@ -30,6 +30,9 @@
                     "ancestries": {
                         "type": "number"
                     },
+                    "consanguineous": {
+                        "type": "string"
+                    },
                     "comment": {
                         "type": "string"
                     }

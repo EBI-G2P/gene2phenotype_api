@@ -621,31 +621,117 @@ class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
         model = LGDCrossCuttingModifier
         fields = ['term']
 
+
+class PublicationCommentSerializer(serializers.ModelSerializer):
+    comment = serializers.CharField()
+    user = serializers.CharField(source="user.username", read_only=True)
+    date = serializers.DateTimeField(read_only=True)
+    is_public = serializers.CharField()
+
+    @transaction.atomic
+    def create(self, validated_data, publication):
+        comment_text = validated_data.get("comment")
+        is_public = validated_data.get("is_public")
+        user_obj = User.objects.get(id=31) # TODO: get user id
+
+        # Check if comment is already stored. We consider same comment if they have the same:
+        #   publication, comment text, user and it's not deleted TODO
+        # Filter can return multiple values - this can happen if we have duplicated entries
+        publication_comment_list = PublicationComment.objects.filter(comment = comment_text,
+                                                                     user = user_obj,
+                                                                     is_deleted = 0)
+
+        publication_comment_obj = publication_comment_list.first()
+
+        # Comment was not found in table - insert new comment
+        if len(publication_comment_list) == 0:
+            publication_comment_obj = PublicationComment.objects.create(comment = comment_text,
+                                                                        is_public = is_public,
+                                                                        is_deleted = 0,
+                                                                        date = datetime.now(),
+                                                                        publication = publication,
+                                                                        user = user_obj)
+
+        return publication_comment_obj
+
+    class Meta:
+        model = PublicationComment
+        fields = ['comment', 'user', 'date', 'is_public']
+
+class PublicationFamiliesSerializer(serializers.ModelSerializer):
+    families = serializers.IntegerField()
+    consanguinity = serializers.CharField(source="consanguinity.value")
+    ethnicity = serializers.CharField(source="ethnicity.value")
+    ancestries = serializers.CharField()
+
+    @transaction.atomic
+    def create(self, validated_data, publication):
+        families = validated_data.get("families")
+        consanguinity = validated_data.get("consanguineous")
+        ancestries = validated_data.get("ancestries")
+        affected_individuals = validated_data.get("affected_individuals")
+        user_obj = User.objects.get(id=31) # TODO: get user id
+
+        # Check if data is already stored
+        publication_families_list = PublicationFamilies.objects.filter(publication = publication,
+                                                                      families = families,
+                                                                      consanguinity = consanguinity, # TODO
+                                                                      ancestries = ancestries, # TODO
+                                                                      affected_individuals = affected_individuals)
+
+        publication_families_obj = publication_families_list.first()
+
+        # Comment was not found in table - insert new comment
+        if len(publication_families_list) == 0:
+            publication_families_obj = PublicationFamilies.objects.create(publication = publication,
+                                                                          families = families,
+                                                                          consanguinity = consanguinity, # TODO
+                                                                          ancestries = ancestries, # TODO
+                                                                          affected_individuals = affected_individuals)
+
+        return publication_families_obj
+
+    class Meta:
+        model = PublicationFamilies
+        fields = ['families', 'consanguinity', 'affected_individuals', 'ancestries']
+
 class PublicationSerializer(serializers.ModelSerializer):
     pmid = serializers.CharField()
     title = serializers.CharField(read_only=True)
     authors = serializers.CharField(read_only=True)
     year = serializers.CharField(read_only=True)
-    comments = serializers.SerializerMethodField()
+    comments = PublicationCommentSerializer(many=True, required=False)
+    number_of_families = PublicationFamiliesSerializer(many=True, required=False)
 
-    def get_comments(self, id):
-        data = []
-        comments = PublicationComment.objects.filter(publication=id)
-        for comment in comments:
-            text = { 'text':comment.comment,
-                     'date':comment.date }
-            data.append(text)
-
-        return data
-
+    @transaction.atomic
     def create(self, validated_data):
+        """
+            Create a publication
+            Fields:
+                    - PMID (mandatory)
+                    - comments
+                    - number of families
+        """
+
         pmid = validated_data.get('pmid')
+        comments = validated_data.get('comments')
+        number_of_families = validated_data.get('number_of_families')
 
         try:
             publication_obj = Publication.objects.get(pmid=pmid)
-            raise serializers.ValidationError({"message": f"publication already exists",
-                                                "please check publication":
-                                                f"PMID: {pmid}, Title: {publication_obj.title}"})
+
+            # Add new comments and/or number of families
+            if comments:
+                for comment in comments:
+                    PublicationCommentSerializer().create(comment, publication_obj)
+
+            # if number_of_families:
+
+
+            return publication_obj
+            # raise serializers.ValidationError({"message": f"publication already exists",
+            #                                     "please check publication":
+            #                                     f"PMID: {pmid}, Title: {publication_obj.title}"})
         except Publication.DoesNotExist:
             response = get_publication(pmid)
 
@@ -674,7 +760,8 @@ class PublicationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Publication
-        fields = ['pmid', 'title', 'authors', 'year', 'comments']
+        fields = ['pmid', 'title', 'authors', 'year', 'comments', 'number_of_families']
+
 
 class LGDPublicationSerializer(serializers.ModelSerializer):
     publication = PublicationSerializer()
@@ -1232,24 +1319,40 @@ class CurationDataSerializer(serializers.ModelSerializer):
         """
         print('Data to publish:', data.json_data)
 
-        # Disease
-        # Use CreateDiseaseSerializer to get or create disease
-        if "cross_references" in data.json_data["disease"]:
-            """ cross_references element example:
-                    {
-                        "source": "OMIM",
-                        "identifier": "114480",
-                        "disease_name": "breast cancer",
-                        "original_disease_name": "BREAST CANCER"
-                    }
-            """
+        ### Publications ###
+        for publication in data.json_data["publications"]:
+            # get source
+            publication_data = get_publication(publication["pmid"])
 
-        disease = { "name": data.json_data["disease"]["disease_name"],
-                    "mim": None, # we need to get the OMIM ID
-                    "ontology_terms": [], # we need to get the MONDO ID
-                    "publications": []  }
+        ####################
 
-        disease_obj = CreateDiseaseSerializer().create(disease) 
+        ### Disease ###
+        # # The disease IDs (ontology terms) are saved under cross_references
+        # """ cross_references element example:
+        #         {
+        #             "source": "OMIM",
+        #             "identifier": "114480",
+        #             "disease_name": "breast cancer",
+        #             "original_disease_name": "BREAST CANCER"
+        #         }
+        # """
+        # cross_references = []
+        # if "cross_references" in data.json_data["disease"]:
+        #     for cr in data.json_data["disease"]["cross_references"]:
+        #         ontology_term = { "accession": cr["identifier"],
+        #                           "term": cr["identifier"],
+        #                           "description": cr["original_disease_name"]
+        #                         }
+        #         cross_references.append(ontology_term)
+
+        # # Use CreateDiseaseSerializer to get or create disease
+        # disease = { "name": data.json_data["disease"]["disease_name"],
+        #             "ontology_terms": cross_references, # if we have more ids the serializer should add them
+        #             "publications": []
+        #           }
+
+        # disease_obj = CreateDiseaseSerializer().create(disease)
+        ###############
 
         # Update stable_id.is_live to 1
         # Update curation_data - delete entry
