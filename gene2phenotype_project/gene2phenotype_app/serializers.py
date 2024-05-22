@@ -866,6 +866,8 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
                             if mondo_disease is None:
                                 raise serializers.ValidationError({"message": "invalid mondo id",
                                                                    "please check id": ontology_accession})
+                            elif mondo_disease == "query failed":
+                                raise serializers.ValidationError({"message": f"cannot query mondo id {ontology_accession}"})
 
                             # Replace '_' from mondo ID
                             ontology_accession = re.sub(r'\_', ':', ontology_accession)
@@ -879,6 +881,8 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
                             if omim_disease is None:
                                 raise serializers.ValidationError({"message": "invalid omim id",
                                                                    "please check id": ontology_accession})
+                            elif omim_disease == "query failed":
+                                raise serializers.ValidationError({"message": f"cannot query omim id {ontology_accession}"})
 
                             if ontology_desc is None and len(omim_disease['description']) > 0:
                                 ontology_desc = omim_disease['description'][0]

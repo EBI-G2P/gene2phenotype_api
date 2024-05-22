@@ -101,7 +101,7 @@ def get_ontology(id, source):
 
     if not r.ok:
         r.raise_for_status()
-        sys.exit()
+        return "query failed"
 
     decoded = r.json()
 
