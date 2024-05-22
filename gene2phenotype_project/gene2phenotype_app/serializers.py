@@ -20,7 +20,7 @@ from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      OntologyTerm, Source, Publication, GeneDisease,
                      Sequence, UniprotAnnotation, CurationData, PublicationFamilies)
 
-from .utils import (clean_string, get_mondo, get_publication, get_authors, validate_gene,
+from .utils import (clean_string, get_ontology, get_publication, get_authors, validate_gene,
                     validate_phenotype, get_ontology_source)
 import re
 
@@ -856,9 +856,13 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
                         # Check if ontology is from OMIM or Mondo
                         source = get_ontology_source(ontology_accession)
 
-                        if source == "Mondo":
+                        if source is None:
+                            raise serializers.ValidationError({"message": f"invalid id {ontology_accession}
+                                                                please input an id from OMIM or Mondo"})
+
+                        elif source == "Mondo":
                             # Check if ontology accession is valid
-                            mondo_disease = get_mondo(ontology_accession)
+                            mondo_disease = get_ontology(ontology_accession, source)
                             if mondo_disease is None:
                                 raise serializers.ValidationError({"message": "invalid mondo id",
                                                                    "please check id": ontology_accession})
@@ -869,6 +873,15 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
                             # Insert ontology
                             if ontology_desc is None and len(mondo_disease['description']) > 0:
                                 ontology_desc = mondo_disease['description'][0]
+
+                        elif source == "OMIM":
+                            omim_disease = get_ontology(ontology_accession, source)
+                            if omim_disease is None:
+                                raise serializers.ValidationError({"message": "invalid omim id",
+                                                                   "please check id": ontology_accession})
+
+                            if ontology_desc is None and len(omim_disease['description']) > 0:
+                                ontology_desc = omim_disease['description'][0]
 
                         source = Source.objects.get(name=source)
                         # Get attrib 'disease'

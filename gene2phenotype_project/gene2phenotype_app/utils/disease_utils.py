@@ -76,8 +76,26 @@ def clean_omim_disease(name):
 
     return disease_name.lower().strip()
 
-def get_mondo(id):
-    url = f"https://www.ebi.ac.uk/ols4/api/search?q={id}&ontology=mondo&exact=1"
+
+"""
+    Get the ontology info from the disease ID
+
+    Input:
+            id: disease ID
+            source: source name
+    Output:
+            ols response
+            return None if no response or source is invalid
+"""
+def get_ontology(id, source):
+    if source.lower() == "mondo":
+        url = f"https://www.ebi.ac.uk/ols4/api/search?q={id}&ontology=mondo&exact=1"
+
+    elif source.lower() == "omim":
+        url = f"https://www.ebi.ac.uk/ols4/api/search?q={id}&ontology=cco"
+
+    else:
+        return None
 
     r = requests.get(url, headers={ "Content-Type" : "application/json"})
 
@@ -94,9 +112,14 @@ def get_mondo(id):
 
     return name
 
+
 """
+    To store the ontology ID/term we have to know its source.
+    The source can be OMIM or Mondo.
+
     Input: disease ID
     Output: source of the disease ID (Mondo or OMIM)
+            the source name is going to be used to fetch the source id from the db (case sensitive)
 """
 def get_ontology_source(id):
     source = None
@@ -104,6 +127,6 @@ def get_ontology_source(id):
     if id.startswith("MONDO"):
         source = "Mondo"
     elif id.isdigit():
-        source = 'OMIM'
+        source = "OMIM"
 
     return source
