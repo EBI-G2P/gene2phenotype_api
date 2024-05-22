@@ -72,8 +72,7 @@ class LocusGenotypeDisease(models.Model):
         indexes = [
             models.Index(fields=['locus']),
             models.Index(fields=['disease']),
-            models.Index(fields=['confidence']),
-            models.Index(fields=['is_deleted'])
+            models.Index(fields=['confidence'])
         ]
 
 class LGDCrossCuttingModifier(models.Model):
@@ -376,7 +375,7 @@ class DiseasePublication(models.Model):
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT)
     families = models.IntegerField(null=True)
     consanguinity = models.ForeignKey("Attrib", related_name='consanguinity', on_delete=models.PROTECT, null=True)
-    ethnicity = models.ForeignKey("Attrib", related_name='ethnicity', on_delete=models.PROTECT, null=True)
+    affected_individuals = models.IntegerField(null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 
@@ -454,7 +453,7 @@ class PublicationFamilies(models.Model):
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT)
     families = models.IntegerField(null=False)
     consanguinity = models.ForeignKey("Attrib", related_name='consanguinity_publication', on_delete=models.PROTECT, null=True)
-    ethnicity = models.ForeignKey("Attrib", related_name='ethnicity_publication', on_delete=models.PROTECT, null=True)
+    affected_individuals = models.IntegerField(null=True)
     ancestries = models.CharField(max_length=500, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
@@ -464,7 +463,7 @@ class PublicationFamilies(models.Model):
         indexes = [
             models.Index(fields=["publication"])
         ]
-        unique_together = ["publication", "families", "consanguinity", "ethnicity"]
+        unique_together = ["publication", "families", "consanguinity", "affected_individuals"]
 
 class PublicationComment(models.Model):
     id = models.AutoField(primary_key=True)
