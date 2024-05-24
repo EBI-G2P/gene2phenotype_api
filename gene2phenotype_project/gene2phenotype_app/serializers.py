@@ -138,22 +138,24 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         lgd_panels = LGDPanel.objects.filter(
             panel=panel.id,
             is_deleted=0
-        ).select_related('lgd__locus__type', 'lgd__disease')
+        ).select_related()
 
         genes = set()
-        diseases = set()
+        confidences = {}
         attrib_id = Attrib.objects.get(value='gene').id
-
         for lgd_panel in lgd_panels:
             if lgd_panel.lgd.locus.type.id == attrib_id:
                 genes.add(lgd_panel.lgd.locus.name)
 
-            diseases.add(lgd_panel.lgd.disease_id)
+            try:
+                confidences[lgd_panel.lgd.confidence.value] += 1
+            except KeyError:
+                confidences[lgd_panel.lgd.confidence.value] = 1
 
         return {
             'total_records': len(lgd_panels),
             'total_genes': len(genes),
-            'total_diseases':len(diseases)
+            'by_confidence': confidences
         }
 
     def records_summary(self, panel):
