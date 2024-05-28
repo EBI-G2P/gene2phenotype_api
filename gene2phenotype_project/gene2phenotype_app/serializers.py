@@ -94,13 +94,22 @@ class PanelDetailSerializer(serializers.ModelSerializer):
 
     # Returns only the curators excluding staff members
     def get_curators(self, id):
-        user_panels = UserPanel.objects.filter(panel=id)
+        user_panels = UserPanel.objects.filter(
+            panel=id,
+            user__is_active=1
+            ).select_related('user')
+
+        # TODO: decide how to define the curators group
+        curators_group = set(
+            User.groups.through.objects.filter(
+            group__name="curators"
+            ).values_list('user_id', flat=True)
+        )
+
         users = []
 
         for user_panel in user_panels:
-            group_queryset = User.groups.through.objects.filter(group__name="curators", user=user_panel.user.id)
-
-            if user_panel.user.is_active == 1 and (user_panel.user.is_staff == 0 or len(group_queryset) > 0):
+            if not user_panel.user.is_staff or user_panel.user.id in curators_group:
                 first_name = user_panel.user.first_name
                 last_name = user_panel.user.last_name
                 if first_name is not None and last_name is not None:
@@ -112,16 +121,16 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         return users
 
     def get_last_updated(self, id):
-        dates = []
-        lgd_panels = LGDPanel.objects.filter(panel=id)
-        for lgd_panel in lgd_panels:
-            if lgd_panel.lgd.date_review is not None and lgd_panel.lgd.is_reviewed == 1 and lgd_panel.lgd.is_deleted == 0:
-                dates.append(lgd_panel.lgd.date_review)
-                dates.sort()
-        if len(dates) > 0:
-            return dates[-1].date()
-        else:
-            return []
+        lgd_panel = LGDPanel.objects.filter(
+            panel=id,
+            lgd__is_reviewed=1,
+            lgd__is_deleted=0,
+            lgd__date_review__isnull=False
+            ).select_related('lgd'
+                             ).latest('lgd__date_review'
+                                      ).lgd.date_review
+
+        return lgd_panel.date() if lgd_panel else []
 
     # Calculates the stats on the fly
     # Returns a JSON object
@@ -132,14 +141,11 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         ).select_related()
 
         genes = set()
-        diseases = set()
         confidences = {}
         attrib_id = Attrib.objects.get(value='gene').id
         for lgd_panel in lgd_panels:
             if lgd_panel.lgd.locus.type.id == attrib_id:
                 genes.add(lgd_panel.lgd.locus.name)
-
-            diseases.add(lgd_panel.lgd.disease_id)
 
             try:
                 confidences[lgd_panel.lgd.confidence.value] += 1
@@ -149,12 +155,11 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         return {
             'total_records': len(lgd_panels),
             'total_genes': len(genes),
-            'total_diseases':len(diseases),
             'by_confidence': confidences
         }
 
     def records_summary(self, panel):
-        lgd_panels = LGDPanel.objects.filter(panel=panel.id).filter(is_deleted=0)
+        lgd_panels = LGDPanel.objects.filter(panel=panel.id, is_deleted=0)
 
         lgd_panels_selected = lgd_panels.select_related('lgd',
                                                         'lgd__locus',
@@ -240,15 +245,18 @@ class UserSerializer(serializers.ModelSerializer):
             Output example: ["Developmental disorders", "Ear disorders"]
         """
         user_login = self.context.get('user')
-        user_panels = UserPanel.objects.filter(user=id)
-        panels_list = []
+        if user_login and user_login.is_authenticated:
+            user_panels = UserPanel.objects.filter(
+                user=id
+                ).select_related('panel'
+                                 ).values_list('panel__description', flat=True)
+        else:
+            user_panels = UserPanel.objects.filter(
+                user=id, panel__is_visible=1
+                ).select_related('panel'
+                                 ).values_list('panel__description', flat=True)
 
-        for user_panel in user_panels:
-            # Authenticated users can view all panels
-            if (user_login and user_login.is_authenticated) or user_panel.panel.is_visible == 1:
-                panels_list.append(user_panel.panel.description)
-        
-        return panels_list
+        return user_panels
 
     class Meta:
         model = User
@@ -334,12 +342,12 @@ class LocusSerializer(serializers.ModelSerializer):
 
     def get_synonyms(self, id):
         attrib_type_obj = AttribType.objects.filter(code='gene_synonym')
-        locus_attribs = LocusAttrib.objects.filter(locus=id, attrib_type=attrib_type_obj.first().id, is_deleted=0)
-        data = []
-        for locus_atttrib in locus_attribs:
-            data.append(locus_atttrib.value)
+        locus_attribs = LocusAttrib.objects.filter(
+            locus=id,
+            attrib_type=attrib_type_obj.first().id,
+            is_deleted=0).values_list('value', flat=True)
 
-        return data
+        return locus_attribs
 
     @transaction.atomic
     def create(self, validated_data):
@@ -416,16 +424,15 @@ class LocusGeneSerializer(LocusSerializer):
     last_updated = serializers.SerializerMethodField()
 
     def get_last_updated(self, id):
-        dates = []
-        lgds = LocusGenotypeDisease.objects.filter(locus=id)
-        for lgd in lgds:
-            if lgd.date_review is not None and lgd.is_reviewed == 1 and lgd.is_deleted == 0:
-                dates.append(lgd.date_review)
-                dates.sort()
-        if len(dates) > 0:
-            return dates[-1].date()
-        else:
-            return []
+        lgd = LocusGenotypeDisease.objects.filter(
+            locus=id,
+            is_reviewed=1,
+            is_deleted=0,
+            date_review__isnull=False
+            ).latest('date_review'
+                     ).date_review
+
+        return lgd.date() if lgd else []
 
     def records_summary(self, user):
         lgd_list = LocusGenotypeDisease.objects.filter(locus=self.id, is_deleted=0)
@@ -584,7 +591,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         date = None
         lgd_obj = self.instance
         insertion_history_type = '+'
-        history_records = lgd_obj.history.all().order_by('history_date').filter(history_type=insertion_history_type)
+        history_records = lgd_obj.history.all().order_by('history_date').filter(
+            history_type=insertion_history_type)
+
         if history_records:
             date = history_records.first().history_date.date()
 
@@ -734,16 +743,15 @@ class DiseaseDetailSerializer(DiseaseSerializer):
     last_updated = serializers.SerializerMethodField()
 
     def get_last_updated(self, id):
-        dates = []
-        filtered_lgd_list = LocusGenotypeDisease.objects.filter(disease=id)
-        for lgd in filtered_lgd_list:
-            if lgd.date_review is not None and lgd.is_reviewed == 1 and lgd.is_deleted == 0:
-                dates.append(lgd.date_review)
-                dates.sort()
-        if len(dates) > 0:
-            return dates[-1].date()
-        else:
-            return []
+        filtered_lgd_list = LocusGenotypeDisease.objects.filter(
+            disease=id,
+            is_reviewed=1,
+            is_deleted=0,
+            date_review__isnull=False
+            ).latest('date_review'
+                     ).date_review
+
+        return filtered_lgd_list.date() if filtered_lgd_list else []
 
     def records_summary(self, id, user):
         lgd_list = LocusGenotypeDisease.objects.filter(disease=id, is_deleted=0)
@@ -1155,7 +1163,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 - publish endpoint: add the data to the G2P tables. entry will be live
         """
         json_data = validated_data.get("json_data")
-       
+
         date_created = datetime.now()
         date_reviewed = date_created
         session_name = json_data.get('session_name')
@@ -1164,10 +1172,9 @@ class CurationDataSerializer(serializers.ModelSerializer):
         if session_name == "":
             session_name = stable_id.stable_id
 
-         
-        user_email = self.context.get('user') # this needs to be looked at 
+        user_email = self.context.get('user')
         user_obj = User.objects.get(email=user_email)
-            
+
         new_curation_data = CurationData.objects.create(
             session_name=session_name,
             json_data=json_data,
