@@ -323,6 +323,12 @@ class AttribType(models.Model):
         db_table = "attrib_type"
 
 class OntologyTerm(models.Model):
+    """
+        Ontology term can be of different types:
+            - disease (Mondo, OMIM)
+            - phenotype (HPO)
+            - variant type (SO)
+    """
     id = models.AutoField(primary_key=True)
     accession = models.CharField(max_length=255, null=False, unique=True)
     term = models.CharField(max_length=255, null=False, unique=True)
@@ -342,7 +348,6 @@ class OntologyTerm(models.Model):
 class Disease(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255, unique=True, null=False)
-    mim = models.IntegerField(null=True)
     history = HistoricalRecords()
 
     class Meta:
@@ -361,13 +366,16 @@ class DiseaseSynonym(models.Model):
     class Meta:
         db_table = "disease_synonym"
         unique_together = ['disease', 'synonym']
+        indexes = [
+            models.Index(fields=['synonym'])
+        ]
 
 class DiseasePublication(models.Model):
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT)
     families = models.IntegerField(null=True)
     consanguinity = models.ForeignKey("Attrib", related_name='consanguinity', on_delete=models.PROTECT, null=True)
-    ethnicity = models.ForeignKey("Attrib", related_name='ethnicity', on_delete=models.PROTECT, null=True)
+    affected_individuals = models.IntegerField(null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 

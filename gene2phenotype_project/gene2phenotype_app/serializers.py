@@ -20,7 +20,8 @@ from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      OntologyTerm, Source, Publication, GeneDisease,
                      Sequence, UniprotAnnotation, CurationData, PublicationFamilies)
 
-from .utils import clean_string, get_mondo, get_publication, get_authors, validate_gene, validate_phenotype
+from .utils import (clean_string, get_ontology, get_publication, get_authors, validate_gene,
+                    validate_phenotype, get_ontology_source)
 import re
 
 class G2PStableIDSerializer(serializers.ModelSerializer):
@@ -93,13 +94,22 @@ class PanelDetailSerializer(serializers.ModelSerializer):
 
     # Returns only the curators excluding staff members
     def get_curators(self, id):
-        user_panels = UserPanel.objects.filter(panel=id)
+        user_panels = UserPanel.objects.filter(
+            panel=id,
+            user__is_active=1
+            ).select_related('user')
+
+        # TODO: decide how to define the curators group
+        curators_group = set(
+            User.groups.through.objects.filter(
+            group__name="curators"
+            ).values_list('user_id', flat=True)
+        )
+
         users = []
 
         for user_panel in user_panels:
-            group_queryset = User.groups.through.objects.filter(group__name="curators", user=user_panel.user.id)
-
-            if user_panel.user.is_active == 1 and (user_panel.user.is_staff == 0 or len(group_queryset) > 0):
+            if not user_panel.user.is_staff or user_panel.user.id in curators_group:
                 first_name = user_panel.user.first_name
                 last_name = user_panel.user.last_name
                 if first_name is not None and last_name is not None:
@@ -111,16 +121,16 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         return users
 
     def get_last_updated(self, id):
-        dates = []
-        lgd_panels = LGDPanel.objects.filter(panel=id)
-        for lgd_panel in lgd_panels:
-            if lgd_panel.lgd.date_review is not None and lgd_panel.lgd.is_reviewed == 1 and lgd_panel.lgd.is_deleted == 0:
-                dates.append(lgd_panel.lgd.date_review)
-                dates.sort()
-        if len(dates) > 0:
-            return dates[-1].date()
-        else:
-            return []
+        lgd_panel = LGDPanel.objects.filter(
+            panel=id,
+            lgd__is_reviewed=1,
+            lgd__is_deleted=0,
+            lgd__date_review__isnull=False
+            ).select_related('lgd'
+                             ).latest('lgd__date_review'
+                                      ).lgd.date_review
+
+        return lgd_panel.date() if lgd_panel else []
 
     # Calculates the stats on the fly
     # Returns a JSON object
@@ -131,14 +141,11 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         ).select_related()
 
         genes = set()
-        diseases = set()
         confidences = {}
         attrib_id = Attrib.objects.get(value='gene').id
         for lgd_panel in lgd_panels:
             if lgd_panel.lgd.locus.type.id == attrib_id:
                 genes.add(lgd_panel.lgd.locus.name)
-
-            diseases.add(lgd_panel.lgd.disease_id)
 
             try:
                 confidences[lgd_panel.lgd.confidence.value] += 1
@@ -148,12 +155,11 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         return {
             'total_records': len(lgd_panels),
             'total_genes': len(genes),
-            'total_diseases':len(diseases),
             'by_confidence': confidences
         }
 
     def records_summary(self, panel):
-        lgd_panels = LGDPanel.objects.filter(panel=panel.id).filter(is_deleted=0)
+        lgd_panels = LGDPanel.objects.filter(panel=panel.id, is_deleted=0)
 
         lgd_panels_selected = lgd_panels.select_related('lgd',
                                                         'lgd__locus',
@@ -239,15 +245,18 @@ class UserSerializer(serializers.ModelSerializer):
             Output example: ["Developmental disorders", "Ear disorders"]
         """
         user_login = self.context.get('user')
-        user_panels = UserPanel.objects.filter(user=id)
-        panels_list = []
+        if user_login and user_login.is_authenticated:
+            user_panels = UserPanel.objects.filter(
+                user=id
+                ).select_related('panel'
+                                 ).values_list('panel__description', flat=True)
+        else:
+            user_panels = UserPanel.objects.filter(
+                user=id, panel__is_visible=1
+                ).select_related('panel'
+                                 ).values_list('panel__description', flat=True)
 
-        for user_panel in user_panels:
-            # Authenticated users can view all panels
-            if (user_login and user_login.is_authenticated) or user_panel.panel.is_visible == 1:
-                panels_list.append(user_panel.panel.description)
-        
-        return panels_list
+        return user_panels
 
     class Meta:
         model = User
@@ -333,12 +342,12 @@ class LocusSerializer(serializers.ModelSerializer):
 
     def get_synonyms(self, id):
         attrib_type_obj = AttribType.objects.filter(code='gene_synonym')
-        locus_attribs = LocusAttrib.objects.filter(locus=id, attrib_type=attrib_type_obj.first().id, is_deleted=0)
-        data = []
-        for locus_atttrib in locus_attribs:
-            data.append(locus_atttrib.value)
+        locus_attribs = LocusAttrib.objects.filter(
+            locus=id,
+            attrib_type=attrib_type_obj.first().id,
+            is_deleted=0).values_list('value', flat=True)
 
-        return data
+        return locus_attribs
 
     @transaction.atomic
     def create(self, validated_data):
@@ -415,16 +424,15 @@ class LocusGeneSerializer(LocusSerializer):
     last_updated = serializers.SerializerMethodField()
 
     def get_last_updated(self, id):
-        dates = []
-        lgds = LocusGenotypeDisease.objects.filter(locus=id)
-        for lgd in lgds:
-            if lgd.date_review is not None and lgd.is_reviewed == 1 and lgd.is_deleted == 0:
-                dates.append(lgd.date_review)
-                dates.sort()
-        if len(dates) > 0:
-            return dates[-1].date()
-        else:
-            return []
+        lgd = LocusGenotypeDisease.objects.filter(
+            locus=id,
+            is_reviewed=1,
+            is_deleted=0,
+            date_review__isnull=False
+            ).latest('date_review'
+                     ).date_review
+
+        return lgd.date() if lgd else []
 
     def records_summary(self, user):
         lgd_list = LocusGenotypeDisease.objects.filter(locus=self.id, is_deleted=0)
@@ -583,7 +591,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         date = None
         lgd_obj = self.instance
         insertion_history_type = '+'
-        history_records = lgd_obj.history.all().order_by('history_date').filter(history_type=insertion_history_type)
+        history_records = lgd_obj.history.all().order_by('history_date').filter(
+            history_type=insertion_history_type)
+
         if history_records:
             date = history_records.first().history_date.date()
 
@@ -785,14 +795,14 @@ class DiseaseOntologySerializer(serializers.ModelSerializer):
     accession = serializers.CharField(source="ontology_term.accession")
     term = serializers.CharField(source="ontology_term.term")
     description = serializers.CharField(source="ontology_term.description", allow_null=True)
+    source = serializers.CharField(source="ontology_term.source.name")
 
     class Meta:
         model = DiseaseOntology
-        fields = ['accession', 'term', 'description']
+        fields = ['accession', 'term', 'description', 'source']
 
 class DiseaseSerializer(serializers.ModelSerializer):
     name = serializers.CharField()
-    mim = serializers.CharField()
     ontology_terms = serializers.SerializerMethodField()
     publications = serializers.SerializerMethodField()
     synonyms = serializers.SerializerMethodField()
@@ -814,22 +824,21 @@ class DiseaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Disease
-        fields = ['name', 'mim', 'ontology_terms', 'publications', 'synonyms']
+        fields = ['name', 'ontology_terms', 'publications', 'synonyms']
 
 class DiseaseDetailSerializer(DiseaseSerializer):
     last_updated = serializers.SerializerMethodField()
 
     def get_last_updated(self, id):
-        dates = []
-        filtered_lgd_list = LocusGenotypeDisease.objects.filter(disease=id)
-        for lgd in filtered_lgd_list:
-            if lgd.date_review is not None and lgd.is_reviewed == 1 and lgd.is_deleted == 0:
-                dates.append(lgd.date_review)
-                dates.sort()
-        if len(dates) > 0:
-            return dates[-1].date()
-        else:
-            return []
+        filtered_lgd_list = LocusGenotypeDisease.objects.filter(
+            disease=id,
+            is_reviewed=1,
+            is_deleted=0,
+            date_review__isnull=False
+            ).latest('date_review'
+                     ).date_review
+
+        return filtered_lgd_list.date() if filtered_lgd_list else []
 
     def records_summary(self, id, user):
         lgd_list = LocusGenotypeDisease.objects.filter(disease=id, is_deleted=0)
@@ -902,7 +911,6 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         disease_name = validated_data.get('name')
-        mim = validated_data.get('mim')
         ontologies_list = validated_data.get('ontology_terms')
         publications_list = validated_data.get('publications')
 
@@ -927,11 +935,11 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
             # TODO: give disease suggestions
 
             disease_obj = Disease.objects.create(
-                name = disease_name,
-                mim = mim
+                name = disease_name
             )
 
             # Check if ontology is in db
+            # The disease ontology is saved in the db as attrib type 'disease'
             for ontology in ontologies_list:
                 ontology_accession = ontology['ontology_term']['accession']
                 ontology_term = ontology['ontology_term']['term']
@@ -941,24 +949,47 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
                     try:
                         ontology_obj = OntologyTerm.objects.get(accession=ontology_accession)
                     except OntologyTerm.DoesNotExist:
-                        # Check if ontology accession is valid
-                        mondo_disease = get_mondo(ontology_accession)
-                        if mondo_disease is None:
-                            raise serializers.ValidationError({"message": f"invalid mondo id",
-                                                            "please check id": ontology_accession})
+                        # Check if ontology is from OMIM or Mondo
+                        source = get_ontology_source(ontology_accession)
 
-                        source = Source.objects.get(name="Mondo")
+                        if source is None:
+                            raise serializers.ValidationError({"message": f"invalid id {ontology_accession} please input an id from OMIM or Mondo"})
 
-                        # Insert ontology
-                        ontology_accession = re.sub(r'\_', ':', ontology_accession)
-                        ontology_term = re.sub(r'\_', ':', ontology_term)
-                        if ontology_desc is None and len(mondo_disease['description']) > 0:
-                            ontology_desc = mondo_disease['description'][0]
+                        elif source == "Mondo":
+                            # Check if ontology accession is valid
+                            mondo_disease = get_ontology(ontology_accession, source)
+                            if mondo_disease is None:
+                                raise serializers.ValidationError({"message": "invalid mondo id",
+                                                                   "please check id": ontology_accession})
+                            elif mondo_disease == "query failed":
+                                raise serializers.ValidationError({"message": f"cannot query mondo id {ontology_accession}"})
+
+                            # Replace '_' from mondo ID
+                            ontology_accession = re.sub(r'\_', ':', ontology_accession)
+                            ontology_term = re.sub(r'\_', ':', ontology_term)
+                            # Insert ontology
+                            if ontology_desc is None and len(mondo_disease['description']) > 0:
+                                ontology_desc = mondo_disease['description'][0]
+
+                        elif source == "OMIM":
+                            omim_disease = get_ontology(ontology_accession, source)
+                            # TODO: check if we can use the OMIM API in the future
+                            if omim_disease == "query failed":
+                                raise serializers.ValidationError({"message": f"cannot query omim id {ontology_accession}"})
+
+                            if ontology_desc is None and omim_disease is not None and len(omim_disease['description']) > 0:
+                                ontology_desc = omim_disease['description'][0]
+
+                        source = Source.objects.get(name=source)
+                        # Get attrib 'disease'
+                        attrib_disease = Attrib.objects.get(value="disease")
+
                         ontology_obj = OntologyTerm.objects.create(
                             accession = ontology_accession,
                             term = ontology_term,
                             description = ontology_desc,
-                            source = source
+                            source = source,
+                            group_type = attrib_disease
                         )
 
                     # Insert disease ontology
@@ -966,7 +997,7 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
                     disease_ontology_obj = DiseaseOntology.objects.create(
                         disease = disease_obj,
                         ontology_term = ontology_obj,
-                        mapped_by_attrib = attrib
+                        mapped_by_attrib = attrib,
                     )
 
             # Insert disease publication info
@@ -1025,7 +1056,7 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Disease
-        fields = ['name', 'mim', 'ontology_terms', 'publications']
+        fields = ['name', 'ontology_terms', 'publications']
 
 class PhenotypeSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="term", read_only=True)
@@ -1267,7 +1298,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 - publish endpoint: add the data to the G2P tables. entry will be live
         """
         json_data = validated_data.get("json_data")
-       
+
         date_created = datetime.now()
         date_reviewed = date_created
         session_name = json_data.get('session_name')
@@ -1276,10 +1307,9 @@ class CurationDataSerializer(serializers.ModelSerializer):
         if session_name == "":
             session_name = stable_id.stable_id
 
-         
-        user_email = self.context.get('user') # this needs to be looked at 
+        user_email = self.context.get('user')
         user_obj = User.objects.get(email=user_email)
-            
+
         new_curation_data = CurationData.objects.create(
             session_name=session_name,
             json_data=json_data,
