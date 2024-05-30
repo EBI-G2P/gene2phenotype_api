@@ -105,17 +105,20 @@ class LGDPhenotype(models.Model):
             models.Index(fields=['lgd', 'phenotype']),
         ]
 
-class LGDPhenotypeComment(models.Model):
+class LGDPhenotypeSummary(models.Model):
+    """
+        Summary of the phenotypes reported in a publication for a G2P record.
+        This is not directly linked to a phenotype.
+    """
     id = models.AutoField(primary_key=True)
-    lgd_phenotype = models.ForeignKey("LGDPhenotype", on_delete=models.PROTECT)
-    comment = models.TextField(null=False)
-    date_created = models.DateTimeField(null=False)
-    is_public = models.SmallIntegerField(null=False, default=True)
-    user = models.ForeignKey("User", on_delete=models.PROTECT)
+    lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
+    publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
+    summary = models.TextField(null=False)
     is_deleted = models.SmallIntegerField(null=False, default=False)
+    history = HistoricalRecords()
 
     class Meta:
-        db_table = "lgd_phenotype_comment"
+        db_table = "lgd_phenotype_summary"
 
 # Types of variants reported in the publication: missense_variant, frameshift_variant, stop_gained, etc.
 # Sequence ontology terms are used to describe variant types
@@ -123,7 +126,9 @@ class LGDVariantType(models.Model):
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     variant_type_ot = models.ForeignKey("OntologyTerm", related_name="variant_type", on_delete=models.PROTECT)
-    inheritance = models.ForeignKey("Attrib", on_delete=models.PROTECT, null=True)
+    inherited = models.BooleanField()
+    de_novo = models.BooleanField()
+    unknown_inheritance = models.BooleanField()
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
@@ -136,8 +141,13 @@ class LGDVariantType(models.Model):
         ]
 
 class LGDVariantTypeDescription(models.Model):
+    """
+        Variant HGVS linked to the LGD record and the publication.
+        The HGVS is not directly linked to the variant type.
+    """
     id = models.AutoField(primary_key=True)
-    lgd_variant_type = models.ForeignKey("LGDVariantType", on_delete=models.PROTECT)
+    lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
+    publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     description = models.CharField(max_length=250, null=False)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
@@ -189,6 +199,32 @@ class LGDMolecularMechanism(models.Model):
     class Meta:
         db_table = "lgd_molecular_mechanism"
         unique_together = ["lgd", "mechanism"]
+
+class LGDMolecularMechanismEvidence(models.Model):
+    id = models.AutoField(primary_key=True)
+    molecular_mechanism = models.ForeignKey("LGDMolecularMechanism", on_delete=models.PROTECT)
+    description = models.TextField(null=True)
+    publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
+    is_deleted = models.SmallIntegerField(null=False, default=False)
+    history = HistoricalRecords()
+
+    class Meta:
+        db_table = "lgd_molecular_mechanism_evidence"
+        unique_together = ["molecular_mechanism", "publication"]
+
+class LGDMolecularMechanismEvidenceType(models.Model):
+    id = models.AutoField(primary_key=True)
+    molecular_mechanism_evidence = models.ForeignKey("LGDMolecularMechanismEvidence", on_delete=models.PROTECT)
+    function = models.ForeignKey("Attrib", related_name='function', on_delete=models.PROTECT)
+    functional_alteration = models.ForeignKey("Attrib", related_name='functional_alteration', on_delete=models.PROTECT)
+    models_type = models.ForeignKey("Attrib", related_name='models_type', on_delete=models.PROTECT)
+    rescue = models.ForeignKey("Attrib", related_name='rescue', on_delete=models.PROTECT)
+    is_deleted = models.SmallIntegerField(null=False, default=False)
+    history = HistoricalRecords()
+
+    class Meta:
+        db_table = "lgd_molecular_mechanism_evidence_type"
+        unique_together = ["molecular_mechanism_evidence", "function", "functional_alteration", "models_type", "rescue"]
 
 class LGDComment(models.Model):
     id = models.AutoField(primary_key=True)
@@ -328,10 +364,12 @@ class OntologyTerm(models.Model):
             - disease (Mondo, OMIM)
             - phenotype (HPO)
             - variant type (SO)
+        Different sources can have the same term which means in this table
+        the same term can be linked to different accessions (coming from different sources)
     """
     id = models.AutoField(primary_key=True)
     accession = models.CharField(max_length=255, null=False, unique=True)
-    term = models.CharField(max_length=255, null=False, unique=True)
+    term = models.CharField(max_length=255, null=False)
     description = models.TextField(null=True)
     source = models.ForeignKey("Source", on_delete=models.PROTECT)
     group_type = models.ForeignKey("Attrib", on_delete=models.PROTECT)
@@ -387,7 +425,7 @@ class DiseaseOntology(models.Model):
     id = models.AutoField(primary_key=True)
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
     ontology_term = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
-    mapped_by_attrib = models.ForeignKey("Attrib", on_delete=models.PROTECT)
+    mapped_by_attrib = models.ForeignKey("Attrib", on_delete=models.PROTECT, null=True)
     history = HistoricalRecords()
 
     class Meta:

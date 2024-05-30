@@ -7,7 +7,6 @@ from django.db import connection, transaction
 from django.core.exceptions import ObjectDoesNotExist
 from datetime import datetime
 from django.utils import timezone
-from django.db.models import Q
 import pytz
 
 from .models import (Panel, User, UserPanel, AttribType, Attrib,
@@ -18,7 +17,8 @@ from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      G2PStableID,LocusIdentifier, PublicationComment, LGDComment,
                      DiseasePublication, LGDMolecularMechanism,
                      OntologyTerm, Source, Publication, GeneDisease,
-                     Sequence, UniprotAnnotation, CurationData, PublicationFamilies)
+                     Sequence, UniprotAnnotation, CurationData, PublicationFamilies,
+                     LGDVariantTypeDescription)
 
 from .utils import (clean_string, get_ontology, get_publication, get_authors, validate_gene,
                     validate_phenotype, get_ontology_source)
@@ -32,7 +32,6 @@ class G2PStableIDSerializer(serializers.ModelSerializer):
         and vice versa. It handles serialization and deserialization of G2PStableID
         objects.
     """
-    @transaction.atomic
 
     def create_stable_id():
         """
@@ -69,7 +68,26 @@ class G2PStableIDSerializer(serializers.ModelSerializer):
 
         return stable_id_instance
     
-    
+    def update_stable_id(self, is_live):
+        """
+            Update the status of the G2P stable id.
+            Set 'is_live' to:
+                0: entry is not published (live)
+                OR
+                1: entry is published
+        """
+        stable_id = self.context['stable_id']
+
+        try:
+            g2p_id_obj = G2PStableID.objects.get(stable_id=stable_id)
+        except G2PStableID.DoesNotExist:
+            raise serializers.ValidationError({"message": f"G2P ID not found '{stable_id}'"})
+
+        g2p_id_obj.is_live = is_live
+        g2p_id_obj.save()
+
+        return g2p_id_obj
+
     class Meta:
         """
             Metadata options for the G2PStableIDSerializer class.
@@ -291,7 +309,7 @@ class LGDPanelSerializer(serializers.ModelSerializer):
         panel_obj = Panel.objects.filter(name=panel_name)
 
         if not panel_obj.exists():
-            raise serializers.ValidationError({"message": f"invalid panel name '{panel_name}'"})
+            raise serializers.ValidationError({"message": f"Invalid panel name '{panel_name}'"})
         lgd_panel_obj = LGDPanel.objects.filter(panel=panel_obj.first().id, lgd=lgd.id)
 
         if lgd_panel_obj.exists():
@@ -310,7 +328,7 @@ class LGDPanelSerializer(serializers.ModelSerializer):
         )
 
         return lgd_panel_obj
-    
+
     class Meta:
         model = LGDPanel
         fields = ['name', 'description', 'publications']
@@ -517,21 +535,22 @@ class GeneDiseaseSerializer(serializers.ModelSerializer):
 
 class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     locus = serializers.SerializerMethodField()
-    stable_id = serializers.CharField(source="stable_id.stable_id", read_only=True) #CharField and the source is the stable_id column in the stable_id table
-    genotype = serializers.CharField(source="genotype.value", read_only=True)
-    variant_consequence = serializers.SerializerMethodField()
-    molecular_mechanism = serializers.SerializerMethodField()
+    stable_id = serializers.CharField(source="stable_id.stable_id") #CharField and the source is the stable_id column in the stable_id table
+    genotype = serializers.CharField(source="genotype.value")
+    variant_consequence = serializers.SerializerMethodField(allow_null=True)
+    molecular_mechanism = serializers.SerializerMethodField(allow_null=True)
     disease = serializers.SerializerMethodField()
-    confidence = serializers.CharField(source="confidence.value", read_only=True)
+    confidence = serializers.CharField(source="confidence.value")
     publications = serializers.SerializerMethodField()
     panels = serializers.SerializerMethodField()
-    cross_cutting_modifier = serializers.SerializerMethodField()
-    variant_type = serializers.SerializerMethodField()
-    phenotypes = serializers.SerializerMethodField()
+    cross_cutting_modifier = serializers.SerializerMethodField(allow_null=True)
+    variant_type = serializers.SerializerMethodField(allow_null=True)
+    variant_description = serializers.SerializerMethodField(allow_null=True)
+    phenotypes = serializers.SerializerMethodField(allow_null=True)
     last_updated = serializers.SerializerMethodField()
     date_created = serializers.SerializerMethodField()
-    comments = serializers.SerializerMethodField()
-    is_reviewed = serializers.IntegerField(read_only=True)
+    comments = serializers.SerializerMethodField(allow_null=True)
+    is_reviewed = serializers.IntegerField()
 
     def get_locus(self, id):
         locus = LocusSerializer(id.locus).data
@@ -549,7 +568,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
     def get_variant_consequence(self, id):
         queryset = LGDVariantGenccConsequence.objects.filter(lgd_id=id)
-        return VariantConsequenceSerializer(queryset, many=True).data
+        return LGDVariantGenCCConsequenceSerializer(queryset, many=True).data
 
     def get_molecular_mechanism(self, id):
         queryset = LGDMolecularMechanism.objects.filter(lgd_id=id)
@@ -565,17 +584,72 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
     def get_phenotypes(self, id):
         queryset = LGDPhenotype.objects.filter(lgd_id=id)
-        return LGDPhenotypeSerializer(queryset, many=True).data
+        data = {}
+
+        for lgd_phenotype in queryset:
+            accession = lgd_phenotype.phenotype.accession
+
+            if accession in data and lgd_phenotype.publication:
+                data[accession]["publications"].append(lgd_phenotype.publication.pmid)
+            else:
+                publication_list = []
+                if lgd_phenotype.publication:
+                    publication_list = [lgd_phenotype.publication.pmid]
+
+                data[accession] = {"term": lgd_phenotype.phenotype.term,
+                                   "accession": accession,
+                                   "publications": publication_list}
+
+        return data.values()
 
     def get_variant_type(self, id):
+        # The variant type can be linked to several publications
+        # Format the output to return the list of publications
         queryset = LGDVariantType.objects.filter(lgd_id=id)
-        return VariantTypeSerializer(queryset, many=True).data
+        data = {}
+
+        for lgd_variant in queryset:
+            accession = lgd_variant.variant_type_ot.accession
+
+            if accession in data and lgd_variant.publication:
+                data[accession]["publications"].append(lgd_variant.publication.pmid)
+            else:
+                publication_list = []
+                if lgd_variant.publication:
+                    publication_list = [lgd_variant.publication.pmid]
+
+                data[accession] = {"term": lgd_variant.variant_type_ot.term,
+                                   "accession": accession,
+                                   "inherited": lgd_variant.inherited,
+                                   "de_novo": lgd_variant.de_novo,
+                                   "unknown_inheritance": lgd_variant.unknown_inheritance,
+                                   "publications": publication_list}
+        return data.values()
+
+    def get_variant_description(self, id):
+        queryset = LGDVariantTypeDescription.objects.filter(lgd_id=id)
+        data = {}
+
+        for lgd_variant in queryset:
+            if lgd_variant.description in data and lgd_variant.publication:
+                data[lgd_variant.description]["publications"].append(lgd_variant.publication.pmid)
+            else:
+                publication_list = []
+                if lgd_variant.publication:
+                    publication_list = [lgd_variant.publication.pmid]
+                data[lgd_variant.description] = {
+                    "description": lgd_variant.description,
+                    "publications": publication_list
+                }
+
+        return data.values()
 
     def get_panels(self, id):
         queryset = LGDPanel.objects.filter(lgd_id=id)
         return LGDPanelSerializer(queryset, many=True).data
 
     def get_comments(self, id):
+        # TODO check if comment is public
         lgd_comments = LGDComment.objects.filter(lgd_id=id)
         data = []
         for comment in lgd_comments:
@@ -599,14 +673,140 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         return date
 
+    def create(self, validated_data, disease_obj, publications_list):
+        """
+            Create a G2P record.
+            A record is always linked to one or more panels and publications.
+
+            Mandatory data:
+                            - locus
+                            - G2P stable_id
+                            - disease
+                            - genotype (allelic requeriment)
+                            - mechanism (TODO)
+                            - panel(s)
+                            - confidence
+                            - publications
+        """
+
+        locus_name = validated_data.get('locus') # Usually this is the gene symbol
+        stable_id_obj = validated_data.get('stable_id') # stable id obj
+        genotype = validated_data.get('allelic_requirement') # allelic requirement
+        panels = validated_data.get('panels') # Array of panel names
+        confidence = validated_data.get('confidence') # confidence level and justification
+
+        if not panels or not publications_list:
+            raise serializers.ValidationError({"message": f"Missing data to create the G2P record {stable_id_obj.stable_id}"})
+
+        # Check if record (LGD) is already inserted
+        try:
+            lgd_obj = LocusGenotypeDisease.objects.get(stable_id=stable_id_obj)
+            return lgd_obj
+
+        except LocusGenotypeDisease.DoesNotExist:
+
+            # Get locus object
+            try:
+                locus_obj = Locus.objects.get(name=locus_name)
+            except Locus.DoesNotExist:
+                raise serializers.ValidationError({"message": f"Invalid locus {locus_name}"})
+
+            # Get genotype
+            try:
+                genotype_obj = Attrib.objects.get(
+                    value = genotype,
+                    type__code = "genotype"
+                )
+            except Attrib.DoesNotExist:
+                raise serializers.ValidationError({"message": f"Invalid genotype value {genotype}"})
+
+            # Get confidence
+            try:
+                confidence_obj = Attrib.objects.get(
+                    value = confidence["level"],
+                    type__code = "confidence_category"
+                )
+            except Attrib.DoesNotExist:
+                raise serializers.ValidationError({"message": f"Invalid confidence value {confidence["level"]}"})
+
+            # Text to justify the confidence value (optional)
+            if confidence["justification"] == "":
+                confidence_support = None
+            else:
+                confidence_support = confidence["justification"]
+
+            # Insert new G2P record (LGD)
+            lgd_obj = LocusGenotypeDisease.objects.create(
+                locus = locus_obj,
+                stable_id = stable_id_obj,
+                genotype = genotype_obj,
+                disease = disease_obj,
+                confidence = confidence_obj,
+                confidence_support = confidence_support,
+                is_reviewed = 1,
+                is_deleted = 0,
+                date_review = datetime.now()
+            )
+
+            # Insert panels
+            for panel in panels:
+                try:
+                    # Get name from description
+                    panel_obj = Panel.objects.get(description=panel)
+                    data = {"panel": {"name": panel_obj.name}}
+                    # The LGDPanelSerializer fetches the object LGD from its context
+                    LGDPanelSerializer(context={'lgd': lgd_obj}).create(data)
+                
+                except Panel.DoesNotExist:
+                    raise serializers.ValidationError({"message": f"Invalid panel {panel}"})
+
+            # Insert LGD-publications
+            for publication_obj in publications_list:
+                data_publication = {"publication": publication_obj}
+                LGDPublicationSerializer(context={'lgd': lgd_obj}).create(data_publication)
+
+        return lgd_obj
+
     class Meta:
         model = LocusGenotypeDisease
         exclude = ['id', 'is_deleted', 'date_review']
 
-class VariantConsequenceSerializer(serializers.ModelSerializer):
+class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
     variant_consequence = serializers.CharField(source="variant_consequence.term")
     support = serializers.CharField(source="support.value")
-    publication = serializers.CharField(source="publication.title", allow_null=True)
+    publication = serializers.CharField(source="publication.pmid", allow_null=True)
+
+    def create(self, variant_consequence):
+        lgd = self.context['lgd']
+        term = variant_consequence.get("name").replace("_", " ")
+        support = variant_consequence.get("support").lower()
+
+        # Get variant gencc consequence value from ontology_term
+        try:
+            consequence_obj = OntologyTerm.objects.get(
+                term = term, # TODO check
+                group_type__value = "variant_type"
+            )
+        except OntologyTerm.DoesNotExist:
+            raise serializers.ValidationError({"message": f"Invalid variant consequence '{term}'"})
+
+        # Get support value from attrib
+        try:
+            support_obj = Attrib.objects.get(
+                value = support,
+                type__code = "support"
+            )
+        except Attrib.DoesNotExist:
+            raise serializers.ValidationError({"message": f"Invalid support value {support}"})
+
+        lgd_var_consequence_obj = LGDVariantGenccConsequence.objects.get_or_create(
+                variant_consequence = consequence_obj,
+                support = support_obj,
+                lgd = lgd,
+                is_deleted = 0
+            )
+        
+        return lgd_var_consequence_obj
 
     class Meta:
         model = LGDVariantGenccConsequence
@@ -620,17 +820,98 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
     synopsis_support = serializers.CharField(source="synopsis_support.value", allow_null=True)
     publication = serializers.CharField(source="publication.title", allow_null=True)
 
+    def create(self, mechanism, mechanism_synopsis):
+        lgd = self.context['lgd']
+        mechanism_name = mechanism["name"]
+        mechanism_support = mechanism["support"]
+        synopsis_name = mechanism_synopsis["name"]
+        synopsis_support = mechanism_synopsis["support"]
+
+        # Get mechanism value from attrib
+        try:
+            mechanism_obj = Attrib.objects.get(
+                value = mechanism_name,
+                type__code = "mechanism"
+            )
+        except Attrib.DoesNotExist:
+            raise serializers.ValidationError({"message": f"Invalid mechanims value {mechanism_name}"})
+        
+        # Get mechanism support from attrib
+        try:
+            mechanism_support_obj = Attrib.objects.get(
+                value = mechanism_support,
+                type__code = "support"
+            )
+        except Attrib.DoesNotExist:
+            raise serializers.ValidationError({"message": f"Invalid mechanism support value {mechanism_support}"})
+
+        # Get mechanism synopsis value from attrib
+        try:
+            synopsis_obj = Attrib.objects.get(
+                value = synopsis_name,
+                type__code = "mechanism_synopsis"
+            )
+        except Attrib.DoesNotExist:
+            raise serializers.ValidationError({"message": f"Invalid mechanims synopsis value {synopsis_name}"})
+
+        # Get mechanism synopsis support from attrib
+        try:
+            synopsis_support_obj = Attrib.objects.get(
+                value = synopsis_support,
+                type__code = "support"
+            )
+        except Attrib.DoesNotExist:
+            raise serializers.ValidationError({"message": f"Invalid mechanism synopsis support value {synopsis_support}"})
+
+        # Create new LGD-molecular mechanism
+        lgd_mechanism = LGDMolecularMechanism.objects.create(
+            lgd = lgd,
+            mechanism = mechanism_obj,
+            mechanism_support = mechanism_support_obj,
+            synopsis = synopsis_obj,
+            synopsis_support = synopsis_support_obj,
+            is_deleted = 0
+        )
+
+        return lgd_mechanism
+
     class Meta:
-        model = LGDVariantGenccConsequence
+        model = LGDMolecularMechanism
         fields = ['mechanism', 'support', 'description', 'synopsis', 'synopsis_support', 'publication']
 
 class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
     term = serializers.CharField(source="ccm.value")
 
+    def create(self, term):
+        lgd = self.context['lgd']
+
+        # Get cross cutting modifier from attrib
+        try:
+            ccm_obj = Attrib.objects.get(
+                value = term,
+                type__code = 'cross_cutting_modifier'
+            )
+        except Attrib.DoesNotExist:
+            raise serializers.ValidationError({"message": f"Invalid cross cutting modifier {term}"})
+
+        # Check if LGD-cross cutting modifier already exists
+        try:
+            lgd_ccm_obj = LGDCrossCuttingModifier.objects.get(
+                ccm = ccm_obj,
+                lgd = lgd
+            )
+        except LGDCrossCuttingModifier.DoesNotExist:
+            lgd_ccm_obj = LGDCrossCuttingModifier.objects.create(
+                ccm = ccm_obj,
+                lgd = lgd,
+                is_deleted = 0
+            )
+
+        return lgd_ccm_obj
+
     class Meta:
         model = LGDCrossCuttingModifier
         fields = ['term']
-
 
 class PublicationCommentSerializer(serializers.ModelSerializer):
     comment = serializers.CharField()
@@ -638,11 +919,10 @@ class PublicationCommentSerializer(serializers.ModelSerializer):
     date = serializers.DateTimeField(read_only=True)
     is_public = serializers.CharField()
 
-    @transaction.atomic
     def create(self, validated_data, publication):
         comment_text = validated_data.get("comment")
         is_public = validated_data.get("is_public")
-        user_obj = User.objects.get(id=31) # TODO: get user id
+        user_obj = self.context['user']
 
         # Check if comment is already stored. We consider same comment if they have the same:
         #   publication, comment text, user and it's not deleted TODO
@@ -670,34 +950,57 @@ class PublicationCommentSerializer(serializers.ModelSerializer):
 
 class PublicationFamiliesSerializer(serializers.ModelSerializer):
     families = serializers.IntegerField()
-    consanguinity = serializers.CharField(source="consanguinity.value")
-    ethnicity = serializers.CharField(source="ethnicity.value")
-    ancestries = serializers.CharField()
+    consanguinity = serializers.CharField(source="consanguinity.value", allow_null=True) # values are stored in attrib
+    affected_individuals = serializers.IntegerField(allow_null=True)
+    ancestries = serializers.CharField() # This field is a free text
 
-    @transaction.atomic
     def create(self, validated_data, publication):
+        """
+            Create a PublicationFamilies object.
+
+            Fields:
+                    - families: number of families reported in the publication (mandatory)
+                    - consanguinity: consanguinity (default: unknown)
+                    - ancestries: ancestry free text
+                    - affected_individuals: number of affected individuals reported in the publication
+        """
         families = validated_data.get("families")
-        consanguinity = validated_data.get("consanguineous")
+        consanguinity = validated_data.get("consanguinity")
         ancestries = validated_data.get("ancestries")
         affected_individuals = validated_data.get("affected_individuals")
-        user_obj = User.objects.get(id=31) # TODO: get user id
 
-        # Check if data is already stored
-        publication_families_list = PublicationFamilies.objects.filter(publication = publication,
-                                                                      families = families,
-                                                                      consanguinity = consanguinity, # TODO
-                                                                      ancestries = ancestries, # TODO
-                                                                      affected_individuals = affected_individuals)
+        # Check if there is data
+        if families == "" or families is None:
+            return None
 
-        publication_families_obj = publication_families_list.first()
+        # Get consanguinity from attrib
+        try:
+            consanguinity_obj = Attrib.objects.get(
+                value = consanguinity,
+                type__code = "consanguinity"
+            )
+        except Attrib.DoesNotExist:
+            raise serializers.ValidationError({"message": f"Invalid consanguinity value {consanguinity}"})
 
-        # Comment was not found in table - insert new comment
-        if len(publication_families_list) == 0:
-            publication_families_obj = PublicationFamilies.objects.create(publication = publication,
-                                                                          families = families,
-                                                                          consanguinity = consanguinity, # TODO
-                                                                          ancestries = ancestries, # TODO
-                                                                          affected_individuals = affected_individuals)
+        # Check if LGD-publication families is already stored
+        try:
+            publication_families_obj = PublicationFamilies.objects.get(
+                publication = publication,
+                families = families,
+                consanguinity = consanguinity_obj,
+                ancestries = ancestries,
+                affected_individuals = affected_individuals
+            )
+
+        except PublicationFamilies.DoesNotExist:
+            # Data was not found in table - insert families data
+            publication_families_obj = PublicationFamilies.objects.create(
+                publication = publication,
+                families = families,
+                consanguinity = consanguinity_obj,
+                ancestries = ancestries,
+                affected_individuals = affected_individuals
+            )
 
         return publication_families_obj
 
@@ -706,21 +1009,24 @@ class PublicationFamiliesSerializer(serializers.ModelSerializer):
         fields = ['families', 'consanguinity', 'affected_individuals', 'ancestries']
 
 class PublicationSerializer(serializers.ModelSerializer):
-    pmid = serializers.CharField()
+    pmid = serializers.IntegerField()
     title = serializers.CharField(read_only=True)
     authors = serializers.CharField(read_only=True)
     year = serializers.CharField(read_only=True)
     comments = PublicationCommentSerializer(many=True, required=False)
     number_of_families = PublicationFamiliesSerializer(many=True, required=False)
 
-    @transaction.atomic
     def create(self, validated_data):
         """
-            Create a publication
+            Create a publication.
+            If PMID is already stored in G2P, add the new comment and number of 
+            families to the existing PMID.
+            This method is called when publishing a record.
+
             Fields:
-                    - PMID (mandatory)
-                    - comments
-                    - number of families
+                    - pmid: publications PMID (mandatory)
+                    - comments: list of comments
+                    - number_of_families: list of families
         """
 
         pmid = validated_data.get('pmid')
@@ -730,24 +1036,12 @@ class PublicationSerializer(serializers.ModelSerializer):
         try:
             publication_obj = Publication.objects.get(pmid=pmid)
 
-            # Add new comments and/or number of families
-            if comments:
-                for comment in comments:
-                    PublicationCommentSerializer().create(comment, publication_obj)
-
-            # if number_of_families:
-
-
-            return publication_obj
-            # raise serializers.ValidationError({"message": f"publication already exists",
-            #                                     "please check publication":
-            #                                     f"PMID: {pmid}, Title: {publication_obj.title}"})
         except Publication.DoesNotExist:
             response = get_publication(pmid)
 
             if response['hitCount'] == 0:
-                raise serializers.ValidationError({"message": f"invalid pmid",
-                                                   "please check id": pmid})
+                raise serializers.ValidationError({"message": "Invalid PMID",
+                                                   "Please check ID": pmid})
 
             authors = get_authors(response)
             year = None
@@ -766,15 +1060,47 @@ class PublicationSerializer(serializers.ModelSerializer):
                                                          year = year,
                                                          doi = doi)
 
+        # Add new comments and/or number of families
+        for comment in comments:
+            PublicationCommentSerializer(context={'user': self.context.get('user')}).create(comment, publication_obj)
+
+        for family in number_of_families:
+            PublicationFamiliesSerializer().create(family, publication_obj)
+
         return publication_obj
 
     class Meta:
         model = Publication
         fields = ['pmid', 'title', 'authors', 'year', 'comments', 'number_of_families']
 
-
 class LGDPublicationSerializer(serializers.ModelSerializer):
     publication = PublicationSerializer()
+
+    def create(self, validated_data):
+        lgd = self.context['lgd']
+        publication_obj = validated_data.get('publication') # TODO REVIEW
+
+        try:
+            lgd_publication_obj = LGDPublication.objects.get(
+                lgd = lgd,
+                publication = publication_obj
+            )
+
+            # The entry can be deleted
+            if lgd_publication_obj.is_deleted == 1:
+                raise serializers.ValidationError(
+                    {"message": f"Record {lgd.stable_id.stable_id} is already linked to publication {publication_obj.pmid}"}
+                )
+
+        except LGDPublication.DoesNotExist:
+            # Insert new LGD-publication entry
+            lgd_publication_obj = LGDPublication.objects.create(
+                lgd = lgd,
+                publication = publication_obj,
+                is_deleted = 0
+            )
+
+        return lgd_publication_obj
 
     class Meta:
         model = LGDPublication
@@ -785,11 +1111,11 @@ class DiseasePublicationSerializer(serializers.ModelSerializer):
     title = serializers.CharField(source="publication.title", allow_null=True)
     number_families = serializers.IntegerField(source="families", allow_null=True)
     consanguinity = serializers.CharField(allow_null=True)
-    ethnicity = serializers.CharField(allow_null=True)
+    affected_individuals = serializers.CharField(allow_null=True)
 
     class Meta:
         model = DiseasePublication
-        fields = ['pmid', 'title', 'number_families', 'consanguinity', 'ethnicity']
+        fields = ['pmid', 'title', 'number_families', 'consanguinity', 'affected_individuals']
 
 class DiseaseOntologySerializer(serializers.ModelSerializer):
     accession = serializers.CharField(source="ontology_term.accession")
@@ -908,7 +1234,6 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
     publications = DiseasePublicationSerializer(many=True, required=False)
     # Add synonyms
 
-    @transaction.atomic
     def create(self, validated_data):
         disease_name = validated_data.get('name')
         ontologies_list = validated_data.get('ontology_terms')
@@ -931,126 +1256,143 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
                 disease_obj = disease_synonym.disease
 
         if disease_obj is None:
-            # TODO: check if MIM is valid - need OMIM API access
             # TODO: give disease suggestions
 
             disease_obj = Disease.objects.create(
                 name = disease_name
             )
 
-            # Check if ontology is in db
-            # The disease ontology is saved in the db as attrib type 'disease'
-            for ontology in ontologies_list:
-                ontology_accession = ontology['ontology_term']['accession']
-                ontology_term = ontology['ontology_term']['term']
-                ontology_desc = ontology['ontology_term']['description']
+        # Check if ontology is in db
+        # The disease ontology is saved in the db as attrib type 'disease'
+        for ontology in ontologies_list:
+            ontology_accession = ontology['ontology_term']['accession']
+            ontology_term = ontology['ontology_term']['term']
+            ontology_desc = ontology['ontology_term']['description']
+            disease_ontology_obj = None
 
-                if ontology_accession is not None and ontology_term is not None:
-                    try:
-                        ontology_obj = OntologyTerm.objects.get(accession=ontology_accession)
-                    except OntologyTerm.DoesNotExist:
-                        # Check if ontology is from OMIM or Mondo
-                        source = get_ontology_source(ontology_accession)
+            if ontology_accession is not None and ontology_term is not None:
+                try:
+                    ontology_obj = OntologyTerm.objects.get(accession=ontology_accession)
 
-                        if source is None:
-                            raise serializers.ValidationError({"message": f"invalid id {ontology_accession} please input an id from OMIM or Mondo"})
+                except OntologyTerm.DoesNotExist:
+                    # Check if ontology is from OMIM or Mondo
+                    source = get_ontology_source(ontology_accession)
 
-                        elif source == "Mondo":
-                            # Check if ontology accession is valid
-                            mondo_disease = get_ontology(ontology_accession, source)
-                            if mondo_disease is None:
-                                raise serializers.ValidationError({"message": "invalid mondo id",
-                                                                   "please check id": ontology_accession})
-                            elif mondo_disease == "query failed":
-                                raise serializers.ValidationError({"message": f"cannot query mondo id {ontology_accession}"})
+                    if source is None:
+                        raise serializers.ValidationError({
+                            "message": f"Invalid ID '{ontology_accession}' please input a valid ID from OMIM or Mondo"
+                            })
 
-                            # Replace '_' from mondo ID
-                            ontology_accession = re.sub(r'\_', ':', ontology_accession)
-                            ontology_term = re.sub(r'\_', ':', ontology_term)
-                            # Insert ontology
-                            if ontology_desc is None and len(mondo_disease['description']) > 0:
-                                ontology_desc = mondo_disease['description'][0]
+                    elif source == "Mondo":
+                        # Check if ontology accession is valid
+                        mondo_disease = get_ontology(ontology_accession, source)
+                        if mondo_disease is None:
+                            raise serializers.ValidationError({"message": "Invalid Mondo ID",
+                                                                   "Please check ID": ontology_accession})
+                        elif mondo_disease == "query failed":
+                            raise serializers.ValidationError({"message": f"Cannot query Mondo ID {ontology_accession}"})
 
-                        elif source == "OMIM":
-                            omim_disease = get_ontology(ontology_accession, source)
-                            # TODO: check if we can use the OMIM API in the future
-                            if omim_disease == "query failed":
-                                raise serializers.ValidationError({"message": f"cannot query omim id {ontology_accession}"})
+                    # Replace '_' from mondo ID
+                    ontology_accession = re.sub(r'\_', ':', ontology_accession)
+                    ontology_term = re.sub(r'\_', ':', ontology_term)
+                    # Insert ontology
+                    if ontology_desc is None and len(mondo_disease['description']) > 0:
+                        ontology_desc = mondo_disease['description'][0]
 
-                            if ontology_desc is None and omim_disease is not None and len(omim_disease['description']) > 0:
-                                ontology_desc = omim_disease['description'][0]
+                    elif source == "OMIM":
+                        omim_disease = get_ontology(ontology_accession, source)
+                        # TODO: check if we can use the OMIM API in the future
+                        if omim_disease == "query failed":
+                            raise serializers.ValidationError({"message": f"Cannot query OMIM ID {ontology_accession}"})
 
-                        source = Source.objects.get(name=source)
-                        # Get attrib 'disease'
-                        attrib_disease = Attrib.objects.get(value="disease")
+                        if ontology_desc is None and omim_disease is not None and len(omim_disease['description']) > 0:
+                            ontology_desc = omim_disease['description'][0]
 
-                        ontology_obj = OntologyTerm.objects.create(
-                            accession = ontology_accession,
-                            term = ontology_term,
-                            description = ontology_desc,
-                            source = source,
-                            group_type = attrib_disease
-                        )
+                    source = Source.objects.get(name=source)
+                    # Get attrib 'disease'
+                    attrib_disease = Attrib.objects.get(
+                        value = "disease",
+                        type__code = "ontology_term_group"
+                    )
 
-                    # Insert disease ontology
-                    attrib = Attrib.objects.get(value="Data source")
-                    disease_ontology_obj = DiseaseOntology.objects.create(
+                    ontology_obj = OntologyTerm.objects.create(
+                                accession = ontology_accession,
+                                term = ontology_term,
+                                description = ontology_desc,
+                                source = source,
+                                group_type = attrib_disease
+                    )
+
+                attrib = Attrib.objects.get(
+                    value="Data source",
+                    type__code = "ontology_mapping"
+                )
+
+                try:
+                    # Check if disease-ontology is stored in G2P
+                    disease_ontology_obj = DiseaseOntology.objects.get(
                         disease = disease_obj,
                         ontology_term = ontology_obj,
                         mapped_by_attrib = attrib,
                     )
+                except DiseaseOntology.DoesNotExist:
+                    # Insert disease-ontology
+                    disease_ontology_obj = DiseaseOntology.objects.create(
+                        disease = disease_obj,
+                        ontology_term = ontology_obj,
+                        mapped_by_attrib = attrib,
+                    )    
 
-            # Insert disease publication info
-            for publication in publications_list:
-                publication_pmid = publication['publication']['pmid']
-                publication_title = publication['publication']['title']
-                n_families = publication['families']
-                consanguinity = publication['consanguinity']
-                ethnicity = publication['ethnicity']
+        # Insert disease publication info
+        for publication in publications_list:
+            publication_pmid = publication['publication']['pmid']
+            publication_title = publication['publication']['title']
+            n_families = publication['families']
+            consanguinity = publication['consanguinity']
+            ethnicity = publication['ethnicity']
 
-                try:
-                    publication_obj = Publication.objects.get(pmid=publication_pmid)
-                except Publication.DoesNotExist:
-                    publication = get_publication(publication_pmid)
-                    if publication['hitCount'] == 0:
-                        raise serializers.ValidationError({"message": f"invalid pmid",
-                                                                    "please check id": publication_pmid})
+            try:
+                publication_obj = Publication.objects.get(pmid=publication_pmid)
+            except Publication.DoesNotExist:
+                publication = get_publication(publication_pmid)
+                if publication['hitCount'] == 0:
+                    raise serializers.ValidationError({"message": f"Invalid PMID",
+                                                       "Please check ID": publication_pmid})
 
-                    # Insert publication
-                    if publication_title is None:
-                        publication_title = publication['result']['title']
-                    publication_authors = get_authors(publication)
-                    publication_doi = None
-                    publication_year = None
-                    if 'doi' in publication['result']:
-                        publication_doi = publication['result']['doi']
-                    if 'pubYear' in publication['result']:
-                        publication_year = publication['result']['pubYear']
+                # Insert publication
+                if publication_title is None:
+                    publication_title = publication['result']['title']
+                publication_authors = get_authors(publication)
+                publication_doi = None
+                publication_year = None
+                if 'doi' in publication['result']:
+                    publication_doi = publication['result']['doi']
+                if 'pubYear' in publication['result']:
+                    publication_year = publication['result']['pubYear']
 
-                    publication_obj = Publication.objects.create(
+                publication_obj = Publication.objects.create(
                         pmid = publication_pmid,
                         title = publication_title,
                         authors = publication_authors,
                         doi = publication_doi,
                         year = publication_year
-                    )
+                )
 
-                # Insert disease_publication
-                try:
-                    disease_publication_obj = DiseasePublication.objects.get(disease=disease_obj, publication=publication_obj)
-                except DiseasePublication.DoesNotExist:
-                    disease_publication_obj = DiseasePublication.objects.create(
+            # Insert disease_publication
+            try:
+                disease_publication_obj = DiseasePublication.objects.get(
+                    disease=disease_obj,
+                    publication=publication_obj
+                )
+            except DiseasePublication.DoesNotExist:
+                disease_publication_obj = DiseasePublication.objects.create(
                         disease = disease_obj,
                         publication = publication_obj,
                         families = n_families,
                         consanguinity = consanguinity,
                         ethnicity = ethnicity,
                         is_deleted = 0
-                    )
-
-        else:
-            raise serializers.ValidationError({"message": f"disease already exists",
-                                               "please select existing disease": disease_obj.name})
+                )
 
         return disease_obj
 
@@ -1062,30 +1404,41 @@ class PhenotypeSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="term", read_only=True)
     description = serializers.CharField(read_only=True)
 
-    @transaction.atomic
-    def create(self, validated_data):
-        phenotype_accession = validated_data.get('accession')
+    def create(self, phenotype_accession):
+        """
+            Create a phenotype based on the accession.
+        """
         phenotype_description = None
 
-        # Check if accession is valid
+        # Check if accession is valid - query HPO API
         validated_phenotype = validate_phenotype(phenotype_accession)
 
         if not re.match(r'HP\:\d+', phenotype_accession) or validated_phenotype is None:
-            raise serializers.ValidationError({"message": f"invalid phenotype accession",
-                                               "please check id": phenotype_accession})
+            raise serializers.ValidationError({"message": f"Invalid phenotype accession",
+                                               "Please check ID": phenotype_accession})
 
-        if validated_phenotype['details']['isObsolete'] == True:
-            raise serializers.ValidationError({"message": f"phenotype accession is obsolete",
-                                               "please check id": phenotype_accession})
+        # TODO check if the new API has 'isObsolete'
+        # if validated_phenotype['isObsolete'] == True:
+        #     raise serializers.ValidationError({"message": f"Phenotype accession is obsolete",
+        #                                        "Please check id": phenotype_accession})
 
-        if 'definition' in validated_phenotype['details']:
-            phenotype_description = validated_phenotype['details']['definition']
+        # Check if phenotype is already in G2P
+        try:
+            phenotype_obj = OntologyTerm.objects.get(accession=phenotype_accession)
 
-        source_obj = Source.objects.filter(name='HPO')
-        phenotype_obj = OntologyTerm.objects.create(accession=phenotype_accession,
-                                                    term=validated_phenotype['details']['name'],
-                                                    description=phenotype_description,
-                                                    source=source_obj.first())
+        except OntologyTerm.DoesNotExist:
+            try:
+                source_obj = Source.objects.get(name='HPO')
+            except Source.DoesNotExist:
+                raise serializers.ValidationError({"message": f"Problem fetching the phenotype source 'HPO'"})
+
+            if 'definition' in validated_phenotype:
+                phenotype_description = validated_phenotype['definition']
+
+            phenotype_obj = OntologyTerm.objects.create(accession=phenotype_accession,
+                                                        term=validated_phenotype['name'],
+                                                        description=phenotype_description,
+                                                        source=source_obj)
 
         return phenotype_obj
 
@@ -1096,25 +1449,116 @@ class PhenotypeSerializer(serializers.ModelSerializer):
 class LGDPhenotypeSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="phenotype.term")
     accession = serializers.CharField(source="phenotype.accession")
+    publication = serializers.IntegerField(source="publication.pmid", allow_null=True) # TODO check how to support several publications
+
+    def create(self, validated_data):
+        lgd = self.context['lgd']
+        accession = validated_data.get("accession") # HPO term
+        publication = validated_data.get("publication") # pmid
+
+        # This method 'create' behaves like 'get_or_create'
+        # If phenotype is already stored in G2P then it returns the object
+        pheno_obj = PhenotypeSerializer().create(accession)
+
+        # TODO insert if not found?
+        publication_obj = Publication.objects.get(pmid=publication)
+
+        lgd_phenotype_obj = LGDPhenotype.objects.create(
+            lgd = lgd,
+            phenotype = pheno_obj,
+            is_deleted = 0,
+            publication = publication_obj
+        )
+
+        return lgd_phenotype_obj
 
     class Meta:
         model = LGDPhenotype
-        fields = ['name', 'accession']
+        fields = ['name', 'accession', 'publication']
 
-class VariantTypeSerializer(serializers.ModelSerializer):
+class LGDVariantTypeSerializer(serializers.ModelSerializer):
     term = serializers.CharField(source="variant_type_ot.term")
     accession = serializers.CharField(source="variant_type_ot.accession")
+    inherited = serializers.BooleanField(allow_null=True)
+    de_novo = serializers.BooleanField(allow_null=True)
+    unknown_inheritance = serializers.BooleanField(allow_null=True)
+    publication = serializers.IntegerField(source="publication.pmid", allow_null=True)
+
+    def create(self, validated_data):
+        lgd = self.context['lgd']
+        inherited = validated_data.get("inherited")
+        de_novo = validated_data.get("de_novo")
+        unknown_inheritance = validated_data.get("unknown_inheritance")
+        var_type = validated_data.get("secondary_type")
+        publications = validated_data.get("supporting_papers")
+
+        # Get variant type from ontology_term
+        # nmd_escape list: frameshift_variant, stop_gained, splice_region_variant?, splice_acceptor_variant,
+        # splice_donor_variant
+        # We save the variant types already with the NMD_escape attached to the term
+        if validated_data.get("nmd_escape") is True:
+            var_type = f"{var_type}_NMD_escaping"
+
+        try:
+            var_type_obj = OntologyTerm.objects.get(
+                term = var_type,
+                group_type__value = "variant_type"
+            )
+        except OntologyTerm.DoesNotExist:
+            raise serializers.ValidationError({"message": f"Invalid variant type {var_type}"})
+
+        # A single variant type can be attached to several publications
+        for publication in publications:
+            # TODO: get or create
+            publication_obj = Publication.objects.get(pmid=publication)
+
+            lgd_variant_type = LGDVariantType.objects.get_or_create(
+                lgd = lgd,
+                variant_type_ot = var_type_obj,
+                inherited = inherited,
+                de_novo = de_novo,
+                unknown_inheritance = unknown_inheritance,
+                publication = publication_obj,
+                is_deleted = 0
+            )
+
+        # TODO return all objects created
+        return lgd_variant_type
 
     class Meta:
         model = LGDVariantType
-        fields = ['term', 'accession']
+        fields = ['term', 'accession', 'inherited', 'de_novo', 'unknown_inheritance', 'publication']
+
+class LGDVariantTypeDescriptionSerializer(serializers.ModelSerializer):
+    publication = serializers.IntegerField(source="publication.pmid")
+    description = serializers.CharField()
+
+    def create(self, validated_data):
+        lgd = self.context['lgd']
+        pmid = validated_data.get("pmid")
+        description = validated_data.get("description")
+
+        publication_obj = Publication.objects.get(pmid=pmid)
+
+        lgd_variant_type_desc = LGDVariantTypeDescription.objects.get_or_create(
+                lgd = lgd,
+                description = description,
+                publication = publication_obj,
+                is_deleted = 0
+            )
+        
+        return lgd_variant_type_desc
+
+    class Meta:
+        model = LGDVariantTypeDescription
+        fields = ['publication', 'description']
 
 ### Curation data ###
 class CurationDataSerializer(serializers.ModelSerializer):
     """
         Serializer for CurationData model
     """
-    
+
     def validate(self, data):
         """
             Validate the input data for curation.
@@ -1147,7 +1591,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         # Check if JSON is already in the table
         curation_entry = self.compare_curation_data(data_dict, user_obj.id)
-   
+
         if curation_entry: # Throw error if data is already stored in table
             raise serializers.ValidationError({"message": f"Data already under curation. Please check session '{curation_entry.session_name}'"})
         if len(data_dict["json_data"]["panels"]) >= 1:
@@ -1179,30 +1623,44 @@ class CurationDataSerializer(serializers.ModelSerializer):
         json_data = data.json_data
         missing_data = []
 
-        if len(json_data["disease"]) == 0:
-            missing_data.append("disease")
-        
-        if len(json_data["confidence"]) == 0:
-            missing_data.append("confidence")
-        
-        if len(json_data["publications"]) == 0:
-            missing_data.append("publication")
-        
-        if not json_data["panels"]:
-            missing_data.append("panel")
-        
-        if json_data["allelic_requirement"] == "":
-            missing_data.append("allelic_requirement")
-
-        if missing_data:
-            raise serializers.ValidationError({"message" : f"The following mandatory fields are missing: {missing_data}"})
-
-        # Check if data is stored in G2P
-        # Locus - we only accept locus already stored in G2P
+        # Check if G2P record (LGD) is already published
         try:
-            locus_obj = Locus.objects.get(name=json_data["locus"])
-        except Locus.DoesNotExist:
-            raise serializers.ValidationError({"message" : f"Invalid locus {json_data["locus"]}"})
+            lgd_obj = LocusGenotypeDisease.objects.get(
+                locus__name = json_data["locus"],
+                genotype__value = json_data["allelic_requirement"],
+                disease__name = json_data["disease"]["disease_name"]
+            )
+
+            raise serializers.ValidationError({
+                "message": "Found another record with same locus, genotype and disease",
+                "Please check G2P record": lgd_obj.stable_id.stable_id
+            })
+
+        except LocusGenotypeDisease.DoesNotExist:
+            if len(json_data["disease"]) == 0:
+                missing_data.append("disease")
+            
+            if len(json_data["confidence"]) == 0:
+                missing_data.append("confidence")
+            
+            if len(json_data["publications"]) == 0:
+                missing_data.append("publication")
+            
+            if not json_data["panels"]:
+                missing_data.append("panel")
+            
+            if json_data["allelic_requirement"] == "":
+                missing_data.append("allelic_requirement")
+
+            if missing_data:
+                raise serializers.ValidationError({"message" : f"The following mandatory fields are missing: {missing_data}"})
+
+            # Check if data is stored in G2P
+            # Locus - we only accept locus already stored in G2P
+            try:
+                locus_obj = Locus.objects.get(name=json_data["locus"])
+            except Locus.DoesNotExist:
+                raise serializers.ValidationError({"message" : f"Invalid locus {json_data["locus"]}"})
 
         return locus_obj
 
@@ -1307,7 +1765,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         if session_name == "":
             session_name = stable_id.stable_id
 
-        user_email = self.context.get('user')
+        user_email = self.context.get('user') # TODO: this needs to be looked at
         user_obj = User.objects.get(email=user_email)
 
         new_curation_data = CurationData.objects.create(
@@ -1341,52 +1799,132 @@ class CurationDataSerializer(serializers.ModelSerializer):
         return instance
 
     @transaction.atomic
-    def publish(data, locus):
+    def publish(self, data):
         """
             Publish a record under curation.
+            This method is wrapped in a single transation (@transaction.atomic) ensuring
+            that all related database operations are treated as a single unit.
+
             Args:
                 data: CurationData object to publish
         """
-        print('Data to publish:', data.json_data)
+        user = self.context.get('user')
+        publications_list = []
 
         ### Publications ###
         for publication in data.json_data["publications"]:
-            # get source
-            publication_data = get_publication(publication["pmid"])
+            if publication["families"] is None:
+                family = []
+            else: 
+                family = [{ "families": publication["families"], 
+                            "consanguinity": publication["consanguineous"], 
+                            "ancestries": publication["ancestries"], 
+                            "affected_individuals": publication["affectedIndividuals"]
+                        }]
 
+            # format the publication data according to the expected format in PublicationSerializer
+            publication_data = { "pmid": publication["pmid"],
+                                "comments": [{"comment": publication["comment"], "is_public": 1}],
+                                "number_of_families": family
+                            }
+
+            publication_obj = PublicationSerializer(context={'user': user}).create(publication_data)
+            publications_list.append(publication_obj)
         ####################
 
         ### Disease ###
-        # # The disease IDs (ontology terms) are saved under cross_references
-        # """ cross_references element example:
-        #         {
-        #             "source": "OMIM",
-        #             "identifier": "114480",
-        #             "disease_name": "breast cancer",
-        #             "original_disease_name": "BREAST CANCER"
-        #         }
-        # """
-        # cross_references = []
-        # if "cross_references" in data.json_data["disease"]:
-        #     for cr in data.json_data["disease"]["cross_references"]:
-        #         ontology_term = { "accession": cr["identifier"],
-        #                           "term": cr["identifier"],
-        #                           "description": cr["original_disease_name"]
-        #                         }
-        #         cross_references.append(ontology_term)
+        # The disease IDs (ontology terms) are saved under cross_references
+        """ cross_references element example:
+                {
+                    "source": "OMIM",
+                    "identifier": "114480",
+                    "disease_name": "breast cancer",
+                    "original_disease_name": "BREAST CANCER"
+                }
+        """
+        cross_references = []
+        if "cross_references" in data.json_data["disease"]:
+            for cr in data.json_data["disease"]["cross_references"]:
+                ontology_term = {
+                    "accession": cr["identifier"],
+                    "term": cr["identifier"], # TODO This should be the disease name
+                    "description": cr["original_disease_name"] # TODO This should be the full description
+                }
+                # Format the cross_reference dictionary according to the expected format in CreateDiseaseSerializer
+                cross_references.append({"ontology_term": ontology_term})
 
-        # # Use CreateDiseaseSerializer to get or create disease
-        # disease = { "name": data.json_data["disease"]["disease_name"],
-        #             "ontology_terms": cross_references, # if we have more ids the serializer should add them
-        #             "publications": []
-        #           }
+        # Use CreateDiseaseSerializer to get or create disease
+        disease = {
+            "name": data.json_data["disease"]["disease_name"],
+            "ontology_terms": cross_references, # if we have more ids the serializer should add them
+            "publications": [] # TODO review if necessary
+        }
 
-        # disease_obj = CreateDiseaseSerializer().create(disease)
+        # The CreateDiseaseSerializer is going to first check if the disease is stored in G2P
+        # It only inserts data that is not in G2P
+        disease_obj = CreateDiseaseSerializer().create(disease)
         ###############
 
-        # Update stable_id.is_live to 1
-        # Update curation_data - delete entry
+        ### Locus-Genotype-Disease ###
+        lgd_data = {"locus": data.json_data["locus"],
+                    "stable_id": data.stable_id, # stable id obj
+                    "allelic_requirement": data.json_data["allelic_requirement"], # value string
+                    "panels": data.json_data["panels"],
+                    "confidence": data.json_data["confidence"],
+                    "phenotypes": data.json_data["phenotypes"],
+                    "variant_types": data.json_data["variant_types"]
+                }
 
+        lgd_obj = LocusGenotypeDiseaseSerializer().create(lgd_data, disease_obj, publications_list)
+        ##############################
+
+        ### Insert data attached to the record Locus-Genotype-Disease ###
+
+        ### Phenotypes ###
+        for phenotype in data.json_data["phenotypes"]:
+            LGDPhenotypeSerializer(context={'lgd': lgd_obj}).create({
+                "accession": phenotype["summary"], # TODO update variable name
+                "publication": phenotype["pmid"] # optional
+                })
+        
+        ### Cross cutting modifier ###
+        # "cross_cutting_modifier" is an array of strings
+        for ccm in data.json_data["cross_cutting_modifier"]:
+            LGDCrossCuttingModifierSerializer(context={'lgd': lgd_obj}).create(ccm)
+
+        ### Variant (GenCC) consequences ###
+        # Example: 'variant_consequences': [{'name': 'altered_gene_product_level', 'support': ''}
+        for var_consequence in data.json_data["variant_consequences"]:
+            LGDVariantGenCCConsequenceSerializer(context={'lgd': lgd_obj}).create(var_consequence)
+
+        ### Variant types ###
+        # Example: {'comment': 'This is a frameshift', 'inherited': false, 'de_novo': false, 
+        # 'unknown_inheritance': false, 'nmd_escape': True, 'primary_type': 'protein_changing',
+        # 'secondary_type': 'frameshift_variant', 'supporting_papers': [38737272, 38768424]}
+        for variant_type in data.json_data["variant_types"]:
+            LGDVariantTypeSerializer(context={'lgd': lgd_obj}).create(variant_type)
+
+        # Variant description (HGVS)
+        for variant_type_desc in data.json_data["variant_descriptions"]:
+            LGDVariantTypeDescriptionSerializer(context={'lgd': lgd_obj}).create(variant_type_desc)
+
+        # TODO: add comment
+
+        ### Mechanism ###
+        # The curation form only supports one mechanism
+        # Curators cannot create a record with multiple mechanisms
+        if data.json_data["molecular_mechanism"]:
+            LGDMolecularMechanismSerializer(context={'lgd': lgd_obj}).create(
+                data.json_data["molecular_mechanism"],
+                data.json_data["mechanism_synopsis"]
+            )
+
+        #################################################################
+
+        # Update stable_id status to live (is_live=1)
+        G2PStableIDSerializer(context={'stable_id': data.stable_id.stable_id}).update_stable_id(1)
+
+        return lgd_obj
 
     class Meta:
         model = CurationData

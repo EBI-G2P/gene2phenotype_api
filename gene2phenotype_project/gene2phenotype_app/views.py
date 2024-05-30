@@ -911,12 +911,26 @@ class PublishRecord(APIView):
             # Get curation record
             curation_obj = CurationData.objects.get(stable_id__stable_id=stable_id,
                                                     user__email=user)
+
             # Check if there is enough data to publish the record
             locus_obj = self.serializer_class().validate_to_publish(curation_obj)
 
             # Publish record
-            self.serializer_class.publish(curation_obj, locus_obj)
+            try:
+                lgd_obj = self.serializer_class(context={'user': user}).publish(curation_obj)
+                # Delete entry from 'curation_data'
+                curation_obj.delete()
+
+                return Response({
+                    "message": f"Record '{lgd_obj.stable_id.stable_id}' published succesfully"
+                    }, status=status.HTTP_201_CREATED)
+
+            except LocusGenotypeDisease.DoesNotExist:
+                Response({
+                    "message": f"Failed to publish record ID '{stable_id}'"
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         except CurationData.DoesNotExist:
-            return Response({"message": f"Curation data not found for ID {stable_id}"},
-                             status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                "message": f"Curation data not found for ID '{stable_id}'"
+                }, status=status.HTTP_404_NOT_FOUND)

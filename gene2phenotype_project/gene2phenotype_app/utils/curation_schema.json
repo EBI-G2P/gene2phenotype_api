@@ -28,7 +28,7 @@
                         "type": "number"
                     },
                     "ancestries": {
-                        "type": "number"
+                        "type": "string"
                     },
                     "consanguineous": {
                         "type": "string"
