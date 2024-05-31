@@ -260,6 +260,7 @@ class UserSerializer(serializers.ModelSerializer):
     def get_panels(self, id):
         """
             Get a list of panels the user has permission to edit.
+            It returns the panel descriptions i.e. full name.
             Output example: ["Developmental disorders", "Ear disorders"]
         """
         user_login = self.context.get('user')
@@ -273,6 +274,26 @@ class UserSerializer(serializers.ModelSerializer):
                 user=id, panel__is_visible=1
                 ).select_related('panel'
                                  ).values_list('panel__description', flat=True)
+
+        return user_panels
+
+    def panels_names(self, id):
+        """
+            Get a list of panels the user has permission to edit.
+            It returns the panel names i.e. short name.
+            Output example: ["DD", "Ear"]
+        """
+        user_login = self.context.get('user')
+        if user_login and user_login.is_authenticated:
+            user_panels = UserPanel.objects.filter(
+                user=id
+                ).select_related('panel'
+                                 ).values_list('panel__name', flat=True)
+        else:
+            user_panels = UserPanel.objects.filter(
+                user=id, panel__is_visible=1
+                ).select_related('panel'
+                                 ).values_list('panel__name', flat=True)
 
         return user_panels
 
@@ -298,8 +319,8 @@ class AttribSerializer(serializers.ModelSerializer):
 
 class LGDPanelSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="panel.name")
-    description = serializers.CharField(source="panel.description", allow_null=True)
-    publications = serializers.CharField(source="publication.pmid", allow_null=True)
+    description = serializers.CharField(source="panel.description", allow_null=True, required = False)
+    publications = serializers.CharField(source="publication.pmid", allow_null=True, required = False)
 
     def create(self, validated_data):
         lgd = self.context['lgd']
@@ -367,7 +388,6 @@ class LocusSerializer(serializers.ModelSerializer):
 
         return locus_attribs
 
-    @transaction.atomic
     def create(self, validated_data):
         gene_symbol = validated_data.get('name')
         sequence_name = validated_data.get('sequence')['name']
@@ -1404,10 +1424,11 @@ class PhenotypeSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="term", read_only=True)
     description = serializers.CharField(read_only=True)
 
-    def create(self, phenotype_accession):
+    def create(self, accession):
         """
             Create a phenotype based on the accession.
         """
+        phenotype_accession = accession["accession"]
         phenotype_description = None
 
         # Check if accession is valid - query HPO API
@@ -1458,7 +1479,7 @@ class LGDPhenotypeSerializer(serializers.ModelSerializer):
 
         # This method 'create' behaves like 'get_or_create'
         # If phenotype is already stored in G2P then it returns the object
-        pheno_obj = PhenotypeSerializer().create(accession)
+        pheno_obj = PhenotypeSerializer().create({"accession": accession})
 
         # TODO insert if not found?
         publication_obj = Publication.objects.get(pmid=publication)

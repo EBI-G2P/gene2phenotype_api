@@ -10,6 +10,7 @@ from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from rest_framework.views import APIView
+from django.db import transaction
 
 
 from gene2phenotype_app.serializers import (UserSerializer,
@@ -654,6 +655,7 @@ class SearchView(BaseView):
 class BaseAdd(generics.CreateAPIView):
     http_method_names = ['post', 'head']
 
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -693,7 +695,12 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
     serializer_class = LGDPanelSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
+    @transaction.atomic
     def post(self, request, stable_id):
+        """
+            The post method links the current LGD record to the panel.
+            We want to whole process to be done in one db transaction.
+        """
         user = self.request.user
 
         if not user.is_authenticated:
@@ -702,7 +709,8 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
         # Check if user can update panel
         user_obj = get_object_or_404(User, email=user)
         serializer = UserSerializer(user_obj, context={'user' : user})
-        user_panel_list_lower = [panel.lower() for panel in serializer.get_panels(user_obj)]
+        user_panel_list_lower = [panel.lower() for panel in serializer.panels_names(user_obj)]
+
         panel_name_input = request.data.get('name', None)
 
         if panel_name_input is None:
@@ -713,13 +721,13 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
 
         g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id) #using the g2p stable id information to get the lgd 
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id=g2p_stable_id, is_deleted=0)
-        serializer_class = LGDPanelSerializer(data=request.data, context={'lgd': lgd, 'include_details' : True})
+        serializer_class = LGDPanelSerializer(data={"name": panel_name_input}, context={'lgd': lgd})
 
         if serializer_class.is_valid():
             serializer_class.save()
             response = Response({'message': 'Panel added to the G2P entry successfully.'}, status=status.HTTP_200_OK)
         else:
-            response = Response({"message": "Error adding a panel"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            response = Response({"message": "Error adding a panel", "details": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return response
 
