@@ -68,7 +68,7 @@ class G2PStableIDSerializer(serializers.ModelSerializer):
 
         return stable_id_instance
     
-    def update_stable_id(self, is_live):
+    def update_g2p_id_status(self, is_live):
         """
             Update the status of the G2P stable id.
             Set 'is_live' to:
@@ -1943,7 +1943,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         #################################################################
 
         # Update stable_id status to live (is_live=1)
-        G2PStableIDSerializer(context={'stable_id': data.stable_id.stable_id}).update_stable_id(1)
+        G2PStableIDSerializer(context={'stable_id': data.stable_id.stable_id}).update_g2p_id_status(1)
 
         return lgd_obj
 
