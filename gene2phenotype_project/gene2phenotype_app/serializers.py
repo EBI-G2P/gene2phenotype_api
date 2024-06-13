@@ -844,8 +844,10 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
         lgd = self.context['lgd']
         mechanism_name = mechanism["name"]
         mechanism_support = mechanism["support"]
-        synopsis_name = mechanism_synopsis["name"]
-        synopsis_support = mechanism_synopsis["support"]
+        synopsis_name = mechanism_synopsis["name"] # optional
+        synopsis_support = mechanism_synopsis["support"] # optional
+        synopsis_obj = None
+        synopsis_support_obj = None
 
         # Get mechanism value from attrib
         try:
@@ -854,8 +856,8 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
                 type__code = "mechanism"
             )
         except Attrib.DoesNotExist:
-            raise serializers.ValidationError({"message": f"Invalid mechanims value {mechanism_name}"})
-        
+            raise serializers.ValidationError({"message": f"Invalid mechanism value '{mechanism_name}'"})
+
         # Get mechanism support from attrib
         try:
             mechanism_support_obj = Attrib.objects.get(
@@ -863,25 +865,26 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
                 type__code = "support"
             )
         except Attrib.DoesNotExist:
-            raise serializers.ValidationError({"message": f"Invalid mechanism support value {mechanism_support}"})
+            raise serializers.ValidationError({"message": f"Invalid mechanism support value '{mechanism_support}'"})
 
-        # Get mechanism synopsis value from attrib
-        try:
-            synopsis_obj = Attrib.objects.get(
-                value = synopsis_name,
-                type__code = "mechanism_synopsis"
-            )
-        except Attrib.DoesNotExist:
-            raise serializers.ValidationError({"message": f"Invalid mechanims synopsis value {synopsis_name}"})
+        if synopsis_name != "":
+            # Get mechanism synopsis value from attrib
+            try:
+                synopsis_obj = Attrib.objects.get(
+                    value = synopsis_name,
+                    type__code = "mechanism_synopsis"
+                )
+            except Attrib.DoesNotExist:
+                raise serializers.ValidationError({"message": f"Invalid mechanism synopsis value '{synopsis_name}'"})
 
-        # Get mechanism synopsis support from attrib
-        try:
-            synopsis_support_obj = Attrib.objects.get(
-                value = synopsis_support,
-                type__code = "support"
-            )
-        except Attrib.DoesNotExist:
-            raise serializers.ValidationError({"message": f"Invalid mechanism synopsis support value {synopsis_support}"})
+            # Get mechanism synopsis support from attrib
+            try:
+                synopsis_support_obj = Attrib.objects.get(
+                    value = synopsis_support,
+                    type__code = "support"
+                )
+            except Attrib.DoesNotExist:
+                raise serializers.ValidationError({"message": f"Invalid mechanism synopsis support value '{synopsis_support}'"})
 
         # Create new LGD-molecular mechanism
         lgd_mechanism = LGDMolecularMechanism.objects.create(
@@ -1783,20 +1786,24 @@ class CurationDataSerializer(serializers.ModelSerializer):
         if session_name == "":
             session_name = stable_id.stable_id
 
-        if CurationData.objects.get(session_name=session_name):
-            raise serializers.ValidationError({"message" : f"Curation data with the '{session_name}' already exists. Please change the session name and try again"})
+        try:
+            CurationData.objects.get(session_name=session_name)
+            raise serializers.ValidationError({
+                "message" : f"Curation data with the '{session_name}' already exists. Please change the session name and try again"
+            })
 
-        user_email = self.context.get('user') # TODO: this needs to be looked at
-        user_obj = User.objects.get(email=user_email)
+        except:
+            user_email = self.context.get('user') # TODO: this needs to be looked at
+            user_obj = User.objects.get(email=user_email)
 
-        new_curation_data = CurationData.objects.create(
-            session_name=session_name,
-            json_data=json_data,
-            stable_id=stable_id,
-            date_created=date_created,
-            date_last_update=date_reviewed,
-            user=user_obj
-        )
+            new_curation_data = CurationData.objects.create(
+                session_name=session_name,
+                json_data=json_data,
+                stable_id=stable_id,
+                date_created=date_created,
+                date_last_update=date_reviewed,
+                user=user_obj
+            )
 
         return new_curation_data
 
@@ -1907,7 +1914,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 "accession": phenotype["summary"], # TODO update variable name
                 "publication": phenotype["pmid"] # optional
                 })
-        
+
         ### Cross cutting modifier ###
         # "cross_cutting_modifier" is an array of strings
         for ccm in data.json_data["cross_cutting_modifier"]:
