@@ -930,7 +930,7 @@ class PublishRecord(APIView):
                 curation_obj.delete()
 
                 return Response({
-                    "message": f"Record '{lgd_obj.stable_id.stable_id}' published succesfully"
+                    "message": f"Record '{lgd_obj.stable_id.stable_id}' published successfully"
                     }, status=status.HTTP_201_CREATED)
 
             except LocusGenotypeDisease.DoesNotExist:
