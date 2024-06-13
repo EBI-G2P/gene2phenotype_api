@@ -693,7 +693,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         return date
 
-    def create(self, validated_data, disease_obj, publications_list):
+    def create(self, data, disease_obj, publications_list):
         """
             Create a G2P record.
             A record is always linked to one or more panels and publications.
@@ -709,11 +709,11 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                             - publications
         """
 
-        locus_name = validated_data.get('locus') # Usually this is the gene symbol
-        stable_id_obj = validated_data.get('stable_id') # stable id obj
-        genotype = validated_data.get('allelic_requirement') # allelic requirement
-        panels = validated_data.get('panels') # Array of panel names
-        confidence = validated_data.get('confidence') # confidence level and justification
+        locus_name = data.get('locus') # Usually this is the gene symbol
+        stable_id_obj = data.get('stable_id') # stable id obj
+        genotype = data.get('allelic_requirement') # allelic requirement
+        panels = data.get('panels') # Array of panel names
+        confidence = data.get('confidence') # confidence level and justification
 
         if not panels or not publications_list:
             raise serializers.ValidationError({"message": f"Missing data to create the G2P record {stable_id_obj.stable_id}"})
@@ -747,7 +747,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     type__code = "confidence_category"
                 )
             except Attrib.DoesNotExist:
-                raise serializers.ValidationError({"message": f"Invalid confidence value {confidence["level"]}"})
+                raise serializers.ValidationError({"message": f"Invalid confidence value {confidence['level']}"})
 
             # Text to justify the confidence value (optional)
             if confidence["justification"] == "":
@@ -773,9 +773,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 try:
                     # Get name from description
                     panel_obj = Panel.objects.get(description=panel)
-                    data = {"panel": {"name": panel_obj.name}}
+                    data_panel = {"panel": {"name": panel_obj.name}}
                     # The LGDPanelSerializer fetches the object LGD from its context
-                    LGDPanelSerializer(context={'lgd': lgd_obj}).create(data)
+                    LGDPanelSerializer(context={'lgd': lgd_obj}).create(data_panel)
                 
                 except Panel.DoesNotExist:
                     raise serializers.ValidationError({"message": f"Invalid panel {panel}"})
@@ -939,9 +939,9 @@ class PublicationCommentSerializer(serializers.ModelSerializer):
     date = serializers.DateTimeField(read_only=True)
     is_public = serializers.CharField()
 
-    def create(self, validated_data, publication):
-        comment_text = validated_data.get("comment")
-        is_public = validated_data.get("is_public")
+    def create(self, data, publication):
+        comment_text = data.get("comment")
+        is_public = data.get("is_public")
         user_obj = self.context['user']
 
         # Check if comment is already stored. We consider same comment if they have the same:
@@ -1082,7 +1082,10 @@ class PublicationSerializer(serializers.ModelSerializer):
 
         # Add new comments and/or number of families
         for comment in comments:
-            PublicationCommentSerializer(context={'user': self.context.get('user')}).create(comment, publication_obj)
+            if comment != "":
+                PublicationCommentSerializer(
+                    context={'user': self.context.get('user')}
+                ).create(comment, publication_obj)
 
         for family in number_of_families:
             PublicationFamiliesSerializer().create(family, publication_obj)
@@ -1658,10 +1661,10 @@ class CurationDataSerializer(serializers.ModelSerializer):
             })
 
         except LocusGenotypeDisease.DoesNotExist:
-            if len(json_data["disease"]) == 0:
+            if json_data["disease"]["disease_name"] == "":
                 missing_data.append("disease")
             
-            if len(json_data["confidence"]) == 0:
+            if json_data["confidence"]["level"] == "":
                 missing_data.append("confidence")
             
             if len(json_data["publications"]) == 0:
@@ -1674,14 +1677,15 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 missing_data.append("allelic_requirement")
 
             if missing_data:
-                raise serializers.ValidationError({"message" : f"The following mandatory fields are missing: {missing_data}"})
+                missing_data_str = ', '.join(missing_data)
+                raise serializers.ValidationError({"message" : f"The following mandatory fields are missing: {missing_data_str}"})
 
             # Check if data is stored in G2P
             # Locus - we only accept locus already stored in G2P
             try:
                 locus_obj = Locus.objects.get(name=json_data["locus"])
             except Locus.DoesNotExist:
-                raise serializers.ValidationError({"message" : f"Invalid locus {json_data["locus"]}"})
+                raise serializers.ValidationError({"message" : f"Invalid locus {json_data['locus']}"})
 
         return locus_obj
 

@@ -36,7 +36,7 @@ urlpatterns = [
     path('gene2phenotype/api/curation/<str:stable_id>/update/', views.UpdateCurationData.as_view(), name="update_curation"),
 
     ### Publish data
-    path('gene2phenotype/api/publish/<str:stable_id>/', views.PublishRecord.as_view(), name="publish_record"),
+    path('gene2phenotype/api/curation/publish/<str:stable_id>/', views.PublishRecord.as_view(), name="publish_record"),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)

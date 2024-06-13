@@ -765,7 +765,7 @@ class AddCurationData(BaseAdd):
         except exceptions.ValidationError as e:
             return Response({"message": "JSON data does not follow the required format, Required format is" + str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.serializer_class(data=request.data, context={'user': self.request.user})
         if serializer.is_valid():
             
             serializer.save()
@@ -912,7 +912,7 @@ class PublishRecord(APIView):
     serializer_class = CurationDataSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, stable_id, *args, **kwargs):
+    def post(self, request, stable_id):
         user = self.request.user
 
         try:

@@ -377,6 +377,7 @@ class OntologyTerm(models.Model):
 
     class Meta:
         db_table = "ontology_term"
+        unique_together = ["accession", "term"]
         indexes = [
             models.Index(fields=['accession']),
             models.Index(fields=['term']),
@@ -425,7 +426,7 @@ class DiseaseOntology(models.Model):
     id = models.AutoField(primary_key=True)
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
     ontology_term = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
-    mapped_by_attrib = models.ForeignKey("Attrib", on_delete=models.PROTECT, null=True)
+    mapped_by_attrib = models.ForeignKey("Attrib", on_delete=models.PROTECT)
     history = HistoricalRecords()
 
     class Meta:
