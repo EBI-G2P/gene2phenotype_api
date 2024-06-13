@@ -934,10 +934,6 @@ class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
         fields = ['term']
 
 class PublicationCommentSerializer(serializers.ModelSerializer):
-    comment = serializers.CharField()
-    user = serializers.CharField(source="user.username", read_only=True)
-    date = serializers.DateTimeField(read_only=True)
-    is_public = serializers.CharField()
 
     def create(self, data, publication):
         comment_text = data.get("comment")
@@ -966,13 +962,8 @@ class PublicationCommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PublicationComment
-        fields = ['comment', 'user', 'date', 'is_public']
 
 class PublicationFamiliesSerializer(serializers.ModelSerializer):
-    families = serializers.IntegerField()
-    consanguinity = serializers.CharField(source="consanguinity.value", allow_null=True) # values are stored in attrib
-    affected_individuals = serializers.IntegerField(allow_null=True)
-    ancestries = serializers.CharField() # This field is a free text
 
     def create(self, validated_data, publication):
         """
@@ -1026,7 +1017,6 @@ class PublicationFamiliesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PublicationFamilies
-        fields = ['families', 'consanguinity', 'affected_individuals', 'ancestries']
 
 class PublicationSerializer(serializers.ModelSerializer):
     pmid = serializers.IntegerField()
@@ -1636,7 +1626,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 - locus (validated in the first validation step)
                 - disease
                 - genotype/allelic requirement
-                - mutations consequence
+                - molecular mechanism
                 - panel(s)
                 - confidence
                 - publication(s)
@@ -1675,6 +1665,9 @@ class CurationDataSerializer(serializers.ModelSerializer):
             
             if json_data["allelic_requirement"] == "":
                 missing_data.append("allelic_requirement")
+
+            if json_data["molecular_mechanism"]["name"] == "":
+                missing_data.append("molecular_mechanism")
 
             if missing_data:
                 missing_data_str = ', '.join(missing_data)
