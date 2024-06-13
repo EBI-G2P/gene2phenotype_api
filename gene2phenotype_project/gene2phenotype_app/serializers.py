@@ -1790,6 +1790,9 @@ class CurationDataSerializer(serializers.ModelSerializer):
         if session_name == "":
             session_name = stable_id.stable_id
 
+        if CurationData.objects.get(session_name=session_name):
+            raise serializers.ValidationError({"message" : f"Curation data with the '{session_name}' already exists. Please change the session name and try again"})
+
         user_email = self.context.get('user') # TODO: this needs to be looked at
         user_obj = User.objects.get(email=user_email)
 
