@@ -100,7 +100,6 @@ def get_ontology(id, source):
     r = requests.get(url, headers={ "Content-Type" : "application/json"})
 
     if not r.ok:
-        r.raise_for_status()
         return "query failed"
 
     decoded = r.json()

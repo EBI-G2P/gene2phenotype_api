@@ -10,6 +10,7 @@ from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from rest_framework.views import APIView
+from django.db import transaction
 
 
 from gene2phenotype_app.serializers import (UserSerializer,
@@ -654,6 +655,7 @@ class SearchView(BaseView):
 class BaseAdd(generics.CreateAPIView):
     http_method_names = ['post', 'head']
 
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -693,7 +695,12 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
     serializer_class = LGDPanelSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
+    @transaction.atomic
     def post(self, request, stable_id):
+        """
+            The post method links the current LGD record to the panel.
+            We want to whole process to be done in one db transaction.
+        """
         user = self.request.user
 
         if not user.is_authenticated:
@@ -702,7 +709,8 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
         # Check if user can update panel
         user_obj = get_object_or_404(User, email=user)
         serializer = UserSerializer(user_obj, context={'user' : user})
-        user_panel_list_lower = [panel.lower() for panel in serializer.get_panels(user_obj)]
+        user_panel_list_lower = [panel.lower() for panel in serializer.panels_names(user_obj)]
+
         panel_name_input = request.data.get('name', None)
 
         if panel_name_input is None:
@@ -713,13 +721,13 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
 
         g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id) #using the g2p stable id information to get the lgd 
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id=g2p_stable_id, is_deleted=0)
-        serializer_class = LGDPanelSerializer(data=request.data, context={'lgd': lgd, 'include_details' : True})
+        serializer_class = LGDPanelSerializer(data={"name": panel_name_input}, context={'lgd': lgd})
 
         if serializer_class.is_valid():
             serializer_class.save()
             response = Response({'message': 'Panel added to the G2P entry successfully.'}, status=status.HTTP_200_OK)
         else:
-            response = Response({"message": "Error adding a panel"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            response = Response({"message": "Error adding a panel", "details": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return response
 
@@ -898,3 +906,39 @@ class UpdateCurationData(generics.UpdateAPIView):
 
         else:
             return Response({"message": "Failed to update data", "details": serializer.errors})
+
+class PublishRecord(APIView):
+    http_method_names = ['post', 'head']
+    serializer_class = CurationDataSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, stable_id):
+        user = self.request.user
+
+        try:
+            # Get curation record
+            curation_obj = CurationData.objects.get(stable_id__stable_id=stable_id,
+                                                    user__email=user)
+
+            # Check if there is enough data to publish the record
+            locus_obj = self.serializer_class().validate_to_publish(curation_obj)
+
+            # Publish record
+            try:
+                lgd_obj = self.serializer_class(context={'user': user}).publish(curation_obj)
+                # Delete entry from 'curation_data'
+                curation_obj.delete()
+
+                return Response({
+                    "message": f"Record '{lgd_obj.stable_id.stable_id}' published successfully"
+                    }, status=status.HTTP_201_CREATED)
+
+            except LocusGenotypeDisease.DoesNotExist:
+                Response({
+                    "message": f"Failed to publish record ID '{stable_id}'"
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        except CurationData.DoesNotExist:
+            return Response({
+                "message": f"Curation data not found for ID '{stable_id}'"
+                }, status=status.HTTP_404_NOT_FOUND)
