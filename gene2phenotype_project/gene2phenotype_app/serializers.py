@@ -74,7 +74,7 @@ class G2PStableIDSerializer(serializers.ModelSerializer):
             Set 'is_live' to:
                 0: entry is not published (live)
                 OR
-                1: entry is published
+                1: entry is published (live)
         """
         stable_id = self.context['stable_id']
 
