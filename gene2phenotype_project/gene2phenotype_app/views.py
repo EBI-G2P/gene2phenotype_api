@@ -26,7 +26,7 @@ from gene2phenotype_app.serializers import (UserSerializer,
 
 from gene2phenotype_app.models import (Panel, User, AttribType, Attrib,
                                        LocusGenotypeDisease, Locus, OntologyTerm,
-                                       DiseaseOntology, Disease, LGDPanel,
+                                       DiseaseOntologyTerm, Disease, LGDPanel,
                                        LocusAttrib, GeneDisease, G2PStableID,
                                        CurationData, Publication)
 
@@ -266,7 +266,7 @@ class DiseaseDetail(BaseView):
             if not ontology_term.exists():
                 self.handle_no_permission('Disease', id)
 
-            disease_ontology = DiseaseOntology.objects.filter(ontology_term_id=ontology_term.first().id)
+            disease_ontology = DiseaseOntologyTerm.objects.filter(ontology_term_id=ontology_term.first().id)
 
             if not disease_ontology.exists():
                 self.handle_no_permission('Disease', id)
@@ -509,7 +509,7 @@ class SearchView(BaseView):
         base_locus_3 = Q(locus__locusattrib__isnull=False, locus__locusattrib__value=search_query, locus__locusattrib__is_deleted=0)
         base_disease = Q(disease__name__icontains=search_query, is_deleted=0)
         base_disease_2 = Q(disease__diseasesynonym__synonym__icontains=search_query, is_deleted=0)
-        base_disease_3 = Q(disease__diseaseontology__ontology_term__accession=search_query, is_deleted=0)
+        base_disease_3 = Q(disease__diseaseontologyterm__ontology_term__accession=search_query, is_deleted=0)
         base_phenotype = Q(lgdphenotype__phenotype__term__icontains=search_query, lgdphenotype__isnull=False, is_deleted=0)
         base_phenotype_2 = Q(lgdphenotype__phenotype__accession=search_query, lgdphenotype__isnull=False, is_deleted=0)
         base_g2p_id = Q(stable_id__stable_id=search_query, is_deleted=0)
