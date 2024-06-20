@@ -18,7 +18,7 @@ from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      LGDMolecularMechanism, LGDMolecularMechanismEvidence,
                      OntologyTerm, Source, Publication, GeneDisease,
                      Sequence, UniprotAnnotation, CurationData, PublicationFamilies,
-                     LGDVariantTypeDescription)
+                     LGDVariantTypeDescription, CVMolecularMechanism)
 
 from .utils import (clean_string, get_ontology, get_publication, get_authors, validate_gene,
                     validate_phenotype, get_ontology_source)
@@ -835,14 +835,14 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
             ).select_related('evidence', 'publication').values(
                 'publication__pmid',
                 'evidence__value',
-                'evidence__type__code'
+                'evidence__subtype'
             ).order_by('publication')
 
         data = {}
 
         for evidence in evidence_list:
             evidence_value = evidence["evidence__value"]
-            evidence_type = evidence["evidence__type__code"].replace("mechanism_evidence_", "")
+            evidence_type = evidence["evidence__subtype"]
             pmid = evidence["publication__pmid"]
 
             if pmid not in data:
@@ -869,18 +869,18 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
 
         # Get mechanism value from attrib
         try:
-            mechanism_obj = Attrib.objects.get(
+            mechanism_obj = CVMolecularMechanism.objects.get(
                 value = mechanism_name,
-                type__code = "mechanism"
+                type = "mechanism"
             )
         except Attrib.DoesNotExist:
             raise serializers.ValidationError({"message": f"Invalid mechanism value '{mechanism_name}'"})
 
         # Get mechanism support from attrib
         try:
-            mechanism_support_obj = Attrib.objects.get(
+            mechanism_support_obj = CVMolecularMechanism.objects.get(
                 value = mechanism_support,
-                type__code = "support"
+                type = "support"
             )
         except Attrib.DoesNotExist:
             raise serializers.ValidationError({"message": f"Invalid mechanism support value '{mechanism_support}'"})
@@ -888,18 +888,18 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
         if synopsis_name != "":
             # Get mechanism synopsis value from attrib
             try:
-                synopsis_obj = Attrib.objects.get(
+                synopsis_obj = CVMolecularMechanism.objects.get(
                     value = synopsis_name,
-                    type__code = "mechanism_synopsis"
+                    type = "mechanism_synopsis"
                 )
             except Attrib.DoesNotExist:
                 raise serializers.ValidationError({"message": f"Invalid mechanism synopsis value '{synopsis_name}'"})
 
             # Get mechanism synopsis support from attrib
             try:
-                synopsis_support_obj = Attrib.objects.get(
+                synopsis_support_obj = CVMolecularMechanism.objects.get(
                     value = synopsis_support,
-                    type__code = "support"
+                    type = "support"
                 )
             except Attrib.DoesNotExist:
                 raise serializers.ValidationError({"message": f"Invalid mechanism synopsis support value '{synopsis_support}'"})
@@ -926,28 +926,31 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
                 except Publication.DoesNotExist:
                     raise serializers.ValidationError({"message": f"Could not find publication for PMID '{evidence['pmid']}'"})
 
-                # Get the evidence values
-                for evidence_type in evidence["evidence_types"]:
-                    # type can be: function, rescue, functional alteration or models
-                    type = evidence_type["primary_type"].replace(" ", "_")
-                    values = evidence_type["secondary_type"]
+                else:
+                    # Get the evidence values
+                    for evidence_type in evidence["evidence_types"]:
+                        # type can be: function, rescue, functional alteration or models
+                        type = evidence_type["primary_type"].replace(" ", "_")
+                        values = evidence_type["secondary_type"]
 
-                    # Values are stored in attrib table
-                    for v in values:
-                        try:
-                            evidence_value = Attrib.objects.get(
-                                value = v.lower(),
-                                type__code = f"mechanism_evidence_{type.lower()}"
+                        # Values are stored in attrib table
+                        for v in values:
+                            try:
+                                evidence_value = CVMolecularMechanism.objects.get(
+                                    value = v.lower(),
+                                    type = "evidence",
+                                    subtype = type.lower
+                                )
+                            except Attrib.DoesNotExist:
+                                raise serializers.ValidationError({"message": f"Invalid mechanism evidence value '{v.lower()}'"})
+
+                            else:
+                                lgd_mechanism_evidence = LGDMolecularMechanismEvidence.objects.create(
+                                molecular_mechanism = lgd_mechanism,
+                                evidence = evidence_value,
+                                publication = publication_obj,
+                                is_deleted = 0
                             )
-                        except Attrib.DoesNotExist:
-                            raise serializers.ValidationError({"message": f"Invalid mechanism evidence value '{v.lower()}'"})
-
-                        lgd_mechanism_evidence = LGDMolecularMechanismEvidence.objects.create(
-                            molecular_mechanism = lgd_mechanism,
-                            evidence = evidence_value,
-                            publication = publication_obj,
-                            is_deleted = 0
-                        )
 
         return lgd_mechanism
 
