@@ -79,13 +79,12 @@ class LGDCrossCuttingModifier(models.Model):
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     ccm = models.ForeignKey("Attrib", on_delete=models.PROTECT)
-    publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 
     class Meta:
         db_table = "lgd_cross_cutting_modifier"
-        unique_together = ["lgd", "ccm", "publication"]
+        unique_together = ["lgd", "ccm"]
         indexes = [
             models.Index(fields=['lgd', 'ccm']),
         ]
