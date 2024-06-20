@@ -873,7 +873,7 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
                 value = mechanism_name,
                 type = "mechanism"
             )
-        except Attrib.DoesNotExist:
+        except CVMolecularMechanism.DoesNotExist:
             raise serializers.ValidationError({"message": f"Invalid mechanism value '{mechanism_name}'"})
 
         # Get mechanism support from attrib
@@ -882,7 +882,7 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
                 value = mechanism_support,
                 type = "support"
             )
-        except Attrib.DoesNotExist:
+        except CVMolecularMechanism.DoesNotExist:
             raise serializers.ValidationError({"message": f"Invalid mechanism support value '{mechanism_support}'"})
 
         if synopsis_name != "":
@@ -892,7 +892,7 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
                     value = synopsis_name,
                     type = "mechanism_synopsis"
                 )
-            except Attrib.DoesNotExist:
+            except CVMolecularMechanism.DoesNotExist:
                 raise serializers.ValidationError({"message": f"Invalid mechanism synopsis value '{synopsis_name}'"})
 
             # Get mechanism synopsis support from attrib
@@ -901,7 +901,7 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
                     value = synopsis_support,
                     type = "support"
                 )
-            except Attrib.DoesNotExist:
+            except CVMolecularMechanism.DoesNotExist:
                 raise serializers.ValidationError({"message": f"Invalid mechanism synopsis support value '{synopsis_support}'"})
 
         # Create new LGD-molecular mechanism
@@ -930,7 +930,7 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
                     # Get the evidence values
                     for evidence_type in evidence["evidence_types"]:
                         # type can be: function, rescue, functional alteration or models
-                        type = evidence_type["primary_type"].replace(" ", "_")
+                        subtype = evidence_type["primary_type"].replace(" ", "_")
                         values = evidence_type["secondary_type"]
 
                         # Values are stored in attrib table
@@ -939,9 +939,9 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
                                 evidence_value = CVMolecularMechanism.objects.get(
                                     value = v.lower(),
                                     type = "evidence",
-                                    subtype = type.lower
+                                    subtype = subtype.lower()
                                 )
-                            except Attrib.DoesNotExist:
+                            except CVMolecularMechanism.DoesNotExist:
                                 raise serializers.ValidationError({"message": f"Invalid mechanism evidence value '{v.lower()}'"})
 
                             else:
