@@ -156,7 +156,7 @@ class LGDVariantTypeDescription(models.Model):
 
 class LGDVariantTypeComment(models.Model):
     id = models.AutoField(primary_key=True)
-    lgd_variant_type = models.ForeignKey("LGDVariantType", on_delete=models.PROTECT)
+    lgd_variant_type = models.ForeignKey("LGDVariantType", related_name="comments", on_delete=models.PROTECT)
     comment = models.TextField(null=False)
     is_public = models.SmallIntegerField(null=False, default=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
@@ -231,7 +231,7 @@ class LGDMolecularMechanism(models.Model):
 class LGDMolecularMechanismEvidence(models.Model):
     id = models.AutoField(primary_key=True)
     molecular_mechanism = models.ForeignKey("LGDMolecularMechanism", on_delete=models.PROTECT)
-    evidence = models.ForeignKey("CVMolecularMechanism", on_delete=models.PROTECT, default=None)
+    evidence = models.ForeignKey("CVMolecularMechanism", related_name="evidence", on_delete=models.PROTECT, default=None)
     description = models.TextField(null=True, default=None)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)

@@ -7,7 +7,7 @@ from ..models import (Panel, Attrib,
                      LGDPanel, LocusGenotypeDisease, LGDVariantGenccConsequence,
                      LGDCrossCuttingModifier, LGDPublication,
                      LGDPhenotype, LGDVariantType, Locus,
-                     G2PStableID, LGDComment,
+                     G2PStableID, LGDComment, LGDVariantTypeComment,
                      LGDMolecularMechanism, LGDMolecularMechanismEvidence,
                      OntologyTerm, Publication,
                      LGDVariantTypeDescription, CVMolecularMechanism)
@@ -202,7 +202,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         return LGDPublicationSerializer(queryset, many=True).data
 
     def get_phenotypes(self, id):
-        queryset = LGDPhenotype.objects.filter(lgd_id=id, is_deleted=0)
+        queryset = LGDPhenotype.objects.filter(lgd_id=id, is_deleted=0).prefetch_related()
         data = {}
 
         for lgd_phenotype in queryset:
@@ -224,7 +224,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     def get_variant_type(self, id):
         # The variant type can be linked to several publications
         # Format the output to return the list of publications
-        queryset = LGDVariantType.objects.filter(lgd_id=id, is_deleted=0)
+        queryset = LGDVariantType.objects.filter(lgd_id=id, is_deleted=0).prefetch_related()
         data = {}
 
         for lgd_variant in queryset:
@@ -237,16 +237,19 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 if lgd_variant.publication:
                     publication_list = [lgd_variant.publication.pmid]
 
-                data[accession] = {"term": lgd_variant.variant_type_ot.term,
-                                   "accession": accession,
-                                   "inherited": lgd_variant.inherited,
-                                   "de_novo": lgd_variant.de_novo,
-                                   "unknown_inheritance": lgd_variant.unknown_inheritance,
-                                   "publications": publication_list}
+                data[accession] = {
+                    "term": lgd_variant.variant_type_ot.term,
+                    "accession": accession,
+                    "inherited": lgd_variant.inherited,
+                    "de_novo": lgd_variant.de_novo,
+                    "unknown_inheritance": lgd_variant.unknown_inheritance,
+                    "publications": publication_list
+                }
+
         return data.values()
 
     def get_variant_description(self, id):
-        queryset = LGDVariantTypeDescription.objects.filter(lgd_id=id, is_deleted=0)
+        queryset = LGDVariantTypeDescription.objects.filter(lgd_id=id, is_deleted=0).prefetch_related()
         data = {}
 
         for lgd_variant in queryset:
@@ -269,7 +272,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
     def get_comments(self, id):
         # TODO check if comment is public
-        lgd_comments = LGDComment.objects.filter(lgd_id=id, is_deleted=0)
+        lgd_comments = LGDComment.objects.filter(lgd_id=id, is_deleted=0).prefetch_related()
         data = []
         for comment in lgd_comments:
             text = { 'text':comment.comment,
@@ -709,6 +712,15 @@ class LGDPhenotypeSerializer(serializers.ModelSerializer):
         model = LGDPhenotype
         fields = ['name', 'accession', 'publication']
 
+class LGDVariantTypeCommentSerializer(serializers.ModelSerializer):
+    comment = serializers.CharField()
+    user = serializers.CharField(source="user.username")
+    date = serializers.CharField()
+
+    class Meta:
+        model = LGDVariantTypeComment
+        fields = ['comment', 'user', 'date']
+
 class LGDVariantTypeSerializer(serializers.ModelSerializer):
     term = serializers.CharField(source="variant_type_ot.term")
     accession = serializers.CharField(source="variant_type_ot.accession")
@@ -716,6 +728,7 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
     de_novo = serializers.BooleanField(allow_null=True)
     unknown_inheritance = serializers.BooleanField(allow_null=True)
     publication = serializers.IntegerField(source="publication.pmid", allow_null=True)
+    comments = LGDVariantTypeCommentSerializer(many=True, required=False)
 
     def create(self, validated_data):
         lgd = self.context['lgd']
@@ -738,7 +751,7 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
                 group_type__value = "variant_type"
             )
         except OntologyTerm.DoesNotExist:
-            raise serializers.ValidationError({"message": f"Invalid variant type {var_type}"})
+            raise serializers.ValidationError({"message": f"Invalid variant type '{var_type}'"})
 
         # A single variant type can be attached to several publications
         for publication in publications:
@@ -760,7 +773,7 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LGDVariantType
-        fields = ['term', 'accession', 'inherited', 'de_novo', 'unknown_inheritance', 'publication']
+        fields = ['term', 'accession', 'inherited', 'de_novo', 'unknown_inheritance', 'publication', 'comments']
 
 class LGDVariantTypeDescriptionSerializer(serializers.ModelSerializer):
     publication = serializers.IntegerField(source="publication.pmid")

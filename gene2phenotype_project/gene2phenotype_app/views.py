@@ -344,10 +344,7 @@ def PublicationDetail(request, pmids):
                 if response['hitCount'] == 0:
                     data.append({
                         'pmid': int(pmid),
-                        'title': None,
-                        'authors': None,
-                        'year': None,
-                        'source': 'Not found'
+                        'error': 'Invalid PMID'
                     })
                 else:
                     authors = get_authors(response)
