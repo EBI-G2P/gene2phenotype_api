@@ -143,8 +143,9 @@ class PublicationSerializer(serializers.ModelSerializer):
                                                          doi = doi)
 
         # Add new comments and/or number of families
+        # Comment: {'comment': 'this is a comment', 'is_public': 1}
         for comment in comments:
-            if comment != "":
+            if comment["comment"] != "":
                 PublicationCommentSerializer(
                     context={'user': self.context.get('user')}
                 ).create(comment, publication_obj)

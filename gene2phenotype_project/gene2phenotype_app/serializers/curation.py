@@ -207,7 +207,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError({"message": f"Data already submited to G2P '{lgd_obj.stable_id.stable_id}'"})
                 else:
                     raise serializers.ValidationError({"message": f"This is an old G2P record '{lgd_obj.stable_id.stable_id}'"})
-        
+
         else:
             raise serializers.ValidationError({"message" : "To publish a curated entry, locus, allelic requirement and disease are neccessary"})
 
@@ -287,6 +287,15 @@ class CurationDataSerializer(serializers.ModelSerializer):
         user = self.context.get('user')
         publications_list = []
 
+        # Get user object
+        try:
+            user_obj = User.objects.get(email=user, is_active=1)
+
+        except User.DoesNotExist:
+            raise serializers.ValidationError({
+                "message" : f"Invalid user '{user}'"
+            })
+
         ### Publications ###
         for publication in data.json_data["publications"]:
             if publication["families"] is None:
@@ -304,7 +313,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                                 "number_of_families": family
                             }
 
-            publication_obj = PublicationSerializer(context={'user': user}).create(publication_data)
+            publication_obj = PublicationSerializer(context={'user': user_obj}).create(publication_data)
             publications_list.append(publication_obj)
         ####################
 
@@ -356,11 +365,12 @@ class CurationDataSerializer(serializers.ModelSerializer):
         ### Insert data attached to the record Locus-Genotype-Disease ###
 
         ### Phenotypes ###
+        # TODO: improve
         for phenotype in data.json_data["phenotypes"]:
             LGDPhenotypeSerializer(context={'lgd': lgd_obj}).create({
                 "accession": phenotype["summary"], # TODO update variable name
                 "publication": phenotype["pmid"] # optional
-                })
+            })
 
         ### Cross cutting modifier ###
         # "cross_cutting_modifier" is an array of strings

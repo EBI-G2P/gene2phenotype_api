@@ -107,7 +107,13 @@ class LGDPanelSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """
-            
+            Add a LGD record to a panel.
+
+            Input: panel name (short name)
+
+            Output: LGDPanel obj
+                    Raise error if panel name is invalid
+                    Raise error if LGDPanel already exists
         """
 
         lgd = self.context['lgd']
@@ -180,23 +186,23 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             return None
 
     def get_variant_consequence(self, id):
-        queryset = LGDVariantGenccConsequence.objects.filter(lgd_id=id)
+        queryset = LGDVariantGenccConsequence.objects.filter(lgd_id=id, is_deleted=0)
         return LGDVariantGenCCConsequenceSerializer(queryset, many=True).data
 
     def get_molecular_mechanism(self, id):
-        queryset = LGDMolecularMechanism.objects.filter(lgd_id=id)
+        queryset = LGDMolecularMechanism.objects.filter(lgd_id=id, is_deleted=0)
         return LGDMolecularMechanismSerializer(queryset, many=True).data
 
     def get_cross_cutting_modifier(self, id):
-        queryset = LGDCrossCuttingModifier.objects.filter(lgd_id=id)
+        queryset = LGDCrossCuttingModifier.objects.filter(lgd_id=id, is_deleted=0)
         return LGDCrossCuttingModifierSerializer(queryset, many=True).data
 
     def get_publications(self, id):
-        queryset = LGDPublication.objects.filter(lgd_id=id)
+        queryset = LGDPublication.objects.filter(lgd_id=id, is_deleted=0)
         return LGDPublicationSerializer(queryset, many=True).data
 
     def get_phenotypes(self, id):
-        queryset = LGDPhenotype.objects.filter(lgd_id=id)
+        queryset = LGDPhenotype.objects.filter(lgd_id=id, is_deleted=0)
         data = {}
 
         for lgd_phenotype in queryset:
@@ -218,7 +224,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     def get_variant_type(self, id):
         # The variant type can be linked to several publications
         # Format the output to return the list of publications
-        queryset = LGDVariantType.objects.filter(lgd_id=id)
+        queryset = LGDVariantType.objects.filter(lgd_id=id, is_deleted=0)
         data = {}
 
         for lgd_variant in queryset:
@@ -240,7 +246,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         return data.values()
 
     def get_variant_description(self, id):
-        queryset = LGDVariantTypeDescription.objects.filter(lgd_id=id)
+        queryset = LGDVariantTypeDescription.objects.filter(lgd_id=id, is_deleted=0)
         data = {}
 
         for lgd_variant in queryset:
@@ -263,7 +269,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
     def get_comments(self, id):
         # TODO check if comment is public
-        lgd_comments = LGDComment.objects.filter(lgd_id=id)
+        lgd_comments = LGDComment.objects.filter(lgd_id=id, is_deleted=0)
         data = []
         for comment in lgd_comments:
             text = { 'text':comment.comment,
@@ -390,11 +396,22 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
     publication = serializers.CharField(source="publication.pmid", allow_null=True)
 
     def create(self, variant_consequence):
+        """
+            Add a Variant GenCC consequence to a LGD record.
+
+            Input: (dict) variant consequence (name and support)
+
+            Output: LGDVariantGenCCConsequence object
+                    Raise error if variant consequence term is invalid
+                    Raise error if support value is invalid
+        """
+
         lgd = self.context['lgd']
         term = variant_consequence.get("name").replace("_", " ")
         support = variant_consequence.get("support").lower()
 
         # Get variant gencc consequence value from ontology_term
+        # Possible values: absent gene product, altered gene product structure, etc.
         try:
             consequence_obj = OntologyTerm.objects.get(
                 term = term, # TODO check
@@ -404,13 +421,14 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"message": f"Invalid variant consequence '{term}'"})
 
         # Get support value from attrib
+        # Values: evidence or inferred
         try:
             support_obj = Attrib.objects.get(
                 value = support,
                 type__code = "support"
             )
         except Attrib.DoesNotExist:
-            raise serializers.ValidationError({"message": f"Invalid support value {support}"})
+            raise serializers.ValidationError({"message": f"Invalid support value '{support}'"})
 
         lgd_var_consequence_obj = LGDVariantGenccConsequence.objects.get_or_create(
                 variant_consequence = consequence_obj,
@@ -434,6 +452,10 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
     evidence = serializers.SerializerMethodField()
 
     def get_evidence(self, id):
+        """
+            Return dict with all the evidence by publication.
+            There are different types of evidence: function, models, rescue, etc.
+        """
         evidence_list = LGDMolecularMechanismEvidence.objects.filter(
             molecular_mechanism=id
             ).select_related('evidence', 'publication').values(
@@ -468,10 +490,12 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
         synopsis_obj = None
         synopsis_support_obj = None
 
+        # If the mechanism support is 'evidence' then the evidence has to be provided
+        # Check if data has been provided
         if mechanism_support == "evidence" and not mechanism_evidence:
             raise serializers.ValidationError({"message": f"Mechanism is missing the evidence"})
 
-        # Get mechanism value from attrib
+        # Get mechanism value from controlled vocabulary table for molecular mechanism
         try:
             mechanism_obj = CVMolecularMechanism.objects.get(
                 value = mechanism_name,
@@ -480,7 +504,7 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
         except CVMolecularMechanism.DoesNotExist:
             raise serializers.ValidationError({"message": f"Invalid mechanism value '{mechanism_name}'"})
 
-        # Get mechanism support from attrib
+        # Get mechanism support from controlled vocabulary table for molecular mechanism
         try:
             mechanism_support_obj = CVMolecularMechanism.objects.get(
                 value = mechanism_support,
@@ -489,8 +513,9 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
         except CVMolecularMechanism.DoesNotExist:
             raise serializers.ValidationError({"message": f"Invalid mechanism support value '{mechanism_support}'"})
 
+        # Synopsis is optional
         if synopsis_name != "":
-            # Get mechanism synopsis value from attrib
+            # Get mechanism synopsis value from controlled vocabulary table for molecular mechanism
             try:
                 synopsis_obj = CVMolecularMechanism.objects.get(
                     value = synopsis_name,
@@ -499,7 +524,7 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
             except CVMolecularMechanism.DoesNotExist:
                 raise serializers.ValidationError({"message": f"Invalid mechanism synopsis value '{synopsis_name}'"})
 
-            # Get mechanism synopsis support from attrib
+            # Get mechanism synopsis support from controlled vocabulary table for molecular mechanism
             try:
                 synopsis_support_obj = CVMolecularMechanism.objects.get(
                     value = synopsis_support,
@@ -537,7 +562,7 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
                         subtype = evidence_type["primary_type"].replace(" ", "_")
                         values = evidence_type["secondary_type"]
 
-                        # Values are stored in attrib table
+                        # Values are stored in cv_molecular_mechanism table
                         for v in values:
                             try:
                                 evidence_value = CVMolecularMechanism.objects.get(
@@ -566,6 +591,17 @@ class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
     term = serializers.CharField(source="ccm.value")
 
     def create(self, term):
+        """
+            Add cross cutting modifier to LGD record.
+
+            Input: (string) cross cutting modifier value
+
+            Output: LGDCrossCuttingModifier object
+
+                    Raise error if cross cutting modifier value is invalid
+                    Raise error if cross cutting modifier already linked to LGD record
+        """
+
         lgd = self.context['lgd']
 
         # Get cross cutting modifier from attrib
@@ -575,7 +611,7 @@ class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
                 type__code = 'cross_cutting_modifier'
             )
         except Attrib.DoesNotExist:
-            raise serializers.ValidationError({"message": f"Invalid cross cutting modifier {term}"})
+            raise serializers.ValidationError({"message": f"Invalid cross cutting modifier '{term}'"})
 
         # Check if LGD-cross cutting modifier already exists
         try:
@@ -589,6 +625,15 @@ class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
                 lgd = lgd,
                 is_deleted = 0
             )
+        else:
+            # LGD-cross cutting modifier already exists
+            # Is it deleted?
+            if lgd_ccm_obj.is_deleted == 0:
+                raise serializers.ValidationError({"message": f"G2P entry {lgd.stable_id.stable_id} is already linked to cross cutting modifier '{term}'"})
+            else:
+                # If deleted then update it to not deleted
+                lgd_ccm_obj.is_deleted = 0
+                lgd_ccm_obj.save()
 
         return lgd_ccm_obj
 
@@ -609,12 +654,6 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
                 publication = publication_obj
             )
 
-            # The entry can be deleted
-            if lgd_publication_obj.is_deleted == 1:
-                raise serializers.ValidationError(
-                    {"message": f"Record {lgd.stable_id.stable_id} is already linked to publication {publication_obj.pmid}"}
-                )
-
         except LGDPublication.DoesNotExist:
             # Insert new LGD-publication entry
             lgd_publication_obj = LGDPublication.objects.create(
@@ -622,6 +661,17 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
                 publication = publication_obj,
                 is_deleted = 0
             )
+
+        else:
+            # Is LGD-publication deleted? If not then return message
+            if lgd_publication_obj.is_deleted == 0:
+                raise serializers.ValidationError(
+                    {"message": f"Record {lgd.stable_id.stable_id} is already linked to publication '{publication_obj.pmid}'"}
+                )
+            else:
+                # Update it to not deleted
+                lgd_publication_obj.is_deleted = 0
+                lgd_publication_obj.save()
 
         return lgd_publication_obj
 
@@ -632,7 +682,7 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
 class LGDPhenotypeSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="phenotype.term")
     accession = serializers.CharField(source="phenotype.accession")
-    publication = serializers.IntegerField(source="publication.pmid", allow_null=True) # TODO check how to support several publications
+    publication = serializers.IntegerField(source="publication.pmid", allow_null=True) # TODO support array of pmids
 
     def create(self, validated_data):
         lgd = self.context['lgd']
