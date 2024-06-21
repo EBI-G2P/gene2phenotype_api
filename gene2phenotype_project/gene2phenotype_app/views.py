@@ -28,7 +28,7 @@ from gene2phenotype_app.models import (Panel, User, AttribType, Attrib,
                                        LocusGenotypeDisease, Locus, OntologyTerm,
                                        DiseaseOntologyTerm, Disease, LGDPanel,
                                        LocusAttrib, GeneDisease, G2PStableID,
-                                       CurationData, Publication)
+                                       CurationData, Publication, CVMolecularMechanism)
 
 from .utils import get_publication, get_authors, clean_omim_disease
 
@@ -418,6 +418,39 @@ class AttribList(generics.ListAPIView):
         queryset = self.get_queryset()
         code_list = [attrib.value for attrib in queryset]
         return Response({'results':code_list, 'count':len(code_list)})
+
+class ListMolecularMechanisms(generics.ListAPIView):
+    queryset = CVMolecularMechanism.objects.all().values('type', 'subtype', 'value').order_by('type')
+
+    def list(self, request, *args, **kwargs):
+        """
+            List the supported molecular mechanism values by type and subtype (if applicable).
+        """
+
+        queryset = self.get_queryset()
+        result = {}
+        for mechanism in queryset:
+            mtype = mechanism["type"]
+            subtype = mechanism["subtype"]
+            value = mechanism["value"]
+
+            if mtype not in result:
+                result[mtype] = {}
+                # evidence has subtypes
+                if mtype == "evidence":
+                    result[mtype][subtype] = [value]
+                else:
+                    result[mtype] = [value]
+            else:
+                if mtype == "evidence":
+                    if subtype not in result[mtype]:
+                        result[mtype][subtype] = [value]
+                    else:
+                        result[mtype][subtype].append(value)
+                else:
+                    result[mtype].append(value)
+
+        return Response(result)
 
 """
     Retrives a list of all variant types.

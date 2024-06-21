@@ -436,7 +436,7 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
                 lgd = lgd,
                 is_deleted = 0
             )
-        
+
         return lgd_var_consequence_obj
 
     class Meta:
@@ -478,7 +478,7 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
                 data[pmid][evidence_type] = [evidence_value]
             else:
                 data[pmid][evidence_type].append(evidence_value)
-        
+
         return data
 
     def create(self, mechanism, mechanism_synopsis, mechanism_evidence):
