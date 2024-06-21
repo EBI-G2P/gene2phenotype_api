@@ -333,7 +333,6 @@ class CurationDataSerializer(serializers.ModelSerializer):
         disease = {
             "name": data.json_data["disease"]["disease_name"],
             "ontology_terms": cross_references, # if we have more ids the serializer should add them
-            "publications": [] # TODO review if necessary
         }
 
         # The CreateDiseaseSerializer is going to first check if the disease is stored in G2P

@@ -3,6 +3,9 @@ from ..models import Attrib, AttribType
 
 
 class AttribTypeSerializer(serializers.ModelSerializer):
+    """
+        Used to differentiate different type of attribs.
+    """
 
     def get_all_attribs(self, id):
         queryset = Attrib.objects.filter(type=id)
@@ -14,6 +17,10 @@ class AttribTypeSerializer(serializers.ModelSerializer):
         fields = ['code']
 
 class AttribSerializer(serializers.ModelSerializer):
+    """
+        Attribs represent controlled vocabulary.
+    """
+
     class Meta:
         model = Attrib
         fields = ['value']

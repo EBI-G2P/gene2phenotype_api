@@ -44,9 +44,9 @@ class G2PStableIDSerializer(serializers.ModelSerializer):
             Example:
                 Example usage:
 
-                 >>> new_stable_id = create_stable_id()
-                >>> print(new_stable_id.stable_id)
-                'G2P00001'
+                new_stable_id = create_stable_id()
+                print(new_stable_id.stable_id)
+                > 'G2P00001'
         """
 
         #Generate the sequence numbers as part of the ID 
@@ -103,9 +103,13 @@ class G2PStableIDSerializer(serializers.ModelSerializer):
 
 class LGDPanelSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="panel.name")
-    description = serializers.CharField(source="panel.description", allow_null=True, required = False)
+    description = serializers.CharField(source="panel.description", allow_null=True, required=False)
 
     def create(self, validated_data):
+        """
+            
+        """
+
         lgd = self.context['lgd']
         panel_name = validated_data.get('panel')['name']
 
@@ -114,23 +118,28 @@ class LGDPanelSerializer(serializers.ModelSerializer):
 
         if not panel_obj.exists():
             raise serializers.ValidationError({"message": f"Invalid panel name '{panel_name}'"})
-        lgd_panel_obj = LGDPanel.objects.filter(panel=panel_obj.first().id, lgd=lgd.id)
 
-        if lgd_panel_obj.exists():
-            if lgd_panel_obj.first().is_deleted == 0:
+        try:
+            lgd_panel_obj = LGDPanel.objects.get(panel=panel_obj.first().id, lgd=lgd.id)
+
+        except LGDPanel.DoesNotExist:
+            # Create LGDPanel
+            lgd_panel_obj = LGDPanel.objects.create(
+                lgd=lgd,
+                panel=panel_obj.first(),
+                is_deleted=0
+            )
+
+        else:
+            # The LGDPanel exists
+            # Is it deleted? If not deleted then the entry already exists
+            if lgd_panel_obj.is_deleted == 0:
                 raise serializers.ValidationError({"message": f"G2P entry {lgd.stable_id.stable_id} is already linked to panel {panel_name}"})
             else:
-                # Entry is not deleted anymore
+                # If deleted then update to not deleted
                 lgd_panel_obj.is_deleted = 0
-                return lgd_panel_obj
-
-        # Create LGDPanel
-        lgd_panel_obj = LGDPanel.objects.create(
-            lgd=lgd,
-            panel=panel_obj.first(),
-            is_deleted=0
-        )
-
+                lgd_panel_obj.save()
+        
         return lgd_panel_obj
 
     class Meta:
@@ -249,7 +258,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         return data.values()
 
     def get_panels(self, id):
-        queryset = LGDPanel.objects.filter(lgd_id=id)
+        queryset = LGDPanel.objects.filter(lgd_id=id, is_deleted=0)
         return LGDPanelSerializer(queryset, many=True).data
 
     def get_comments(self, id):
