@@ -9,6 +9,25 @@ from .base import BaseView
 
 
 class LocusGene(BaseView):
+    """
+        Display the gene data.
+
+        Args:
+            (str) gene_name: gene symbol or the synonym symbol
+
+        Returns:
+            LocusGene object data:
+                            - gene_symbol
+                            - sequence
+                            - start
+                            - end
+                            - strand
+                            - reference
+                            - ids
+                            - list of synonyms (gene symbols)
+                            - last_updated (date of the last update)
+    """
+
     lookup_field = 'name'
     serializer_class = LocusGeneSerializer
 
@@ -36,6 +55,18 @@ class LocusGene(BaseView):
         return Response(serializer.data)
 
 class LocusGeneSummary(BaseView):
+    """
+        Display a summary of the latest G2P entries associated with gene.
+
+        Args:
+            (str) gene_name: gene symbol or the synonym symbol
+
+        Returns:
+            Response object includes:
+                            (string) gene_symbol
+                            (list) records_summary
+    """
+
     serializer_class = LocusGeneSerializer
 
     def get(self, request, name, *args, **kwargs):
@@ -63,6 +94,19 @@ class LocusGeneSummary(BaseView):
         return Response(response_data)
 
 class GeneFunction(BaseView):
+    """
+        Display the gene product function.
+        Data retrieved from UniProt API.
+
+        Args:
+            (str) gene_name: gene symbol or the synonym symbol
+
+        Returns:
+            Response object includes:
+                            (string) gene_symbol
+                            (dict) function: gene product function from UniProt
+    """
+
     serializer_class = LocusGeneSerializer
 
     def get(self, request, name, *args, **kwargs):

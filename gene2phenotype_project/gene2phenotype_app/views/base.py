@@ -23,7 +23,7 @@ class BaseView(generics.ListAPIView):
 
 class BaseAdd(generics.CreateAPIView):
     """
-        Generic method to create data
+        Generic method to add data
     """
     http_method_names = ['post', 'head']
 

@@ -17,17 +17,18 @@ class GeneDiseaseView(BaseView):
         Retrieves all diseases associated with a specific gene.
 
         Args:
-                gene_name (str): gene symbol or the synonym symbol
+            (str) gene_name: gene symbol or the synonym symbol
 
-        Return:
-                Response object includes:
-                    - results (list): contains disease data
-                                        - original_disease_name
-                                        - disease_name
-                                        - identifier
-                                        - source name
-                    - count (int): number of diseases associated with the gene
+        Returns:
+            Response object includes:
+                    (list) results: disease data
+                                    - original_disease_name
+                                    - disease_name
+                                    - identifier
+                                    - source name
+                    (int) count: number of diseases associated with the gene
     """
+
     serializer_class = GeneDiseaseSerializer
 
     def get_queryset(self):
@@ -68,6 +69,16 @@ class GeneDiseaseView(BaseView):
         return Response({'results': results, 'count': len(results)})
 
 class DiseaseDetail(BaseView):
+    """
+        Display information for a specific disease.
+
+        Args:
+            (str) disease id: disease name or ontology ID (Mondo)
+
+        Returns:
+            Disease object
+    """
+
     serializer_class = DiseaseDetailSerializer
 
     def get_queryset(self):
@@ -102,6 +113,18 @@ class DiseaseDetail(BaseView):
         return Response(serializer.data)
 
 class DiseaseSummary(DiseaseDetail):
+    """
+        Display a summary of the latest G2P entries associated with disease.
+
+        Args:
+            (str) disease id: disease name or ontology ID (Mondo)
+
+        Returns:
+            Response object includes:
+                    (string) disease: disease data
+                    (list) records_summary: summary of records linked to disease
+    """
+
     def list(self, request, *args, **kwargs):
         disease = kwargs.get('id')
         disease_obj = self.get_queryset().first()

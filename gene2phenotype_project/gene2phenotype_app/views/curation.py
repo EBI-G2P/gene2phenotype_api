@@ -18,8 +18,8 @@ class AddCurationData(BaseAdd):
     """
         Add a new curation entry.
         It is only available for authenticated users.
-        We do not need to check for authenticated users because of the user management issues.
     """
+
     serializer_class = CurationDataSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -58,10 +58,12 @@ class ListCurationEntries(BaseView):
     """
         List all the curation entries being curated by the user.
         It is only available for authenticated users.
+
         Returns:
-            - list of entries
-            - number of entries
+                list of entries under 'curation'
+                number of entries under 'count'
     """
+
     serializer_class = CurationDataSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -71,9 +73,6 @@ class ListCurationEntries(BaseView):
 
             Returns:
                 Queryset of CurationData objects.
-            Future:
-
-                user = self.request.user commenting this out for now we should user to filter the Curation objects we are getting for the future
         """
         queryset = CurationData.objects.all()
 
@@ -108,9 +107,21 @@ class ListCurationEntries(BaseView):
 
 class CurationDataDetail(BaseView):
     """
-        Returns all the data for a specific curation entry.
+        Returns all data for a specific curation entry.
         It is only available for authenticated users.
+
+        Args:
+            (string) stable_id
+
+        Returns:
+                Response containing the CurationData object
+                    - session_name
+                    - stable_id
+                    - created_on
+                    - last_updated_on
+                    - data (json data under curation)
     """
+
     serializer_class = CurationDataSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -141,7 +152,15 @@ class CurationDataDetail(BaseView):
 
 class UpdateCurationData(generics.UpdateAPIView):
     """
-        Updates the JSON data for the specific G2P ID.
+        Update the JSON data for the specific G2P ID.
+        It replaces the existing json with the new data.
+
+        Args:
+            (string) stable_id
+            (json) new data to save
+
+        Returns:
+                Response message
     """
 
     http_method_names = ['put', 'options']
@@ -162,6 +181,7 @@ class UpdateCurationData(generics.UpdateAPIView):
             return queryset
 
     def update(self, request, *args, **kwargs):
+        # Get curation entry to be updated
         curation_obj = self.get_queryset().first()
 
         json_file_path = settings.BASE_DIR.joinpath("gene2phenotype_app", "utils", "curation_schema.json")
@@ -176,6 +196,7 @@ class UpdateCurationData(generics.UpdateAPIView):
         except exceptions.ValidationError as e:
             return Response({"message": "JSON data does not follow the required format, Required format is" + str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Update data - it replaces the data
         serializer = CurationDataSerializer(curation_obj, data=request.data, context={'user': self.request.user})
 
         if serializer.is_valid():
@@ -186,6 +207,18 @@ class UpdateCurationData(generics.UpdateAPIView):
             return Response({"message": "Failed to update data", "details": serializer.errors})
 
 class PublishRecord(APIView):
+    """
+        Publish the data.
+        If data is published succesfully, it deletes entry from curation data list and
+        updates the G2P ID status to live.
+
+        Args:
+            (string) stable_id
+
+        Returns:
+                Response message
+    """
+
     http_method_names = ['post', 'head']
     serializer_class = CurationDataSerializer
     permission_classes = [permissions.IsAuthenticated]

@@ -18,19 +18,21 @@ from ..utils import get_publication, get_authors
     If PMID not found in G2P then returns info from EuropePMC.
 
     Args:
-            request (HttpRequest): HTTP request
-            pmids (str): A comma-separated string of PMIDs
+            (HttpRequest) request: HTTP request
+            (str) pmids: A comma-separated string of PMIDs
 
-    Return:
+    Returns:
             Response object includes:
-                - results (list): contains publication data for each publication
+                (list) results: contains publication data for each publication
                                     - pmid
                                     - title
                                     - authors
                                     - year
-                                    - source (possible values: 'G2P', 'EuropePMC', 'Not found')
-                - count (int): number of PMIDs in the response
-            If a PMID is invalid it returns Http404
+                                    - source (possible values: 'G2P', 'EuropePMC')
+                (int) count: number of PMIDs
+    
+    Raises:
+            Invalid PMID
 """
 @api_view(['GET'])
 def PublicationDetail(request, pmids):

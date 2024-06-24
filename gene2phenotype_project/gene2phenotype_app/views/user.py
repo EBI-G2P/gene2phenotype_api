@@ -7,6 +7,16 @@ from gene2phenotype_app.models import User
 
 
 class UserList(generics.ListAPIView):
+    """
+        Display a list of active users and their info.
+        The info includes a list of panels the user has permission to edit.
+
+        Returns:
+            Response object includes:
+                            (list) results: list of users
+                            (int) count: number of users
+    """
+
     serializer_class = UserSerializer
 
     def get_serializer_context(self):

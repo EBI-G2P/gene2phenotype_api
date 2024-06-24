@@ -7,6 +7,13 @@ from gene2phenotype_app.models import AttribType, Attrib
 
 
 class AttribTypeList(generics.ListAPIView):
+    """
+        Display all available attribs by type.
+
+        Returns:
+                (dict) response: list of attribs for each attrib type.
+    """
+
     queryset = AttribType.objects.all()
 
     def list(self, request, *args, **kwargs):
@@ -20,6 +27,31 @@ class AttribTypeList(generics.ListAPIView):
         return Response(result)
 
 class AttribList(generics.ListAPIView):
+    """
+        Display the attribs for a specific attrib type.
+
+        Args:
+            (string) code: type of attrib
+
+        Returns:
+                Response object includes:
+                    (list) results: list of attribs
+                    (int) count: number of attribs
+
+        Example: gene2phenotype/api/attrib/confidence_category/
+                {
+                    "results": [
+                        "definitive",
+                        "disputed",
+                        "limited",
+                        "moderate",
+                        "refuted",
+                        "strong"
+                    ],
+                    "count": 6
+                }
+    """
+
     lookup_field = 'type'
     serializer_class = AttribSerializer
 

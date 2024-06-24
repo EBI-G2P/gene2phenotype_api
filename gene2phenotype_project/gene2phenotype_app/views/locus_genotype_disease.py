@@ -17,13 +17,18 @@ from .base import BaseView, BaseAdd
 
 
 class ListMolecularMechanisms(generics.ListAPIView):
+    """
+        Display the molecular mechanisms terms by type and subtype (if applicable).
+        Only type 'evidence' has a defined subtype.
+
+        Returns:
+            Returns:
+                (dict) response: list of molecular mechanisms by type and subtype.
+    """
+
     queryset = CVMolecularMechanism.objects.all().values('type', 'subtype', 'value').order_by('type')
 
     def list(self, request, *args, **kwargs):
-        """
-            List the supported molecular mechanism values by type and subtype (if applicable).
-        """
-
         queryset = self.get_queryset()
         result = {}
         for mechanism in queryset:
@@ -51,8 +56,13 @@ class ListMolecularMechanisms(generics.ListAPIView):
 
 class VariantTypesList(generics.ListAPIView):
     """
-        Retrives a list of all variant types.
+        Display all variant types by group.
+
+        Returns:
+            Returns:
+                (dict) response: variant types by group
     """
+
     def get_queryset(self):
         group = Attrib.objects.filter(value="variant_type", type__code="ontology_term_group")
         return OntologyTerm.objects.filter(group_type=group.first().id)
@@ -82,6 +92,24 @@ class VariantTypesList(generics.ListAPIView):
                          'other_variants': list})
 
 class LocusGenotypeDiseaseDetail(BaseView):
+    """
+        Display all data for a specific G2P stable ID.
+
+        Args:
+            (string) stable_id
+
+        Returns:
+                Response containing the LocusGenotypeDisease object
+                    - locus
+                    - stable_id
+                    - genotype
+                    - disease
+                    - molecular_mechanism
+                    - phenotypes
+                    - publications
+                    - etc
+    """
+
     serializer_class = LocusGenotypeDiseaseSerializer
 
     def get_queryset(self):

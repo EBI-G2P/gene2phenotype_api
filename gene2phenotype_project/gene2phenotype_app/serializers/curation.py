@@ -224,6 +224,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             Future:
                 - publish endpoint: add the data to the G2P tables. entry will be live
         """
+
         json_data = validated_data.get("json_data")
 
         date_created = datetime.now()
@@ -268,6 +269,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             Returns:
                 CurationData: The updated CurationData instance.
         """
+
         instance.json_data = validated_data.get('json_data')
         instance.date_last_update = timezone.now().astimezone(pytz.timezone("Europe/London"))
         instance.save()

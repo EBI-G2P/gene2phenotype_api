@@ -9,6 +9,19 @@ from .base import BaseView
 
 
 class PanelList(generics.ListAPIView):
+    """
+        Display all panels info.
+        The information includes some stats: 
+            - total number of records linked to panel
+            - total number of genes linked to panel
+            - total number of records by confidence
+
+        Returns:
+            Response object includes:
+                            (list) results: list of panels info
+                            (int) count: number of panels
+    """
+
     queryset = Panel.objects.all()
     serializer_class = PanelDetailSerializer
 
@@ -30,6 +43,21 @@ class PanelList(generics.ListAPIView):
         return Response({'results':panel_list, 'count':len(panel_list)})
 
 class PanelDetail(BaseView):
+    """
+        Display the panel info.
+
+        Args:
+            (str) panel: the panel short name
+
+        Returns:
+            Response object includes:
+                            (string) panel name
+                            (string) panel description: long name
+                            (list) curators: list of curators with permission to edit the panel
+                            (string) last_updated
+                            (dict) stats
+    """
+
     def get(self, request, name, *args, **kwargs):
         user = self.request.user
         queryset = Panel.objects.filter(name=name)
@@ -57,6 +85,18 @@ class PanelDetail(BaseView):
             self.handle_no_permission('Panel', name)
 
 class PanelRecordsSummary(BaseView):
+    """
+        Display a summary of the latest G2P entries associated with panel.
+
+        Args:
+            (str) panel: the panel short name
+
+        Returns:
+            Response object includes:
+                            (string) panel name
+                            (list) records_summary: summary of entries linked to panel
+    """
+
     def get(self, request, name, *args, **kwargs):
         user = self.request.user
         queryset = Panel.objects.filter(name=name)
