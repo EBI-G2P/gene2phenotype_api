@@ -117,7 +117,7 @@ class LGDPanelSerializer(serializers.ModelSerializer):
         """
 
         lgd = self.context['lgd']
-        panel_name = validated_data.get('panel')['name']
+        panel_name = validated_data.get('panel')['name'] # panel short name (example: 'DD')
 
         # Check if panel name is valid
         panel_obj = Panel.objects.filter(name=panel_name)
@@ -153,12 +153,12 @@ class LGDPanelSerializer(serializers.ModelSerializer):
         fields = ['name', 'description']
 
 class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
-    locus = serializers.SerializerMethodField()
+    locus = serializers.SerializerMethodField() # part of the unique entry
     stable_id = serializers.CharField(source="stable_id.stable_id") #CharField and the source is the stable_id column in the stable_id table
-    genotype = serializers.CharField(source="genotype.value")
+    genotype = serializers.CharField(source="genotype.value") # part of the unique entry
     variant_consequence = serializers.SerializerMethodField(allow_null=True)
     molecular_mechanism = serializers.SerializerMethodField(allow_null=True)
-    disease = serializers.SerializerMethodField()
+    disease = serializers.SerializerMethodField() # part of the unique entry
     confidence = serializers.CharField(source="confidence.value")
     publications = serializers.SerializerMethodField()
     panels = serializers.SerializerMethodField()
@@ -447,17 +447,30 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
         fields = ['variant_consequence', 'support', 'publication']
 
 class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
-    mechanism = serializers.CharField(source="mechanism.value")
-    support = serializers.CharField(source="mechanism_support.value")
-    description = serializers.CharField(source="mechanism_description", allow_null=True)
-    synopsis = serializers.CharField(source="synopsis.value", allow_null=True)
-    synopsis_support = serializers.CharField(source="synopsis_support.value", allow_null=True)
-    evidence = serializers.SerializerMethodField()
+    mechanism = serializers.CharField(source="mechanism.value") # FK to CVMolecularMechanism
+    support = serializers.CharField(source="mechanism_support.value") # default value = 'inferred'
+    description = serializers.CharField(source="mechanism_description", allow_null=True) # optional
+    synopsis = serializers.CharField(source="synopsis.value", allow_null=True) # optional
+    synopsis_support = serializers.CharField(source="synopsis_support.value", allow_null=True) # optional
+    evidence = serializers.SerializerMethodField() # only necessary if support = 'evidence'
 
     def get_evidence(self, id):
         """
-            Return dict with all the evidence by publication.
+            Return the mechanism evidence associated with the LGDMolecularMechanism by publication.
             There are different types of evidence: function, models, rescue, etc.
+
+            Output example:
+                            "evidence": {
+                                "11235": {
+                                    "function": [
+                                        "biochemical",
+                                        "protein interaction"
+                                    ],
+                                    "functional_alteration": [
+                                        "patient cells"
+                                    ]
+                                }
+                            }
         """
         evidence_list = LGDMolecularMechanismEvidence.objects.filter(
             molecular_mechanism=id
@@ -471,6 +484,7 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
 
         for evidence in evidence_list:
             evidence_value = evidence["evidence__value"]
+            # The evidence subtype is always populated
             evidence_type = evidence["evidence__subtype"]
             pmid = evidence["publication__pmid"]
 
@@ -517,7 +531,7 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"message": f"Invalid mechanism support value '{mechanism_support}'"})
 
         # Synopsis is optional
-        if synopsis_name != "":
+        if synopsis_name:
             # Get mechanism synopsis value from controlled vocabulary table for molecular mechanism
             try:
                 synopsis_obj = CVMolecularMechanism.objects.get(
@@ -546,7 +560,7 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
             is_deleted = 0
         )
 
-        # Insert the mechanism evidence
+        # Insert the mechanism evidence (if applicable)
         if mechanism_support == "evidence":
             # for each publication (pmid) there is one or more evidence values
             for evidence in mechanism_evidence:
@@ -722,8 +736,13 @@ class LGDVariantTypeCommentSerializer(serializers.ModelSerializer):
         fields = ['comment', 'user', 'date']
 
 class LGDVariantTypeSerializer(serializers.ModelSerializer):
+    """
+        Types of variants reported in publications:
+            missense_variant, frameshift_variant, stop_gained, etc.
+        Sequence ontology terms are used to describe variant types.
+    """
     term = serializers.CharField(source="variant_type_ot.term")
-    accession = serializers.CharField(source="variant_type_ot.accession")
+    accession = serializers.CharField(source="variant_type_ot.accession") # Sequence ontology term
     inherited = serializers.BooleanField(allow_null=True)
     de_novo = serializers.BooleanField(allow_null=True)
     unknown_inheritance = serializers.BooleanField(allow_null=True)
@@ -776,8 +795,13 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
         fields = ['term', 'accession', 'inherited', 'de_novo', 'unknown_inheritance', 'publication', 'comments']
 
 class LGDVariantTypeDescriptionSerializer(serializers.ModelSerializer):
+    """
+        Variant HGVS description linked to the:
+            - LGD record
+            - publication
+    """
     publication = serializers.IntegerField(source="publication.pmid")
-    description = serializers.CharField()
+    description = serializers.CharField() # HGVS description following HGVS standard
 
     def create(self, validated_data):
         lgd = self.context['lgd']

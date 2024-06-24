@@ -215,9 +215,9 @@ class CVMolecularMechanism(models.Model):
 
 class LGDMolecularMechanism(models.Model):
     id = models.AutoField(primary_key=True)
-    lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
-    mechanism = models.ForeignKey("CVMolecularMechanism", related_name='mechanism', on_delete=models.PROTECT)
-    mechanism_support = models.ForeignKey("CVMolecularMechanism", related_name='mechanism_support', on_delete=models.PROTECT)
+    lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT, null=False)
+    mechanism = models.ForeignKey("CVMolecularMechanism", related_name='mechanism', on_delete=models.PROTECT, null=False)
+    mechanism_support = models.ForeignKey("CVMolecularMechanism", related_name='mechanism_support', on_delete=models.PROTECT, null=False)
     synopsis = models.ForeignKey("CVMolecularMechanism", related_name='synopsis', on_delete=models.PROTECT, null=True)
     synopsis_support = models.ForeignKey("CVMolecularMechanism", related_name='synopsis_support', on_delete=models.PROTECT, null=True)
     mechanism_description = models.TextField(null=True)
