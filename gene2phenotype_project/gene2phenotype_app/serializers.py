@@ -885,7 +885,7 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
         except CVMolecularMechanism.DoesNotExist:
             raise serializers.ValidationError({"message": f"Invalid mechanism support value '{mechanism_support}'"})
 
-        if synopsis_name != "":
+        if synopsis_name:
             # Get mechanism synopsis value from attrib
             try:
                 synopsis_obj = CVMolecularMechanism.objects.get(
