@@ -79,13 +79,12 @@ class LGDCrossCuttingModifier(models.Model):
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     ccm = models.ForeignKey("Attrib", on_delete=models.PROTECT)
-    publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 
     class Meta:
         db_table = "lgd_cross_cutting_modifier"
-        unique_together = ["lgd", "ccm", "publication"]
+        unique_together = ["lgd", "ccm"]
         indexes = [
             models.Index(fields=['lgd', 'ccm']),
         ]
@@ -175,24 +174,53 @@ class LGDVariantGenccConsequence(models.Model):
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     variant_consequence = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
     support = models.ForeignKey("Attrib", on_delete=models.PROTECT)
-    panel = models.ForeignKey("Panel", on_delete=models.PROTECT, null=True, default=None)
-    publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True, default=None)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 
     class Meta:
         db_table = "lgd_variant_gencc_consequence"
-        unique_together = ["lgd", "variant_consequence", "support", "publication"]
+        unique_together = ["lgd", "variant_consequence", "support"]
+
+class CVMolecularMechanism(models.Model):
+    """
+        Controlled vocabulary for molecular mechanism
+    """
+
+    # Type of vocabulary available for the mechanism
+    choices_values = (
+        ("mechanism", "Molecular mechanism"),
+        ("mechanism_synopsis", "Mechanism synopsis"),
+        ("support", "Mechanism support"),
+        ("evidence", "Mechanism evidence")
+    )
+
+    # Type of vocabulary available for the evidence
+    # The evidence values are a subtype of type "evidence"
+    choices_evidence_types = (
+        ("function", "Function"),
+        ("rescue", "Rescue"),
+        ("functional_alteration", "Functional alteration"),
+        ("models", "Models")
+    )
+
+    id = models.AutoField(primary_key=True)
+    type = models.CharField(max_length=50, choices=choices_values)
+    # the subtype is only populated for the evidence
+    subtype = models.CharField(max_length=100, choices=choices_evidence_types, null=True)
+    value = models.CharField(max_length=100)
+
+    class Meta:
+        db_table = "cv_molecular_mechanism"
+        unique_together = ["type", "subtype", "value"]
 
 class LGDMolecularMechanism(models.Model):
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
-    mechanism = models.ForeignKey("Attrib", related_name='mechanism', on_delete=models.PROTECT)
-    mechanism_support = models.ForeignKey("Attrib", related_name='mechanism_support', on_delete=models.PROTECT)
-    synopsis = models.ForeignKey("Attrib", related_name='synopsis', on_delete=models.PROTECT, null=True)
-    synopsis_support = models.ForeignKey("Attrib", related_name='synopsis_support', on_delete=models.PROTECT, null=True)
+    mechanism = models.ForeignKey("CVMolecularMechanism", related_name='mechanism', on_delete=models.PROTECT)
+    mechanism_support = models.ForeignKey("CVMolecularMechanism", related_name='mechanism_support', on_delete=models.PROTECT)
+    synopsis = models.ForeignKey("CVMolecularMechanism", related_name='synopsis', on_delete=models.PROTECT, null=True)
+    synopsis_support = models.ForeignKey("CVMolecularMechanism", related_name='synopsis_support', on_delete=models.PROTECT, null=True)
     mechanism_description = models.TextField(null=True)
-    publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 
@@ -203,28 +231,15 @@ class LGDMolecularMechanism(models.Model):
 class LGDMolecularMechanismEvidence(models.Model):
     id = models.AutoField(primary_key=True)
     molecular_mechanism = models.ForeignKey("LGDMolecularMechanism", on_delete=models.PROTECT)
-    description = models.TextField(null=True)
+    evidence = models.ForeignKey("CVMolecularMechanism", on_delete=models.PROTECT, default=None)
+    description = models.TextField(null=True, default=None)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 
     class Meta:
         db_table = "lgd_molecular_mechanism_evidence"
-        unique_together = ["molecular_mechanism", "publication"]
-
-class LGDMolecularMechanismEvidenceType(models.Model):
-    id = models.AutoField(primary_key=True)
-    molecular_mechanism_evidence = models.ForeignKey("LGDMolecularMechanismEvidence", on_delete=models.PROTECT)
-    function = models.ForeignKey("Attrib", related_name='function', on_delete=models.PROTECT)
-    functional_alteration = models.ForeignKey("Attrib", related_name='functional_alteration', on_delete=models.PROTECT)
-    models_type = models.ForeignKey("Attrib", related_name='models_type', on_delete=models.PROTECT)
-    rescue = models.ForeignKey("Attrib", related_name='rescue', on_delete=models.PROTECT)
-    is_deleted = models.SmallIntegerField(null=False, default=False)
-    history = HistoricalRecords()
-
-    class Meta:
-        db_table = "lgd_molecular_mechanism_evidence_type"
-        unique_together = ["molecular_mechanism_evidence", "function", "functional_alteration", "models_type", "rescue"]
+        unique_together = ["molecular_mechanism", "evidence", "publication"]
 
 class LGDComment(models.Model):
     id = models.AutoField(primary_key=True)
@@ -252,7 +267,6 @@ class LGDPanel(models.Model):
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     panel = models.ForeignKey("Panel", on_delete=models.PROTECT)
-    publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     relevance = models.ForeignKey("Attrib", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
@@ -399,7 +413,6 @@ class DiseaseSynonym(models.Model):
     id = models.AutoField(primary_key=True)
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
     synonym = models.CharField(max_length=255, unique=True, null=False)
-    synonym_type = models.ForeignKey("Attrib", on_delete=models.PROTECT)
     history = HistoricalRecords()
 
     class Meta:
@@ -409,20 +422,7 @@ class DiseaseSynonym(models.Model):
             models.Index(fields=['synonym'])
         ]
 
-class DiseasePublication(models.Model):
-    disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
-    publication = models.ForeignKey("Publication", on_delete=models.PROTECT)
-    families = models.IntegerField(null=True)
-    consanguinity = models.ForeignKey("Attrib", related_name='consanguinity', on_delete=models.PROTECT, null=True)
-    affected_individuals = models.IntegerField(null=True)
-    is_deleted = models.SmallIntegerField(null=False, default=False)
-    history = HistoricalRecords()
-
-    class Meta:
-        db_table = "disease_publication"
-        unique_together = ['disease', 'publication']
-
-class DiseaseOntology(models.Model):
+class DiseaseOntologyTerm(models.Model):
     id = models.AutoField(primary_key=True)
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
     ontology_term = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
@@ -430,7 +430,7 @@ class DiseaseOntology(models.Model):
     history = HistoricalRecords()
 
     class Meta:
-        db_table = "disease_ontology"
+        db_table = "disease_ontology_term"
         unique_together = ["disease", "ontology_term"]
 
 class DiseasePhenotype(models.Model):

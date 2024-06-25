@@ -13,12 +13,12 @@ from .models import (Panel, User, UserPanel, AttribType, Attrib,
                      LGDPanel, LocusGenotypeDisease, LGDVariantGenccConsequence,
                      LGDCrossCuttingModifier, LGDPublication,
                      LGDPhenotype, LGDVariantType, Locus, Disease,
-                     DiseaseOntology, LocusAttrib, DiseaseSynonym, 
+                     DiseaseOntologyTerm, LocusAttrib, DiseaseSynonym, 
                      G2PStableID,LocusIdentifier, PublicationComment, LGDComment,
-                     DiseasePublication, LGDMolecularMechanism,
+                     LGDMolecularMechanism, LGDMolecularMechanismEvidence,
                      OntologyTerm, Source, Publication, GeneDisease,
                      Sequence, UniprotAnnotation, CurationData, PublicationFamilies,
-                     LGDVariantTypeDescription)
+                     LGDVariantTypeDescription, CVMolecularMechanism)
 
 from .utils import (clean_string, get_ontology, get_publication, get_authors, validate_gene,
                     validate_phenotype, get_ontology_source)
@@ -320,7 +320,6 @@ class AttribSerializer(serializers.ModelSerializer):
 class LGDPanelSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="panel.name")
     description = serializers.CharField(source="panel.description", allow_null=True, required = False)
-    publications = serializers.CharField(source="publication.pmid", allow_null=True, required = False)
 
     def create(self, validated_data):
         lgd = self.context['lgd']
@@ -352,17 +351,7 @@ class LGDPanelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LGDPanel
-        fields = ['name', 'description', 'publications']
-
-    # Only include publication details if defined in context
-    # We want to include the details when creating a new publication
-    def __init__(self, *args, **kwargs):
-        super(LGDPanelSerializer, self).__init__(*args, **kwargs)
-
-        if 'include_details' in self.context:
-            self.fields['publications'].required = self.context['include_details']
-        else:
-            self.fields['publications'].required = False
+        fields = ['name', 'description']
 
 class LocusSerializer(serializers.ModelSerializer):
     gene_symbol = serializers.CharField(source="name")
@@ -838,9 +827,35 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
     description = serializers.CharField(source="mechanism_description", allow_null=True)
     synopsis = serializers.CharField(source="synopsis.value", allow_null=True)
     synopsis_support = serializers.CharField(source="synopsis_support.value", allow_null=True)
-    publication = serializers.CharField(source="publication.title", allow_null=True)
+    evidence = serializers.SerializerMethodField()
 
-    def create(self, mechanism, mechanism_synopsis):
+    def get_evidence(self, id):
+        evidence_list = LGDMolecularMechanismEvidence.objects.filter(
+            molecular_mechanism=id
+            ).select_related('evidence', 'publication').values(
+                'publication__pmid',
+                'evidence__value',
+                'evidence__subtype'
+            ).order_by('publication')
+
+        data = {}
+
+        for evidence in evidence_list:
+            evidence_value = evidence["evidence__value"]
+            evidence_type = evidence["evidence__subtype"]
+            pmid = evidence["publication__pmid"]
+
+            if pmid not in data:
+                data[pmid] = {}
+                data[pmid][evidence_type] = [evidence_value]
+            elif evidence_type not in data[pmid]:
+                data[pmid][evidence_type] = [evidence_value]
+            else:
+                data[pmid][evidence_type].append(evidence_value)
+        
+        return data
+
+    def create(self, mechanism, mechanism_synopsis, mechanism_evidence):
         lgd = self.context['lgd']
         mechanism_name = mechanism["name"]
         mechanism_support = mechanism["support"]
@@ -849,41 +864,44 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
         synopsis_obj = None
         synopsis_support_obj = None
 
+        if mechanism_support == "evidence" and not mechanism_evidence:
+            raise serializers.ValidationError({"message": f"Mechanism is missing the evidence"})
+
         # Get mechanism value from attrib
         try:
-            mechanism_obj = Attrib.objects.get(
+            mechanism_obj = CVMolecularMechanism.objects.get(
                 value = mechanism_name,
-                type__code = "mechanism"
+                type = "mechanism"
             )
-        except Attrib.DoesNotExist:
+        except CVMolecularMechanism.DoesNotExist:
             raise serializers.ValidationError({"message": f"Invalid mechanism value '{mechanism_name}'"})
 
         # Get mechanism support from attrib
         try:
-            mechanism_support_obj = Attrib.objects.get(
+            mechanism_support_obj = CVMolecularMechanism.objects.get(
                 value = mechanism_support,
-                type__code = "support"
+                type = "support"
             )
-        except Attrib.DoesNotExist:
+        except CVMolecularMechanism.DoesNotExist:
             raise serializers.ValidationError({"message": f"Invalid mechanism support value '{mechanism_support}'"})
 
-        if synopsis_name != "":
+        if synopsis_name:
             # Get mechanism synopsis value from attrib
             try:
-                synopsis_obj = Attrib.objects.get(
+                synopsis_obj = CVMolecularMechanism.objects.get(
                     value = synopsis_name,
-                    type__code = "mechanism_synopsis"
+                    type = "mechanism_synopsis"
                 )
-            except Attrib.DoesNotExist:
+            except CVMolecularMechanism.DoesNotExist:
                 raise serializers.ValidationError({"message": f"Invalid mechanism synopsis value '{synopsis_name}'"})
 
             # Get mechanism synopsis support from attrib
             try:
-                synopsis_support_obj = Attrib.objects.get(
+                synopsis_support_obj = CVMolecularMechanism.objects.get(
                     value = synopsis_support,
-                    type__code = "support"
+                    type = "support"
                 )
-            except Attrib.DoesNotExist:
+            except CVMolecularMechanism.DoesNotExist:
                 raise serializers.ValidationError({"message": f"Invalid mechanism synopsis support value '{synopsis_support}'"})
 
         # Create new LGD-molecular mechanism
@@ -896,11 +914,49 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
             is_deleted = 0
         )
 
+        # Insert the mechanism evidence
+        if mechanism_support == "evidence":
+            # for each publication (pmid) there is one or more evidence values
+            for evidence in mechanism_evidence:
+                publication_obj = None
+
+                try:
+                    publication_obj = Publication.objects.get(pmid=evidence["pmid"])
+
+                except Publication.DoesNotExist:
+                    raise serializers.ValidationError({"message": f"Could not find publication for PMID '{evidence['pmid']}'"})
+
+                else:
+                    # Get the evidence values
+                    for evidence_type in evidence["evidence_types"]:
+                        # type can be: function, rescue, functional alteration or models
+                        subtype = evidence_type["primary_type"].replace(" ", "_")
+                        values = evidence_type["secondary_type"]
+
+                        # Values are stored in attrib table
+                        for v in values:
+                            try:
+                                evidence_value = CVMolecularMechanism.objects.get(
+                                    value = v.lower(),
+                                    type = "evidence",
+                                    subtype = subtype.lower()
+                                )
+                            except CVMolecularMechanism.DoesNotExist:
+                                raise serializers.ValidationError({"message": f"Invalid mechanism evidence value '{v.lower()}'"})
+
+                            else:
+                                lgd_mechanism_evidence = LGDMolecularMechanismEvidence.objects.create(
+                                molecular_mechanism = lgd_mechanism,
+                                evidence = evidence_value,
+                                publication = publication_obj,
+                                is_deleted = 0
+                            )
+
         return lgd_mechanism
 
     class Meta:
         model = LGDMolecularMechanism
-        fields = ['mechanism', 'support', 'description', 'synopsis', 'synopsis_support', 'publication']
+        fields = ['mechanism', 'support', 'description', 'synopsis', 'synopsis_support', 'evidence']
 
 class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
     term = serializers.CharField(source="ccm.value")
@@ -1122,40 +1178,24 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
         model = LGDPublication
         fields = ['publication']
 
-class DiseasePublicationSerializer(serializers.ModelSerializer):
-    pmid = serializers.CharField(source="publication.pmid")
-    title = serializers.CharField(source="publication.title", allow_null=True)
-    number_families = serializers.IntegerField(source="families", allow_null=True)
-    consanguinity = serializers.CharField(allow_null=True)
-    affected_individuals = serializers.CharField(allow_null=True)
-
-    class Meta:
-        model = DiseasePublication
-        fields = ['pmid', 'title', 'number_families', 'consanguinity', 'affected_individuals']
-
-class DiseaseOntologySerializer(serializers.ModelSerializer):
+class DiseaseOntologyTermSerializer(serializers.ModelSerializer):
     accession = serializers.CharField(source="ontology_term.accession")
     term = serializers.CharField(source="ontology_term.term")
     description = serializers.CharField(source="ontology_term.description", allow_null=True)
     source = serializers.CharField(source="ontology_term.source.name")
 
     class Meta:
-        model = DiseaseOntology
+        model = DiseaseOntologyTerm
         fields = ['accession', 'term', 'description', 'source']
 
 class DiseaseSerializer(serializers.ModelSerializer):
     name = serializers.CharField()
     ontology_terms = serializers.SerializerMethodField()
-    publications = serializers.SerializerMethodField()
     synonyms = serializers.SerializerMethodField()
 
     def get_ontology_terms(self, id):
-        disease_ontologies = DiseaseOntology.objects.filter(disease=id)
-        return DiseaseOntologySerializer(disease_ontologies, many=True).data
-
-    def get_publications(self, id):
-        disease_publications = DiseasePublication.objects.filter(disease=id)
-        return DiseasePublicationSerializer(disease_publications, many=True).data
+        disease_ontologies = DiseaseOntologyTerm.objects.filter(disease=id)
+        return DiseaseOntologyTermSerializer(disease_ontologies, many=True).data
 
     def get_synonyms(self, id):
         synonyms = []
@@ -1166,7 +1206,7 @@ class DiseaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Disease
-        fields = ['name', 'ontology_terms', 'publications', 'synonyms']
+        fields = ['name', 'ontology_terms', 'synonyms']
 
 class DiseaseDetailSerializer(DiseaseSerializer):
     last_updated = serializers.SerializerMethodField()
@@ -1204,7 +1244,7 @@ class DiseaseDetailSerializer(DiseaseSerializer):
                                                   'lgdvariantgenccconsequence__variant_consequence__term',
                                                   'lgdvarianttype__variant_type_ot__term',
                                                   'lgdmolecularmechanism__mechanism__value'))
-        
+
         aggregated_data = {}
         for lgd_obj in lgd_objects_list:
             if lgd_obj['stable_id__stable_id'] not in aggregated_data.keys():
@@ -1246,14 +1286,13 @@ class DiseaseDetailSerializer(DiseaseSerializer):
         fields = DiseaseSerializer.Meta.fields + ['last_updated']
 
 class CreateDiseaseSerializer(serializers.ModelSerializer):
-    ontology_terms = DiseaseOntologySerializer(many=True, required=False)
-    publications = DiseasePublicationSerializer(many=True, required=False)
+    ontology_terms = DiseaseOntologyTermSerializer(many=True, required=False)
+
     # Add synonyms
 
     def create(self, validated_data):
         disease_name = validated_data.get('name')
         ontologies_list = validated_data.get('ontology_terms')
-        publications_list = validated_data.get('publications')
 
         disease_obj = None
 
@@ -1346,75 +1385,24 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
 
                 try:
                     # Check if disease-ontology is stored in G2P
-                    disease_ontology_obj = DiseaseOntology.objects.get(
+                    disease_ontology_obj = DiseaseOntologyTerm.objects.get(
                         disease = disease_obj,
                         ontology_term = ontology_obj,
                         mapped_by_attrib = attrib,
                     )
-                except DiseaseOntology.DoesNotExist:
+                except DiseaseOntologyTerm.DoesNotExist:
                     # Insert disease-ontology
-                    disease_ontology_obj = DiseaseOntology.objects.create(
+                    disease_ontology_obj = DiseaseOntologyTerm.objects.create(
                         disease = disease_obj,
                         ontology_term = ontology_obj,
                         mapped_by_attrib = attrib,
-                    )    
-
-        # Insert disease publication info
-        for publication in publications_list:
-            publication_pmid = publication['publication']['pmid']
-            publication_title = publication['publication']['title']
-            n_families = publication['families']
-            consanguinity = publication['consanguinity']
-            ethnicity = publication['ethnicity']
-
-            try:
-                publication_obj = Publication.objects.get(pmid=publication_pmid)
-            except Publication.DoesNotExist:
-                publication = get_publication(publication_pmid)
-                if publication['hitCount'] == 0:
-                    raise serializers.ValidationError({"message": f"Invalid PMID",
-                                                       "Please check ID": publication_pmid})
-
-                # Insert publication
-                if publication_title is None:
-                    publication_title = publication['result']['title']
-                publication_authors = get_authors(publication)
-                publication_doi = None
-                publication_year = None
-                if 'doi' in publication['result']:
-                    publication_doi = publication['result']['doi']
-                if 'pubYear' in publication['result']:
-                    publication_year = publication['result']['pubYear']
-
-                publication_obj = Publication.objects.create(
-                        pmid = publication_pmid,
-                        title = publication_title,
-                        authors = publication_authors,
-                        doi = publication_doi,
-                        year = publication_year
-                )
-
-            # Insert disease_publication
-            try:
-                disease_publication_obj = DiseasePublication.objects.get(
-                    disease=disease_obj,
-                    publication=publication_obj
-                )
-            except DiseasePublication.DoesNotExist:
-                disease_publication_obj = DiseasePublication.objects.create(
-                        disease = disease_obj,
-                        publication = publication_obj,
-                        families = n_families,
-                        consanguinity = consanguinity,
-                        ethnicity = ethnicity,
-                        is_deleted = 0
-                )
+                    )
 
         return disease_obj
 
     class Meta:
         model = Disease
-        fields = ['name', 'ontology_terms', 'publications']
+        fields = ['name', 'ontology_terms']
 
 class PhenotypeSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="term", read_only=True)
@@ -1944,7 +1932,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
         if data.json_data["molecular_mechanism"]:
             LGDMolecularMechanismSerializer(context={'lgd': lgd_obj}).create(
                 data.json_data["molecular_mechanism"],
-                data.json_data["mechanism_synopsis"]
+                data.json_data["mechanism_synopsis"],
+                data.json_data["mechanism_evidence"] # array of evidence values for each publication
             )
 
         #################################################################
