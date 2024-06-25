@@ -3,11 +3,24 @@ from ..models import Panel, User, UserPanel, LGDPanel, Attrib
 
 
 class PanelDetailSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the Panel model.
+        It returns the panel info including extra data:
+            - list of curators with permission to edit the panel
+            - data of the last update
+            - some stats: total number of records linked to the panel, etc.
+            - summary of records associated with panel
+    """
+
     curators = serializers.SerializerMethodField()
     last_updated = serializers.SerializerMethodField()
 
     # Returns only the curators excluding staff members
     def get_curators(self, id):
+        """
+            Returns a list of users with permission to edit the panel.
+        """
+
         user_panels = UserPanel.objects.filter(
             panel=id,
             user__is_active=1
@@ -35,6 +48,10 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         return users
 
     def get_last_updated(self, id):
+        """
+            Retrives the date of the last time a record associated with the panel was updated.
+        """
+
         lgd_panel = LGDPanel.objects.filter(
             panel=id,
             lgd__is_reviewed=1,
@@ -44,11 +61,17 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                              ).latest('lgd__date_review'
                                       ).lgd.date_review
 
-        return lgd_panel.date() if lgd_panel else []
+        return lgd_panel.date() if lgd_panel else None
 
     # Calculates the stats on the fly
     # Returns a JSON object
     def calculate_stats(self, panel):
+        """
+            Returns stats for the panel:
+                - total number of records associated with panel
+                - total number of genes associated with panel
+                - total number of records by confidence
+        """
         lgd_panels = LGDPanel.objects.filter(
             panel=panel.id,
             is_deleted=0
@@ -73,6 +96,10 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         }
 
     def records_summary(self, panel):
+        """
+            A summary of the last 10 records associated with the panel.
+        """
+
         lgd_panels = LGDPanel.objects.filter(panel=panel.id, is_deleted=0)
 
         lgd_panels_selected = lgd_panels.select_related('lgd',
@@ -99,6 +126,7 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         aggregated_data = {}
         number_keys = 0
         for lgd_obj in lgd_objects_list:
+            # Return the last 10 records
             if lgd_obj['lgd__stable_id__stable_id'] not in aggregated_data.keys() and number_keys < 10:
                 variant_consequences = []
                 variant_types = []

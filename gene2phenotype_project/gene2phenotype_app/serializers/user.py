@@ -3,12 +3,22 @@ from ..models import User, UserPanel
 
 
 class UserSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the User model.
+    """
+
     user_name = serializers.SerializerMethodField()
     email = serializers.CharField(read_only=True)
     panels = serializers.SerializerMethodField()
     is_active = serializers.CharField(read_only=True)
 
     def get_user_name(self, id):
+        """
+            Gets the user name.
+            If the first and last name are not available then
+            splits the username.
+        """
+
         user = User.objects.filter(email=id)
         if user.first().first_name is not None and user.first().last_name is not None:
             name = f"{user.first().first_name} {user.first().last_name}"
@@ -22,8 +32,10 @@ class UserSerializer(serializers.ModelSerializer):
         """
             Get a list of panels the user has permission to edit.
             It returns the panel descriptions i.e. full name.
+
             Output example: ["Developmental disorders", "Ear disorders"]
         """
+
         user_login = self.context.get('user')
         if user_login and user_login.is_authenticated:
             user_panels = UserPanel.objects.filter(
@@ -42,8 +54,10 @@ class UserSerializer(serializers.ModelSerializer):
         """
             Get a list of panels the user has permission to edit.
             It returns the panel names i.e. short name.
+
             Output example: ["DD", "Ear"]
         """
+
         user_login = self.context.get('user')
         if user_login and user_login.is_authenticated:
             user_panels = UserPanel.objects.filter(

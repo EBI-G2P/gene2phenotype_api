@@ -5,8 +5,17 @@ from ..models import (Locus, LocusIdentifier, LocusAttrib,
 
 from ..utils import validate_gene
 
+"""
+    Locus represents a gene, variant or region.
+    In a first phase, G2P records are associated with genes.
+"""
 
 class LocusSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the Locus model.
+        If the locus is a gene then the name is the gene symbol.
+        The sequence is the chromosome overlapping the locus.
+    """
     gene_symbol = serializers.CharField(source="name")
     sequence = serializers.CharField(source="sequence.name")
     reference = serializers.CharField(read_only=True, source="sequence.reference.value")
@@ -14,6 +23,10 @@ class LocusSerializer(serializers.ModelSerializer):
     synonyms = serializers.SerializerMethodField()
 
     def get_ids(self, id):
+        """
+            Locus IDs from external sources.
+            It can be the HGNC ID for a gene.
+        """
         locus_ids = LocusIdentifier.objects.filter(locus=id)
         data = {}
         for id in locus_ids:
@@ -22,6 +35,10 @@ class LocusSerializer(serializers.ModelSerializer):
         return data
 
     def get_synonyms(self, id):
+        """
+            Returns the locus synonyms.
+            The locus synonym can be an old gene symbol.
+        """
         attrib_type_obj = AttribType.objects.filter(code='gene_synonym')
         locus_attribs = LocusAttrib.objects.filter(
             locus=id,
@@ -31,6 +48,15 @@ class LocusSerializer(serializers.ModelSerializer):
         return locus_attribs
 
     def create(self, validated_data):
+        """
+            Method to create a Locus object.
+            This method is not available on REST API. The genes
+            are internally imported in bulk.
+
+            Returns:
+                    Locus object
+        """
+
         gene_symbol = validated_data.get('name')
         sequence_name = validated_data.get('sequence')['name']
         start = validated_data.get('start')
@@ -38,22 +64,32 @@ class LocusSerializer(serializers.ModelSerializer):
         strand = validated_data.get('strand')
 
         locus_obj = None
+
         try:
             locus_obj = Locus.objects.get(name=gene_symbol)
-            raise serializers.ValidationError({"message": f"gene already exists",
-                                               "please select existing gene": f"{locus_obj.name} {locus_obj.sequence.name}:{locus_obj.start}-{locus_obj.end}"})
+            raise serializers.ValidationError(
+                {"message": f"Gene already exists",
+                            "Please select existing gene": f"{locus_obj.name} {locus_obj.sequence.name}:{locus_obj.start}-{locus_obj.end}"
+                }
+            )
+
         except Locus.DoesNotExist:
+
             try:
                 # Check if gene symbol is a synonym
                 synonym_obj = LocusAttrib.objects.get(value=gene_symbol)
-                raise serializers.ValidationError({"message": f"gene already exists as a synonym",
-                                               "please select existing gene": f"{synonym_obj.locus.name} {synonym_obj.locus.sequence.name}:{synonym_obj.locus.start}-{synonym_obj.locus.end}"})
+                raise serializers.ValidationError(
+                    {"message": f"Gene already exists as a synonym",
+                                "Please select existing gene": f"{synonym_obj.locus.name} {synonym_obj.locus.sequence.name}:{synonym_obj.locus.start}-{synonym_obj.locus.end}"
+                    }
+                )
+
             except LocusAttrib.DoesNotExist:
                 # Validate gene before insertion
                 validated = validate_gene(gene_symbol)
                 if validated == None:
-                    raise serializers.ValidationError({"message": f"invalid gene symbol",
-                                                       "please check symbol": gene_symbol})
+                    raise serializers.ValidationError({"message": f"Invalid gene symbol",
+                                                       "Please check symbol": gene_symbol})
 
                 # Insert locus gene
                 sequence = Sequence.objects.filter(name=sequence_name)
@@ -101,9 +137,21 @@ class LocusSerializer(serializers.ModelSerializer):
         fields = ['gene_symbol', 'sequence', 'start', 'end', 'strand', 'reference', 'ids', 'synonyms']
 
 class LocusGeneSerializer(LocusSerializer):
+    """
+        Serializer for the LocusSerializer model extra data.
+        It returns the Locus data and the date of the last update.
+        It can also include:
+         - summary of records associated with the locus (method records_summary)
+         - gene product function from UniProt (method function)
+    """
+
     last_updated = serializers.SerializerMethodField()
 
     def get_last_updated(self, id):
+        """
+            Returns the date last time the locus was updated.
+        """
+
         lgd = LocusGenotypeDisease.objects.filter(
             locus=id,
             is_reviewed=1,
@@ -112,9 +160,13 @@ class LocusGeneSerializer(LocusSerializer):
             ).latest('date_review'
                      ).date_review
 
-        return lgd.date() if lgd else []
+        return lgd.date() if lgd else None
 
     def records_summary(self, user):
+        """
+            Returns a summary of the G2P records associated with the locus.
+        """
+
         lgd_list = LocusGenotypeDisease.objects.filter(locus=self.id, is_deleted=0)
 
         if user.is_authenticated:
@@ -173,6 +225,12 @@ class LocusGeneSerializer(LocusSerializer):
         return aggregated_data.values()
 
     def function(self):
+        """
+            Returns the gene product function from UniProt.
+
+            Returns:
+                    (dict) result_data: it includes the protein function description and the uniprot accession
+        """
         result_data = {}
         uniprot_annotation_objs = UniprotAnnotation.objects.filter(gene=self.id)
 

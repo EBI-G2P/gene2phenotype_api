@@ -7,13 +7,22 @@ from ..utils import validate_phenotype
 
 
 class PhenotypeSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the OntologyTerm model.
+        The phenotypes are represented in OntologyTerm model.
+    """
+
     name = serializers.CharField(source="term", read_only=True)
     description = serializers.CharField(read_only=True)
 
     def create(self, accession):
         """
             Create a phenotype based on the accession.
+
+            Returns:
+                    OntologyTerm object
         """
+
         phenotype_accession = accession["accession"]
         phenotype_description = None
 

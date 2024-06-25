@@ -28,21 +28,22 @@ class CurationDataSerializer(serializers.ModelSerializer):
         """
             Validate the input data for curation.
 
-            Args:
-                data: The data to be validated.
-            
             Validation extension step:
                 This step is called in AddCurationData of the views.py
                 The steps of the validation for the save is
-                    -Locus is the minimum requirement needed to save a draft
-                    -Draft does not already exist as a draft 
-                    -User has permissions to curate on the panel selected 
+                    - Locus is the minimum requirement needed to save a draft
+                    - Draft does not already exist as a draft 
+                    - User has permissions to curate on the selected panel
+
+            Args:
+                data: The data to be validated.
 
             Returns:
                 The validated data.
 
             Raises:
-                serializers.ValidationError: If the data is already under curation or if the user does not have permission to curate on certain panels.
+                serializers.ValidationError: If the data is already under curation or 
+                if the user does not have permission to curate on certain panels.
         """
 
         data_copy = copy.deepcopy(data) # making a copy of this so any changes to this are only to this 
@@ -52,20 +53,27 @@ class CurationDataSerializer(serializers.ModelSerializer):
         user_obj = User.objects.get(email=user_email)
 
         if data_dict["json_data"]["locus"] == "" or data_dict["json_data"]["locus"] is None:
-            raise serializers.ValidationError({"message" : "To save a draft, the minimum requirement is a locus entry, Please save this draft with locus information"})
+            raise serializers.ValidationError(
+                {"message" : "To save a draft, the minimum requirement is a locus entry. Please save this draft with locus information"}
+            )
 
         # Check if JSON is already in the table
         curation_entry = self.compare_curation_data(data_dict, user_obj.id)
 
         if curation_entry: # Throw error if data is already stored in table
-            raise serializers.ValidationError({"message": f"Data already under curation. Please check session '{curation_entry.session_name}'"})
+            raise serializers.ValidationError(
+                {"message": f"Data already under curation. Please check session '{curation_entry.session_name}'"}
+            )
+
         if len(data_dict["json_data"]["panels"]) >= 1:
             panels = UserSerializer.get_panels(self,user_obj.id)
             # Check if any panel in data_dict["json_data"]["panels"] is not in the updated panels list
             unauthorized_panels = [panel for panel in data_dict["json_data"]["panels"] if panel not in panels]
             if unauthorized_panels:
                 unauthorized_panels_str = "', '".join(unauthorized_panels)
-                raise serializers.ValidationError({"message" : f"You do not have permission to curate on these panels: '{unauthorized_panels_str}'"})
+                raise serializers.ValidationError(
+                    {"message" : f"You do not have permission to curate on these panels: '{unauthorized_panels_str}'"}
+                )
 
         return data
 
@@ -73,7 +81,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         """
             Second step to validate the JSON data.
             This validation is done before a record is published.
-            There are mandatory fields to publish a record:
+            The following fields are mandatory to publish a record:
                 - locus (validated in the first validation step)
                 - disease
                 - genotype/allelic requirement
@@ -82,7 +90,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 - confidence
                 - publication(s)
             
-            data (CurationData obj): data to be validated
+            Args:
+                (CurationData obj) data: data to be validated
         """
 
         json_data = data.json_data
@@ -122,7 +131,9 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
             if missing_data:
                 missing_data_str = ', '.join(missing_data)
-                raise serializers.ValidationError({"message" : f"The following mandatory fields are missing: {missing_data_str}"})
+                raise serializers.ValidationError(
+                    {"message" : f"The following mandatory fields are missing: {missing_data_str}"}
+                )
 
             # Check if data is stored in G2P
             # Locus - we only accept locus already stored in G2P
@@ -138,14 +149,16 @@ class CurationDataSerializer(serializers.ModelSerializer):
         """
             Convert data to a regular dictionary if it is an OrderedDict.
 
-            Parameters:
+            Args:
                 data: Data to convert (can be OrderedDict or dict).
 
             Returns:
                 Converted data as a dict.
             Reason:
-                If the data is an OrderedDict, which is how Python is reading the JSON, it is turned to a regular dictionary which is what is returned, otherwise it just returns the data gotten
+                If the data is an OrderedDict, which is how Python is reading the JSON, 
+                it is turned to a regular dictionary which is what is returned, otherwise it just returns the data gotten.
         """
+
         if isinstance(data, OrderedDict):
             return dict(data)
         
@@ -155,15 +168,19 @@ class CurationDataSerializer(serializers.ModelSerializer):
     # this still needs to be worked on when we have fixed the user permission issue 
     def compare_curation_data(self, input_json_data, user_obj):
        """"
-            Function to compare provided JSON data against JSON data stored in CurationData instances associated with a specific user.
+            Function to compare provided JSON data against JSON data stored in CurationData instances 
+            associated with a specific user.
             Only compares the first layer of JSON objects.
-                Parameters:
+
+            Args:
                     input_json_data: JSON data to compare against.
                     user_obj: User object whose associated CurationData instances are to be checked.
-                 Returns:
+
+            Returns:
                     If a match is found, returns the corresponding CurationData instance.
                     If no match is found, returns None.
         """
+
        user_sessions_queryset = CurationData.objects.filter(user=user_obj)
        for curation_data in user_sessions_queryset:
             data_json = curation_data.json_data
@@ -179,7 +196,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         """
             Check the validity of the provided JSON data for publishing a curated entry.
         
-            Parameters:
+            Args:
                 input_json_data (dict): JSON data to be checked.
         
             Raises:
@@ -187,6 +204,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             Future: 
                 This is for the publish and will be done differently 
         """
+
         input_dictionary = input_json_data
 
         locus = input_dictionary["locus"]
@@ -216,13 +234,11 @@ class CurationDataSerializer(serializers.ModelSerializer):
         """
             Create a new entry in the CurationData table.
         
-            Parameters:
-                validated_data (dict): Validated data containing the JSON data to be stored.
+            Args:
+                (dict) validated_data: Validated data containing the JSON data to be stored.
         
             Returns:
                 CurationData: The newly created CurationData instance.
-            Future:
-                - publish endpoint: add the data to the G2P tables. entry will be live
         """
 
         json_data = validated_data.get("json_data")
@@ -262,9 +278,9 @@ class CurationDataSerializer(serializers.ModelSerializer):
             Update an entry in the curation table.
             It replaces the json data object with the latest data and updates the 'date_last_update'. 
 
-            Parameters:
+            Args:
                 instance
-                validated_data (dict): Validated data containing the updated JSON data to be stored.
+                (dict) validated_data: Validated data containing the updated JSON data to be stored.
 
             Returns:
                 CurationData: The updated CurationData instance.
@@ -286,6 +302,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             Args:
                 data: CurationData object to publish
         """
+
         user = self.context.get('user')
         publications_list = []
 

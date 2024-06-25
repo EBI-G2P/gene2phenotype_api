@@ -6,8 +6,19 @@ from ..utils import (get_publication, get_authors)
 
 
 class PublicationCommentSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the PublicationComment model.
+    """
 
     def create(self, data, publication):
+        """
+            Method to add a comment to a publication.
+            The comment can be public or private.
+
+            Returns:
+                    PublicationComment object
+        """
+
         comment_text = data.get("comment")
         is_public = data.get("is_public")
         user_obj = self.context['user']
@@ -36,17 +47,27 @@ class PublicationCommentSerializer(serializers.ModelSerializer):
         model = PublicationComment
 
 class PublicationFamiliesSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the PublicationFamilies model.
+    """
 
     def create(self, validated_data, publication):
         """
-            Create a PublicationFamilies object.
+            Method to add the information about the families reported in the publication.
 
-            Fields:
-                    - families: number of families reported in the publication (mandatory)
-                    - consanguinity: consanguinity (default: unknown)
-                    - ancestries: ancestry free text
-                    - affected_individuals: number of affected individuals reported in the publication
+            Args:
+                - families: number of families reported in the publication (mandatory)
+                - consanguinity: consanguinity (default: unknown)
+                - ancestries: ancestry free text
+                - affected_individuals: number of affected individuals reported in the publication
+            
+            Returns:
+                    PublicationFamilies object
+
+            Raises:
+                    Invalid consanguinity value
         """
+
         families = validated_data.get("families")
         consanguinity = validated_data.get("consanguinity")
         ancestries = validated_data.get("ancestries")
@@ -91,6 +112,10 @@ class PublicationFamiliesSerializer(serializers.ModelSerializer):
         model = PublicationFamilies
 
 class PublicationSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the Publication model.
+    """
+
     pmid = serializers.IntegerField()
     title = serializers.CharField(read_only=True)
     authors = serializers.CharField(read_only=True)
@@ -100,15 +125,21 @@ class PublicationSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """
-            Create a publication.
+            Method to create a publication.
             If PMID is already stored in G2P, add the new comment and number of 
             families to the existing PMID.
             This method is called when publishing a record.
 
-            Fields:
-                    - pmid: publications PMID (mandatory)
-                    - comments: list of comments
-                    - number_of_families: list of families
+            Args:
+                - pmid: publications PMID (mandatory)
+                - comments: list of comments
+                - number_of_families: list of families
+            
+            Returns:
+                    Publication object
+
+            Raises:
+                    Invalid PMID
         """
 
         pmid = validated_data.get('pmid')

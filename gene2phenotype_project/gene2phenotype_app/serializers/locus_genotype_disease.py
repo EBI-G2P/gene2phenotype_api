@@ -102,6 +102,11 @@ class G2PStableIDSerializer(serializers.ModelSerializer):
         fields = ['stable_id']
 
 class LGDPanelSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the LGDPanel model.
+        The LGDPanel model represents the panels associated with LGD entries.
+    """
+
     name = serializers.CharField(source="panel.name")
     description = serializers.CharField(source="panel.description", allow_null=True, required=False)
 
@@ -109,11 +114,14 @@ class LGDPanelSerializer(serializers.ModelSerializer):
         """
             Add a LGD record to a panel.
 
-            Input: panel name (short name)
+            Args:
+                (string) panel name: short name
 
-            Output: LGDPanel obj
-                    Raise error if panel name is invalid
-                    Raise error if LGDPanel already exists
+            Returns:
+                    LGDPanel obj
+            Raises:
+                Raise error if panel name is invalid
+                Raise error if LGDPanel already exists
         """
 
         lgd = self.context['lgd']
@@ -153,6 +161,11 @@ class LGDPanelSerializer(serializers.ModelSerializer):
         fields = ['name', 'description']
 
 class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the LocusGenotypeDisease model.
+        LocusGenotypeDisease represents a G2P record.
+    """
+
     locus = serializers.SerializerMethodField() # part of the unique entry
     stable_id = serializers.CharField(source="stable_id.stable_id") #CharField and the source is the stable_id column in the stable_id table
     genotype = serializers.CharField(source="genotype.value") # part of the unique entry
@@ -172,36 +185,63 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     is_reviewed = serializers.IntegerField()
 
     def get_locus(self, id):
+        """
+            Locus linked to the LGD record.
+            It can be a gene, variant or region.
+        """
         locus = LocusSerializer(id.locus).data
         return locus
 
     def get_disease(self, id):
+        """
+            Disease associated with the LGD record.
+        """
         disease = DiseaseSerializer(id.disease).data
         return disease
 
     def get_last_updated(self, obj):
+        """
+            Date last time the LGD record was updated by a curator.
+        """
         if obj.date_review is not None:
             return obj.date_review.strftime("%Y-%m-%d")
         else: 
             return None
 
     def get_variant_consequence(self, id):
+        """
+            Variant consequences linked to the LGD record.
+            This is the GenCC level of variant consequence: altered_gene_product_level, etc.
+        """
         queryset = LGDVariantGenccConsequence.objects.filter(lgd_id=id, is_deleted=0)
         return LGDVariantGenCCConsequenceSerializer(queryset, many=True).data
 
     def get_molecular_mechanism(self, id):
+        """
+            Molecular mechanisms associated with the LGD record.
+        """
         queryset = LGDMolecularMechanism.objects.filter(lgd_id=id, is_deleted=0)
         return LGDMolecularMechanismSerializer(queryset, many=True).data
 
     def get_cross_cutting_modifier(self, id):
+        """
+            Cross cutting modifier terms associated with the LGD record.
+        """
         queryset = LGDCrossCuttingModifier.objects.filter(lgd_id=id, is_deleted=0)
         return LGDCrossCuttingModifierSerializer(queryset, many=True).data
 
     def get_publications(self, id):
+        """
+            Publications associated with the LGD record.
+        """
         queryset = LGDPublication.objects.filter(lgd_id=id, is_deleted=0)
         return LGDPublicationSerializer(queryset, many=True).data
 
     def get_phenotypes(self, id):
+        """
+            Phenotypes associated with the LGD record.
+            The response includes the list of publications associated with the phenotype.
+        """
         queryset = LGDPhenotype.objects.filter(lgd_id=id, is_deleted=0).prefetch_related()
         data = {}
 
@@ -222,8 +262,11 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         return data.values()
 
     def get_variant_type(self, id):
-        # The variant type can be linked to several publications
-        # Format the output to return the list of publications
+        """
+            Variant types associated with the LGD record.
+            The variant type can be linked to several publications therefore response 
+            includes the list of publications associated with the variant type.
+        """
         queryset = LGDVariantType.objects.filter(lgd_id=id, is_deleted=0).prefetch_related()
         data = {}
 
@@ -249,6 +292,10 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         return data.values()
 
     def get_variant_description(self, id):
+        """
+            Variant HGVS description linked to the LGD record and publication(s).
+            The response includes a list of publications associated with the HGVS description.
+        """
         queryset = LGDVariantTypeDescription.objects.filter(lgd_id=id, is_deleted=0).prefetch_related()
         data = {}
 
@@ -267,10 +314,18 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         return data.values()
 
     def get_panels(self, id):
+        """
+            Panel(s) associated with the LGD record.
+        """
         queryset = LGDPanel.objects.filter(lgd_id=id, is_deleted=0)
         return LGDPanelSerializer(queryset, many=True).data
 
     def get_comments(self, id):
+        """
+            LGD record comments.
+            Comments can be public or private. Private comments can only be
+            seen by curators.
+        """
         # TODO check if comment is public
         lgd_comments = LGDComment.objects.filter(lgd_id=id, is_deleted=0).prefetch_related()
         data = []
@@ -281,9 +336,13 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         return data
 
-    # This method depends on the history table
-    # Entries that were migrated from the old db don't have the date when they were created
     def get_date_created(self, id):
+        """
+            Date the LGD record was created.
+            Dependency: this method depends on the history table.
+            
+            Note: entries that were migrated from the old db don't have the date when they were created.
+        """
         date = None
         lgd_obj = self.instance
         insertion_history_type = '+'
@@ -297,7 +356,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
     def create(self, data, disease_obj, publications_list):
         """
-            Create a G2P record.
+            Method to create a G2P record (LGD record).
             A record is always linked to one or more panels and publications.
 
             Mandatory data:
@@ -394,6 +453,10 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         exclude = ['id', 'is_deleted', 'date_review']
 
 class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the LGDVariantGenccConsequence model.
+    """
+
     variant_consequence = serializers.CharField(source="variant_consequence.term")
     support = serializers.CharField(source="support.value")
     publication = serializers.CharField(source="publication.pmid", allow_null=True)
@@ -402,11 +465,15 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
         """
             Add a Variant GenCC consequence to a LGD record.
 
-            Input: (dict) variant consequence (name and support)
+            Args:
+                (dict) variant consequence: name and support
 
-            Output: LGDVariantGenCCConsequence object
-                    Raise error if variant consequence term is invalid
-                    Raise error if support value is invalid
+            Output: 
+                LGDVariantGenCCConsequence object
+            
+            Raises:
+                Raise error if variant consequence term is invalid
+                Raise error if support value is invalid
         """
 
         lgd = self.context['lgd']
@@ -447,6 +514,13 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
         fields = ['variant_consequence', 'support', 'publication']
 
 class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the LGDMolecularMechanism model.
+        A molecular mechanism can have a synopsis and/or evidence(s).
+        If the support is 'evidence' then the type of evidence has to
+        be provided.
+        By default, support is 'inferred'.
+    """
     mechanism = serializers.CharField(source="mechanism.value") # FK to CVMolecularMechanism
     support = serializers.CharField(source="mechanism_support.value") # default value = 'inferred'
     description = serializers.CharField(source="mechanism_description", allow_null=True) # optional
@@ -499,6 +573,10 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, mechanism, mechanism_synopsis, mechanism_evidence):
+        """
+            Create LGDMolecularMechanism and LGDMolecularMechanismEvidence (if support = 'evidence')
+        """
+    
         lgd = self.context['lgd']
         mechanism_name = mechanism["name"]
         mechanism_support = mechanism["support"]
@@ -605,18 +683,26 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
         fields = ['mechanism', 'support', 'description', 'synopsis', 'synopsis_support', 'evidence']
 
 class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the LGDCrossCuttingModifier model.
+        A G2P record can be linked to one or more cross cutting modifier.
+    """
+
     term = serializers.CharField(source="ccm.value")
 
     def create(self, term):
         """
             Add cross cutting modifier to LGD record.
 
-            Input: (string) cross cutting modifier value
+            Args:
+                (string) cross cutting modifier value
 
-            Output: LGDCrossCuttingModifier object
+            Returns:
+                LGDCrossCuttingModifier object
 
-                    Raise error if cross cutting modifier value is invalid
-                    Raise error if cross cutting modifier already linked to LGD record
+            Raises:
+                Raise error if cross cutting modifier value is invalid
+                Raise error if cross cutting modifier already linked to LGD record
         """
 
         lgd = self.context['lgd']
@@ -659,9 +745,19 @@ class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
         fields = ['term']
 
 class LGDPublicationSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the LGDPublication model.
+    """
     publication = PublicationSerializer()
 
     def create(self, validated_data):
+        """
+            Method to create LGD-publication associations.
+
+            Returns:
+                    LGDPublication object
+        """
+
         lgd = self.context['lgd']
         publication_obj = validated_data.get('publication') # TODO REVIEW
 
@@ -697,11 +793,22 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
         fields = ['publication']
 
 class LGDPhenotypeSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the LGDPhenotype model.
+        A G2P record is linked to one or more phenotypes (supported by publications).
+    """
+
     name = serializers.CharField(source="phenotype.term")
     accession = serializers.CharField(source="phenotype.accession")
     publication = serializers.IntegerField(source="publication.pmid", allow_null=True) # TODO support array of pmids
 
     def create(self, validated_data):
+        """
+            Method to create LGD-phenotype association.
+
+            Returns:
+                    LGDPhenotype object
+        """
         lgd = self.context['lgd']
         accession = validated_data.get("accession") # HPO term
         publication = validated_data.get("publication") # pmid
@@ -727,6 +834,12 @@ class LGDPhenotypeSerializer(serializers.ModelSerializer):
         fields = ['name', 'accession', 'publication']
 
 class LGDVariantTypeCommentSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the LGDVariantTypeComment model.
+        Comment associated with the variant type that is linked to the G2P record.
+        A comment can be public or private. Private comments can only be seen
+        by curators.
+    """
     comment = serializers.CharField()
     user = serializers.CharField(source="user.username")
     date = serializers.CharField()
@@ -737,10 +850,13 @@ class LGDVariantTypeCommentSerializer(serializers.ModelSerializer):
 
 class LGDVariantTypeSerializer(serializers.ModelSerializer):
     """
+        Serializer for the LGDVariantType model.
+
         Types of variants reported in publications:
             missense_variant, frameshift_variant, stop_gained, etc.
         Sequence ontology terms are used to describe variant types.
     """
+
     term = serializers.CharField(source="variant_type_ot.term")
     accession = serializers.CharField(source="variant_type_ot.accession") # Sequence ontology term
     inherited = serializers.BooleanField(allow_null=True)
@@ -750,6 +866,14 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
     comments = LGDVariantTypeCommentSerializer(many=True, required=False)
 
     def create(self, validated_data):
+        """
+            Method to create LGDVariantType object.
+            A G2P record can be associated with one or more variant types.
+
+            Returns:
+                    LGDVariantType object
+        """
+
         lgd = self.context['lgd']
         inherited = validated_data.get("inherited")
         de_novo = validated_data.get("de_novo")
@@ -804,6 +928,15 @@ class LGDVariantTypeDescriptionSerializer(serializers.ModelSerializer):
     description = serializers.CharField() # HGVS description following HGVS standard
 
     def create(self, validated_data):
+        """
+            Method to create LGDVariantTypeDescription object.
+            LGDVariantTypeDescription represents the variant HGVS 
+            linked to the LGD record and the publication.
+            The HGVS is not directly linked to the variant type.
+
+            Returns:
+                    LGDVariantTypeDescription object
+        """
         lgd = self.context['lgd']
         pmid = validated_data.get("pmid")
         description = validated_data.get("description")

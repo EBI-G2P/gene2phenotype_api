@@ -9,25 +9,42 @@ from ..utils import (clean_string, get_ontology, get_ontology_source)
 
 
 class DiseaseOntologyTermSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the DiseaseOntologyTerm model.
+        Links the disease to ontology terms imported from external ontology sources.
+    """
+
     accession = serializers.CharField(source="ontology_term.accession")
     term = serializers.CharField(source="ontology_term.term")
-    description = serializers.CharField(source="ontology_term.description", allow_null=True)
-    source = serializers.CharField(source="ontology_term.source.name")
+    description = serializers.CharField(source="ontology_term.description", allow_null=True) # the description is optional
+    source = serializers.CharField(source="ontology_term.source.name") # external source (ex: OMIM)
 
     class Meta:
         model = DiseaseOntologyTerm
         fields = ['accession', 'term', 'description', 'source']
 
 class DiseaseSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the Disease model.
+        This serializer returns the ontology terms associated with the disease
+        and synonyms names.
+    """
+
     name = serializers.CharField()
     ontology_terms = serializers.SerializerMethodField()
     synonyms = serializers.SerializerMethodField()
 
     def get_ontology_terms(self, id):
+        """
+            Returns the ontology terms associated with the disease.
+        """
         disease_ontologies = DiseaseOntologyTerm.objects.filter(disease=id)
         return DiseaseOntologyTermSerializer(disease_ontologies, many=True).data
 
     def get_synonyms(self, id):
+        """
+            Returns disease synonyms used in other sources.
+        """
         synonyms = []
         disease_synonyms = DiseaseSynonym.objects.filter(disease=id)
         for d_synonym in disease_synonyms:
@@ -39,9 +56,16 @@ class DiseaseSerializer(serializers.ModelSerializer):
         fields = ['name', 'ontology_terms', 'synonyms']
 
 class DiseaseDetailSerializer(DiseaseSerializer):
+    """
+        Serializer for the Disease model - extra fields.
+    """
     last_updated = serializers.SerializerMethodField()
 
     def get_last_updated(self, id):
+        """
+            Returns the date an entry linked to the disease has been updated.
+        """
+
         filtered_lgd_list = LocusGenotypeDisease.objects.filter(
             disease=id,
             is_reviewed=1,
@@ -53,6 +77,10 @@ class DiseaseDetailSerializer(DiseaseSerializer):
         return filtered_lgd_list.date() if filtered_lgd_list else []
 
     def records_summary(self, id, user):
+        """
+            Returns a summary of the LGD records associated with the disease.
+        """
+
         lgd_list = LocusGenotypeDisease.objects.filter(disease=id, is_deleted=0)
 
         if user.is_authenticated:
@@ -116,11 +144,28 @@ class DiseaseDetailSerializer(DiseaseSerializer):
         fields = DiseaseSerializer.Meta.fields + ['last_updated']
 
 class CreateDiseaseSerializer(serializers.ModelSerializer):
+    """
+        Serializer to add new disease.
+    """
     ontology_terms = DiseaseOntologyTermSerializer(many=True, required=False)
 
     # Add synonyms
 
     def create(self, validated_data):
+        """
+            Add new disease and associated ontology terms (optional).
+            To add a new disease first it checks if the disease name
+            or the synonym name is already stored in G2P. If so, returns
+            existing disease.
+            If applicable, it associates the ontology terms to the disease.
+
+            Args:
+                validate_data: disease data to be inserted
+
+            Returns:
+                    disease object
+        """
+
         disease_name = validated_data.get('name')
         ontologies_list = validated_data.get('ontology_terms')
 
@@ -235,8 +280,12 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
         fields = ['name', 'ontology_terms']
 
 class GeneDiseaseSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the GeneDisease model.
+        The GeneDisease model stores external gene-disease associations.
+    """
     disease = serializers.CharField()
-    identifier = serializers.CharField()
+    identifier = serializers.CharField() # external identifier
     source = serializers.CharField(source="source.name")
 
     class Meta:
