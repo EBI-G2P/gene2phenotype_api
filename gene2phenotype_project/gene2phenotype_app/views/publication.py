@@ -38,11 +38,17 @@ from ..utils import get_publication, get_authors
 def PublicationDetail(request, pmids):
     id_list = pmids.split(',')
     data = []
+    invalid_pmids = []
 
     for pmid_str in id_list:
         try:
             pmid = int(pmid_str)
 
+        except:
+            invalid_pmids.append(pmid_str)
+
+        else:
+            # The PMID has the correct format
             try:
                 publication = Publication.objects.get(pmid=pmid)
                 data.append({
@@ -56,7 +62,7 @@ def PublicationDetail(request, pmids):
                 # Query EuropePMC
                 response = get_publication(pmid)
                 if response['hitCount'] == 0:
-                    raise Http404(f"Invalid PMID:{pmid_str}")
+                    invalid_pmids.append(pmid_str)
                 else:
                     authors = get_authors(response)
                     year = None
@@ -73,8 +79,10 @@ def PublicationDetail(request, pmids):
                         'source': 'EuropePMC'
                     })
 
-        except:
-            raise Http404(f"Invalid PMID:{pmid_str}")
+    # if any of the PMIDs is invalid raise error and display all invalid IDs
+    if invalid_pmids:
+        pmid_list = ", ".join(invalid_pmids)
+        raise Http404(f"Invalid PMID: {pmid_list}")
 
     return Response({'results': data, 'count': len(data)})
 

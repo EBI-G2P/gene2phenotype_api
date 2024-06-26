@@ -22,6 +22,7 @@ urlpatterns = [
     path('gene2phenotype/api/disease/<str:id>/', views.DiseaseDetail.as_view(), name="disease_details"),
     path('gene2phenotype/api/disease/<str:id>/summary', views.DiseaseSummary.as_view(), name="disease_summary"),
     path('gene2phenotype/api/publication/<str:pmids>/', views.PublicationDetail, name="publication_details"),
+    path('gene2phenotype/api/phenotype/<str:hpo_list>/', views.PhenotypeDetail, name="phenotype_details"),
     path('gene2phenotype/api/lgd/<str:stable_id>/', views.LocusGenotypeDiseaseDetail.as_view(), name="lgd"),
     path('gene2phenotype/api/search/', views.SearchView.as_view(), name="search"),
 
