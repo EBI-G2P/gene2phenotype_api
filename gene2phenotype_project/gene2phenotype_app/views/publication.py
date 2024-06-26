@@ -56,10 +56,7 @@ def PublicationDetail(request, pmids):
                 # Query EuropePMC
                 response = get_publication(pmid)
                 if response['hitCount'] == 0:
-                    data.append({
-                        'pmid': int(pmid),
-                        'error': 'Invalid PMID'
-                    })
+                    raise Http404(f"Invalid PMID:{pmid_str}")
                 else:
                     authors = get_authors(response)
                     year = None
