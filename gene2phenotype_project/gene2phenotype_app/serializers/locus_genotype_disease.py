@@ -146,7 +146,7 @@ class LGDPanelSerializer(serializers.ModelSerializer):
 
         else:
             # The LGDPanel exists
-            # Is it deleted? If not deleted then the entry already exists
+            # If not deleted then the entry already exists
             if lgd_panel_obj.is_deleted == 0:
                 raise serializers.ValidationError({"message": f"G2P entry {lgd.stable_id.stable_id} is already linked to panel {panel_name}"})
             else:
@@ -521,7 +521,7 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
         be provided.
         By default, support is 'inferred'.
     """
-    mechanism = serializers.CharField(source="mechanism.value") # FK to CVMolecularMechanism
+    mechanism = serializers.CharField(source="mechanism.value") # Foreign Key to CVMolecularMechanism
     support = serializers.CharField(source="mechanism_support.value") # default value = 'inferred'
     description = serializers.CharField(source="mechanism_description", allow_null=True) # optional
     synopsis = serializers.CharField(source="synopsis.value", allow_null=True) # optional
@@ -730,7 +730,7 @@ class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
             )
         else:
             # LGD-cross cutting modifier already exists
-            # Is it deleted?
+            # If not deleted then the entry already exists
             if lgd_ccm_obj.is_deleted == 0:
                 raise serializers.ValidationError({"message": f"G2P entry {lgd.stable_id.stable_id} is already linked to cross cutting modifier '{term}'"})
             else:
@@ -776,13 +776,13 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
             )
 
         else:
-            # Is LGD-publication deleted? If not then return message
+            # If LGD-publication is not deleted then throw validation error
             if lgd_publication_obj.is_deleted == 0:
                 raise serializers.ValidationError(
                     {"message": f"Record {lgd.stable_id.stable_id} is already linked to publication '{publication_obj.pmid}'"}
                 )
             else:
-                # Update it to not deleted
+                # If LGD-publication is deleted then update to not deleted
                 lgd_publication_obj.is_deleted = 0
                 lgd_publication_obj.save()
 
