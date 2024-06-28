@@ -13,6 +13,7 @@ urlpatterns = [
     path('gene2phenotype/api/users/', views.UserList.as_view(), name="list_users"),
     path('gene2phenotype/api/attribs/', views.AttribTypeList.as_view(), name="list_attrib_type"),
     path('gene2phenotype/api/attrib/<str:code>/', views.AttribList.as_view(), name="list_attribs_by_type"),
+    path('gene2phenotype/api/molecular_mechanisms/', views.ListMolecularMechanisms.as_view(), name="list_mechanisms"),
     path('gene2phenotype/api/ontology_terms/variant_types/', views.VariantTypesList.as_view(), name="list_variant_types"),
     path('gene2phenotype/api/gene/<str:name>/', views.LocusGene.as_view(), name="locus_gene"),
     path('gene2phenotype/api/gene/<str:name>/summary/', views.LocusGeneSummary.as_view(), name="locus_gene_summary"),
@@ -21,6 +22,7 @@ urlpatterns = [
     path('gene2phenotype/api/disease/<str:id>/', views.DiseaseDetail.as_view(), name="disease_details"),
     path('gene2phenotype/api/disease/<str:id>/summary', views.DiseaseSummary.as_view(), name="disease_summary"),
     path('gene2phenotype/api/publication/<str:pmids>/', views.PublicationDetail, name="publication_details"),
+    path('gene2phenotype/api/phenotype/<str:hpo_list>/', views.PhenotypeDetail, name="phenotype_details"),
     path('gene2phenotype/api/lgd/<str:stable_id>/', views.LocusGenotypeDiseaseDetail.as_view(), name="lgd"),
     path('gene2phenotype/api/search/', views.SearchView.as_view(), name="search"),
 
