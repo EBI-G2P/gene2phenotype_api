@@ -32,25 +32,25 @@ class ListMolecularMechanisms(generics.ListAPIView):
         queryset = self.get_queryset()
         result = {}
         for mechanism in queryset:
-            mtype = mechanism["type"]
+            mechanismtype = mechanism["type"]
             subtype = mechanism["subtype"]
             value = mechanism["value"]
 
-            if mtype not in result:
-                result[mtype] = {}
+            if mechanismtype not in result:
+                result[mechanismtype] = {}
                 # evidence has subtypes
-                if mtype == "evidence":
-                    result[mtype][subtype] = [value]
+                if mechanismtype == "evidence":
+                    result[mechanismtype][subtype] = [value]
                 else:
-                    result[mtype] = [value]
+                    result[mechanismtype] = [value]
             else:
-                if mtype == "evidence":
-                    if subtype not in result[mtype]:
-                        result[mtype][subtype] = [value]
+                if mechanismtype == "evidence":
+                    if subtype not in result[mechanismtype]:
+                        result[mechanismtype][subtype] = [value]
                     else:
-                        result[mtype][subtype].append(value)
+                        result[mechanismtype][subtype].append(value)
                 else:
-                    result[mtype].append(value)
+                    result[mechanismtype].append(value)
 
         return Response(result)
 
