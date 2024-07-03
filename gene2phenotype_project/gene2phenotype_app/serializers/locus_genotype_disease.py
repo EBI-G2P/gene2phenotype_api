@@ -13,10 +13,10 @@ from ..models import (Panel, Attrib,
                      LGDVariantTypeDescription, CVMolecularMechanism)
 
 
-from .publication import PublicationSerializer
+from .publication import LGDPublicationSerializer
 from .locus import LocusSerializer
-from .phenotype import PhenotypeSerializer
 from .disease import DiseaseSerializer
+from .panel import LGDPanelSerializer
 
 
 class G2PStableIDSerializer(serializers.ModelSerializer):
@@ -100,65 +100,6 @@ class G2PStableIDSerializer(serializers.ModelSerializer):
         """
         model = G2PStableID
         fields = ['stable_id']
-
-class LGDPanelSerializer(serializers.ModelSerializer):
-    """
-        Serializer for the LGDPanel model.
-        The LGDPanel model represents the panels associated with LGD entries.
-    """
-
-    name = serializers.CharField(source="panel.name")
-    description = serializers.CharField(source="panel.description", allow_null=True, required=False)
-
-    def create(self, validated_data):
-        """
-            Add a LGD record to a panel.
-
-            Args:
-                (string) panel name: short name
-
-            Returns:
-                    LGDPanel obj
-            Raises:
-                Raise error if panel name is invalid
-                Raise error if LGDPanel already exists
-        """
-
-        lgd = self.context['lgd']
-        panel_name = validated_data.get('panel')['name'] # panel short name (example: 'DD')
-
-        # Check if panel name is valid
-        panel_obj = Panel.objects.filter(name=panel_name)
-
-        if not panel_obj.exists():
-            raise serializers.ValidationError({"message": f"Invalid panel name '{panel_name}'"})
-
-        try:
-            lgd_panel_obj = LGDPanel.objects.get(panel=panel_obj.first().id, lgd=lgd.id)
-
-        except LGDPanel.DoesNotExist:
-            # Create LGDPanel
-            lgd_panel_obj = LGDPanel.objects.create(
-                lgd=lgd,
-                panel=panel_obj.first(),
-                is_deleted=0
-            )
-
-        else:
-            # The LGDPanel exists
-            # If not deleted then the entry already exists
-            if lgd_panel_obj.is_deleted == 0:
-                raise serializers.ValidationError({"message": f"G2P entry {lgd.stable_id.stable_id} is already linked to panel {panel_name}"})
-            else:
-                # If deleted then update to not deleted
-                lgd_panel_obj.is_deleted = 0
-                lgd_panel_obj.save()
-        
-        return lgd_panel_obj
-
-    class Meta:
-        model = LGDPanel
-        fields = ['name', 'description']
 
 class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     """
@@ -434,17 +375,48 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 try:
                     # Get name from description
                     panel_obj = Panel.objects.get(description=panel)
-                    data_panel = {"panel": {"name": panel_obj.name}}
-                    # The LGDPanelSerializer fetches the object LGD from its context
-                    LGDPanelSerializer(context={'lgd': lgd_obj}).create(data_panel)
-                
                 except Panel.DoesNotExist:
                     raise serializers.ValidationError({"message": f"Invalid panel {panel}"})
+                else:
+                    data_panel = {"name": panel_obj.name}
+
+                    # The LGDPanelSerializer fetches the object LGD from its context
+                    lgd_panel_serializer = LGDPanelSerializer(data=data_panel, context={'lgd': lgd_obj})
+
+                    # Validate the input data
+                    if lgd_panel_serializer.is_valid(raise_exception=True):
+                        # Save the lgd-panel data, which will call the create method
+                        lgd_panel_serializer.save()
 
             # Insert LGD-publications
-            for publication_obj in publications_list:
-                data_publication = {"publication": publication_obj}
-                LGDPublicationSerializer(context={'lgd': lgd_obj}).create(data_publication)
+            # If the publication (PMID) is not in G2P, it will create the Publication obj
+            # Example: publications_list = [{ "pmid": 1234,
+            #                                 "comment": {"comment": "comment text", "is_public": 1},
+            #                                 "families": {
+            #                                        "families": 5, 
+            #                                        "consanguinity": "", 
+            #                                        "ancestries": "", 
+            #                                        "affected_individuals": 5
+            #                                  }
+            #                              }]
+            for publication_data in publications_list:
+                # PublicationSerializer is instantiated with the publication data and context
+                lgd_publication_serializer = LGDPublicationSerializer(
+                    # the data argument ignores fields not included in the serializer
+                    # to pass extra fields we can use the context
+                    data={'publication':publication_data},
+                    context={
+                        'lgd': lgd_obj,
+                        'comment': publication_data['comment'],
+                        'families': publication_data['families'],
+                        'user': self.context.get('user')
+                        }
+                )
+
+                # Validate the publication data
+                if lgd_publication_serializer.is_valid(raise_exception=True):
+                    # Save the lgd-publication data which will call the create method
+                    lgd_publication_serializer.save()
 
         return lgd_obj
 
@@ -459,14 +431,19 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
 
     variant_consequence = serializers.CharField(source="variant_consequence.term")
     support = serializers.CharField(source="support.value")
-    publication = serializers.CharField(source="publication.pmid", allow_null=True)
+    publication = serializers.CharField(source="publication.pmid", allow_null=True, required=False)
 
-    def create(self, variant_consequence):
+    def create(self, validated_data):
         """
             Add a Variant GenCC consequence to a LGD record.
 
             Args:
-                (dict) variant consequence: name and support
+                (dict) validated data: variant_consequence and support
+                Example:
+                        {
+                            'support': 'inferred',
+                            'variant_consequence': 'altered_gene_product_structure'
+                        }
 
             Output: 
                 LGDVariantGenCCConsequence object
@@ -477,8 +454,8 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
         """
 
         lgd = self.context['lgd']
-        term = variant_consequence.get("name").replace("_", " ")
-        support = variant_consequence.get("support").lower()
+        term = validated_data.get("variant_consequence")["term"].replace("_", " ")
+        support = validated_data.get("support")["value"].lower()
 
         # Get variant gencc consequence value from ontology_term
         # Possible values: absent gene product, altered gene product structure, etc.
@@ -690,7 +667,7 @@ class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
 
     term = serializers.CharField(source="ccm.value")
 
-    def create(self, term):
+    def create(self, validate_data):
         """
             Add cross cutting modifier to LGD record.
 
@@ -706,6 +683,7 @@ class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
         """
 
         lgd = self.context['lgd']
+        term = validate_data.get("ccm")["value"]
 
         # Get cross cutting modifier from attrib
         try:
@@ -743,95 +721,6 @@ class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
     class Meta:
         model = LGDCrossCuttingModifier
         fields = ['term']
-
-class LGDPublicationSerializer(serializers.ModelSerializer):
-    """
-        Serializer for the LGDPublication model.
-    """
-    publication = PublicationSerializer()
-
-    def create(self, validated_data):
-        """
-            Method to create LGD-publication associations.
-
-            Returns:
-                    LGDPublication object
-        """
-
-        lgd = self.context['lgd']
-        publication_obj = validated_data.get('publication') # TODO REVIEW
-
-        try:
-            lgd_publication_obj = LGDPublication.objects.get(
-                lgd = lgd,
-                publication = publication_obj
-            )
-
-        except LGDPublication.DoesNotExist:
-            # Insert new LGD-publication entry
-            lgd_publication_obj = LGDPublication.objects.create(
-                lgd = lgd,
-                publication = publication_obj,
-                is_deleted = 0
-            )
-
-        else:
-            # If LGD-publication is not deleted then throw validation error
-            if lgd_publication_obj.is_deleted == 0:
-                raise serializers.ValidationError(
-                    {"message": f"Record {lgd.stable_id.stable_id} is already linked to publication '{publication_obj.pmid}'"}
-                )
-            else:
-                # If LGD-publication is deleted then update to not deleted
-                lgd_publication_obj.is_deleted = 0
-                lgd_publication_obj.save()
-
-        return lgd_publication_obj
-
-    class Meta:
-        model = LGDPublication
-        fields = ['publication']
-
-class LGDPhenotypeSerializer(serializers.ModelSerializer):
-    """
-        Serializer for the LGDPhenotype model.
-        A G2P record is linked to one or more phenotypes (supported by publications).
-    """
-
-    name = serializers.CharField(source="phenotype.term")
-    accession = serializers.CharField(source="phenotype.accession")
-    publication = serializers.IntegerField(source="publication.pmid", allow_null=True) # TODO support array of pmids
-
-    def create(self, validated_data):
-        """
-            Method to create LGD-phenotype association.
-
-            Returns:
-                    LGDPhenotype object
-        """
-        lgd = self.context['lgd']
-        accession = validated_data.get("accession") # HPO term
-        publication = validated_data.get("publication") # pmid
-
-        # This method 'create' behaves like 'get_or_create'
-        # If phenotype is already stored in G2P then it returns the object
-        pheno_obj = PhenotypeSerializer().create({"accession": accession})
-
-        # TODO insert if not found?
-        publication_obj = Publication.objects.get(pmid=publication)
-
-        lgd_phenotype_obj = LGDPhenotype.objects.create(
-            lgd = lgd,
-            phenotype = pheno_obj,
-            is_deleted = 0,
-            publication = publication_obj
-        )
-
-        return lgd_phenotype_obj
-
-    class Meta:
-        model = LGDPhenotype
-        fields = ['name', 'accession', 'publication']
 
 class LGDVariantTypeCommentSerializer(serializers.ModelSerializer):
     """

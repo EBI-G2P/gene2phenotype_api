@@ -1,5 +1,6 @@
 from rest_framework import permissions
 from rest_framework.response import Response
+from django.db.models import Q
 
 from gene2phenotype_app.serializers import (GeneDiseaseSerializer,
                                             DiseaseDetailSerializer,

@@ -15,9 +15,9 @@ class DiseaseOntologyTermSerializer(serializers.ModelSerializer):
     """
 
     accession = serializers.CharField(source="ontology_term.accession")
-    term = serializers.CharField(source="ontology_term.term")
-    description = serializers.CharField(source="ontology_term.description", allow_null=True) # the description is optional
-    source = serializers.CharField(source="ontology_term.source.name") # external source (ex: OMIM)
+    term = serializers.CharField(source="ontology_term.term", required=False)
+    description = serializers.CharField(source="ontology_term.description", allow_null=True, required=False) # the description is optional
+    source = serializers.CharField(source="ontology_term.source.name", required=False) # external source (ex: OMIM)
 
     class Meta:
         model = DiseaseOntologyTerm

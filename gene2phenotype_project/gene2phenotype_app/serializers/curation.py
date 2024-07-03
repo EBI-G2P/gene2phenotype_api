@@ -13,11 +13,13 @@ from ..models import (CurationData, Disease, User, LocusGenotypeDisease,
 
 from .user import UserSerializer
 from .disease import CreateDiseaseSerializer
-from .publication import PublicationSerializer
 from .locus_genotype_disease import (G2PStableIDSerializer, LocusGenotypeDiseaseSerializer,
-                                     LGDPhenotypeSerializer, LGDCrossCuttingModifierSerializer,
-                                     LGDMolecularMechanismSerializer, LGDVariantGenCCConsequenceSerializer,
+                                     LGDCrossCuttingModifierSerializer,
+                                     LGDMolecularMechanismSerializer,
+                                     LGDVariantGenCCConsequenceSerializer,
                                      LGDVariantTypeSerializer, LGDVariantTypeDescriptionSerializer)
+
+from .phenotype import LGDPhenotypeSerializer
 
 class CurationDataSerializer(serializers.ModelSerializer):
     """
@@ -318,22 +320,26 @@ class CurationDataSerializer(serializers.ModelSerializer):
         ### Publications ###
         for publication in data.json_data["publications"]:
             if publication["families"] is None:
-                family = []
+                family = None
             else: 
-                family = [{ "families": publication["families"], 
+                family = { "families": publication["families"], 
                             "consanguinity": publication["consanguineous"], 
                             "ancestries": publication["ancestries"], 
                             "affected_individuals": publication["affectedIndividuals"]
-                        }]
+                         }
+
+            if publication["comment"] is None or publication["comment"] == "":
+                comment = None
+            else:
+                comment = {"comment": publication["comment"], "is_public": 1}
 
             # format the publication data according to the expected format in PublicationSerializer
             publication_data = { "pmid": publication["pmid"],
-                                "comments": [{"comment": publication["comment"], "is_public": 1}],
-                                "number_of_families": family
-                            }
+                                 "comment": comment,
+                                 "families": family
+                               }
 
-            publication_obj = PublicationSerializer(context={'user': user_obj}).create(publication_data)
-            publications_list.append(publication_obj)
+            publications_list.append(publication_data)
         ####################
 
         ### Disease ###
@@ -355,7 +361,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                     "description": cr["original_disease_name"] # TODO This should be the full description
                 }
                 # Format the cross_reference dictionary according to the expected format in CreateDiseaseSerializer
-                cross_references.append({"ontology_term": ontology_term})
+                cross_references.append(ontology_term)
 
         # Use CreateDiseaseSerializer to get or create disease
         disease = {
@@ -365,7 +371,11 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         # The CreateDiseaseSerializer is going to first check if the disease is stored in G2P
         # It only inserts data that is not in G2P
-        disease_obj = CreateDiseaseSerializer().create(disease)
+        disease_serializer = CreateDiseaseSerializer(data=disease)
+        # Validate the input data
+        if disease_serializer.is_valid(raise_exception=True):
+            # save and create
+            disease_obj = disease_serializer.save()
         ###############
 
         ### Locus-Genotype-Disease ###
@@ -378,28 +388,55 @@ class CurationDataSerializer(serializers.ModelSerializer):
                     "variant_types": data.json_data["variant_types"]
                 }
 
-        lgd_obj = LocusGenotypeDiseaseSerializer().create(lgd_data, disease_obj, publications_list)
+        lgd_obj = LocusGenotypeDiseaseSerializer(context={'user':user}).create(lgd_data, disease_obj, publications_list)
         ##############################
 
         ### Insert data attached to the record Locus-Genotype-Disease ###
 
         ### Phenotypes ###
-        # TODO: improve
         for phenotype in data.json_data["phenotypes"]:
-            LGDPhenotypeSerializer(context={'lgd': lgd_obj}).create({
+            # TODO format to correct format
+            # TODO add summary
+            phenotype_data = {
                 "accession": phenotype["summary"], # TODO update variable name
                 "publication": phenotype["pmid"] # optional
-            })
+            }
+
+            lgd_phenotype_serializer = LGDPhenotypeSerializer(
+                data = phenotype_data,
+                context = {'lgd': lgd_obj}
+            )
+
+            # Validate the input data
+            if lgd_phenotype_serializer.is_valid(raise_exception=True):
+                # save() is going to call create()
+                lgd_phenotype_serializer.save()
 
         ### Cross cutting modifier ###
         # "cross_cutting_modifier" is an array of strings
         for ccm in data.json_data["cross_cutting_modifier"]:
-            LGDCrossCuttingModifierSerializer(context={'lgd': lgd_obj}).create(ccm)
+            lgd_ccm_serializer = LGDCrossCuttingModifierSerializer(
+                data={"term":ccm}, # valid fields is 'term'
+                context={"lgd": lgd_obj}
+            )
+
+            # Validate the input data
+            if lgd_ccm_serializer.is_valid(raise_exception=True):
+                # save() is going to call create()
+                lgd_ccm_serializer.save()
 
         ### Variant (GenCC) consequences ###
-        # Example: 'variant_consequences': [{'name': 'altered_gene_product_level', 'support': ''}
+        # Example: 'variant_consequences': [{'variant_consequence': 'altered_gene_product_level', 'support': 'inferred'}
         for var_consequence in data.json_data["variant_consequences"]:
-            LGDVariantGenCCConsequenceSerializer(context={'lgd': lgd_obj}).create(var_consequence)
+            lgd_var_cons_serializer = LGDVariantGenCCConsequenceSerializer(
+                data=var_consequence,
+                context={'lgd': lgd_obj}
+            )
+
+            # Validate the input data
+            if lgd_var_cons_serializer.is_valid(raise_exception=True):
+                # save() is going to call create()
+                lgd_var_cons_serializer.save()
 
         ### Variant types ###
         # Example: {'comment': 'This is a frameshift', 'inherited': false, 'de_novo': false, 
