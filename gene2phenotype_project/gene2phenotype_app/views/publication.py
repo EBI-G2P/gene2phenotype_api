@@ -1,6 +1,5 @@
-from rest_framework import permissions
+from rest_framework import permissions, status
 from rest_framework.response import Response
-from django.http import Http404
 from rest_framework.decorators import api_view
 
 from gene2phenotype_app.serializers import PublicationSerializer
@@ -82,9 +81,12 @@ def PublicationDetail(request, pmids):
     # if any of the PMIDs is invalid raise error and display all invalid IDs
     if invalid_pmids:
         pmid_list = ", ".join(invalid_pmids)
-        raise Http404(f"Invalid PMID: {pmid_list}")
+        response = Response({'detail': f"Invalid PMID: {pmid_list}"}, status=status.HTTP_404_NOT_FOUND)
 
-    return Response({'results': data, 'count': len(data)})
+    else:
+        response = Response({'results': data, 'count': len(data)})
+
+    return response
 
 
 ### Add data

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 import re
 
-from ..models import (OntologyTerm, Source)
+from ..models import (OntologyTerm, Source, LGDPhenotype, Publication)
 
 from ..utils import validate_phenotype
 
@@ -61,3 +61,53 @@ class PhenotypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = OntologyTerm
         fields = ['name', 'accession', 'description']
+
+### G2P record (LGD) - phenotype ###
+class LGDPhenotypeSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the LGDPhenotype model.
+        A G2P record is linked to one or more phenotypes (supported by publications).
+    """
+
+    name = serializers.CharField(source="phenotype.term", required=False)
+    accession = serializers.CharField(source="phenotype.accession")
+    publication = serializers.IntegerField(source="publication.pmid", allow_null=True) # TODO support array of pmids
+
+    def create(self, validated_data):
+        """
+            Method to create LGD-phenotype association.
+
+            Args:
+                (dict) validated_data
+                Example:
+                        {
+                            'phenotype': {'accession': 'HP:0003974'},
+                            'publication': {'pmid': 1}
+                        }
+
+            Returns:
+                    LGDPhenotype object
+        """
+        lgd = self.context['lgd']
+        accession = validated_data.get("phenotype")["accession"] # HPO term
+        publication = validated_data.get("publication")["pmid"] # pmid
+
+        # This method 'create' behaves like 'get_or_create'
+        # If phenotype is already stored in G2P then it returns the object
+        pheno_obj = PhenotypeSerializer().create({"accession": accession})
+
+        # TODO insert if not found?
+        publication_obj = Publication.objects.get(pmid=publication)
+
+        lgd_phenotype_obj = LGDPhenotype.objects.create(
+            lgd = lgd,
+            phenotype = pheno_obj,
+            is_deleted = 0,
+            publication = publication_obj
+        )
+
+        return lgd_phenotype_obj
+
+    class Meta:
+        model = LGDPhenotype
+        fields = ['name', 'accession', 'publication']

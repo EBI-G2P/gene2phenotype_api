@@ -2,19 +2,18 @@ from .attrib import AttribSerializer, AttribTypeSerializer
 
 from .user import UserSerializer
 
-from .panel import PanelDetailSerializer
+from .panel import PanelDetailSerializer, LGDPanelSerializer
 
-from .publication import PublicationSerializer
+from .publication import PublicationSerializer, LGDPublicationSerializer
 
 from .locus import LocusSerializer, LocusGeneSerializer
 
-from .phenotype import PhenotypeSerializer
+from .phenotype import PhenotypeSerializer, LGDPhenotypeSerializer
 
 from .disease import (DiseaseSerializer, DiseaseOntologyTermSerializer,
                       CreateDiseaseSerializer, DiseaseDetailSerializer,
                       GeneDiseaseSerializer)
 
-from .locus_genotype_disease import (LocusGenotypeDiseaseSerializer,
-                                     LGDPanelSerializer)
+from .locus_genotype_disease import LocusGenotypeDiseaseSerializer
 
 from .curation import CurationDataSerializer

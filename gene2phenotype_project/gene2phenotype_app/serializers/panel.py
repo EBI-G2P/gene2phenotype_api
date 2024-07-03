@@ -164,3 +164,65 @@ class PanelDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Panel
         fields = ['name', 'description', 'curators', 'last_updated']
+
+### G2P record (LGD) - panels ###
+class LGDPanelSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the LGDPanel model.
+        The LGDPanel model represents the panels associated with LGD entries.
+    """
+
+    name = serializers.CharField(source="panel.name")
+    description = serializers.CharField(source="panel.description", allow_null=True, required=False)
+
+    def create(self, validated_data):
+        """
+            Add a LGD record to a panel.
+
+            Args:
+                (dict) validated_data: panel name
+                Example:
+                        { "name": panel_name }
+
+            Returns:
+                    LGDPanel obj
+            Raises:
+                Raise error if panel name is invalid
+                Raise error if LGDPanel already exists
+        """
+
+        lgd = self.context['lgd']
+        panel_name = validated_data.get('panel')['name'] # panel short name (example: 'DD')
+
+        # Check if panel name is valid
+        panel_obj = Panel.objects.filter(name=panel_name)
+
+        if not panel_obj.exists():
+            raise serializers.ValidationError({"message": f"Invalid panel name '{panel_name}'"})
+
+        try:
+            lgd_panel_obj = LGDPanel.objects.get(panel=panel_obj.first().id, lgd=lgd.id)
+
+        except LGDPanel.DoesNotExist:
+            # Create LGDPanel
+            lgd_panel_obj = LGDPanel.objects.create(
+                lgd=lgd,
+                panel=panel_obj.first(),
+                is_deleted=0
+            )
+
+        else:
+            # The LGDPanel exists
+            # If not deleted then the entry already exists
+            if lgd_panel_obj.is_deleted == 0:
+                raise serializers.ValidationError({"message": f"G2P entry {lgd.stable_id.stable_id} is already linked to panel {panel_name}"})
+            else:
+                # If deleted then update to not deleted
+                lgd_panel_obj.is_deleted = 0
+                lgd_panel_obj.save()
+        
+        return lgd_panel_obj
+
+    class Meta:
+        model = LGDPanel
+        fields = ['name', 'description']
