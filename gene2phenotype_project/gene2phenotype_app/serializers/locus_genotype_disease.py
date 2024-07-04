@@ -176,7 +176,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             Publications associated with the LGD record.
         """
         queryset = LGDPublication.objects.filter(lgd_id=id, is_deleted=0)
-        return LGDPublicationSerializer(queryset, many=True).data
+        # It is necessary to send the user to return public/private comments
+        return LGDPublicationSerializer(queryset, context={'user': self.context.get('user')}, many=True).data
 
     def get_phenotypes(self, id):
         """

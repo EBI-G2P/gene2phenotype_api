@@ -136,7 +136,7 @@ class LocusGenotypeDiseaseDetail(BaseView):
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset().first()
-        serializer = LocusGenotypeDiseaseSerializer(queryset)
+        serializer = LocusGenotypeDiseaseSerializer(queryset, context={'user': self.request.user})
         return Response(serializer.data)
 
 

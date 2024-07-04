@@ -149,7 +149,18 @@ class PublicationSerializer(serializers.ModelSerializer):
                     (list) comments: list of comments
         """
 
-        queryset = PublicationComment.objects.filter(publication_id=id.id, is_deleted=0).prefetch_related('user')
+        user = self.context.get('user')
+
+        # Authenticated users can view all types of comments
+        if user and user.is_authenticated:
+            queryset = PublicationComment.objects.filter(
+                publication_id=id.id, is_deleted=0).prefetch_related('user')
+
+        # Anonymous users can only view public comments
+        else:
+            queryset = PublicationComment.objects.filter(
+                publication_id=id.id, is_deleted=0, is_public=1).prefetch_related('user')
+
         data = []
 
         for publication_comment in queryset:
@@ -161,7 +172,7 @@ class PublicationSerializer(serializers.ModelSerializer):
             data.append(comment)
 
         return data
-    
+
     def get_families(self, id):
         """
             Get families info reported in the publication.
