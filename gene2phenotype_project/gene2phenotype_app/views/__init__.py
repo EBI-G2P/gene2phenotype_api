@@ -18,6 +18,7 @@ from .user import UserList
 from .publication import PublicationDetail, AddPublication
 
 from .locus_genotype_disease import (ListMolecularMechanisms, VariantTypesList,
-                                     LocusGenotypeDiseaseDetail, LocusGenotypeDiseaseAddPanel)
+                                     LocusGenotypeDiseaseDetail, LocusGenotypeDiseaseAddPanel,
+                                     LocusGenotypeDiseaseAddPublication)
 
 from .phenotype import AddPhenotype, PhenotypeDetail
