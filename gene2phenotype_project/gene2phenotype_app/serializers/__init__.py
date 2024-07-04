@@ -4,7 +4,7 @@ from .user import UserSerializer
 
 from .panel import PanelDetailSerializer, LGDPanelSerializer
 
-from .publication import PublicationSerializer, LGDPublicationSerializer
+from .publication import PublicationSerializer, LGDPublicationSerializer, LGDPublicationListSerializer
 
 from .locus import LocusSerializer, LocusGeneSerializer
 

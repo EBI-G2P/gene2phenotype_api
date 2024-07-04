@@ -7,7 +7,7 @@ from django.db import transaction
 
 from gene2phenotype_app.serializers import (UserSerializer, LGDPublicationSerializer,
                                             LocusGenotypeDiseaseSerializer,
-                                            LGDPanelSerializer)
+                                            LGDPanelSerializer, LGDPublicationListSerializer)
 
 from gene2phenotype_app.models import (User, Attrib,
                                        LocusGenotypeDisease, OntologyTerm,
@@ -185,70 +185,84 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
 
         return response
 
-class LocusGenotypeDiseaseAddPublication(BaseAdd):
+class LocusGenotypeDiseaseAddPublications(BaseAdd):
     """
-        Add a publication to an existing G2P record (LGD).
+        Add a list of publications to an existing G2P record (LGD).
         When adding a publication it can also add:
             - comment
             - family info as reported in the publication
     """
 
-    serializer_class = LGDPublicationSerializer
+    serializer_class = LGDPublicationListSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     @transaction.atomic
     def post(self, request, stable_id):
         """
-            The post method creates an association between the current LGD record and a publication.
+            The post method creates an association between the current LGD record and a list of publications.
             We want to whole process to be done in one db transaction.
 
             Args:
                 (dict) request
                 
                 Example:
+                { "publications":[
                     {
                     "publication": { "pmid": 1234 },
                     "comment": { "comment": "this is a comment", "is_public": 1 },
                     "families": { "families": 2, "consanguinity": "unknown", "ancestries": "african", "affected_individuals": 1 }
                     }
+                    ]
+                }
         """
 
         user = self.request.user
-        publication = request.data.get('publication', None) # fields to be sent to the serializer
-        comment = None
-        families = None
-
-        # get extra data: comments, families
-        # "comment": {"comment": "comment text", "is_public": 1},
-        # "families": {
-        #               "families": 5, 
-        #               "consanguinity": "", 
-        #               "ancestries": "", 
-        #               "affected_individuals": 5
-        #              }
-        if "comment" in request.data:
-            comment = request.data.get("comment")
-
-        if "families" in request.data:
-            families = request.data.get("families")
 
         if not user.is_authenticated:
             return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-        
+
         g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id) #using the g2p stable id information to get the lgd 
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id=g2p_stable_id, is_deleted=0)
 
-        # the comment and family info are inputted in the context
-        # 'data' only supports the serializer fields
-        serializer_class = LGDPublicationSerializer(
-            data={"publication": publication},
-            context={"lgd": lgd, "user": user, "comment": comment, "families": families}
-        )
+        # LGDPublicationListSerializer accepts a list of publications
+        # Save request data
+        publications_list = request.data
+        serializer_list = LGDPublicationListSerializer(data=request.data)
 
-        if serializer_class.is_valid():
-            serializer_class.save()
-            response = Response({'message': 'Publication added to the G2P entry successfully.'}, status=status.HTTP_200_OK)
+        if serializer_list.is_valid():
+            publications_data = serializer_list.validated_data.get('publications')
+
+            for publication in publications_data:
+                # the comment and family info are inputted in the context
+                comment = None
+                families = None
+
+                # get extra data: comments, families
+                # "comment": {"comment": "comment text", "is_public": 1},
+                # "families": {
+                #               "families": 5, 
+                #               "consanguinity": "", 
+                #               "ancestries": "", 
+                #               "affected_individuals": 5
+                #              }
+                if "comment" in publication:
+                    comment = publication.get("comment")
+
+                if "families" in publication:
+                    families = publication.get("families")
+
+                serializer_class = LGDPublicationSerializer(
+                    data=publication,
+                    context={"lgd": lgd, "user": user, "comment": comment, "families": families}
+                )
+
+                if serializer_class.is_valid():
+                    serializer_class.save()
+                    response = Response({'message': 'Publication added to the G2P entry successfully.'}, status=status.HTTP_200_OK)
+                else:
+                    response = Response({"message": "Error adding publication", "details": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         else:
-            response = Response({"message": "Error adding publication", "details": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            response = Response({"message": "Error adding publications", "details": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return response

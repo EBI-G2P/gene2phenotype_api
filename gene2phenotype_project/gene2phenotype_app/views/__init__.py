@@ -19,6 +19,6 @@ from .publication import PublicationDetail, AddPublication
 
 from .locus_genotype_disease import (ListMolecularMechanisms, VariantTypesList,
                                      LocusGenotypeDiseaseDetail, LocusGenotypeDiseaseAddPanel,
-                                     LocusGenotypeDiseaseAddPublication)
+                                     LocusGenotypeDiseaseAddPublications)
 
 from .phenotype import AddPhenotype, PhenotypeDetail
