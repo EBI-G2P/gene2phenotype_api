@@ -26,10 +26,13 @@ urlpatterns = [
     path('gene2phenotype/api/lgd/<str:stable_id>/', views.LocusGenotypeDiseaseDetail.as_view(), name="lgd"),
     path('gene2phenotype/api/search/', views.SearchView.as_view(), name="search"),
 
+    ### Endpoints to add data ###
     path('gene2phenotype/api/add/disease/', views.AddDisease.as_view(), name="add_disease"),
     path('gene2phenotype/api/add/phenotype/', views.AddPhenotype.as_view(), name="add_phenotype"),
     path('gene2phenotype/api/add/publication/', views.AddPublication.as_view(), name="add_publication"),
+    # Add data to the G2P record (LGD)
     path('gene2phenotype/api/lgd/<str:stable_id>/add_panel/', views.LocusGenotypeDiseaseAddPanel.as_view(), name="lgd_add_panel"),
+    path('gene2phenotype/api/lgd/<str:stable_id>/add_publication/', views.LocusGenotypeDiseaseAddPublication.as_view(), name="lgd_add_publication"),
 
     ### Curation endpoints ###
     path('gene2phenotype/api/add/curation/', views.AddCurationData.as_view(), name="add_curation_data"),

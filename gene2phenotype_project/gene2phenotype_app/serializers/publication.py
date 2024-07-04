@@ -33,11 +33,12 @@ class PublicationCommentSerializer(serializers.ModelSerializer):
         #   publication, comment text, user and it's not deleted TODO
         # Filter can return multiple values - this can happen if we have duplicated entries
         publication_comment_list = PublicationComment.objects.filter(comment = comment_text,
+                                                                     publication = publication,
                                                                      user = user_obj,
                                                                      is_deleted = 0)
 
         # Comment was not found in table - insert new comment
-        if len(publication_comment_list) == 0:
+        if not publication_comment_list:
             publication_comment_obj = PublicationComment.objects.create(comment = comment_text,
                                                                         is_public = is_public,
                                                                         is_deleted = 0,
@@ -60,9 +61,9 @@ class PublicationFamiliesSerializer(serializers.ModelSerializer):
     """
 
     families = serializers.IntegerField()
-    affected_individuals = serializers.IntegerField(required=False)
-    ancestries = serializers.CharField(required=False)
-    consanguinity = serializers.CharField(source="consanguinity.value", required=False)
+    affected_individuals = serializers.IntegerField(required=False, allow_null=True)
+    ancestries = serializers.CharField(required=False, allow_null=True)
+    consanguinity = serializers.CharField(source="consanguinity.value", required=False, allow_null=True)
 
     def create(self, validated_data, publication):
         """
@@ -82,20 +83,27 @@ class PublicationFamiliesSerializer(serializers.ModelSerializer):
         """
 
         families = validated_data.get("families")
-        consanguinity = validated_data.get("consanguinity")
         ancestries = validated_data.get("ancestries")
         affected_individuals = validated_data.get("affected_individuals")
 
-        # Get consanguinity from attrib
-        try:
-            consanguinity_obj = Attrib.objects.get(
-                value = consanguinity,
-                type__code = "consanguinity"
-            )
-        except Attrib.DoesNotExist:
-            raise serializers.ValidationError({"message": f"Invalid consanguinity value {consanguinity}"})
+        # Check the consanguinity value (optional)
+        consanguinity_obj = None
+        if "consanguinity" in validated_data:
+            consanguinity = validated_data.get("consanguinity")
+
+            # Get consanguinity from attrib
+            try:
+                consanguinity_obj = Attrib.objects.get(
+                    value = consanguinity,
+                    type__code = "consanguinity"
+                )
+            except Attrib.DoesNotExist:
+                raise serializers.ValidationError(
+                    {"message": f"Invalid consanguinity value {consanguinity}"}
+                )
 
         # Check if LGD-publication families is already stored
+        # TODO check what defines as already stored - if paper already has family data then it should be enough
         try:
             publication_families_obj = PublicationFamilies.objects.get(
                 publication = publication,
@@ -166,11 +174,17 @@ class PublicationSerializer(serializers.ModelSerializer):
         data = []
 
         for publication_family in queryset:
+            # Check if consanguinity is NULL
+            if publication_family.consanguinity is None:
+                consanguinity = None
+            else:
+                consanguinity = publication_family.consanguinity.value
+
             families = {
                 "number_of_families": publication_family.families,
                 "affected_individuals": publication_family.affected_individuals,
                 "ancestry": publication_family.ancestries,
-                "consanguinity": publication_family.consanguinity.value
+                "consanguinity": consanguinity
             }
             data.append(families)
 
@@ -267,8 +281,26 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
         """
 
         lgd = self.context['lgd']
-        comment = self.context['comment'] # extra data - comment
-        families = self.context['families'] # extra data - families reported in publication
+        comment = None
+        families = None
+
+        if "comment" in self.context:
+            comment = self.context['comment'] # extra data - comment
+
+            # Check if comment text is invalid or missing
+            if not comment or "comment" not in comment or comment.get("comment") == "":
+                comment = None
+            # If 'is_public' is not defined set it to public (default)
+            elif "is_public" not in comment:
+                comment["is_public"] = 1
+
+        if "families" in self.context:
+            families = self.context['families'] # extra data - families reported in publication
+
+            # Check if family data is invalid or missing
+            if not families:
+                families = None
+
         publication_data = validated_data.get('publication') # only includes the publication pmid
 
         # it is necessary to send the user
@@ -297,16 +329,12 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
                 is_deleted = 0
             )
 
-        else:
-            # If LGD-publication is not deleted then throw validation error
-            if lgd_publication_obj.is_deleted == 0:
-                raise serializers.ValidationError(
-                    {"message": f"Record {lgd.stable_id.stable_id} is already linked to publication '{publication_obj.pmid}'"}
-                )
-            else:
-                # If LGD-publication is deleted then update to not deleted
-                lgd_publication_obj.is_deleted = 0
-                lgd_publication_obj.save()
+        # If LGD-publication already exists then returns the existing object
+        # New comments and/or family info are added to the existing object
+        # If existing LGD-publication is deleted then update to not deleted
+        if lgd_publication_obj.is_deleted != 0:
+            lgd_publication_obj.is_deleted = 0
+            lgd_publication_obj.save()
 
         return lgd_publication_obj
 
