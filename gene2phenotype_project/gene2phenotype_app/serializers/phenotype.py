@@ -96,18 +96,41 @@ class LGDPhenotypeSerializer(serializers.ModelSerializer):
         # If phenotype is already stored in G2P then it returns the object
         pheno_obj = PhenotypeSerializer().create({"accession": accession})
 
-        # TODO insert if not found?
+        # When we add a new phenotype to the G2P record, the publication
+        # already has to be associated with the record
+        # If the publication does not exist then we won't add the lgd-phenotype
         publication_obj = Publication.objects.get(pmid=publication)
 
-        lgd_phenotype_obj = LGDPhenotype.objects.create(
-            lgd = lgd,
-            phenotype = pheno_obj,
-            is_deleted = 0,
-            publication = publication_obj
-        )
+        # Check if LGD-phenotype already exists
+        try:
+            lgd_phenotype_obj = LGDPhenotype.objects.get(
+                lgd = lgd,
+                phenotype = pheno_obj,
+                publication = publication_obj
+            )
+        except LGDPhenotype.DoesNotExist:
+            lgd_phenotype_obj = LGDPhenotype.objects.create(
+                lgd = lgd,
+                phenotype = pheno_obj,
+                is_deleted = 0,
+                publication = publication_obj
+            )
+        else:
+            # The LGD-phenotype can be deleted
+            # If it is deleted then update to not deleted
+            if lgd_phenotype_obj.is_deleted != 0:
+                lgd_phenotype_obj.is_deleted = 0
+                lgd_phenotype_obj.save()
 
         return lgd_phenotype_obj
 
     class Meta:
         model = LGDPhenotype
         fields = ['name', 'accession', 'publication']
+
+class LGDPhenotypeListSerializer(serializers.Serializer):
+    """
+        Serializer to accept a list of phenotypes.
+        Called by: LocusGenotypeDiseaseAddPhenotypes()
+    """
+    phenotypes = LGDPhenotypeSerializer(many=True)

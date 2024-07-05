@@ -276,11 +276,14 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
         Serializer for the LGDPublication model.
     """
     publication = PublicationSerializer()
+    comment = serializers.DictField(required=False)
+    families = serializers.DictField(required=False)
 
     def create(self, validated_data):
         """
             Method to create LGD-publication associations.
-            Extra data ('comment', 'families') is passed as context.
+            Extra data ('comment', 'families') can be inputted as context or
+            as part of the serializer fields.
 
             Args:
                 (dict) validate_data: accepted fied is 'publication'
@@ -351,4 +354,11 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LGDPublication
-        fields = ['publication']
+        fields = ['publication', 'comment', 'families']
+
+class LGDPublicationListSerializer(serializers.Serializer):
+    """
+        Serializer to accept a list of publications.
+        Called by: LocusGenotypeDiseaseAddPublication()
+    """
+    publications = LGDPublicationSerializer(many=True)
