@@ -45,7 +45,7 @@ class LocusSerializer(serializers.ModelSerializer):
             attrib_type=attrib_type_obj.first().id,
             is_deleted=0).values_list('value', flat=True)
 
-        return locus_attribs
+        return locus_attribs if locus_attribs else None
 
     def create(self, validated_data):
         """
@@ -151,16 +151,22 @@ class LocusGeneSerializer(LocusSerializer):
         """
             Returns the date last time the locus was updated.
         """
+        final_date = None
 
+        # Get all G2P records associated with the gene
         lgd = LocusGenotypeDisease.objects.filter(
             locus=id,
             is_reviewed=1,
             is_deleted=0,
             date_review__isnull=False
-            ).latest('date_review'
-                     ).date_review
+            )
 
-        return lgd.date() if lgd else None
+        # Checks if there are G2P records, some genes do not have associated records
+        if lgd:
+            date = lgd.latest('date_review').date_review
+            final_date = date.date()
+
+        return final_date
 
     def records_summary(self, user):
         """
