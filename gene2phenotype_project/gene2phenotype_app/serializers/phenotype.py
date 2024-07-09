@@ -6,7 +6,7 @@ from ..models import (OntologyTerm, Source, LGDPhenotype, Publication)
 from ..utils import validate_phenotype
 
 
-class PhenotypeSerializer(serializers.ModelSerializer):
+class PhenotypeOntologyTermSerializer(serializers.ModelSerializer):
     """
         Serializer for the OntologyTerm model.
         The phenotypes are represented in OntologyTerm model.
@@ -94,7 +94,7 @@ class LGDPhenotypeSerializer(serializers.ModelSerializer):
 
         # This method 'create' behaves like 'get_or_create'
         # If phenotype is already stored in G2P then it returns the object
-        pheno_obj = PhenotypeSerializer().create({"accession": accession})
+        pheno_obj = PhenotypeOntologyTermSerializer().create({"accession": accession})
 
         # When we add a new phenotype to the G2P record, the publication
         # already has to be associated with the record

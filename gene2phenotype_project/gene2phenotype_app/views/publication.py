@@ -81,7 +81,7 @@ def PublicationDetail(request, pmids):
     # if any of the PMIDs is invalid raise error and display all invalid IDs
     if invalid_pmids:
         pmid_list = ", ".join(invalid_pmids)
-        response = Response({'detail': f"Invalid PMID: {pmid_list}"}, status=status.HTTP_404_NOT_FOUND)
+        response = Response({'detail': f"Invalid PMID(s): {pmid_list}"}, status=status.HTTP_404_NOT_FOUND)
 
     else:
         response = Response({'results': data, 'count': len(data)})
