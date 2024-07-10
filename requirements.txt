@@ -9,7 +9,7 @@ djangorestframework==3.15.1
 idna==3.6
 jsonschema==4.21.1
 jsonschema-specifications==2023.12.1
-mysqlclient==2.2.4
+mysqlclient==2.1.1
 ordered-set==4.1.0
 pytz==2024.1
 referencing==0.35.0
