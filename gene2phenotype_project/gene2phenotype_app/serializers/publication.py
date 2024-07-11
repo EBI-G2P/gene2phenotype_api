@@ -34,7 +34,6 @@ class PublicationCommentSerializer(serializers.ModelSerializer):
         # Filter can return multiple values - this can happen if we have duplicated entries
         publication_comment_list = PublicationComment.objects.filter(comment = comment_text,
                                                                      publication = publication,
-                                                                     user = user_obj,
                                                                      is_deleted = 0)
 
         # Comment was not found in table - insert new comment
@@ -286,7 +285,7 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
             as part of the serializer fields.
 
             Args:
-                (dict) validate_data: accepted fied is 'publication'
+                (dict) validate_data: accepted field is 'publication'
                 Example input data:
                                     {'publication': {'pmid': 1}}
 

@@ -1,4 +1,4 @@
-from .base import BaseView, BaseAdd
+from .base import BaseView, BaseAdd, ListEndpoints
 
 from .panel import PanelList, PanelDetail, PanelRecordsSummary
 
