@@ -2,6 +2,9 @@ from rest_framework import generics, status
 from django.http import Http404
 from rest_framework.response import Response
 from django.db import transaction
+from django.urls import get_resolver
+from rest_framework.decorators import api_view
+from gene2phenotype_app.models import User
 
 
 class BaseView(generics.ListAPIView):
@@ -34,3 +37,41 @@ class BaseAdd(generics.CreateAPIView):
         instance = self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+@api_view(['GET'])
+def ListEndpoints(request):
+    """
+        Returns a list of available endpoints.
+    """
+    user = request.user
+
+    # Get user obj
+    try:
+        user_obj = User.objects.get(email=user, is_active=1)
+    except User.DoesNotExist:
+        user_obj = None
+
+    resolver = get_resolver()
+    url_patterns = []
+    # use a set to avoid duplicates
+    list_urls = set()
+
+    for key in resolver.reverse_dict.keys():
+        url_patterns.extend(resolver.reverse_dict[key])
+
+    for url_pattern in url_patterns:
+        if isinstance(url_pattern, list):
+            pattern = url_pattern[0][0]
+
+            # Format the url to display the django format
+            # Remove 'gene2phenotype/api/' from the urls
+            pattern = pattern.replace("%(", "<").replace(")s", ">").replace("gene2phenotype/api/", "")
+
+            # Authenticated users have access to all endpoints
+            # Non-authenticated users can only search data
+            if user_obj is not None and pattern != "":
+                list_urls.add(pattern)
+            elif user_obj is None and pattern != "" and "add" not in pattern and "curation" not in pattern:
+                list_urls.add(pattern)
+
+    return Response({"endpoints": sorted(list_urls)})
