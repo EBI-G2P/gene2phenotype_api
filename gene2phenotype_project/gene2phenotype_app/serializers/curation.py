@@ -54,7 +54,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
         user_email = self.context.get('user')
         user_obj = User.objects.get(email=user_email)
 
-        if data_dict["json_data"]["locus"] == "" or data_dict["json_data"]["locus"] is None:
+        if ("locus" not in data_dict["json_data"] or data_dict["json_data"]["locus"] == ""
+            or data_dict["json_data"]["locus"] is None):
             raise serializers.ValidationError(
                 {"message" : "To save a draft, the minimum requirement is a locus entry. Please save this draft with locus information"}
             )
@@ -67,7 +68,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 {"message": f"Data already under curation. Please check session '{curation_entry.session_name}'"}
             )
 
-        if len(data_dict["json_data"]["panels"]) >= 1:
+        if "panels" in data_dict["json_data"] and len(data_dict["json_data"]["panels"]) >= 1:
             panels = UserSerializer.get_panels(self,user_obj.id)
             # Check if any panel in data_dict["json_data"]["panels"] is not in the updated panels list
             unauthorized_panels = [panel for panel in data_dict["json_data"]["panels"] if panel not in panels]
@@ -99,7 +100,39 @@ class CurationDataSerializer(serializers.ModelSerializer):
         json_data = data.json_data
         missing_data = []
 
+        if "disease" not in json_data or json_data["disease"]["disease_name"] == "":
+            missing_data.append("disease")
+
+        if "confidence" not in json_data or json_data["confidence"]["level"] == "":
+            missing_data.append("confidence")
+
+        if "publications" not in json_data or len(json_data["publications"]) == 0:
+            missing_data.append("publication")
+
+        if "panels" not in json_data or not json_data["panels"]:
+            missing_data.append("panel")
+
+        if "allelic_requirement" not in json_data or json_data["allelic_requirement"] == "":
+            missing_data.append("allelic_requirement")
+
+        if "molecular_mechanism" not in json_data or json_data["molecular_mechanism"]["name"] == "":
+            missing_data.append("molecular_mechanism")
+
+        if missing_data:
+            missing_data_str = ', '.join(missing_data)
+            raise serializers.ValidationError(
+                {"message" : f"The following mandatory fields are missing: {missing_data_str}"}
+            )
+
+        # Check if locus data is stored in G2P
+        # Locus - we only accept locus already stored in G2P
+        try:
+            locus_obj = Locus.objects.get(name=json_data["locus"])
+        except Locus.DoesNotExist:
+            raise serializers.ValidationError({"message" : f"Invalid locus {json_data['locus']}"})
+
         # Check if G2P record (LGD) is already published
+        # TODO update this check
         try:
             lgd_obj = LocusGenotypeDisease.objects.get(
                 locus__name = json_data["locus"],
@@ -111,41 +144,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 "message": "Found another record with same locus, genotype and disease",
                 "Please check G2P record": lgd_obj.stable_id.stable_id
             })
-
         except LocusGenotypeDisease.DoesNotExist:
-            if json_data["disease"]["disease_name"] == "":
-                missing_data.append("disease")
-            
-            if json_data["confidence"]["level"] == "":
-                missing_data.append("confidence")
-            
-            if len(json_data["publications"]) == 0:
-                missing_data.append("publication")
-            
-            if not json_data["panels"]:
-                missing_data.append("panel")
-            
-            if json_data["allelic_requirement"] == "":
-                missing_data.append("allelic_requirement")
-
-            if json_data["molecular_mechanism"]["name"] == "":
-                missing_data.append("molecular_mechanism")
-
-            if missing_data:
-                missing_data_str = ', '.join(missing_data)
-                raise serializers.ValidationError(
-                    {"message" : f"The following mandatory fields are missing: {missing_data_str}"}
-                )
-
-            # Check if data is stored in G2P
-            # Locus - we only accept locus already stored in G2P
-            try:
-                locus_obj = Locus.objects.get(name=json_data["locus"])
-            except Locus.DoesNotExist:
-                raise serializers.ValidationError({"message" : f"Invalid locus {json_data['locus']}"})
-
-        return locus_obj
-
+            return locus_obj
 
     def convert_to_dict(self, data):
         """
@@ -250,7 +250,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         session_name = json_data.get('session_name')
         stable_id = G2PStableIDSerializer.create_stable_id()
 
-        if session_name == "":
+        if session_name is None or session_name == "":
             session_name = stable_id.stable_id
 
         try:
