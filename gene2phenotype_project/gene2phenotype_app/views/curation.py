@@ -48,7 +48,7 @@ class AddCurationData(BaseAdd):
 
         serializer = self.serializer_class(data=request.data, context={'user': self.request.user})
         if serializer.is_valid():
-            
+
             serializer.save()
             return Response({"message": "Data saved successfully"}, status=status.HTTP_200_OK)
         else:
@@ -74,7 +74,8 @@ class ListCurationEntries(BaseView):
             Returns:
                 Queryset of CurationData objects.
         """
-        queryset = CurationData.objects.all()
+        user = self.request.user
+        queryset = CurationData.objects.filter(user__email=user, user__is_active=1)
 
         return queryset
 

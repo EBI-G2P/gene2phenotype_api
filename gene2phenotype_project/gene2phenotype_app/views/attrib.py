@@ -38,7 +38,7 @@ class AttribList(generics.ListAPIView):
                     (list) results: list of attribs
                     (int) count: number of attribs
 
-        Example: gene2phenotype/api/attrib/confidence_category/
+        Example:
                 {
                     "results": [
                         "definitive",
