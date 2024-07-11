@@ -1,4 +1,4 @@
-import json
+import json, jsonschema
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
@@ -42,9 +42,9 @@ class AddCurationData(BaseAdd):
 
         # Validate the JSON data against the schema
         try:
-            validate(instance=request.data, schema=schema)
-        except exceptions.ValidationError as e:
-            return Response({"message": "JSON data does not follow the required format, Required format is" + str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            validate(instance=request.data["json_data"], schema=schema)
+        except jsonschema.exceptions.ValidationError as e:
+            return Response({"message": "JSON data does not follow the required format. Required format is" + str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.serializer_class(data=request.data, context={'user': self.request.user})
         if serializer.is_valid():
@@ -192,9 +192,9 @@ class UpdateCurationData(generics.UpdateAPIView):
             return Response({"message": "Schema file not found"}, status=status.HTTP_404_NOT_FOUND)
         # Validate the JSON data against the schema
         try:
-            validate(instance=request.data, schema=schema)
-        except exceptions.ValidationError as e:
-            return Response({"message": "JSON data does not follow the required format, Required format is" + str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            validate(instance=request.data["json_data"], schema=schema)
+        except jsonschema.exceptions.ValidationError as e:
+            return Response({"message": "JSON data does not follow the required format. Required format is" + str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         # Update data - it replaces the data
         serializer = CurationDataSerializer(curation_obj, data=request.data, context={'user': self.request.user})
