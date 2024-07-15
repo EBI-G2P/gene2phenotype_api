@@ -66,7 +66,10 @@ def PhenotypeDetail(request, hpo_list):
         hpo_list = ", ".join(invalid_hpos)
         response = Response({'detail': f"Invalid HPO term(s): {hpo_list}"}, status=status.HTTP_404_NOT_FOUND)
 
-    return Response({'results': data, 'count': len(data)})
+    else:
+        response = Response({'results': data, 'count': len(data)})
+
+    return response
 
 
 ### Add data
