@@ -85,21 +85,21 @@
                         "type": "string"
                     },
                     "nmd_escape": {
-                        "type": "string"
+                        "type": "boolean"
                     },
-                    "denovo": {
-                        "type": "string"
+                    "de_novo": {
+                        "type": "boolean"
                     },
                     "inherited": {
-                        "type": "string"
+                        "type": "boolean"
                     },
                     "unknown_inheritance": {
-                        "type": "string"
+                        "type": "boolean"
                     },
                     "supporting_papers": {
                         "type": "array",
                         "items": {
-                            "type": "number"
+                            "type": ["number", "string"]
                         }
                     },
                     "comment": {
