@@ -22,10 +22,10 @@
                         "type": "string"
                     },
                     "families":{
-                        "type": "number"
+                        "type": ["number", "null"]
                     },
                     "affectedIndividuals": {
-                        "type": "number"
+                        "type": ["number", "null"]
                     },
                     "ancestries": {
                         "type": "string"
@@ -35,8 +35,18 @@
                     },
                     "comment": {
                         "type": "string"
+                    },
+                    "year": {
+                        "type": "number"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "authors": {
+                        "type": "string"
                     }
-                }
+                },
+                "required": ["pmid"]
             }
         },
         "phenotypes": {
@@ -95,7 +105,8 @@
                     "comment": {
                         "type": "string" 
                     }
-                }
+                },
+                "required": ["supporting_papers"]
             }
         },
         "variant_description": {
@@ -113,7 +124,6 @@
                 }
             }
         },
-
         "variant_consequence": {
             "description": "Variant consequence associated with this description",
             "type": "array",
@@ -129,7 +139,6 @@
                 }
             }
         },
-
         "molecular_mechanism": {
             "description": "Molecular mechanism",
             "type": "object",
@@ -213,7 +222,8 @@
                     } 
 
                 }
-            } 
+            },
+            "required": ["disease_name"]
         },
         "panel": {
             "type": "array",
@@ -230,7 +240,8 @@
                 "level": {
                     "type": "string"
                 }
-            }
+            },
+            "required": ["level"]
         }
     },
     "required": ["locus"]
