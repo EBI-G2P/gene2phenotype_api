@@ -130,7 +130,7 @@
             "items":{
                 "type": "object",
                 "properties": {
-                    "name": {
+                    "variant_consequence": {
                         "type": "string"
                     },
                     "support": {

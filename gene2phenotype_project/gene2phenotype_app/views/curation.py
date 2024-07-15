@@ -40,9 +40,14 @@ class AddCurationData(BaseAdd):
         except FileNotFoundError:
             return Response({"message": "Schema file not found"}, status=status.HTTP_404_NOT_FOUND)
 
+        # json format accepts null values but in python these values are represented as 'None'
+        # dumps() converts 'None' to 'null' before json validation
+        input_data = json.dumps(request.data)
+        input_json_data = json.loads(input_data)
+
         # Validate the JSON data against the schema
         try:
-            validate(instance=request.data["json_data"], schema=schema)
+            validate(instance=input_json_data["json_data"], schema=schema)
         except jsonschema.exceptions.ValidationError as e:
             return Response({"message": "JSON data does not follow the required format. Required format is" + str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -75,6 +80,7 @@ class ListCurationEntries(BaseView):
                 Queryset of CurationData objects.
         """
         user = self.request.user
+
         queryset = CurationData.objects.filter(user__email=user, user__is_active=1)
 
         return queryset
