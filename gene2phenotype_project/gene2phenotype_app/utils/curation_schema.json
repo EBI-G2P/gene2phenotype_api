@@ -16,7 +16,7 @@
                 "type": "object",
                 "properties": {
                     "pmid": {
-                        "type": "number"
+                        "type": ["number", "string"]
                     },
                     "source": {
                         "type": "string"
@@ -56,7 +56,7 @@
                 "type": "object",
                 "properties": {
                     "pmid": {
-                        "type": "number"
+                        "type": ["number", "string"]
                     },
                     "summary": {
                         "type": "string"
@@ -116,7 +116,7 @@
                 "type": "object",
                 "properties": {
                     "pmid": {
-                        "type": "number"
+                        "type": ["number", "string"]
                     }, 
                     "description":{
                         "type": "string"
@@ -170,7 +170,7 @@
                 "type": "object",
                 "properties": {
                     "pmid": {
-                        "type": "number"
+                        "type": ["number", "string"]
                     },
                     "description": {
                         "type": "string"
