@@ -138,7 +138,7 @@ class CurationDataDetail(BaseView):
 
         g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
         # Get the entry if the user matches
-        queryset = CurationData.objects.filter(stable_id=g2p_stable_id, user=user)
+        queryset = CurationData.objects.filter(stable_id=g2p_stable_id, user__email=user)
 
         if not queryset.exists():
             self.handle_no_permission('Entry', stable_id)
@@ -197,9 +197,15 @@ class UpdateCurationData(generics.UpdateAPIView):
                 schema = json.load(file)
         except FileNotFoundError:
             return Response({"message": "Schema file not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # json format accepts null values but in python these values are represented as 'None'
+        # dumps() converts 'None' to 'null' before json validation
+        input_data = json.dumps(request.data)
+        input_json_data = json.loads(input_data)
+
         # Validate the JSON data against the schema
         try:
-            validate(instance=request.data["json_data"], schema=schema)
+            validate(instance=input_json_data["json_data"], schema=schema)
         except jsonschema.exceptions.ValidationError as e:
             return Response({"message": "JSON data does not follow the required format. Required format is" + str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
