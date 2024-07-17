@@ -72,7 +72,9 @@ class LocusGenotypeDisease(models.Model):
         indexes = [
             models.Index(fields=['locus']),
             models.Index(fields=['disease']),
-            models.Index(fields=['confidence'])
+            models.Index(fields=['confidence']),
+            models.Index(fields=['is_deleted']),
+            models.Index(fields=['is_reviewed'])
         ]
 
 class LGDCrossCuttingModifier(models.Model):
@@ -147,6 +149,7 @@ class LGDVariantType(models.Model):
         unique_together = ["lgd","variant_type_ot", "publication"]
         indexes = [
             models.Index(fields=['lgd', 'variant_type_ot']),
+            models.Index(fields=['variant_type_ot'])
         ]
 
 class LGDVariantTypeDescription(models.Model):
@@ -196,6 +199,9 @@ class LGDVariantGenccConsequence(models.Model):
     class Meta:
         db_table = "lgd_variant_gencc_consequence"
         unique_together = ["lgd", "variant_consequence", "support"]
+        indexes = [
+            models.Index(fields=['variant_consequence'])
+        ]
 
 class CVMolecularMechanism(models.Model):
     """
@@ -243,6 +249,9 @@ class LGDMolecularMechanism(models.Model):
     class Meta:
         db_table = "lgd_molecular_mechanism"
         unique_together = ["lgd", "mechanism"]
+        indexes = [
+            models.Index(fields=['mechanism'])
+        ]
 
 class LGDMolecularMechanismEvidence(models.Model):
     id = models.AutoField(primary_key=True)
@@ -454,6 +463,9 @@ class DiseaseOntologyTerm(models.Model):
     class Meta:
         db_table = "disease_ontology_term"
         unique_together = ["disease", "ontology_term"]
+        indexes = [
+            models.Index(fields=['ontology_term'])
+        ]
 
 class DiseasePhenotype(models.Model):
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)

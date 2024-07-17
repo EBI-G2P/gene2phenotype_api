@@ -1,6 +1,6 @@
 from .base import BaseView, BaseAdd, ListEndpoints
 
-from .panel import PanelList, PanelDetail, PanelRecordsSummary
+from .panel import PanelList, PanelDetail, PanelRecordsSummary, PanelDownload
 
 from .locus import LocusGene, LocusGeneSummary, GeneFunction
 
