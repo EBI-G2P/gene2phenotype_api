@@ -48,6 +48,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 if the user does not have permission to curate on certain panels.
         """
 
+        session_name = self.context.get('session_name')
         data_copy = copy.deepcopy(data) # making a copy of this so any changes to this are only to this 
         data_dict = self.convert_to_dict(data_copy)
 
@@ -63,13 +64,14 @@ class CurationDataSerializer(serializers.ModelSerializer):
         # Check if JSON is already in the table
         curation_entry = self.compare_curation_data(data_dict, user_obj.id)
 
-        if curation_entry: # Throw error if data is already stored in table
+        # Throw error if data is already stored in table associated with another curation entry
+        if curation_entry and session_name != curation_entry.session_name:
             raise serializers.ValidationError(
                 {"message": f"Data already under curation. Please check session '{curation_entry.session_name}'"}
             )
 
         if "panels" in data_dict["json_data"] and len(data_dict["json_data"]["panels"]) >= 1:
-            panels = UserSerializer.get_panels(self,user_obj.id)
+            panels = UserSerializer.get_panels(self, user_obj.id)
             # Check if any panel in data_dict["json_data"]["panels"] is not in the updated panels list
             unauthorized_panels = [panel for panel in data_dict["json_data"]["panels"] if panel not in panels]
             if unauthorized_panels:

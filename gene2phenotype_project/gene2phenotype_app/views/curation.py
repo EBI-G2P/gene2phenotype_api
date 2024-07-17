@@ -52,10 +52,10 @@ class AddCurationData(BaseAdd):
             return Response({"message": "JSON data does not follow the required format. Required format is" + str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.serializer_class(data=request.data, context={'user': self.request.user})
-        if serializer.is_valid():
 
-            serializer.save()
-            return Response({"message": "Data saved successfully"}, status=status.HTTP_200_OK)
+        if serializer.is_valid():
+            instance = serializer.save()
+            return Response({"message": f"Data saved successfully for session name '{instance.session_name}'"}, status=status.HTTP_200_OK)
         else:
             return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -210,14 +210,18 @@ class UpdateCurationData(generics.UpdateAPIView):
             return Response({"message": "JSON data does not follow the required format. Required format is" + str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         # Update data - it replaces the data
-        serializer = CurationDataSerializer(curation_obj, data=request.data, context={'user': self.request.user})
+        serializer = CurationDataSerializer(
+            curation_obj,
+            data=request.data,
+            context={'user': self.request.user,'session_name': curation_obj.session_name}
+        )
 
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "Data updated successfully"})
 
         else:
-            return Response({"message": "Failed to update data", "details": serializer.errors})
+            return Response({"message": "Failed to update data", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 class PublishRecord(APIView):
     """
