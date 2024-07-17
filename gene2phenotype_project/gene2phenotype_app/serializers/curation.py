@@ -390,29 +390,44 @@ class CurationDataSerializer(serializers.ModelSerializer):
                     "variant_types": data.json_data["variant_types"]
                 }
 
-        lgd_obj = LocusGenotypeDiseaseSerializer(context={'user':user}).create(lgd_data, disease_obj, publications_list)
+        lgd_obj = LocusGenotypeDiseaseSerializer(context={'user':user_obj}).create(lgd_data, disease_obj, publications_list)
         ##############################
 
         ### Insert data attached to the record Locus-Genotype-Disease ###
 
         ### Phenotypes ###
-        for phenotype in data.json_data["phenotypes"]:
-            # TODO format to correct format
+        # Phenotype format: {
+        #      'pmid': '1',
+        #      'summary': 'This is the summary of these phenotypes.',
+        #      'hpo_terms': [
+        #          {
+        #             'term': 'Sclerosis of the middle phalanx of the 5th finger',
+        #             'accession': 'HP:0100907', 'description': ''
+        #         }, {
+        #             'term': 'Abnormal proximal phalanx morphology of the hand', 
+        #             'accession': 'HP:0009834', 'description': ''
+        #             }
+        #         ]
+        # }
+        for phenotype_pmid in data.json_data["phenotypes"]:
             # TODO add summary
-            phenotype_data = {
-                "accession": phenotype["summary"], # TODO update variable name
-                "publication": phenotype["pmid"] # optional
-            }
+            # TODO improve this method to send a list of phenotypes to LGDPhenotypeSerializer
+            hpo_terms = phenotype_pmid['hpo_terms']
+            for hpo in hpo_terms:
+                phenotype_data = {
+                    "accession": hpo["accession"],
+                    "publication": phenotype_pmid["pmid"]
+                }
 
-            lgd_phenotype_serializer = LGDPhenotypeSerializer(
-                data = phenotype_data,
-                context = {'lgd': lgd_obj}
-            )
+                lgd_phenotype_serializer = LGDPhenotypeSerializer(
+                    data = phenotype_data,
+                    context = {'lgd': lgd_obj}
+                )
 
-            # Validate the input data
-            if lgd_phenotype_serializer.is_valid(raise_exception=True):
-                # save() is going to call create()
-                lgd_phenotype_serializer.save()
+                # Validate the input data
+                if lgd_phenotype_serializer.is_valid(raise_exception=True):
+                    # save() is going to call create()
+                    lgd_phenotype_serializer.save()
 
         ### Cross cutting modifier ###
         # "cross_cutting_modifier" is an array of strings

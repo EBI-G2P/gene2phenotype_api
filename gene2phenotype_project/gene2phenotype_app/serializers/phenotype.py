@@ -79,11 +79,6 @@ class LGDPhenotypeSerializer(serializers.ModelSerializer):
 
             Args:
                 (dict) validated_data
-                Example:
-                        {
-                            'phenotype': {'accession': 'HP:0003974'},
-                            'publication': {'pmid': 1}
-                        }
 
             Returns:
                     LGDPhenotype object
