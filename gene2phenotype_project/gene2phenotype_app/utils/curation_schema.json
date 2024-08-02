@@ -16,16 +16,16 @@
                 "type": "object",
                 "properties": {
                     "pmid": {
-                        "type": "number"
+                        "type": ["number", "string"]
                     },
                     "source": {
                         "type": "string"
                     },
                     "families":{
-                        "type": "number"
+                        "type": ["number", "null"]
                     },
                     "affectedIndividuals": {
-                        "type": "number"
+                        "type": ["number", "null"]
                     },
                     "ancestries": {
                         "type": "string"
@@ -35,8 +35,18 @@
                     },
                     "comment": {
                         "type": "string"
+                    },
+                    "year": {
+                        "type": "number"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "authors": {
+                        "type": "string"
                     }
-                }
+                },
+                "required": ["pmid"]
             }
         },
         "phenotypes": {
@@ -46,12 +56,16 @@
                 "type": "object",
                 "properties": {
                     "pmid": {
-                        "type": "number"
+                        "type": ["number", "string"]
                     },
                     "summary": {
                         "type": "string"
+                    },
+                    "hpo_terms": {
+                        "type": "array"
                     }
-                }
+                },
+                "required": ["pmid", "hpo_terms"]
             }
         },
         "allelic_requirement": {
@@ -75,27 +89,28 @@
                         "type": "string"
                     },
                     "nmd_escape": {
-                        "type": "string"
+                        "type": "boolean"
                     },
-                    "denovo": {
-                        "type": "string"
+                    "de_novo": {
+                        "type": "boolean"
                     },
                     "inherited": {
-                        "type": "string"
+                        "type": "boolean"
                     },
                     "unknown_inheritance": {
-                        "type": "string"
+                        "type": "boolean"
                     },
                     "supporting_papers": {
                         "type": "array",
                         "items": {
-                            "type": "number"
+                            "type": ["number", "string"]
                         }
                     },
                     "comment": {
                         "type": "string" 
                     }
-                }
+                },
+                "required": ["supporting_papers"]
             }
         },
         "variant_description": {
@@ -105,7 +120,7 @@
                 "type": "object",
                 "properties": {
                     "pmid": {
-                        "type": "number"
+                        "type": ["number", "string"]
                     }, 
                     "description":{
                         "type": "string"
@@ -113,14 +128,13 @@
                 }
             }
         },
-
         "variant_consequence": {
             "description": "Variant consequence associated with this description",
             "type": "array",
             "items":{
                 "type": "object",
                 "properties": {
-                    "name": {
+                    "variant_consequence": {
                         "type": "string"
                     },
                     "support": {
@@ -129,7 +143,6 @@
                 }
             }
         },
-
         "molecular_mechanism": {
             "description": "Molecular mechanism",
             "type": "object",
@@ -161,7 +174,7 @@
                 "type": "object",
                 "properties": {
                     "pmid": {
-                        "type": "number"
+                        "type": ["number", "string"]
                     },
                     "description": {
                         "type": "string"
@@ -204,7 +217,7 @@
                                 "type": "string"
                             },
                             "identifier": {
-                                "type": "number"
+                                "type": ["number", "string"]
                             },
                             "source": {
                                 "type": "string"
@@ -213,7 +226,8 @@
                     } 
 
                 }
-            } 
+            },
+            "required": ["disease_name"]
         },
         "panel": {
             "type": "array",
@@ -230,8 +244,9 @@
                 "level": {
                     "type": "string"
                 }
-            }
+            },
+            "required": ["level"]
         }
-    }
-    
+    },
+    "required": ["locus"]
 }

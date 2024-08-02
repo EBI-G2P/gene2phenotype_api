@@ -19,5 +19,5 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('gene2phenotype_app.urls')),
+    path('gene2phenotype/api/', include('gene2phenotype_app.urls')),
 ]

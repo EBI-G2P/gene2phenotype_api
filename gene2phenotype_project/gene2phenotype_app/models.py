@@ -51,7 +51,7 @@ class CurationData(models.Model):
 
 class LocusGenotypeDisease(models.Model):
     """
-        Represents a G2P record (LGD).
+        Represents a G2P record (LGD record).
         A record is characterised by a locus, genotype (allelic requeriment) and a disease.
     """
     id = models.AutoField(primary_key=True)
@@ -72,10 +72,15 @@ class LocusGenotypeDisease(models.Model):
         indexes = [
             models.Index(fields=['locus']),
             models.Index(fields=['disease']),
-            models.Index(fields=['confidence'])
+            models.Index(fields=['confidence']),
+            models.Index(fields=['is_deleted']),
+            models.Index(fields=['is_reviewed'])
         ]
 
 class LGDCrossCuttingModifier(models.Model):
+    """
+        Represents the cross cutting modifier term associated with the G2P record.
+    """
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     ccm = models.ForeignKey("Attrib", on_delete=models.PROTECT)
@@ -90,6 +95,9 @@ class LGDCrossCuttingModifier(models.Model):
         ]
 
 class LGDPhenotype(models.Model):
+    """
+        Represents the phenotype (ontology term) associated with the G2P record.
+    """
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     phenotype = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
@@ -119,9 +127,13 @@ class LGDPhenotypeSummary(models.Model):
     class Meta:
         db_table = "lgd_phenotype_summary"
 
-# Types of variants reported in the publication: missense_variant, frameshift_variant, stop_gained, etc.
-# Sequence ontology terms are used to describe variant types
 class LGDVariantType(models.Model):
+    """
+        Represents the variant type associated with the G2P record and a publication.
+
+        Types of variants reported in the publication: missense_variant, frameshift_variant, stop_gained, etc.
+        Sequence ontology terms are used to describe variant types.
+    """
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     variant_type_ot = models.ForeignKey("OntologyTerm", related_name="variant_type", on_delete=models.PROTECT)
@@ -137,11 +149,12 @@ class LGDVariantType(models.Model):
         unique_together = ["lgd","variant_type_ot", "publication"]
         indexes = [
             models.Index(fields=['lgd', 'variant_type_ot']),
+            models.Index(fields=['variant_type_ot'])
         ]
 
 class LGDVariantTypeDescription(models.Model):
     """
-        Variant HGVS linked to the LGD record and the publication.
+        Represents the HGVS description linked to the LGD record and the publication.
         The HGVS is not directly linked to the variant type.
     """
     id = models.AutoField(primary_key=True)
@@ -155,8 +168,12 @@ class LGDVariantTypeDescription(models.Model):
         db_table = "lgd_variant_type_description"
 
 class LGDVariantTypeComment(models.Model):
+    """
+        Represents a comment linked to the lgd-variant type.
+        Curators can add comments to the variant types, they can be public or private.
+    """
     id = models.AutoField(primary_key=True)
-    lgd_variant_type = models.ForeignKey("LGDVariantType", on_delete=models.PROTECT)
+    lgd_variant_type = models.ForeignKey("LGDVariantType", related_name="comments", on_delete=models.PROTECT)
     comment = models.TextField(null=False)
     is_public = models.SmallIntegerField(null=False, default=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
@@ -166,10 +183,12 @@ class LGDVariantTypeComment(models.Model):
     class Meta:
         db_table = "lgd_variant_type_comment"
 
-# GenCC level of variant consequence: altered_gene_product_level, etc.
-# Sequence ontology terms are used to describe GenCC variant types
-# VariantGenccConsequence: links consequences with support and publications
 class LGDVariantGenccConsequence(models.Model):
+    """
+        Links a G2P record to variant consequences with support (inferred/evidence).
+        GenCC level of variant consequence: altered_gene_product_level, etc.
+        Sequence ontology terms are used to describe GenCC variant types.
+    """
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     variant_consequence = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
@@ -180,6 +199,9 @@ class LGDVariantGenccConsequence(models.Model):
     class Meta:
         db_table = "lgd_variant_gencc_consequence"
         unique_together = ["lgd", "variant_consequence", "support"]
+        indexes = [
+            models.Index(fields=['variant_consequence'])
+        ]
 
 class CVMolecularMechanism(models.Model):
     """
@@ -215,9 +237,9 @@ class CVMolecularMechanism(models.Model):
 
 class LGDMolecularMechanism(models.Model):
     id = models.AutoField(primary_key=True)
-    lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
-    mechanism = models.ForeignKey("CVMolecularMechanism", related_name='mechanism', on_delete=models.PROTECT)
-    mechanism_support = models.ForeignKey("CVMolecularMechanism", related_name='mechanism_support', on_delete=models.PROTECT)
+    lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT, null=False)
+    mechanism = models.ForeignKey("CVMolecularMechanism", related_name='mechanism', on_delete=models.PROTECT, null=False)
+    mechanism_support = models.ForeignKey("CVMolecularMechanism", related_name='mechanism_support', on_delete=models.PROTECT, null=False)
     synopsis = models.ForeignKey("CVMolecularMechanism", related_name='synopsis', on_delete=models.PROTECT, null=True)
     synopsis_support = models.ForeignKey("CVMolecularMechanism", related_name='synopsis_support', on_delete=models.PROTECT, null=True)
     mechanism_description = models.TextField(null=True)
@@ -227,11 +249,14 @@ class LGDMolecularMechanism(models.Model):
     class Meta:
         db_table = "lgd_molecular_mechanism"
         unique_together = ["lgd", "mechanism"]
+        indexes = [
+            models.Index(fields=['mechanism'])
+        ]
 
 class LGDMolecularMechanismEvidence(models.Model):
     id = models.AutoField(primary_key=True)
     molecular_mechanism = models.ForeignKey("LGDMolecularMechanism", on_delete=models.PROTECT)
-    evidence = models.ForeignKey("CVMolecularMechanism", on_delete=models.PROTECT, default=None)
+    evidence = models.ForeignKey("CVMolecularMechanism", related_name="evidence", on_delete=models.PROTECT, default=None)
     description = models.TextField(null=True, default=None)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
@@ -279,8 +304,10 @@ class LGDPanel(models.Model):
             models.Index(fields=['lgd', 'panel'])
         ]
 
-# Meta table helps to keep track of bulk updates
 class Meta(models.Model):
+    """
+        Meta table can be used to keep track of bulk updates.
+    """
     id = models.AutoField(primary_key=True)
     key = models.CharField(max_length=100, null=False)
     source = models.ForeignKey("Source", on_delete=models.PROTECT)
@@ -423,6 +450,10 @@ class DiseaseSynonym(models.Model):
         ]
 
 class DiseaseOntologyTerm(models.Model):
+    """
+        Links the disease to ontology terms imported from external ontology sources.
+        Example of ontology terms for disease are: OMIM and Mondo IDs
+    """
     id = models.AutoField(primary_key=True)
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
     ontology_term = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
@@ -432,6 +463,9 @@ class DiseaseOntologyTerm(models.Model):
     class Meta:
         db_table = "disease_ontology_term"
         unique_together = ["disease", "ontology_term"]
+        indexes = [
+            models.Index(fields=['ontology_term'])
+        ]
 
 class DiseasePhenotype(models.Model):
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
@@ -517,6 +551,10 @@ class PublicationComment(models.Model):
         db_table = "publication_comment"
 
 class Source(models.Model):
+    """
+        External sources from where data is retrieved.
+        Example: UniProt
+    """
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100, unique=True, null=False)
     description = models.CharField(max_length=255, null=True)
@@ -574,12 +612,16 @@ class UserPanel(models.Model):
         ]
 
 class UniprotAnnotation(models.Model):
+    """
+        It represents the gene product function from UniProt.
+    """
+
     id = models.AutoField(primary_key=True)
     uniprot_accession = models.CharField(max_length=100, null=False)
     gene = models.ForeignKey("Locus", on_delete=models.PROTECT)
-    hgnc = models.CharField(max_length=50, null=False)
-    gene_symbol = models.CharField(max_length=100, null=False)
-    mim = models.CharField(max_length=100, null=True)
+    hgnc = models.CharField(max_length=50, null=False) # TODO remove this field
+    gene_symbol = models.CharField(max_length=100, null=False) # TODO remove this field
+    mim = models.CharField(max_length=100, null=True) # TODO remove this field
     protein_function = models.TextField(null=False)
     source = models.ForeignKey("Source", on_delete=models.PROTECT)
 
@@ -605,6 +647,10 @@ class GeneStats(models.Model):
         ]
 
 class GeneDisease(models.Model):
+    """
+        External gene-disease associations.
+        Data imported from OMIM, Mondo, etc.
+    """
     id = models.AutoField(primary_key=True)
     gene = models.ForeignKey("Locus", on_delete=models.PROTECT)
     disease = models.CharField(max_length=255, null=False)
