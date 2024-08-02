@@ -13,12 +13,12 @@ from ..models import (CurationData, Disease, User, LocusGenotypeDisease,
 
 from .user import UserSerializer
 from .disease import CreateDiseaseSerializer
-from .locus_genotype_disease import (G2PStableIDSerializer, LocusGenotypeDiseaseSerializer,
+from .locus_genotype_disease import (LocusGenotypeDiseaseSerializer,
                                      LGDCrossCuttingModifierSerializer,
                                      LGDMolecularMechanismSerializer,
                                      LGDVariantGenCCConsequenceSerializer,
                                      LGDVariantTypeSerializer, LGDVariantTypeDescriptionSerializer)
-
+from .stable_id import G2PStableIDSerializer
 from .phenotype import LGDPhenotypeSerializer
 
 class CurationDataSerializer(serializers.ModelSerializer):
@@ -49,7 +49,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
         """
 
         session_name = self.context.get('session_name')
-        data_copy = copy.deepcopy(data) # making a copy of this so any changes to this are only to this 
+        # making a deep copy of data so any changes made are only applied to data_copy
+        data_copy = copy.deepcopy(data)
         data_dict = self.convert_to_dict(data_copy)
 
         user_email = self.context.get('user')
@@ -168,8 +169,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
         
         return data
     
-    #using the Deepdiff module, compare JSON data 
-    # this still needs to be worked on when we have fixed the user permission issue 
+    # using the Deepdiff module to compare JSON data 
+    # TODO: this still needs to be worked on when we have fixed the user permission issue 
     def compare_curation_data(self, input_json_data, user_obj):
        """"
             Function to compare provided JSON data against JSON data stored in CurationData instances 
