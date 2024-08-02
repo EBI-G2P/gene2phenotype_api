@@ -13,12 +13,12 @@ from ..models import (CurationData, Disease, User, LocusGenotypeDisease,
 
 from .user import UserSerializer
 from .disease import CreateDiseaseSerializer
-from .locus_genotype_disease import (G2PStableIDSerializer, LocusGenotypeDiseaseSerializer,
+from .locus_genotype_disease import (LocusGenotypeDiseaseSerializer,
                                      LGDCrossCuttingModifierSerializer,
                                      LGDMolecularMechanismSerializer,
                                      LGDVariantGenCCConsequenceSerializer,
                                      LGDVariantTypeSerializer, LGDVariantTypeDescriptionSerializer)
-
+from .stable_id import G2PStableIDSerializer
 from .phenotype import LGDPhenotypeSerializer
 
 class CurationDataSerializer(serializers.ModelSerializer):
@@ -48,7 +48,9 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 if the user does not have permission to curate on certain panels.
         """
 
-        data_copy = copy.deepcopy(data) # making a copy of this so any changes to this are only to this 
+        session_name = self.context.get('session_name')
+        # making a deep copy of data so any changes made are only applied to data_copy
+        data_copy = copy.deepcopy(data)
         data_dict = self.convert_to_dict(data_copy)
 
         user_email = self.context.get('user')
@@ -63,13 +65,14 @@ class CurationDataSerializer(serializers.ModelSerializer):
         # Check if JSON is already in the table
         curation_entry = self.compare_curation_data(data_dict, user_obj.id)
 
-        if curation_entry: # Throw error if data is already stored in table
+        # Throw error if data is already stored in table associated with another curation entry
+        if curation_entry and session_name != curation_entry.session_name:
             raise serializers.ValidationError(
                 {"message": f"Data already under curation. Please check session '{curation_entry.session_name}'"}
             )
 
         if "panels" in data_dict["json_data"] and len(data_dict["json_data"]["panels"]) >= 1:
-            panels = UserSerializer.get_panels(self,user_obj.id)
+            panels = UserSerializer.get_panels(self, user_obj.id)
             # Check if any panel in data_dict["json_data"]["panels"] is not in the updated panels list
             unauthorized_panels = [panel for panel in data_dict["json_data"]["panels"] if panel not in panels]
             if unauthorized_panels:
@@ -166,8 +169,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
         
         return data
     
-    #using the Deepdiff module, compare JSON data 
-    # this still needs to be worked on when we have fixed the user permission issue 
+    # using the Deepdiff module to compare JSON data 
+    # TODO: this still needs to be worked on when we have fixed the user permission issue 
     def compare_curation_data(self, input_json_data, user_obj):
        """"
             Function to compare provided JSON data against JSON data stored in CurationData instances 
@@ -388,29 +391,44 @@ class CurationDataSerializer(serializers.ModelSerializer):
                     "variant_types": data.json_data["variant_types"]
                 }
 
-        lgd_obj = LocusGenotypeDiseaseSerializer(context={'user':user}).create(lgd_data, disease_obj, publications_list)
+        lgd_obj = LocusGenotypeDiseaseSerializer(context={'user':user_obj}).create(lgd_data, disease_obj, publications_list)
         ##############################
 
         ### Insert data attached to the record Locus-Genotype-Disease ###
 
         ### Phenotypes ###
-        for phenotype in data.json_data["phenotypes"]:
-            # TODO format to correct format
+        # Phenotype format: {
+        #      'pmid': '1',
+        #      'summary': 'This is the summary of these phenotypes.',
+        #      'hpo_terms': [
+        #          {
+        #             'term': 'Sclerosis of the middle phalanx of the 5th finger',
+        #             'accession': 'HP:0100907', 'description': ''
+        #         }, {
+        #             'term': 'Abnormal proximal phalanx morphology of the hand', 
+        #             'accession': 'HP:0009834', 'description': ''
+        #             }
+        #         ]
+        # }
+        for phenotype_pmid in data.json_data["phenotypes"]:
             # TODO add summary
-            phenotype_data = {
-                "accession": phenotype["summary"], # TODO update variable name
-                "publication": phenotype["pmid"] # optional
-            }
+            # TODO improve this method to send a list of phenotypes to LGDPhenotypeSerializer
+            hpo_terms = phenotype_pmid['hpo_terms']
+            for hpo in hpo_terms:
+                phenotype_data = {
+                    "accession": hpo["accession"],
+                    "publication": phenotype_pmid["pmid"]
+                }
 
-            lgd_phenotype_serializer = LGDPhenotypeSerializer(
-                data = phenotype_data,
-                context = {'lgd': lgd_obj}
-            )
+                lgd_phenotype_serializer = LGDPhenotypeSerializer(
+                    data = phenotype_data,
+                    context = {'lgd': lgd_obj}
+                )
 
-            # Validate the input data
-            if lgd_phenotype_serializer.is_valid(raise_exception=True):
-                # save() is going to call create()
-                lgd_phenotype_serializer.save()
+                # Validate the input data
+                if lgd_phenotype_serializer.is_valid(raise_exception=True):
+                    # save() is going to call create()
+                    lgd_phenotype_serializer.save()
 
         ### Cross cutting modifier ###
         # "cross_cutting_modifier" is an array of strings

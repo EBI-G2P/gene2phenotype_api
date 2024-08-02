@@ -11,6 +11,7 @@ urlpatterns = [
     path('panels/', views.PanelList.as_view(), name="list_panels"),
     path('panel/<str:name>/', views.PanelDetail.as_view(), name="panel_details"),
     path('panel/<str:name>/summary/', views.PanelRecordsSummary.as_view(), name="panel_summary"),
+    path('panel/<str:name>/download/', views.PanelDownload, name="panel_download"),
     path('users/', views.UserList.as_view(), name="list_users"),
     path('attribs/', views.AttribTypeList.as_view(), name="list_attrib_type"),
     path('attrib/<str:code>/', views.AttribList.as_view(), name="list_attribs_by_type"),

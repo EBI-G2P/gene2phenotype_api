@@ -60,8 +60,12 @@
                     },
                     "summary": {
                         "type": "string"
+                    },
+                    "hpo_terms": {
+                        "type": "array"
                     }
-                }
+                },
+                "required": ["pmid", "hpo_terms"]
             }
         },
         "allelic_requirement": {
@@ -85,21 +89,21 @@
                         "type": "string"
                     },
                     "nmd_escape": {
-                        "type": "string"
+                        "type": "boolean"
                     },
-                    "denovo": {
-                        "type": "string"
+                    "de_novo": {
+                        "type": "boolean"
                     },
                     "inherited": {
-                        "type": "string"
+                        "type": "boolean"
                     },
                     "unknown_inheritance": {
-                        "type": "string"
+                        "type": "boolean"
                     },
                     "supporting_papers": {
                         "type": "array",
                         "items": {
-                            "type": "number"
+                            "type": ["number", "string"]
                         }
                     },
                     "comment": {
@@ -213,7 +217,7 @@
                                 "type": "string"
                             },
                             "identifier": {
-                                "type": "number"
+                                "type": ["number", "string"]
                             },
                             "source": {
                                 "type": "string"
