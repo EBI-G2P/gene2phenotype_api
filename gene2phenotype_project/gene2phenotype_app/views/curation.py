@@ -33,6 +33,8 @@ class AddCurationData(BaseAdd):
             Returns:
                 A Response object with appropriate status and message.
         """
+        user = self.request.user
+
         json_file_path = settings.BASE_DIR.joinpath("gene2phenotype_app", "utils", "curation_schema.json")
         try:
             with open(json_file_path, 'r') as file:
@@ -51,7 +53,7 @@ class AddCurationData(BaseAdd):
         except jsonschema.exceptions.ValidationError as e:
             return Response({"message": "JSON data does not follow the required format. Required format is" + str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = self.serializer_class(data=request.data, context={'user': self.request.user})
+        serializer = self.serializer_class(data=request.data, context={'user': user})
 
         if serializer.is_valid():
             instance = serializer.save()
@@ -188,6 +190,8 @@ class UpdateCurationData(generics.UpdateAPIView):
             return queryset
 
     def update(self, request, *args, **kwargs):
+        user = self.request.user
+ 
         # Get curation entry to be updated
         curation_obj = self.get_queryset().first()
 
@@ -213,7 +217,7 @@ class UpdateCurationData(generics.UpdateAPIView):
         serializer = CurationDataSerializer(
             curation_obj,
             data=request.data,
-            context={'user': self.request.user,'session_name': curation_obj.session_name}
+            context={'user': user,'session_name': curation_obj.session_name}
         )
 
         if serializer.is_valid():

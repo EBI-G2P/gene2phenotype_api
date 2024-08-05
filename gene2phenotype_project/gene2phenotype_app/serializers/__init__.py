@@ -14,7 +14,8 @@ from .disease import (DiseaseSerializer, DiseaseOntologyTermSerializer,
                       CreateDiseaseSerializer, DiseaseDetailSerializer,
                       GeneDiseaseSerializer)
 
-from .locus_genotype_disease import LocusGenotypeDiseaseSerializer, LGDCommentSerializer
+from .locus_genotype_disease import (LocusGenotypeDiseaseSerializer, LGDCommentSerializer,
+                                     LGDVariantConsequenceListSerializer, LGDVariantGenCCConsequenceSerializer)
 
 from .stable_id import G2PStableIDSerializer
 

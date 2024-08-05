@@ -445,6 +445,13 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
         model = LGDVariantGenccConsequence
         fields = ['variant_consequence', 'support', 'publication']
 
+class LGDVariantConsequenceListSerializer(serializers.Serializer):
+    """
+        Serializer to accept a list of variant GenCC consequences.
+        Called by: LGDAddVariantConsequences()
+    """
+    variant_consequences = LGDVariantGenCCConsequenceSerializer(many=True)
+
 class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
     """
         Serializer for the LGDMolecularMechanism model.

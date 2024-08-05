@@ -444,7 +444,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 lgd_ccm_serializer.save()
 
         ### Variant (GenCC) consequences ###
-        # Example: 'variant_consequences': [{'variant_consequence': 'altered_gene_product_level', 'support': 'inferred'}
+        # Example: 'variant_consequences': [{'variant_consequence': 'altered_gene_product_level', 'support': 'inferred'}]
         for var_consequence in data.json_data["variant_consequences"]:
             lgd_var_cons_serializer = LGDVariantGenCCConsequenceSerializer(
                 data=var_consequence,
@@ -455,7 +455,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             if lgd_var_cons_serializer.is_valid(raise_exception=True):
                 # save() is going to call create()
                 lgd_var_cons_serializer.save()
-
+ 
         ### Variant types ###
         # Example: {'comment': 'This is a frameshift', 'inherited': false, 'de_novo': false, 
         # 'unknown_inheritance': false, 'nmd_escape': True, 'primary_type': 'protein_changing',

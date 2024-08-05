@@ -12,7 +12,8 @@ from gene2phenotype_app.serializers import (UserSerializer, LGDPublicationSerial
                                             LocusGenotypeDiseaseSerializer,
                                             LGDPanelSerializer, LGDPublicationListSerializer,
                                             LGDPhenotypeListSerializer, LGDPhenotypeSerializer,
-                                            LGDCommentSerializer)
+                                            LGDCommentSerializer, LGDVariantConsequenceListSerializer,
+                                            LGDVariantGenCCConsequenceSerializer)
 
 from gene2phenotype_app.models import (User, Attrib,
                                        LocusGenotypeDisease, OntologyTerm,
@@ -358,6 +359,12 @@ class LocusGenotypeDiseaseAddPhenotypes(BaseAdd):
         if serializer_list.is_valid():
             phenotypes_data = serializer_list.validated_data.get('phenotypes')
 
+            if(not phenotypes_data):
+                response = Response(
+                    {"message": "Empty phenotype. Please provide valid data."},
+                     status=status.HTTP_400_BAD_REQUEST
+                )
+
             # Add each phenotype from the input list
             for phenotype in phenotypes_data:
                 # Format data to be accepted by LGDPhenotypeSerializer
@@ -377,5 +384,79 @@ class LocusGenotypeDiseaseAddPhenotypes(BaseAdd):
 
         else:
             response = Response({"message": "Error adding phenotypes", "details": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return response
+
+class LGDAddVariantConsequences(BaseAdd):
+    """
+        Add a list of variant GenCC consequences to an existing G2P record (LGD).
+    """
+
+    serializer_class = LGDVariantConsequenceListSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    @transaction.atomic
+    def post(self, request, stable_id):
+        """
+            The post method creates an association between the current LGD record and a list of variant consequences.
+            We want to whole process to be done in one db transaction.
+
+            Args:
+                (dict) request
+
+                Example:
+                    {
+                        "variant_consequences": [{
+                            "variant_consequence": "altered_gene_product_level",
+                            "support": "inferred"
+                        }]
+                    }
+        """
+
+        user = self.request.user
+        if not user.is_authenticated:
+            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # LGDVariantConsequenceListSerializer accepts a list of variant consequences
+        serializer_list = LGDVariantConsequenceListSerializer(data=request.data)
+
+        if serializer_list.is_valid():
+            variant_consequence_data = serializer_list.validated_data.get('variant_consequences')
+
+            # Check if list of consequences is empty
+            if(not variant_consequence_data):
+                response = Response(
+                    {"message": "Empty variant consequence. Please provide valid data."},
+                     status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Add each variant GenCC consequence from the input list
+            for var_consequence in variant_consequence_data:
+                # The data is created in LGDVariantGenCCConsequenceSerializer
+                # Input the expected data format
+                serializer_class = LGDVariantGenCCConsequenceSerializer(
+                    data={
+                        "variant_consequence": var_consequence["variant_consequence"]["term"],
+                        "support": var_consequence["support"]["value"]
+                    },
+                    context={"lgd": lgd}
+                )
+
+                if serializer_class.is_valid():
+                    serializer_class.save()
+                    response = Response(
+                        {"message": "Variant consequence added to the G2P entry successfully."},
+                        status=status.HTTP_200_OK
+                    )
+                else:
+                    response = Response(
+                        {"message": "Error adding variant consequence",
+                         "details": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    )
+
+        else:
+            response = Response({"message": "Error adding variant consequences", "details": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return response
