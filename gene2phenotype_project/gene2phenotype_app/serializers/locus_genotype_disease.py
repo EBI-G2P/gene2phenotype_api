@@ -684,6 +684,13 @@ class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
         model = LGDCrossCuttingModifier
         fields = ['term']
 
+class LGDCrossCuttingModifierListSerializer(serializers.Serializer):
+    """
+        Serializer to accept a list of cross cutting modifiers.
+        Called by: LocusGenotypeDiseaseAddCCM()
+    """
+    cross_cutting_modifiers = LGDCrossCuttingModifierSerializer(many=True)
+
 class LGDVariantTypeCommentSerializer(serializers.ModelSerializer):
     """
         Serializer for the LGDVariantTypeComment model.

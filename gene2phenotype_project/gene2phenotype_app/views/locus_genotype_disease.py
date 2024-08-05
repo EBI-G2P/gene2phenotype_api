@@ -1,11 +1,8 @@
 from rest_framework import generics, status, permissions
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import permission_classes
 from rest_framework.response import Response
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.db import transaction
-from django.views.decorators.http import require_http_methods
 
 
 from gene2phenotype_app.serializers import (UserSerializer, LGDPublicationSerializer,
@@ -13,7 +10,8 @@ from gene2phenotype_app.serializers import (UserSerializer, LGDPublicationSerial
                                             LGDPanelSerializer, LGDPublicationListSerializer,
                                             LGDPhenotypeListSerializer, LGDPhenotypeSerializer,
                                             LGDCommentSerializer, LGDVariantConsequenceListSerializer,
-                                            LGDVariantGenCCConsequenceSerializer)
+                                            LGDVariantGenCCConsequenceSerializer, LGDCrossCuttingModifierListSerializer,
+                                            LGDCrossCuttingModifierSerializer)
 
 from gene2phenotype_app.models import (User, Attrib,
                                        LocusGenotypeDisease, OntologyTerm,
@@ -457,6 +455,80 @@ class LGDAddVariantConsequences(BaseAdd):
                     )
 
         else:
-            response = Response({"message": "Error adding variant consequences", "details": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            response = Response(
+                {"message": "Error adding variant consequences", "details": serializer_list.errors},
+                  status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        return response
+
+class LocusGenotypeDiseaseAddCCM(BaseAdd):
+    """
+        Add a list of cross cutting modifiers to an existing G2P record (LGD).
+    """
+
+    serializer_class = LGDCrossCuttingModifierListSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    @transaction.atomic
+    def post(self, request, stable_id):
+        """
+            The post method creates an association between the current LGD record and a list of cross cutting modifiers.
+            We want to whole process to be done in one db transaction.
+
+            Args:
+                (dict) request
+
+                Example:
+                    {
+                        "cross_cutting_modifiers": [{"term": "typically mosaic"}]
+                    }
+        """
+
+        user = self.request.user
+        if not user.is_authenticated:
+            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # LGDCrossCuttingModifierListSerializer accepts a list of cross cutting modifiers
+        serializer_list = LGDCrossCuttingModifierListSerializer(data=request.data)
+
+        if serializer_list.is_valid():
+            ccm_data = serializer_list.validated_data.get('cross_cutting_modifiers')
+
+            # Check if list of consequences is empty
+            if(not ccm_data):
+                response = Response(
+                    {"message": "Empty cross cutting modifier. Please provide valid data."},
+                     status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Add each cross cutting modifier from the input list
+            for ccm in ccm_data:
+                # The data is created in LGDCrossCuttingModifierSerializer
+                # Input the expected data format
+                serializer_class = LGDCrossCuttingModifierSerializer(
+                    data={"term": ccm["ccm"]["value"]},
+                    context={"lgd": lgd}
+                )
+
+                if serializer_class.is_valid():
+                    serializer_class.save()
+                    response = Response(
+                        {"message": "Cross cutting modifier added to the G2P entry successfully."},
+                        status=status.HTTP_200_OK
+                    )
+                else:
+                    response = Response(
+                        {"message": "Error adding cross cutting modifier",
+                         "details": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    )
+
+        else:
+            response = Response(
+                {"message": "Error adding cross cutting modifiers", "details": serializer_list.errors},
+                  status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
         return response
