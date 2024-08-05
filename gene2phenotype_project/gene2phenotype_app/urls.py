@@ -34,6 +34,7 @@ urlpatterns = [
     path('add/publication/', views.AddPublication.as_view(), name="add_publication"),
     # Add data to the G2P record (LGD)
     path('lgd/<str:stable_id>/add_panel/', views.LocusGenotypeDiseaseAddPanel.as_view(), name="lgd_add_panel"),
+    path('lgd/<str:stable_id>/add_comment/', views.LocusGenotypeDiseaseAddComment.as_view(), name="lgd_add_comment"),
     path('lgd/<str:stable_id>/add_publications/', views.LocusGenotypeDiseaseAddPublications.as_view(), name="lgd_add_publications"),
     path('lgd/<str:stable_id>/add_phenotypes/', views.LocusGenotypeDiseaseAddPhenotypes.as_view(), name="lgd_add_phenotypes"),
 

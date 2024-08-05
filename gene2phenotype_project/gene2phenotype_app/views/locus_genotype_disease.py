@@ -1,14 +1,18 @@
 from rest_framework import generics, status, permissions
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import permission_classes
 from rest_framework.response import Response
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.db import transaction
+from django.views.decorators.http import require_http_methods
 
 
 from gene2phenotype_app.serializers import (UserSerializer, LGDPublicationSerializer,
                                             LocusGenotypeDiseaseSerializer,
                                             LGDPanelSerializer, LGDPublicationListSerializer,
-                                            LGDPhenotypeListSerializer, LGDPhenotypeSerializer)
+                                            LGDPhenotypeListSerializer, LGDPhenotypeSerializer,
+                                            LGDCommentSerializer)
 
 from gene2phenotype_app.models import (User, Attrib,
                                        LocusGenotypeDisease, OntologyTerm,
@@ -183,6 +187,56 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
             response = Response({'message': 'Panel added to the G2P entry successfully.'}, status=status.HTTP_200_OK)
         else:
             response = Response({"message": "Error adding a panel", "details": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return response
+
+class LocusGenotypeDiseaseAddComment(BaseAdd):
+    """
+        Add a comment to a G2P record (LGD).
+    """
+    serializer_class = LGDCommentSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    @transaction.atomic
+    def post(self, request, stable_id):
+        """
+            The post method links the current LGD record to the new comment.
+            We want to whole process to be done in one db transaction.
+        """
+        user = self.request.user
+
+        if not user.is_authenticated:
+            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        # Check if G2P ID exists
+        lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # Check if user can edit this LGD entry
+        permission = 0
+        lgd_serializer = LocusGenotypeDiseaseSerializer(lgd)
+        lgd_panels = lgd_serializer.get_panels(lgd)
+        # Example of lgd_panels:
+        # [{'name': 'DD', 'description': 'Developmental disorders'}, {'name': 'Eye', 'description': 'Eye disorders'}]
+        user_obj = get_object_or_404(User, email=user)
+        user_serializer = UserSerializer(user_obj, context={"user": user})
+        for panel_name in lgd_panels:
+            if user_serializer.check_panel_permission(panel_name["name"]):
+                permission = 1
+
+        if(not permission):
+            return Response({"message": f"No permission to edit {stable_id}"}, status=status.HTTP_403_FORBIDDEN)
+
+        comment = request.data.get("comment", None)
+        is_public = request.data.get("is_public", None)
+
+        serializer_class = LGDCommentSerializer(data={"comment": comment, "is_public": is_public},
+                                                context={"lgd": lgd, "user": user})
+
+        if serializer_class.is_valid():
+            serializer_class.save()
+            response = Response({"message": "Comment added to the G2P entry successfully."}, status=status.HTTP_200_OK)
+        else:
+            response = Response({"message": "Error adding the comment", "details": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return response
 

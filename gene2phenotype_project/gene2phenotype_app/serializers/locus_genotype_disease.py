@@ -342,6 +342,43 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         model = LocusGenotypeDisease
         exclude = ['id', 'is_deleted', 'date_review']
 
+class LGDCommentSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the LGDComment model.
+    """
+
+    def create(self, data):
+        """
+            Method to add a comment to a G2P entry.
+        """
+
+        comment = data.get("comment")
+        is_public = data.get("is_public")
+        lgd = self.context["lgd"]
+        user = self.context["user"]
+
+        # Check if this comment is already linked to the G2P entry
+        lgd_comments = LGDComment.objects.filter(lgd_id=lgd, is_deleted=0, comment=comment)
+
+        if lgd_comments:
+            raise serializers.ValidationError({"message": f"Comment is already associated with {lgd.stable_id.stable_id}"})
+
+        else:
+            lgd_comment_obj = LGDComment.objects.create(
+                    lgd = lgd,
+                    comment = comment,
+                    is_public = is_public,
+                    is_deleted = 0,
+                    user = user,
+                    date = datetime.now()
+                )
+
+        return lgd_comment_obj
+
+    class Meta:
+        model = LGDComment
+        exclude = ['id', 'is_deleted', 'lgd', 'date', 'user']
+
 class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
     """
         Serializer for the LGDVariantGenccConsequence model.
