@@ -11,7 +11,7 @@ from gene2phenotype_app.serializers import (UserSerializer, LGDPublicationSerial
                                             LGDPhenotypeListSerializer, LGDPhenotypeSerializer,
                                             LGDCommentSerializer, LGDVariantConsequenceListSerializer,
                                             LGDVariantGenCCConsequenceSerializer, LGDCrossCuttingModifierListSerializer,
-                                            LGDCrossCuttingModifierSerializer)
+                                            LGDCrossCuttingModifierSerializer, LGDPhenotypeSummarySerializer)
 
 from gene2phenotype_app.models import (User, Attrib,
                                        LocusGenotypeDisease, OntologyTerm,
@@ -382,6 +382,52 @@ class LocusGenotypeDiseaseAddPhenotypes(BaseAdd):
 
         else:
             response = Response({"message": "Error adding phenotypes", "details": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return response
+
+class LGDAddPhenotypeSummary(BaseAdd):
+    """
+        Add a phenotype summary to an existing G2P record (LGD).
+    """
+
+    serializer_class = LGDPhenotypeSummarySerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    @transaction.atomic
+    def post(self, request, stable_id):
+        """
+            The post method creates an association between the current LGD record and a summary of phenotypes.
+            A summary can be linked to one or more publications.
+
+            We want to whole process to be done in one db transaction.
+
+            Args:
+                (dict) request:
+                                - (string) summary: phenotype summary text
+                                - (list) publication: list of pmids
+
+                Example:
+                    {
+                        "summary": "This is a summary",
+                        "publication": [1, 12345]
+                    }
+        """
+
+        user = self.request.user
+
+        if not user.is_authenticated:
+            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # LGDPhenotypeSummarySerializer accepts a summary of phenotypes associated with pmids
+        serializer = LGDPhenotypeSummarySerializer(data=request.data, context={"lgd": lgd})
+
+        if serializer.is_valid():
+            serializer.save()
+            response = Response({"message": "Phenotype added to the G2P entry successfully."}, status=status.HTTP_200_OK)
+        else:
+            response = Response({"message": "Error adding phenotype", "details": serializer.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return response
 

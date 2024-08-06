@@ -37,8 +37,9 @@ urlpatterns = [
     path('lgd/<str:stable_id>/add_comment/', views.LocusGenotypeDiseaseAddComment.as_view(), name="lgd_add_comment"),
     path('lgd/<str:stable_id>/add_publications/', views.LocusGenotypeDiseaseAddPublications.as_view(), name="lgd_add_publications"),
     path('lgd/<str:stable_id>/add_phenotypes/', views.LocusGenotypeDiseaseAddPhenotypes.as_view(), name="lgd_add_phenotypes"),
+    path('lgd/<str:stable_id>/add_phenotype_summary/', views.LGDAddPhenotypeSummary.as_view(), name="lgd_add_phenotype_summary"),
     path('lgd/<str:stable_id>/add_variant_consequences/', views.LGDAddVariantConsequences.as_view(), name="lgd_add_var_consequences"),
-    path('lgd/<str:stable_id>/add_cross_cutting_modifier/', views.LocusGenotypeDiseaseAddCCM.as_view(), name="lgd_add_ccm"),
+    path('lgd/<str:stable_id>/add_cross_cutting_modifiers/', views.LocusGenotypeDiseaseAddCCM.as_view(), name="lgd_add_ccm"),
 
     ### Curation endpoints ###
     path('add/curation/', views.AddCurationData.as_view(), name="add_curation_data"),
