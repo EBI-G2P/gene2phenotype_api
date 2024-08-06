@@ -21,6 +21,7 @@ from .locus_genotype_disease import (ListMolecularMechanisms, VariantTypesList,
                                      LocusGenotypeDiseaseDetail, LocusGenotypeDiseaseAddPanel,
                                      LocusGenotypeDiseaseAddPublications, LocusGenotypeDiseaseAddPhenotypes,
                                      LocusGenotypeDiseaseAddComment, LGDAddVariantConsequences,
-                                     LocusGenotypeDiseaseAddCCM, LGDAddPhenotypeSummary)
+                                     LocusGenotypeDiseaseAddCCM, LGDAddPhenotypeSummary,
+                                     LGDAddVariantTypes)
 
 from .phenotype import AddPhenotype, PhenotypeDetail

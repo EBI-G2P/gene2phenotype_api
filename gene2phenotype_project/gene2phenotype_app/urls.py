@@ -40,6 +40,7 @@ urlpatterns = [
     path('lgd/<str:stable_id>/add_phenotype_summary/', views.LGDAddPhenotypeSummary.as_view(), name="lgd_add_phenotype_summary"),
     path('lgd/<str:stable_id>/add_variant_consequences/', views.LGDAddVariantConsequences.as_view(), name="lgd_add_var_consequences"),
     path('lgd/<str:stable_id>/add_cross_cutting_modifiers/', views.LocusGenotypeDiseaseAddCCM.as_view(), name="lgd_add_ccm"),
+    path('lgd/<str:stable_id>/add_variant_types/', views.LGDAddVariantTypes.as_view(), name="lgd_add_variant_types"),
 
     ### Curation endpoints ###
     path('add/curation/', views.AddCurationData.as_view(), name="add_curation_data"),

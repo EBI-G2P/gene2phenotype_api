@@ -11,7 +11,8 @@ from gene2phenotype_app.serializers import (UserSerializer, LGDPublicationSerial
                                             LGDPhenotypeListSerializer, LGDPhenotypeSerializer,
                                             LGDCommentSerializer, LGDVariantConsequenceListSerializer,
                                             LGDVariantGenCCConsequenceSerializer, LGDCrossCuttingModifierListSerializer,
-                                            LGDCrossCuttingModifierSerializer, LGDPhenotypeSummarySerializer)
+                                            LGDCrossCuttingModifierSerializer, LGDPhenotypeSummarySerializer,
+                                            LGDVariantTypeListSerializer, LGDVariantTypeSerializer)
 
 from gene2phenotype_app.models import (User, Attrib,
                                        LocusGenotypeDisease, OntologyTerm,
@@ -503,6 +504,89 @@ class LGDAddVariantConsequences(BaseAdd):
         else:
             response = Response(
                 {"message": "Error adding variant consequences", "details": serializer_list.errors},
+                  status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        return response
+
+class LGDAddVariantTypes(BaseAdd):
+    """
+        Add a list of variant types to an existing G2P record (LGD).
+    """
+
+    serializer_class = LGDVariantTypeListSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    @transaction.atomic
+    def post(self, request, stable_id):
+        """
+            The post method creates an association between the current LGD record and a list of
+            variant types.
+            We want to whole process to be done in one db transaction.
+
+            Args:
+                (dict) request
+
+                Example:
+                    {
+                        "variant_types": [{
+                                "comment": "this is a comment",
+                                "de_novo": false,
+                                "inherited": true,
+                                "nmd_escape": false,
+                                "primary_type": "protein_changing",
+                                "secondary_type": "stop_gained",
+                                "supporting_papers": ["1"],
+                                "unknown_inheritance": true
+                            }]
+                    }
+        """
+
+        user = self.request.user # email
+        if not user.is_authenticated:
+            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        # Get user object
+        user_obj = User.objects.get(email=user, is_active=1)
+
+        lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # LGDVariantTypeListSerializer accepts a list of variant types
+        serializer_list = LGDVariantTypeListSerializer(data=request.data)
+
+        if serializer_list.is_valid():
+            variant_type_data = serializer_list.validated_data.get('variant_types')
+
+            # Check if list of variants is empty
+            if(not variant_type_data):
+                response = Response(
+                    {"message": "Empty variant type. Please provide valid data."},
+                     status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Add each variant GenCC consequence from the input list
+            for var_type in variant_type_data:
+                # The data is created in LGDVariantTypeSerializer
+                serializer_class = LGDVariantTypeSerializer(
+                    data=var_type,
+                    context={"lgd": lgd, "user": user_obj}
+                )
+
+                if serializer_class.is_valid():
+                    serializer_class.save()
+                    response = Response(
+                        {"message": "Variant type added to the G2P entry successfully."},
+                        status=status.HTTP_200_OK
+                    )
+                else:
+                    response = Response(
+                        {"message": "Error adding variant type",
+                         "details": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    )
+
+        else:
+            response = Response(
+                {"message": "Error adding variant types", "details": serializer_list.errors},
                   status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

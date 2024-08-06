@@ -715,13 +715,18 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
         Sequence ontology terms are used to describe variant types.
     """
 
-    term = serializers.CharField(source="variant_type_ot.term")
-    accession = serializers.CharField(source="variant_type_ot.accession") # Sequence ontology term
+    term = serializers.CharField(source="variant_type_ot.term", required=False)
+    accession = serializers.CharField(source="variant_type_ot.accession", required=False) # Sequence ontology term
     inherited = serializers.BooleanField(allow_null=True)
     de_novo = serializers.BooleanField(allow_null=True)
     unknown_inheritance = serializers.BooleanField(allow_null=True)
-    publication = serializers.IntegerField(source="publication.pmid", allow_null=True)
+    publication = serializers.IntegerField(source="publication.pmid", allow_null=True, required=False)
     comments = LGDVariantTypeCommentSerializer(many=True, required=False)
+    # Extra fields for the create method
+    secondary_type = serializers.CharField(write_only=True) # variant type term
+    supporting_papers = serializers.ListField(write_only=True) # list of pmids
+    nmd_escape = serializers.BooleanField(write_only=True) # flag
+    comment = serializers.CharField(write_only=True, allow_blank=True) # single comment
 
     def create(self, validated_data):
         """
@@ -732,18 +737,20 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
                     LGDVariantType object
         """
 
+        user_obj = self.context['user']
         lgd = self.context['lgd']
         inherited = validated_data.get("inherited")
         de_novo = validated_data.get("de_novo")
         unknown_inheritance = validated_data.get("unknown_inheritance")
-        var_type = validated_data.get("secondary_type")
-        publications = validated_data.get("supporting_papers")
+        var_type = validated_data.get("secondary_type", None)
+        publications = validated_data.get("supporting_papers", None)
+        comment = validated_data.get("comment", None)
 
         # Get variant type from ontology_term
         # nmd_escape list: frameshift_variant, stop_gained, splice_region_variant?, splice_acceptor_variant,
         # splice_donor_variant
         # We save the variant types already with the NMD_escape attached to the term
-        if validated_data.get("nmd_escape") is True:
+        if validated_data.get("nmd_escape", None) is True:
             var_type = f"{var_type}_NMD_escaping"
 
         try:
@@ -754,27 +761,137 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
         except OntologyTerm.DoesNotExist:
             raise serializers.ValidationError({"message": f"Invalid variant type '{var_type}'"})
 
-        # A single variant type can be attached to several publications
-        for publication in publications:
-            # TODO: get or create
-            publication_obj = Publication.objects.get(pmid=publication)
+        # Variants are supposed to be linked to publications
+        # But if there is no publication then create the object without a pmid
+        if not publications:
+            try:
+                lgd_variant_type_obj = LGDVariantType.objects.get(
+                    lgd = lgd,
+                    variant_type_ot = var_type_obj,
+                    inherited = inherited,
+                    de_novo = de_novo,
+                    unknown_inheritance = unknown_inheritance,
+                    publication = None,
+                    is_deleted = 0
+                )
+            except LGDVariantType.DoesNotExist:
+                lgd_variant_type_obj = LGDVariantType.objects.create(
+                    lgd = lgd,
+                    variant_type_ot = var_type_obj,
+                    inherited = inherited,
+                    de_novo = de_novo,
+                    unknown_inheritance = unknown_inheritance,
+                    is_deleted = 0
+                )
 
-            lgd_variant_type = LGDVariantType.objects.get_or_create(
-                lgd = lgd,
-                variant_type_ot = var_type_obj,
-                inherited = inherited,
-                de_novo = de_novo,
-                unknown_inheritance = unknown_inheritance,
-                publication = publication_obj,
-                is_deleted = 0
-            )
+            # The LGDPhenotypeSummary is created - next step is to create the LGDVariantTypeComment
+            if(comment != ""):
+                try:
+                    lgd_comment_obj = LGDVariantTypeComment.objects.get(
+                        comment = comment,
+                        lgd_variant_type = lgd_variant_type_obj,
+                        is_public = 1, # TODO: update
+                        user = user_obj,
+                    )
+                except LGDVariantTypeComment.DoesNotExist:
+                    lgd_comment_obj = LGDVariantTypeComment.objects.create(
+                        comment = comment,
+                        lgd_variant_type = lgd_variant_type_obj,
+                        is_public = 1, # TODO: update
+                        is_deleted = 0,
+                        user = user_obj,
+                        date = datetime.now()
+                    ) 
+                else:
+                    if(lgd_comment_obj.is_deleted == 1):
+                        lgd_comment_obj.is_deleted = 0
+                        lgd_comment_obj.save()
 
-        # TODO return all objects created
-        return lgd_variant_type
+        else:
+            # Variant type is linked to publication(s)
+            # A single variant type can be attached to several publications - create an object for each pmid
+            for publication in publications:
+                try:
+                    # The publication is supposed to be stored in the G2P db
+                    publication_obj = Publication.objects.get(pmid=publication)
+
+                except Publication.DoesNotExist:
+                    raise serializers.ValidationError(
+                        {"message": f"Invalid publication '{publication}'"}
+                    )
+
+                else:
+                    # The publication is valid
+                    # Check if LGDVariantType object already exists in db
+                    try:
+                        lgd_variant_type_obj = LGDVariantType.objects.get(
+                            lgd = lgd,
+                            variant_type_ot = var_type_obj,
+                            inherited = inherited,
+                            de_novo = de_novo,
+                            unknown_inheritance = unknown_inheritance,
+                            publication = publication_obj,
+                            is_deleted = 0
+                        )
+                    except LGDVariantType.DoesNotExist:
+                        # Check if LGDVariantType object already exists in db without a publication
+                        try:
+                            lgd_variant_type_obj = LGDVariantType.objects.get(
+                                lgd = lgd,
+                                variant_type_ot = var_type_obj,
+                                inherited = inherited,
+                                de_novo = de_novo,
+                                unknown_inheritance = unknown_inheritance,
+                                publication = None, # no publication attached to entry
+                                is_deleted = 0
+                            )
+                        except LGDVariantType.DoesNotExist:
+                            # LGDVariantType does not exist with or without publication
+                            # Create LGDVariantType object with publication
+                            lgd_variant_type_obj = LGDVariantType.objects.create(
+                                lgd = lgd,
+                                variant_type_ot = var_type_obj,
+                                inherited = inherited,
+                                de_novo = de_novo,
+                                unknown_inheritance = unknown_inheritance,
+                                publication = publication_obj,
+                                is_deleted = 0
+                            )
+                        else:
+                            # LGDVariantType already exists in the db without a publication
+                            # Add publication to existing object
+                            lgd_variant_type_obj.publication = publication_obj
+                            lgd_variant_type_obj.save()
+
+                    # The LGDPhenotypeSummary is created - next step is to create the LGDVariantTypeComment
+                    if(comment != ""):
+                        try:
+                            lgd_comment_obj = LGDVariantTypeComment.objects.get(
+                                comment = comment,
+                                lgd_variant_type = lgd_variant_type_obj,
+                                is_public = 1, # TODO: update
+                                user = user_obj,
+                            )
+                        except LGDVariantTypeComment.DoesNotExist:
+                            lgd_comment_obj = LGDVariantTypeComment.objects.create(
+                                comment = comment,
+                                lgd_variant_type = lgd_variant_type_obj,
+                                is_public = 1, # TODO: update
+                                is_deleted = 0,
+                                user = user_obj,
+                                date = datetime.now()
+                            ) 
+                        else:
+                            if(lgd_comment_obj.is_deleted == 1):
+                                lgd_comment_obj.is_deleted = 0
+                                lgd_comment_obj.save()
+
+        return 1
 
     class Meta:
         model = LGDVariantType
-        fields = ['term', 'accession', 'inherited', 'de_novo', 'unknown_inheritance', 'publication', 'comments']
+        fields = ['term', 'accession', 'inherited', 'de_novo', 'unknown_inheritance', 
+                  'publication', 'comments', 'secondary_type', 'supporting_papers', 'nmd_escape', 'comment']
 
 class LGDVariantTypeDescriptionSerializer(serializers.ModelSerializer):
     """
@@ -813,3 +930,10 @@ class LGDVariantTypeDescriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = LGDVariantTypeDescription
         fields = ['publication', 'description']
+
+class LGDVariantTypeListSerializer(serializers.Serializer):
+    """
+        Serializer to accept a list of variant types.
+        Called by: LGDAddVariantTypes()
+    """
+    variant_types = LGDVariantTypeSerializer(many=True)
