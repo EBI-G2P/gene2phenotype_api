@@ -43,6 +43,9 @@ urlpatterns = [
     path('lgd/<str:stable_id>/add_variant_types/', views.LGDAddVariantTypes.as_view(), name="lgd_add_variant_types"),
     path('lgd/<str:stable_id>/add_variant_descriptions/', views.LGDAddVariantTypeDescriptions.as_view(), name="lgd_add_variant_descriptions"),
 
+    ### Endpoints to update data ###
+    path('lgd/<str:stable_id>/update_confidence/', views.LGDUpdateConfidence.as_view(), name="lgd_update_confidence"),
+
     ### Curation endpoints ###
     path('add/curation/', views.AddCurationData.as_view(), name="add_curation_data"),
     path('curations/', views.ListCurationEntries.as_view(), name="list_curation_entries"),

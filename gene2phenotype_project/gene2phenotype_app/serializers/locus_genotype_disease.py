@@ -25,12 +25,13 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     """
 
     locus = serializers.SerializerMethodField() # part of the unique entry
-    stable_id = serializers.CharField(source="stable_id.stable_id") #CharField and the source is the stable_id column in the stable_id table
-    genotype = serializers.CharField(source="genotype.value") # part of the unique entry
+    stable_id = serializers.CharField(source="stable_id.stable_id", read_only=True) #CharField and the source is the stable_id column in the stable_id table
+    genotype = serializers.CharField(source="genotype.value", read_only=True) # part of the unique entry
     variant_consequence = serializers.SerializerMethodField(allow_null=True)
     molecular_mechanism = serializers.SerializerMethodField(allow_null=True)
     disease = serializers.SerializerMethodField() # part of the unique entry
     confidence = serializers.CharField(source="confidence.value")
+    confidence_support = serializers.CharField(allow_blank=True, required=False)
     publications = serializers.SerializerMethodField()
     panels = serializers.SerializerMethodField()
     cross_cutting_modifier = serializers.SerializerMethodField(allow_null=True)
@@ -40,7 +41,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     last_updated = serializers.SerializerMethodField()
     date_created = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField(allow_null=True)
-    is_reviewed = serializers.IntegerField()
+    is_reviewed = serializers.IntegerField(allow_null=True, required=False)
 
     def get_locus(self, id):
         """
@@ -337,6 +338,44 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     lgd_publication_serializer.save()
 
         return lgd_obj
+
+    def update(self, instance, validated_data):
+        # validated_data example:
+        # {'confidence': {'value': 'definitive'}, 'confidence_support': '', 'is_reviewed': None}
+        confidence = validated_data.get("confidence")["value"]
+        confidence_support = validated_data.get("confidence_support")
+        is_reviewed = validated_data.get("is_reviewed")
+
+        # Get confidence
+        try:
+            confidence_obj = Attrib.objects.get(
+                value = confidence,
+                type__code = "confidence_category"
+            )
+        except Attrib.DoesNotExist:
+            raise serializers.ValidationError({"message": f"Invalid confidence value {confidence}"})
+
+        # Check new confidence is not the same as current value
+        if(instance.confidence == confidence_obj):
+            raise serializers.ValidationError(
+                {"message": f"G2P record '{instance.stable_id.stable_id}' already has confidence value {confidence}"}
+            )
+
+        # Update confidence
+        instance.confidence = confidence_obj
+
+        if(confidence_support != ""):
+            # Update confidence support
+            instance.confidence_support = confidence_support
+
+        # is_reviewed only accepts 1 or 0
+        if(is_reviewed is not None and (is_reviewed == 1 or is_reviewed == 0)):
+            instance.is_reviewed = is_reviewed
+
+        # Save all updates
+        instance.save()
+
+        return instance
 
     class Meta:
         model = LocusGenotypeDisease

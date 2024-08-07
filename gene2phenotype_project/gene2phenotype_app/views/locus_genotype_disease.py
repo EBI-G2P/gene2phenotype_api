@@ -146,6 +146,51 @@ class LocusGenotypeDiseaseDetail(BaseView):
         return Response(serializer.data)
 
 
+### Update data
+class LGDUpdateConfidence(generics.UpdateAPIView):
+    http_method_names = ['put', 'options']
+    serializer_class = LocusGenotypeDiseaseSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        stable_id = self.kwargs['stable_id']
+        user = self.request.user
+
+        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
+        # Get the entry for this user
+        queryset = LocusGenotypeDisease.objects.filter(stable_id=g2p_stable_id)
+
+        if not queryset.exists():
+            self.handle_no_permission('Entry', stable_id)
+        else:
+            return queryset
+
+    def update(self, request, *args, **kwargs):
+        """
+            This method updates the LGD confidence.
+        """
+        user = self.request.user
+
+        # Get G2P entry to be updated
+        lgd_obj = self.get_queryset().first()
+
+        # Update data - it replaces the data
+        serializer = LocusGenotypeDiseaseSerializer(
+            lgd_obj,
+            data=request.data,
+            context={'user': user}
+        )
+
+        if serializer.is_valid():
+            instance = serializer.save()
+            return Response(
+                {"message": f"Data updated successfully for '{instance.stable_id.stable_id}'"},
+                 status=status.HTTP_200_OK)
+
+        else:
+            return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
 ### Add data
 class LocusGenotypeDiseaseAddPanel(BaseAdd):
     """
@@ -168,10 +213,10 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
 
         # Check if user can update panel
         user_obj = get_object_or_404(User, email=user)
-        serializer = UserSerializer(user_obj, context={'user' : user})
+        serializer = UserSerializer(user_obj, context={"user" : user})
         user_panel_list_lower = [panel.lower() for panel in serializer.panels_names(user_obj)]
 
-        panel_name_input = request.data.get('name', None)
+        panel_name_input = request.data.get("name", None)
 
         if panel_name_input is None:
             return Response({"message": f"Please enter a panel name"}, status=status.HTTP_400_BAD_REQUEST)
@@ -181,13 +226,13 @@ class LocusGenotypeDiseaseAddPanel(BaseAdd):
 
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
 
-        serializer_class = LGDPanelSerializer(data={"name": panel_name_input}, context={'lgd': lgd})
+        serializer_class = LGDPanelSerializer(data={"name": panel_name_input}, context={"lgd": lgd})
 
         if serializer_class.is_valid():
             serializer_class.save()
-            response = Response({'message': 'Panel added to the G2P entry successfully.'}, status=status.HTTP_200_OK)
+            response = Response({"message": "Panel added to the G2P entry successfully."}, status=status.HTTP_200_OK)
         else:
-            response = Response({"message": "Error adding a panel", "details": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return response
 
@@ -237,7 +282,7 @@ class LocusGenotypeDiseaseAddComment(BaseAdd):
             serializer_class.save()
             response = Response({"message": "Comment added to the G2P entry successfully."}, status=status.HTTP_200_OK)
         else:
-            response = Response({"message": "Error adding the comment", "details": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return response
 
@@ -313,10 +358,10 @@ class LocusGenotypeDiseaseAddPublications(BaseAdd):
                     serializer_class.save()
                     response = Response({'message': 'Publication added to the G2P entry successfully.'}, status=status.HTTP_200_OK)
                 else:
-                    response = Response({"message": "Error adding publication", "details": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         else:
-            response = Response({"message": "Error adding publications", "details": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            response = Response({"errors": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return response
 
@@ -380,10 +425,10 @@ class LocusGenotypeDiseaseAddPhenotypes(BaseAdd):
                     serializer_class.save()
                     response = Response({"message": "Phenotype added to the G2P entry successfully."}, status=status.HTTP_200_OK)
                 else:
-                    response = Response({"message": "Error adding phenotype", "details": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         else:
-            response = Response({"message": "Error adding phenotypes", "details": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            response = Response({"errors": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return response
 
@@ -429,7 +474,7 @@ class LGDAddPhenotypeSummary(BaseAdd):
             serializer.save()
             response = Response({"message": "Phenotype added to the G2P entry successfully."}, status=status.HTTP_200_OK)
         else:
-            response = Response({"message": "Error adding phenotype", "details": serializer.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            response = Response({"errors": serializer.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return response
 
@@ -498,14 +543,12 @@ class LGDAddVariantConsequences(BaseAdd):
                     )
                 else:
                     response = Response(
-                        {"message": "Error adding variant consequence",
-                         "details": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                        {"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
                     )
 
         else:
             response = Response(
-                {"message": "Error adding variant consequences", "details": serializer_list.errors},
-                  status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"errors": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
         return response
@@ -581,14 +624,12 @@ class LGDAddVariantTypes(BaseAdd):
                     )
                 else:
                     response = Response(
-                        {"message": "Error adding variant type",
-                         "details": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                        {"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
                     )
 
         else:
             response = Response(
-                {"message": "Error adding variant types", "details": serializer_list.errors},
-                  status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"errors": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
         return response
@@ -652,14 +693,12 @@ class LocusGenotypeDiseaseAddCCM(BaseAdd):
                     )
                 else:
                     response = Response(
-                        {"message": "Error adding cross cutting modifier",
-                         "details": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                        {"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
                     )
 
         else:
             response = Response(
-                {"message": "Error adding cross cutting modifiers", "details": serializer_list.errors},
-                  status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"errors": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
         return response
@@ -727,14 +766,12 @@ class LGDAddVariantTypeDescriptions(BaseAdd):
                     )
                 else:
                     response = Response(
-                        {"message": "Error adding variant description",
-                         "details": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                        {"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
                     )
 
         else:
             response = Response(
-                {"message": "Error adding variant descriptions", "details": serializer_list.errors},
-                  status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"errors": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
         return response
