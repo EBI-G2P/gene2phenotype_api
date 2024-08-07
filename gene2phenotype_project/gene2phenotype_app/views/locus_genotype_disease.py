@@ -12,7 +12,8 @@ from gene2phenotype_app.serializers import (UserSerializer, LGDPublicationSerial
                                             LGDCommentSerializer, LGDVariantConsequenceListSerializer,
                                             LGDVariantGenCCConsequenceSerializer, LGDCrossCuttingModifierListSerializer,
                                             LGDCrossCuttingModifierSerializer, LGDPhenotypeSummarySerializer,
-                                            LGDVariantTypeListSerializer, LGDVariantTypeSerializer)
+                                            LGDVariantTypeListSerializer, LGDVariantTypeSerializer,
+                                            LGDVariantTypeDescriptionListSerializer, LGDVariantTypeDescriptionSerializer)
 
 from gene2phenotype_app.models import (User, Attrib,
                                        LocusGenotypeDisease, OntologyTerm,
@@ -658,6 +659,81 @@ class LocusGenotypeDiseaseAddCCM(BaseAdd):
         else:
             response = Response(
                 {"message": "Error adding cross cutting modifiers", "details": serializer_list.errors},
+                  status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        return response
+
+class LGDAddVariantTypeDescriptions(BaseAdd):
+    """
+        Add a list of variant description (HGVS) to an existing G2P record (LGD).
+    """
+
+    serializer_class = LGDVariantTypeDescriptionListSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    @transaction.atomic
+    def post(self, request, stable_id):
+        """
+            The post method creates an association between the current LGD record and a list of 
+            variant type descriptions (HGVS).
+            We want to whole process to be done in one db transaction.
+
+            Args:
+                (dict) request
+
+                Example:
+                    {
+                        "variant_descriptions": [{
+                                "publications": [1, 1234],
+                                "description": "NM_000546.6:c.794T>C (p.Leu265Pro)"
+                        }]
+                    }
+        """
+
+        user = self.request.user
+        if not user.is_authenticated:
+            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # LGDVariantTypeDescriptionListSerializer accepts a list of HGVS
+        serializer_list = LGDVariantTypeDescriptionListSerializer(data=request.data)
+
+        if serializer_list.is_valid():
+            descriptions_data = serializer_list.validated_data.get('variant_descriptions')
+
+            # Check if list of consequences is empty
+            if(not descriptions_data):
+                response = Response(
+                    {"message": "Empty variant descriptions. Please provide valid data."},
+                     status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Add each cross cutting modifier from the input list
+            for description in descriptions_data:
+                # The data is created in LGDCrossCuttingModifierSerializer
+                # Input the expected data format
+                serializer_class = LGDVariantTypeDescriptionSerializer(
+                    data=description,
+                    context={"lgd": lgd}
+                )
+
+                if serializer_class.is_valid():
+                    serializer_class.save()
+                    response = Response(
+                        {"message": "Variant description added to the G2P entry successfully."},
+                        status=status.HTTP_200_OK
+                    )
+                else:
+                    response = Response(
+                        {"message": "Error adding variant description",
+                         "details": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    )
+
+        else:
+            response = Response(
+                {"message": "Error adding variant descriptions", "details": serializer_list.errors},
                   status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

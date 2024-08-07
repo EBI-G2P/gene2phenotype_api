@@ -893,14 +893,32 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
         fields = ['term', 'accession', 'inherited', 'de_novo', 'unknown_inheritance', 
                   'publication', 'comments', 'secondary_type', 'supporting_papers', 'nmd_escape', 'comment']
 
+class LGDVariantTypeListSerializer(serializers.Serializer):
+    """
+        Serializer to accept a list of variant types.
+        Called by: LGDAddVariantTypes()
+    """
+    variant_types = LGDVariantTypeSerializer(many=True)
+
 class LGDVariantTypeDescriptionSerializer(serializers.ModelSerializer):
     """
-        Variant HGVS description linked to the:
+        The variant HGVS description is linked to:
             - LGD record
             - publication
+
+        This method creates a new LGDVariantTypeDescription.
+
+        Raises: Invalid publication
     """
-    publication = serializers.IntegerField(source="publication.pmid")
+
+    publication = serializers.IntegerField(required=False) # Used by curation
     description = serializers.CharField() # HGVS description following HGVS standard
+    # Extra fields for create() method
+    publications = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        required=False
+    ) # Used by views.LGDAddVariantTypeDescriptions
 
     def create(self, validated_data):
         """
@@ -912,28 +930,56 @@ class LGDVariantTypeDescriptionSerializer(serializers.ModelSerializer):
             Returns:
                     LGDVariantTypeDescription object
         """
+
         lgd = self.context['lgd']
-        pmid = validated_data.get("pmid")
+        publication = validated_data.get("publication") # Used by curation
         description = validated_data.get("description")
+        list_publications = validated_data.get("publications") # Used by views.LGDAddVariantTypeDescriptions
 
-        publication_obj = Publication.objects.get(pmid=pmid)
+        # Create the list of pmids from the single publication sent by curation
+        if(not list_publications and publication):
+            list_publications.append(publication)
 
-        lgd_variant_type_desc = LGDVariantTypeDescription.objects.get_or_create(
-                lgd = lgd,
-                description = description,
-                publication = publication_obj,
-                is_deleted = 0
-            )
+        # Insert data based on the pmids
+        # The variant description is supposed to be linked to publications
+        for pmid in list_publications:
+            try:
+                publication_obj = Publication.objects.get(pmid=pmid)
+            except Publication.DoesNotExist:
+                raise serializers.ValidationError(
+                        {"message": f"Invalid publication '{publication}'"}
+                    )
+
+            # Check if LGDVariantTypeDescription exists
+            try:
+                lgd_variant_type_desc = LGDVariantTypeDescription.objects.get(
+                    lgd = lgd,
+                    description = description,
+                    publication = publication_obj
+                )
+            except LGDVariantTypeDescription.DoesNotExist:
+                lgd_variant_type_desc = LGDVariantTypeDescription.objects.create(
+                    lgd = lgd,
+                    description = description,
+                    publication = publication_obj,
+                    is_deleted = 0
+                )
+            else:
+                # If LGDVariantTypeDescription exists and it is deleted
+                # then set existing entry to not deleted
+                if(lgd_variant_type_desc.is_deleted == 1):
+                    lgd_variant_type_desc.is_deleted = 0
+                    lgd_variant_type_desc.save()
         
-        return lgd_variant_type_desc
+        return 1
 
     class Meta:
         model = LGDVariantTypeDescription
-        fields = ['publication', 'description']
+        fields = ['publication', 'description', 'publications']
 
-class LGDVariantTypeListSerializer(serializers.Serializer):
+class LGDVariantTypeDescriptionListSerializer(serializers.Serializer):
     """
-        Serializer to accept a list of variant types.
-        Called by: LGDAddVariantTypes()
+        Serializer to accept a list of variant type descriptions.
+        Called by: LGDAddVariantTypeDescriptions()
     """
-    variant_types = LGDVariantTypeSerializer(many=True)
+    variant_descriptions = LGDVariantTypeDescriptionSerializer(many=True)
