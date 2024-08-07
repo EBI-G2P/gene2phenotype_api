@@ -144,8 +144,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             )
 
             raise serializers.ValidationError({
-                "message": "Found another record with same locus, genotype and disease",
-                "Please check G2P record": lgd_obj.stable_id.stable_id
+                "message": f"Found another record with same locus, genotype and disease. Please check '{lgd_obj.stable_id.stable_id}'"
             })
         except LocusGenotypeDisease.DoesNotExist:
             return locus_obj

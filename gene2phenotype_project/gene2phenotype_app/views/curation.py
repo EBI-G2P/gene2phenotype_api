@@ -225,7 +225,7 @@ class UpdateCurationData(generics.UpdateAPIView):
             return Response({"message": f"Data updated successfully for session name '{instance.session_name}'"}, status=status.HTTP_200_OK)
 
         else:
-            return Response({"message": "Failed to update data", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 class PublishRecord(APIView):
     """

@@ -722,11 +722,11 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
     unknown_inheritance = serializers.BooleanField(allow_null=True)
     publication = serializers.IntegerField(source="publication.pmid", allow_null=True, required=False)
     comments = LGDVariantTypeCommentSerializer(many=True, required=False)
-    # Extra fields for the create method
-    secondary_type = serializers.CharField(write_only=True) # variant type term
-    supporting_papers = serializers.ListField(write_only=True) # list of pmids
-    nmd_escape = serializers.BooleanField(write_only=True) # flag
-    comment = serializers.CharField(write_only=True, allow_blank=True) # single comment
+    # Extra fields for the create() method
+    secondary_type = serializers.CharField(write_only=True) # variant type term (used by curation)
+    supporting_papers = serializers.ListField(write_only=True) # list of pmids (used by curation)
+    nmd_escape = serializers.BooleanField(write_only=True) # flag (used by curation)
+    comment = serializers.CharField(write_only=True, allow_blank=True) # single comment (used by curation)
 
     def create(self, validated_data):
         """
@@ -742,9 +742,9 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
         inherited = validated_data.get("inherited")
         de_novo = validated_data.get("de_novo")
         unknown_inheritance = validated_data.get("unknown_inheritance")
-        var_type = validated_data.get("secondary_type", None)
-        publications = validated_data.get("supporting_papers", None)
-        comment = validated_data.get("comment", None)
+        var_type = validated_data.get("secondary_type", None) # Used by curation
+        publications = validated_data.get("supporting_papers", None) # Used by curation
+        comment = validated_data.get("comment", None)  # Used by curation
 
         # Get variant type from ontology_term
         # nmd_escape list: frameshift_variant, stop_gained, splice_region_variant?, splice_acceptor_variant,
@@ -906,9 +906,10 @@ class LGDVariantTypeDescriptionSerializer(serializers.ModelSerializer):
             - LGD record (mandatory)
             - publication (mandatory)
 
-        This method creates a new LGDVariantTypeDescription.
-
-        Raises: Invalid publication
+        This serializer is called by curation and LGDAddVariantTypeDescriptions.
+        In the curation data, the description is linked to one pmid (multiple pmids
+        are represented multiple times attached to the same description).
+        Meanwhile in LGDAddVariantTypeDescriptions the description is linked to a list of pmids.
     """
 
     publication = serializers.IntegerField(required=False) # Used by curation
@@ -927,8 +928,9 @@ class LGDVariantTypeDescriptionSerializer(serializers.ModelSerializer):
             linked to the LGD record and the publication.
             The HGVS is not directly linked to the variant type.
 
-            Returns:
-                    LGDVariantTypeDescription object
+            Returns: 1
+
+            Raises: Invalid publication
         """
 
         lgd = self.context['lgd']
@@ -979,7 +981,7 @@ class LGDVariantTypeDescriptionSerializer(serializers.ModelSerializer):
 
 class LGDVariantTypeDescriptionListSerializer(serializers.Serializer):
     """
-        Serializer to accept a list of variant type descriptions.
+        Serializer to accept a list of variant type descriptions (HGVS).
         Called by: LGDAddVariantTypeDescriptions()
     """
     variant_descriptions = LGDVariantTypeDescriptionSerializer(many=True)
