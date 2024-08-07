@@ -461,7 +461,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         # 'unknown_inheritance': false, 'nmd_escape': True, 'primary_type': 'protein_changing',
         # 'secondary_type': 'frameshift_variant', 'supporting_papers': [38737272, 38768424]}
         for variant_type in data.json_data["variant_types"]:
-            LGDVariantTypeSerializer(context={'lgd': lgd_obj}).create(variant_type)
+            LGDVariantTypeSerializer(context={'lgd': lgd_obj, 'user': user_obj}).create(variant_type)
 
         # Variant description (HGVS)
         for variant_type_desc in data.json_data["variant_descriptions"]:

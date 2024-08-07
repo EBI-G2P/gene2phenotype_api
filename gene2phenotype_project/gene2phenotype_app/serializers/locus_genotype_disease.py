@@ -903,8 +903,8 @@ class LGDVariantTypeListSerializer(serializers.Serializer):
 class LGDVariantTypeDescriptionSerializer(serializers.ModelSerializer):
     """
         The variant HGVS description is linked to:
-            - LGD record
-            - publication
+            - LGD record (mandatory)
+            - publication (mandatory)
 
         This method creates a new LGDVariantTypeDescription.
 
@@ -934,7 +934,7 @@ class LGDVariantTypeDescriptionSerializer(serializers.ModelSerializer):
         lgd = self.context['lgd']
         publication = validated_data.get("publication") # Used by curation
         description = validated_data.get("description")
-        list_publications = validated_data.get("publications") # Used by views.LGDAddVariantTypeDescriptions
+        list_publications = validated_data.get("publications", []) # Used by views.LGDAddVariantTypeDescriptions
 
         # Create the list of pmids from the single publication sent by curation
         if(not list_publications and publication):
