@@ -168,6 +168,17 @@ class LGDUpdateConfidence(generics.UpdateAPIView):
     def update(self, request, *args, **kwargs):
         """
             This method updates the LGD confidence.
+
+            Input example:
+                    {
+                        'confidence': 'definitive',
+                        'confidence_support': '',
+                        'is_reviewed': None
+                    }
+
+            Raises:
+                Invalid confidence value
+                G2P record already has same confidence value
         """
         user = self.request.user
 
