@@ -34,8 +34,17 @@ urlpatterns = [
     path('add/publication/', views.AddPublication.as_view(), name="add_publication"),
     # Add data to the G2P record (LGD)
     path('lgd/<str:stable_id>/add_panel/', views.LocusGenotypeDiseaseAddPanel.as_view(), name="lgd_add_panel"),
+    path('lgd/<str:stable_id>/add_comment/', views.LocusGenotypeDiseaseAddComment.as_view(), name="lgd_add_comment"),
     path('lgd/<str:stable_id>/add_publications/', views.LocusGenotypeDiseaseAddPublications.as_view(), name="lgd_add_publications"),
     path('lgd/<str:stable_id>/add_phenotypes/', views.LocusGenotypeDiseaseAddPhenotypes.as_view(), name="lgd_add_phenotypes"),
+    path('lgd/<str:stable_id>/add_phenotype_summary/', views.LGDAddPhenotypeSummary.as_view(), name="lgd_add_phenotype_summary"),
+    path('lgd/<str:stable_id>/add_variant_consequences/', views.LGDAddVariantConsequences.as_view(), name="lgd_add_var_consequences"),
+    path('lgd/<str:stable_id>/add_cross_cutting_modifiers/', views.LocusGenotypeDiseaseAddCCM.as_view(), name="lgd_add_ccm"),
+    path('lgd/<str:stable_id>/add_variant_types/', views.LGDAddVariantTypes.as_view(), name="lgd_add_variant_types"),
+    path('lgd/<str:stable_id>/add_variant_descriptions/', views.LGDAddVariantTypeDescriptions.as_view(), name="lgd_add_variant_descriptions"),
+
+    ### Endpoints to update data ###
+    path('lgd/<str:stable_id>/update_confidence/', views.LGDUpdateConfidence.as_view(), name="lgd_update_confidence"),
 
     ### Curation endpoints ###
     path('add/curation/', views.AddCurationData.as_view(), name="add_curation_data"),

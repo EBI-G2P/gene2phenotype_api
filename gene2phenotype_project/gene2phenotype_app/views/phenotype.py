@@ -77,6 +77,8 @@ class AddPhenotype(BaseAdd):
     """
         Add new phenotype.
         The create method is in the PhenotypeSerializer.
+
+        Called by: endpoint add/phenotype/
     """
     serializer_class = PhenotypeOntologyTermSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
