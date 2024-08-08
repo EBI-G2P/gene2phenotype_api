@@ -40,7 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'gene2phenotype_app',
     'rest_framework',
-    'simple_history'
+    'simple_history',
+    'rest_framework.authtoken'
 ]
 
 MIDDLEWARE = [
@@ -56,7 +57,13 @@ MIDDLEWARE = [
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 50
+    'PAGE_SIZE': 50,
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        "rest_framework.permissions.AllowAny",
+    ),
 }
 
 ROOT_URLCONF = 'gene2phenotype_project.urls'
@@ -86,6 +93,9 @@ WSGI_APPLICATION = 'gene2phenotype_project.wsgi.application'
 config_path = os.environ.get('PROJECT_CONFIG_PATH')
 config = ConfigParser()
 config.read(config_path)
+
+
+CSRF_TRUSTED_ORIGINS = []
 
 DATABASES = {
     'default': {

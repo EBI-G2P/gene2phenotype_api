@@ -1,5 +1,6 @@
 from django.urls import path, include
 from rest_framework.urlpatterns import format_suffix_patterns
+from rest_framework.authtoken import views as authviews
 from gene2phenotype_app import views
 
 def perform_create(self, serializer):
@@ -45,10 +46,12 @@ urlpatterns = [
 
     ### Publish data
     path('curation/publish/<str:stable_id>/', views.PublishRecord.as_view(), name="publish_record"),
+
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)
 
 urlpatterns += [
-    path('api-auth/', include('rest_framework.urls'))
+    path('api-auth/', include('rest_framework.urls')),
+    path('api-token-auth/', authviews.obtain_auth_token)
 ]
