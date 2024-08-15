@@ -52,6 +52,7 @@ urlpatterns = [
 urlpatterns = format_suffix_patterns(urlpatterns)
 
 urlpatterns += [
-    path('api-auth/', include('rest_framework.urls')),
-    path('api-token-auth/', authviews.obtain_auth_token)
+    #path('api-auth/', include('rest_framework.urls')),
+    path(r'api/auth/', include('knox.urls'))
+    #path('api-token-auth/', authviews.obtain_auth_token)
 ]
