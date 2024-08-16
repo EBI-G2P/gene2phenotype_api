@@ -1,5 +1,7 @@
 from rest_framework import serializers
+from django.core.exceptions import ValidationError
 from ..models import User, UserPanel
+from django.contrib.auth import authenticate
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -11,6 +13,7 @@ class UserSerializer(serializers.ModelSerializer):
     email = serializers.CharField(read_only=True)
     panels = serializers.SerializerMethodField()
     is_active = serializers.CharField(read_only=True)
+    username = serializers.CharField(write_only=True)
 
     def get_user_name(self, id):
         """
@@ -74,4 +77,30 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['user_name', 'email', 'is_active', 'panels']
+        fields = ['user_name', 'email', 'is_active', 'panels', 'username']
+        extra_kwargs = {'password': {'write_only': True }}
+
+
+class AuthSerializer(serializers.Serializer):
+    '''serializer for the user authentication object'''
+    username = serializers.CharField()
+    password = serializers.CharField(
+        style={'input_type': 'password'},
+        trim_whitespace=False
+    )    
+    def validate(self, attrs):
+        username = attrs.get('username')
+        password = attrs.get('password')
+        
+        user = authenticate(
+            request=self.context.get('request'),
+            username=username,
+            password=password
+        )
+        
+        if not user:
+            msg = ('Unable to authenticate with provided credentials')
+            raise serializers.ValidationError(msg, code='authentication')
+
+        attrs['user'] = user
+        return user

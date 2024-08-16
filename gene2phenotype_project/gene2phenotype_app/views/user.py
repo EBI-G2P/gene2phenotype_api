@@ -1,9 +1,15 @@
-from rest_framework import generics
 from rest_framework.response import Response
-
-from gene2phenotype_app.serializers import UserSerializer
-
+from rest_framework.views import APIView
+from rest_framework import generics, authentication, permissions
+from rest_framework.settings import api_settings
+from rest_framework.authtoken.serializers import AuthTokenSerializer
+from django.contrib.auth import login
+from knox.views import LoginView as KnoxLoginView
+from knox.auth import TokenAuthentication
+from gene2phenotype_app.serializers import UserSerializer, AuthSerializer
 from gene2phenotype_app.models import User
+from django.views import View
+
 
 
 class UserList(generics.ListAPIView):
@@ -38,3 +44,33 @@ class UserList(generics.ListAPIView):
         serializer = UserSerializer(queryset, many=True, context={'user': self.request.user})
 
         return Response({'results': serializer.data, 'count':len(serializer.data)})
+    
+    
+    
+class CreateUserView(generics.CreateAPIView):
+    # Create user API view
+    serializer_class = UserSerializer
+
+
+class LoginView(KnoxLoginView):
+    # login view extending KnoxLoginView
+    serializer_class = AuthSerializer
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request):
+        serializer = AuthTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        login(request, user)
+        return super(LoginView, self).post(request, format=None)    
+
+
+class ManageUserView(generics.RetrieveUpdateAPIView):
+    """Manage the authenticated user"""
+    serializer_class = UserSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_object(self):
+        """Retrieve and return authenticated user"""
+        return self.request.user
+
