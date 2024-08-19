@@ -582,7 +582,7 @@ class Panel(models.Model):
 class User(AbstractUser):
     id = models.AutoField(primary_key=True)
     username = models.CharField(max_length=100, unique=True, null=False)
-    email = models.EmailField(max_length=100, unique=True, null=False)
+    email = models.CharField(max_length=100, unique=True, null=False)
     is_deleted = models.BooleanField(default=False)
     date_joined = models.DateField(null=True)
     is_superuser = models.SmallIntegerField(default=False)
