@@ -6,7 +6,7 @@ from rest_framework.authtoken.serializers import AuthTokenSerializer
 from django.contrib.auth import login
 from knox.views import LoginView as KnoxLoginView
 from knox.auth import TokenAuthentication
-from gene2phenotype_app.serializers import UserSerializer, AuthSerializer
+from gene2phenotype_app.serializers import UserSerializer, AuthSerializer, CreateUserSerializer
 from gene2phenotype_app.models import User
 from django.views import View
 
@@ -49,7 +49,9 @@ class UserList(generics.ListAPIView):
     
 class CreateUserView(generics.CreateAPIView):
     # Create user API view
-    serializer_class = UserSerializer
+    serializer_class = CreateUserSerializer
+    permission_classes = (permissions.AllowAny,)
+    
 
 
 class LoginView(KnoxLoginView):

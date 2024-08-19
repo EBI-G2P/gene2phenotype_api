@@ -49,7 +49,7 @@ urlpatterns = [
     path('curation/publish/<str:stable_id>/', views.PublishRecord.as_view(), name="publish_record"),
 
     #user management
-    path("create/", views.CreateUserView.as_view(), name="create"),
+    path("create/user/", views.CreateUserView.as_view(), name="create"),
     path('profile/', views.ManageUserView.as_view(), name='profile'),
     path('login/', views.LoginView.as_view(), name='knox_login'),
     path('logout/', knox_views.LogoutView.as_view(), name='knox_logout'),
