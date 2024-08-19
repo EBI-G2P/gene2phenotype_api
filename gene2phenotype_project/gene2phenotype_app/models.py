@@ -137,9 +137,9 @@ class LGDVariantType(models.Model):
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     variant_type_ot = models.ForeignKey("OntologyTerm", related_name="variant_type", on_delete=models.PROTECT)
-    inherited = models.BooleanField()
-    de_novo = models.BooleanField()
-    unknown_inheritance = models.BooleanField()
+    inherited = models.BooleanField(default=False)
+    de_novo = models.BooleanField(default=False)
+    unknown_inheritance = models.BooleanField(default=False)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
@@ -160,7 +160,7 @@ class LGDVariantTypeDescription(models.Model):
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
-    description = models.CharField(max_length=250, null=False)
+    description = models.CharField(max_length=250, null=False, default='')
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 
@@ -582,12 +582,13 @@ class Panel(models.Model):
 class User(AbstractUser):
     id = models.AutoField(primary_key=True)
     username = models.CharField(max_length=100, unique=True, null=False)
-    email = models.CharField(max_length=100, unique=True, null=False)
+    email = models.EmailField(max_length=100, unique=True, null=False)
     is_deleted = models.BooleanField(default=False)
     date_joined = models.DateField(null=True)
     is_superuser = models.SmallIntegerField(default=False)
     first_name = models.CharField(max_length=100, null=True, default=None)
     last_name = models.CharField(max_length=100, null=True, default=None)
+ 
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
@@ -610,6 +611,20 @@ class UserPanel(models.Model):
         indexes = [
             models.Index(fields=['user', 'panel']),
         ]
+
+# class UserManager(BaseUserManager):
+#     use_in_migrations = True
+
+#     def create_user(self, email, password, **extra_fields):
+#         if not email:
+#             raise ValueError("Users require an email field")
+#         email = self.normalize_email(email)
+#         user = self.model(email=email, **extra_fields)
+#         user.set_password(password)
+#         user.save(using=self._db)
+#         return user
+
+
 
 class UniprotAnnotation(models.Model):
     """
