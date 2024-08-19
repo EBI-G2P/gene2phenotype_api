@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from ..models import User, UserPanel
 from django.contrib.auth import authenticate
+from rest_framework.validators import UniqueValidator
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -79,6 +80,22 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['user_name', 'email', 'is_active', 'panels', 'username']
         extra_kwargs = {'password': {'write_only': True }}
+
+
+class CreateUserSerializer(serializers.ModelSerializer):
+    def create(self, validated_data):
+        return User.objects.create_user(**validated_data)
+
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password', 'first_name', 'last_name']
+        extra_kwargs = {'password': {'write_only': True, 'min_length': 5},         'email': {
+            'validators': [
+                UniqueValidator(
+                    queryset=User.objects.all()
+                )
+            ]
+        }}
 
 
 class AuthSerializer(serializers.Serializer):
