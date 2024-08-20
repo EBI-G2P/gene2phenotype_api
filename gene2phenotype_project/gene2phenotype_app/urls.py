@@ -51,6 +51,7 @@ urlpatterns = [
     path('curations/', views.ListCurationEntries.as_view(), name="list_curation_entries"),
     path('curation/<str:stable_id>/', views.CurationDataDetail.as_view(), name="curation_details"),
     path('curation/<str:stable_id>/update/', views.UpdateCurationData.as_view(), name="update_curation"),
+    path('curation/<str:stable_id>/delete', views.DeleteCurationData.as_view(), name="delete_curation"),
 
     ### Publish data
     path('curation/publish/<str:stable_id>/', views.PublishRecord.as_view(), name="publish_record"),

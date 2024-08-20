@@ -7,7 +7,7 @@ from .locus import LocusGene, LocusGeneSummary, GeneFunction
 from .disease import GeneDiseaseView, DiseaseDetail, DiseaseSummary, AddDisease
 
 from .curation import (AddCurationData, ListCurationEntries, CurationDataDetail,
-                       UpdateCurationData, PublishRecord)
+                       UpdateCurationData, PublishRecord, DeleteCurationData)
 
 from .search import SearchView
 
