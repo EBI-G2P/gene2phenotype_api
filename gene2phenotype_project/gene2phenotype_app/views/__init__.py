@@ -1,4 +1,4 @@
-from .base import BaseView, BaseAdd, ListEndpoints
+from .base import BaseView, BaseAdd, BaseUpdate, ListEndpoints
 
 from .panel import PanelList, PanelDetail, PanelRecordsSummary, PanelDownload
 
@@ -15,11 +15,12 @@ from .attrib import AttribTypeList, AttribList
 
 from .user import UserList
 
-from .publication import PublicationDetail, AddPublication
+from .publication import (PublicationDetail, AddPublication, LocusGenotypeDiseaseAddPublications,
+                          LGDDeletePublication)
 
 from .locus_genotype_disease import (ListMolecularMechanisms, VariantTypesList,
                                      LocusGenotypeDiseaseDetail, LocusGenotypeDiseaseAddPanel,
-                                     LocusGenotypeDiseaseAddPublications, LocusGenotypeDiseaseAddPhenotypes,
+                                     LocusGenotypeDiseaseAddPhenotypes,
                                      LocusGenotypeDiseaseAddComment, LGDAddVariantConsequences,
                                      LocusGenotypeDiseaseAddCCM, LGDAddPhenotypeSummary,
                                      LGDAddVariantTypes, LGDAddVariantTypeDescriptions,

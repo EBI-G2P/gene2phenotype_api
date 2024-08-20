@@ -46,6 +46,9 @@ urlpatterns = [
     ### Endpoints to update data ###
     path('lgd/<str:stable_id>/update_confidence/', views.LGDUpdateConfidence.as_view(), name="lgd_update_confidence"),
 
+    ### Endpoints to delete data ###
+    path('lgd/<str:stable_id>/delete_lgd_publication/<int:pmid>/', views.LGDDeletePublication.as_view(), name="lgd_delete_publication"),
+
     ### Curation endpoints ###
     path('add/curation/', views.AddCurationData.as_view(), name="add_curation_data"),
     path('curations/', views.ListCurationEntries.as_view(), name="list_curation_entries"),

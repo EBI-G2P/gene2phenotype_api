@@ -38,6 +38,16 @@ class BaseAdd(generics.CreateAPIView):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+class BaseUpdate(generics.UpdateAPIView):
+    """
+        Generic methods to handle expection and permissions.
+    """
+    def handle_no_permission(self, data, stable_id):
+        if data is None:
+            raise Http404(f"{data}")
+        else:
+            raise Http404(f"Could not find '{data}' for ID '{stable_id}'")
+
 @api_view(['GET'])
 def ListEndpoints(request):
     """

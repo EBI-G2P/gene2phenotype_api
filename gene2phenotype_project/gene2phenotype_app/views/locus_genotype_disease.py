@@ -5,9 +5,9 @@ from django.shortcuts import get_object_or_404
 from django.db import transaction
 
 
-from gene2phenotype_app.serializers import (UserSerializer, LGDPublicationSerializer,
+from gene2phenotype_app.serializers import (UserSerializer,
                                             LocusGenotypeDiseaseSerializer,
-                                            LGDPanelSerializer, LGDPublicationListSerializer,
+                                            LGDPanelSerializer,
                                             LGDPhenotypeListSerializer, LGDPhenotypeSerializer,
                                             LGDCommentSerializer, LGDVariantConsequenceListSerializer,
                                             LGDVariantGenCCConsequenceSerializer, LGDCrossCuttingModifierListSerializer,
@@ -294,85 +294,6 @@ class LocusGenotypeDiseaseAddComment(BaseAdd):
             response = Response({"message": "Comment added to the G2P entry successfully."}, status=status.HTTP_200_OK)
         else:
             response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        return response
-
-class LocusGenotypeDiseaseAddPublications(BaseAdd):
-    """
-        Add a list of publications to an existing G2P record (LGD).
-        When adding a publication it can also add:
-            - comment
-            - family info as reported in the publication
-    """
-
-    serializer_class = LGDPublicationListSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    @transaction.atomic
-    def post(self, request, stable_id):
-        """
-            The post method creates an association between the current LGD record and a list of publications.
-            We want to whole process to be done in one db transaction.
-
-            Args:
-                (dict) request
-                
-                Example:
-                { "publications":[
-                    {
-                    "publication": { "pmid": 1234 },
-                    "comment": { "comment": "this is a comment", "is_public": 1 },
-                    "families": { "families": 2, "consanguinity": "unknown", "ancestries": "african", "affected_individuals": 1 }
-                    }
-                    ]
-                }
-        """
-
-        user = self.request.user
-
-        if not user.is_authenticated:
-            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-
-        lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
-
-        # LGDPublicationListSerializer accepts a list of publications
-        serializer_list = LGDPublicationListSerializer(data=request.data)
-
-        if serializer_list.is_valid():
-            publications_data = serializer_list.validated_data.get('publications')
-
-            for publication in publications_data:
-                # the comment and family info are inputted in the context
-                comment = None
-                families = None
-
-                # get extra data: comments, families
-                # "comment": {"comment": "comment text", "is_public": 1},
-                # "families": {
-                #               "families": 5, 
-                #               "consanguinity": "", 
-                #               "ancestries": "", 
-                #               "affected_individuals": 5
-                #              }
-                if "comment" in publication:
-                    comment = publication.get("comment")
-
-                if "families" in publication:
-                    families = publication.get("families")
-
-                serializer_class = LGDPublicationSerializer(
-                    data=publication,
-                    context={"lgd": lgd, "user": user, "comment": comment, "families": families}
-                )
-
-                if serializer_class.is_valid():
-                    serializer_class.save()
-                    response = Response({'message': 'Publication added to the G2P entry successfully.'}, status=status.HTTP_200_OK)
-                else:
-                    response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        else:
-            response = Response({"errors": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return response
 
