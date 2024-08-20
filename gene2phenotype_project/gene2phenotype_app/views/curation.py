@@ -278,7 +278,7 @@ class PublishRecord(APIView):
 class DeleteCurationData(generics.DestroyAPIView):
     """
         Deletes a curation record.
-        Removes entry from curation table, it also deletes the G2P ID (set 'is_deleted' to 0).
+        Removes entry from curation table, it also deletes the G2P ID (set 'is_deleted' to 1).
 
         Args:
             (string) stable_id : G2P ID associated with entry to be deleted
@@ -307,11 +307,11 @@ class DeleteCurationData(generics.DestroyAPIView):
     def perform_destroy(self, instance, stable_id):
         """
             Overwrite method perform_destroy()
-            This method deletes the G2P ID (set 'is_deleted' to 0) and calls the delete() method
+            This method deletes the G2P ID (set 'is_deleted' to 1) and calls the delete() method
             to remove the record from the curation table.
         """
         # Delete the G2P ID linked to this instance
-        # to delete we set the flag 'is_deleted' to 0
+        # to delete we set the flag 'is_deleted' to 1
         g2p_obj = instance.first().stable_id
         g2p_obj.is_deleted = 1
         g2p_obj.save()
