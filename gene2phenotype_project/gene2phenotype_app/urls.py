@@ -52,6 +52,9 @@ urlpatterns = [
     path('lgd/<str:stable_id>/delete_lgd_cross_cutting_modifier/<str:ccm>/', views.LGDDeleteCCM.as_view(), name="delete_lgd_cross_cutting_modifier"),
     path('lgd/<str:stable_id>/delete_lgd_variant_gencc_consequence/<str:consequence>/', views.LGDDeleteVariantConsequence.as_view(), name="delete_lgd_variant_gencc_consequence"),
     path('lgd/<str:stable_id>/delete_lgd_variant_type/<str:type>/', views.LGDDeleteVariantType.as_view(), name="delete_lgd_variant_type"),
+    path('lgd/<str:stable_id>/delete_lgd_variant_type_desc/<str:var_desc>/', views.LGDDeleteVariantTypeDesc.as_view(), name="delete_lgd_variant_type_desc"),
+    path('lgd/<str:stable_id>/delete_lgd_phenotype/<str:accession>/', views.LGDDeletePhenotype.as_view(), name="delete_lgd_Phenotype"),
+    path('lgd/<str:stable_id>/delete_lgd_phenotype_summary/<str:summary>/', views.LGDDeletePhenotypeSummary.as_view(), name="delete_lgd_phenotype_summary"),
 
     ### Curation endpoints ###
     path('add/curation/', views.AddCurationData.as_view(), name="add_curation_data"),

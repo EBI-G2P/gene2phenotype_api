@@ -8,7 +8,7 @@ from ..models import (Panel, Attrib,
                      LGDPhenotype, LGDVariantType, Locus,
                      LGDComment, LGDVariantTypeComment,
                      LGDMolecularMechanism, LGDMolecularMechanismEvidence,
-                     OntologyTerm, Publication,
+                     OntologyTerm, Publication, LGDPhenotypeSummary,
                      LGDVariantTypeDescription, CVMolecularMechanism)
 
 
@@ -38,6 +38,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     variant_type = serializers.SerializerMethodField(allow_null=True)
     variant_description = serializers.SerializerMethodField(allow_null=True)
     phenotypes = serializers.SerializerMethodField(allow_null=True)
+    phenotype_summary = serializers.SerializerMethodField(allow_null=True)
     last_updated = serializers.SerializerMethodField()
     date_created = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField(allow_null=True)
@@ -107,17 +108,43 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         for lgd_phenotype in queryset:
             accession = lgd_phenotype.phenotype.accession
+            publication = lgd_phenotype.publication
 
-            if accession in data and lgd_phenotype.publication:
-                data[accession]["publications"].append(lgd_phenotype.publication.pmid)
+            if accession in data and publication:
+                data[accession]["publications"].append(publication.pmid)
             else:
                 publication_list = []
-                if lgd_phenotype.publication:
-                    publication_list = [lgd_phenotype.publication.pmid]
+                if publication:
+                    publication_list = [publication.pmid]
 
                 data[accession] = {"term": lgd_phenotype.phenotype.term,
                                    "accession": accession,
                                    "publications": publication_list}
+
+        return data.values()
+
+    def get_phenotype_summary(self, id):
+        """
+            A summary about the phenotypes associated with the LGD record.
+            The response includes the list of publications associated with the summary.
+        """
+        # The LGD record is supposed to have one summary
+        # but one summary can be linked to several publications
+        queryset = LGDPhenotypeSummary.objects.filter(lgd_id=id, is_deleted=0).prefetch_related()
+        data = {}
+
+        for summary_obj in queryset:
+            summary_text = summary_obj.summary
+            publication = summary_obj.publication
+
+            if summary_text in data and publication:
+                data[summary_text]["publications"].append(publication.pmid)
+            else:
+                publication_list = []
+                if publication:
+                    publication_list = [publication.pmid]
+
+                data[summary_text] = { "summary": summary_text, "publications": publication_list }
 
         return data.values()
 
@@ -525,7 +552,8 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
                             }
         """
         evidence_list = LGDMolecularMechanismEvidence.objects.filter(
-            molecular_mechanism=id
+            molecular_mechanism=id,
+            is_deleted=0
             ).select_related('evidence', 'publication').values(
                 'publication__pmid',
                 'evidence__value',

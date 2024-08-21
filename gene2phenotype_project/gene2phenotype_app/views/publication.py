@@ -7,7 +7,10 @@ from django.shortcuts import get_object_or_404
 from gene2phenotype_app.serializers import (PublicationSerializer, LGDPublicationSerializer,
                                             LGDPublicationListSerializer)
 
-from gene2phenotype_app.models import (Publication, LocusGenotypeDisease, LGDPublication)
+from gene2phenotype_app.models import (Publication, LocusGenotypeDisease, LGDPublication,
+                                       LGDPhenotype, LGDPhenotypeSummary, LGDVariantType,
+                                       LGDVariantTypeDescription, LGDMolecularMechanism,
+                                       LGDMolecularMechanismEvidence)
 
 from .base import BaseAdd, BaseUpdate
 
@@ -216,10 +219,6 @@ class LGDDeletePublication(BaseUpdate):
     def update(self, request, *args, **kwargs):
         """
             This method 'deletes' the LGD-publication.
-
-            Raises:
-                Invalid confidence value
-                G2P record already has same confidence value
         """
         stable_id = self.kwargs['stable_id']
         pmid = self.kwargs['pmid']
@@ -227,12 +226,96 @@ class LGDDeletePublication(BaseUpdate):
         # Get G2P entry to be updated
         lgd_publication_obj = self.get_queryset().first()
 
+        # Before deleting this publication check if LGD record is linked to other publications
+        queryset_all = LGDPublication.objects.filter(lgd=lgd_publication_obj.lgd, is_deleted=0)
+
+        # TODO: if we are going to delete the last publication then delete LGD record
+        if(queryset_all.exists() and len(queryset_all) == 1):
+            return Response(
+                {"errors": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
+                status=status.HTTP_400_BAD_REQUEST
+        )
+
         lgd_publication_obj.is_deleted = 1
 
         try:
             lgd_publication_obj.save()
         except:
             return Response({"errors": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if this publication is being used in other tables (linked to the LGD record)
+        # lgd_phenotype
+        lgd_phenotype_set = LGDPhenotype.objects.filter(
+            lgd=lgd_publication_obj.lgd,
+            publication=lgd_publication_obj.publication,
+            is_deleted=0)
+        # different phenotypes can be linked to the same publication
+        for lgd_phenotype_obj in lgd_phenotype_set:
+            if(lgd_phenotype_obj):
+                lgd_phenotype_obj.is_deleted = 1
+                lgd_phenotype_obj.save()
+
+        # lgd_phenotype_summary - the phenotype summary is directly associated with the LGD record
+        # A LGD record should only have one phenotype summary but to make sure we delete everything correctly
+        # we'll run the filter to catch all objects
+        lgd_phenotype_summary_set = LGDPhenotypeSummary.objects.filter(
+            lgd=lgd_publication_obj.lgd,
+            publication=lgd_publication_obj.publication,
+            is_deleted=0)
+        for lgd_phenotype_summary_obj in lgd_phenotype_summary_set:
+            if(lgd_phenotype_summary_obj):
+                lgd_phenotype_summary_obj.is_deleted = 1
+                lgd_phenotype_summary_obj.save()
+
+        # lgd_variant_type
+        lgd_var_type_set = LGDVariantType.objects.filter(
+            lgd=lgd_publication_obj.lgd,
+            publication=lgd_publication_obj.publication,
+            is_deleted=0)
+        # different variant types can be linked to the same publication
+        for lgd_var_type_obj in lgd_var_type_set:
+            if(lgd_var_type_obj):
+                lgd_var_type_obj.is_deleted = 1
+                lgd_var_type_obj.save()
+
+        # lgd_variant_type_description
+        lgd_var_desc_set = LGDVariantTypeDescription.objects.filter(
+            lgd=lgd_publication_obj.lgd,
+            publication=lgd_publication_obj.publication,
+            is_deleted=0)
+        # different descriptions can be linked to the same publication
+        for lgd_var_desc_obj in lgd_var_desc_set:
+            if(lgd_var_desc_obj):
+                lgd_var_desc_obj.is_deleted = 1
+                lgd_var_desc_obj.save()
+
+        # lgd_molecular_mechanism_evidence - only the molecular mechanism evidence is linked to a publication
+        lgd_mechanism_obj = LGDMolecularMechanism.objects.get(
+            lgd=lgd_publication_obj.lgd,
+            is_deleted=0)
+        
+        # If the mechanism support is evidence then get the list of LGDMolecularMechanismEvidence
+        # Different types of evidence can be linked to the same publication
+        if(lgd_mechanism_obj and lgd_mechanism_obj.mechanism_support.value == "evidence"):
+            lgd_mechanism_evidence_set = LGDMolecularMechanismEvidence.objects.filter(
+                molecular_mechanism=lgd_mechanism_obj,
+                publication=lgd_publication_obj.publication,
+                is_deleted=0)
+
+            for lgd_mechanism_evidence_obj in lgd_mechanism_evidence_set:
+                lgd_mechanism_evidence_obj.is_deleted = 1
+                lgd_mechanism_evidence_obj.save()
+
+            # Check if LGDMolecularMechanism has evidence linked to other publications
+            lgd_check_evidence_set = LGDMolecularMechanismEvidence.objects.filter(
+                molecular_mechanism=lgd_mechanism_obj,
+                is_deleted=0)
+
+            # There are no other evidence for this lgd-mechanism
+            # In this case, delete the mechanism
+            if(not lgd_check_evidence_set.exists()):
+                lgd_mechanism_obj.is_deleted=1 # TODO if there is no mechanism then delete LGD record
+                lgd_mechanism_obj.save()
 
         return Response(
                 {"message": f"Publication '{pmid}' successfully deleted for ID '{stable_id}'"},

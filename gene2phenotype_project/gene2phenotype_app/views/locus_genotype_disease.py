@@ -6,21 +6,17 @@ from django.shortcuts import get_object_or_404
 from django.db import transaction
 
 
-from gene2phenotype_app.serializers import (UserSerializer,
-                                            LocusGenotypeDiseaseSerializer,
-                                            LGDPanelSerializer,
-                                            LGDPhenotypeListSerializer, LGDPhenotypeSerializer,
+from gene2phenotype_app.serializers import (UserSerializer, LocusGenotypeDiseaseSerializer,
+                                            LGDPanelSerializer, LGDCrossCuttingModifierSerializer,
                                             LGDCommentSerializer, LGDVariantConsequenceListSerializer,
                                             LGDVariantGenCCConsequenceSerializer, LGDCrossCuttingModifierListSerializer,
-                                            LGDCrossCuttingModifierSerializer, LGDPhenotypeSummarySerializer,
                                             LGDVariantTypeListSerializer, LGDVariantTypeSerializer,
                                             LGDVariantTypeDescriptionListSerializer, LGDVariantTypeDescriptionSerializer)
 
-from gene2phenotype_app.models import (User, Attrib,
-                                       LocusGenotypeDisease, OntologyTerm,
-                                       G2PStableID, CVMolecularMechanism,
-                                       LGDCrossCuttingModifier, LGDVariantGenccConsequence,
-                                       LGDVariantType, LGDVariantTypeComment)
+from gene2phenotype_app.models import (User, Attrib, LocusGenotypeDisease, OntologyTerm,
+                                       G2PStableID, CVMolecularMechanism, LGDCrossCuttingModifier, 
+                                       LGDVariantGenccConsequence, LGDVariantType, LGDVariantTypeComment,
+                                       LGDVariantTypeDescription)
 
 from .base import BaseView, BaseAdd, BaseUpdate
 
@@ -204,7 +200,6 @@ class LGDUpdateConfidence(generics.UpdateAPIView):
         else:
             return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-
 ### Add data ###
 class LocusGenotypeDiseaseAddPanel(BaseAdd):
     """
@@ -297,119 +292,6 @@ class LocusGenotypeDiseaseAddComment(BaseAdd):
             response = Response({"message": "Comment added to the G2P entry successfully."}, status=status.HTTP_200_OK)
         else:
             response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        return response
-
-class LocusGenotypeDiseaseAddPhenotypes(BaseAdd):
-    """
-        Add a list of phenotypes to an existing G2P record (LGD).
-    """
-
-    serializer_class = LGDPhenotypeListSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    @transaction.atomic
-    def post(self, request, stable_id):
-        """
-            The post method creates an association between the current LGD record and a list of phenotypes.
-            We want to whole process to be done in one db transaction.
-
-            Args:
-                (dict) request
-                
-                Example:
-                    {
-                        "phenotypes": [{
-                            "accession": "HP:0003974",
-                            "publication": 1
-                        }]
-                    }
-        """
-
-        user = self.request.user
-
-        if not user.is_authenticated:
-            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-        
-        lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
-
-        # LGDPhenotypeListSerializer accepts a list of phenotypes
-        serializer_list = LGDPhenotypeListSerializer(data=request.data)
-
-        if serializer_list.is_valid():
-            phenotypes_data = serializer_list.validated_data.get('phenotypes')
-
-            if(not phenotypes_data):
-                response = Response(
-                    {"message": "Empty phenotype. Please provide valid data."},
-                     status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # Add each phenotype from the input list
-            for phenotype in phenotypes_data:
-                # Format data to be accepted by LGDPhenotypeSerializer
-                phenotype_input = phenotype.get("phenotype")
-                phenotype_input["publication"] = phenotype.get("publication")["pmid"]
-
-                serializer_class = LGDPhenotypeSerializer(
-                    data=phenotype_input,
-                    context={"lgd": lgd}
-                )
-
-                if serializer_class.is_valid():
-                    serializer_class.save()
-                    response = Response({"message": "Phenotype added to the G2P entry successfully."}, status=status.HTTP_200_OK)
-                else:
-                    response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        else:
-            response = Response({"errors": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        return response
-
-class LGDAddPhenotypeSummary(BaseAdd):
-    """
-        Add a phenotype summary to an existing G2P record (LGD).
-    """
-
-    serializer_class = LGDPhenotypeSummarySerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    @transaction.atomic
-    def post(self, request, stable_id):
-        """
-            The post method creates an association between the current LGD record and a summary of phenotypes.
-            A summary can be linked to one or more publications.
-
-            We want to whole process to be done in one db transaction.
-
-            Args:
-                (dict) request:
-                                - (string) summary: phenotype summary text
-                                - (list) publication: list of pmids
-
-                Example:
-                    {
-                        "summary": "This is a summary",
-                        "publication": [1, 12345]
-                    }
-        """
-
-        user = self.request.user
-
-        if not user.is_authenticated:
-            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-
-        lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
-
-        # LGDPhenotypeSummarySerializer accepts a summary of phenotypes associated with pmids
-        serializer = LGDPhenotypeSummarySerializer(data=request.data, context={"lgd": lgd})
-
-        if serializer.is_valid():
-            serializer.save()
-            response = Response({"message": "Phenotype added to the G2P entry successfully."}, status=status.HTTP_200_OK)
-        else:
-            response = Response({"errors": serializer.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return response
 
@@ -876,7 +758,7 @@ class LGDDeleteVariantType(BaseUpdate):
 
         # Get G2P entries to be deleted
         # Different rows mean the lgd-variant type is associated with multiple publications
-        # We have to delete all of the rows
+        # We have to delete all rows
         lgd_var_type_set = self.get_queryset()
 
         for lgd_var_type_obj in lgd_var_type_set:
@@ -898,4 +780,57 @@ class LGDDeleteVariantType(BaseUpdate):
 
         return Response(
                 {"message": f"Variant type '{variant_type}' successfully deleted for ID '{stable_id}'"},
+                status=status.HTTP_200_OK)
+
+class LGDDeleteVariantTypeDesc(BaseUpdate):
+    """
+        Delete a variant type description associated with the LGD.
+        The deletion does not remove the entry from the database, instead
+        it sets the flag 'is_deleted' to 1.
+    """
+
+    http_method_names = ['put', 'options']
+    serializer_class = LGDVariantTypeDescriptionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """
+            Fetch the list of LGD-variant type descriptions
+        """
+        stable_id = self.kwargs['stable_id']
+        var_desc = self.kwargs['var_desc']
+        user = self.request.user # TODO check if user has permission
+
+        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        queryset = LGDVariantTypeDescription.objects.filter(lgd=lgd_obj, description=var_desc, is_deleted=0)
+
+        if not queryset.exists():
+            self.handle_no_permission(var_desc, stable_id)
+        else:
+            return queryset
+
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        """
+            This method deletes the LGD-variant type descriptions
+        """
+        stable_id = self.kwargs['stable_id']
+        var_desc = self.kwargs['var_desc']
+
+        # Get G2P entries to be deleted
+        # Different rows mean the lgd-variant type description is associated with multiple publications
+        # We have to delete all rows
+        lgd_var_desc_set = self.get_queryset()
+
+        for lgd_var_desc_obj in lgd_var_desc_set:
+            lgd_var_desc_obj.is_deleted = 1
+
+            try:
+                lgd_var_desc_obj.save()
+            except:
+                return Response({"errors": f"Could not delete variant type description '{var_desc}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+                {"message": f"Variant type description '{var_desc}' successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK)

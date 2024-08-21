@@ -21,11 +21,11 @@ from .publication import (PublicationDetail, AddPublication, LocusGenotypeDiseas
 
 from .locus_genotype_disease import (ListMolecularMechanisms, VariantTypesList,
                                      LocusGenotypeDiseaseDetail, LocusGenotypeDiseaseAddPanel,
-                                     LocusGenotypeDiseaseAddPhenotypes,
                                      LocusGenotypeDiseaseAddComment, LGDAddVariantConsequences,
-                                     LocusGenotypeDiseaseAddCCM, LGDAddPhenotypeSummary,
+                                     LocusGenotypeDiseaseAddCCM,
                                      LGDAddVariantTypes, LGDAddVariantTypeDescriptions,
                                      LGDUpdateConfidence, LGDDeleteCCM, LGDDeleteVariantConsequence,
-                                     LGDDeleteVariantType)
+                                     LGDDeleteVariantType, LGDDeleteVariantTypeDesc)
 
-from .phenotype import AddPhenotype, PhenotypeDetail
+from .phenotype import (AddPhenotype, PhenotypeDetail, LGDDeletePhenotype, LGDDeletePhenotypeSummary,
+                        LocusGenotypeDiseaseAddPhenotypes, LGDAddPhenotypeSummary)
