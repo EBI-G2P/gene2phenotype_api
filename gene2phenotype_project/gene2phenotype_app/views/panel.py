@@ -1,7 +1,9 @@
-from rest_framework import generics
+from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from django.http import Http404, HttpResponse
 from rest_framework.decorators import api_view
+from django.db import transaction
+from django.shortcuts import get_object_or_404
 from django.db.models import Q
 import csv
 from datetime import datetime
@@ -9,11 +11,12 @@ from datetime import datetime
 from gene2phenotype_app.models import (Panel, User, LocusGenotypeDisease,
                                        LGDVariantType, LGDVariantGenccConsequence,
                                        LGDMolecularMechanism, LGDPhenotype,
-                                       LGDPublication, LGDCrossCuttingModifier)
+                                       LGDPublication, LGDCrossCuttingModifier,
+                                       LGDPanel)
 
-from gene2phenotype_app.serializers import PanelDetailSerializer
+from gene2phenotype_app.serializers import PanelDetailSerializer, LGDPanelSerializer
 
-from .base import BaseView
+from .base import BaseView, BaseUpdate
 
 
 class PanelList(generics.ListAPIView):
@@ -126,6 +129,57 @@ class PanelRecordsSummary(BaseView):
         else:
             self.handle_no_permission('Panel', name)
 
+
+### Delete data ###
+class LGDDeletePanel(BaseUpdate):
+    http_method_names = ['put', 'options']
+    serializer_class = LGDPanelSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """
+            Fetch the list of LGD-panel
+        """
+        stable_id = self.kwargs['stable_id']
+        panel = self.kwargs['name']
+        user = self.request.user # TODO check if user has permission to edit the panel and the record
+
+        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+        panel_obj = get_object_or_404(Panel, name=panel)
+
+        queryset_all_panels = LGDPanel.objects.filter(lgd=lgd_obj, is_deleted=0)
+
+        if(len(queryset_all_panels) == 1):
+            raise Http404(f"Cannot delete panel for ID '{stable_id}'")
+
+        queryset = LGDPanel.objects.filter(lgd=lgd_obj, panel=panel_obj, is_deleted=0)
+
+        if not queryset.exists():
+            self.handle_no_permission(panel, stable_id)
+        else:
+            return queryset
+
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        """
+            This method deletes the LGD-panel
+        """
+        stable_id = self.kwargs['stable_id']
+        panel = self.kwargs['name']
+
+        # Get G2P entry to be updated
+        lgd_panel_obj = self.get_queryset().first()
+
+        lgd_panel_obj.is_deleted = 1
+
+        try:
+            lgd_panel_obj.save()
+        except:
+            return Response({"errors": f"Could not delete panel '{panel}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+                {"message": f"Panel '{panel}' successfully deleted for ID '{stable_id}'"},
+                 status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def PanelDownload(request, name):

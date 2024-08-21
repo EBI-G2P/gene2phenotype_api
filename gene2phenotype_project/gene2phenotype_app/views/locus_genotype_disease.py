@@ -1,5 +1,6 @@
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
+from django.http import Http404
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.db import transaction
@@ -17,9 +18,10 @@ from gene2phenotype_app.serializers import (UserSerializer,
 
 from gene2phenotype_app.models import (User, Attrib,
                                        LocusGenotypeDisease, OntologyTerm,
-                                       G2PStableID, CVMolecularMechanism)
+                                       G2PStableID, CVMolecularMechanism,
+                                       LGDCrossCuttingModifier)
 
-from .base import BaseView, BaseAdd
+from .base import BaseView, BaseAdd, BaseUpdate
 
 
 class ListMolecularMechanisms(generics.ListAPIView):
@@ -146,7 +148,7 @@ class LocusGenotypeDiseaseDetail(BaseView):
         return Response(serializer.data)
 
 
-### Update data
+### Update data ###
 class LGDUpdateConfidence(generics.UpdateAPIView):
     http_method_names = ['put', 'options']
     serializer_class = LocusGenotypeDiseaseSerializer
@@ -202,7 +204,7 @@ class LGDUpdateConfidence(generics.UpdateAPIView):
             return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
-### Add data
+### Add data ###
 class LocusGenotypeDiseaseAddPanel(BaseAdd):
     """
         Add panel to an existing G2P record (LGD).
@@ -707,3 +709,62 @@ class LGDAddVariantTypeDescriptions(BaseAdd):
             )
 
         return response
+
+### Delete data ###
+class LGDDeleteCCM(BaseUpdate):
+    """
+        Delete a cross cutting modifier associated with the LGD.
+        The deletion does not remove the entry from the database, instead
+        it sets the flag 'is_deleted' to 1.
+    """
+
+    http_method_names = ['put', 'options']
+    serializer_class = LGDCrossCuttingModifierSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """
+            Fetch the list of LGD-cross cutting modifiers
+        """
+        stable_id = self.kwargs['stable_id']
+        ccm = self.kwargs['ccm']
+        user = self.request.user # TODO check if user has permission
+
+        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        try:
+            ccm_obj = Attrib.objects.get(
+                value = ccm,
+                type__code = 'cross_cutting_modifier'
+            )
+        except Attrib.DoesNotExist:
+            raise Http404(f"Invalid cross cutting modifier '{ccm}'")
+
+        queryset = LGDCrossCuttingModifier.objects.filter(lgd=lgd_obj, ccm=ccm_obj, is_deleted=0)
+
+        if not queryset.exists():
+            self.handle_no_permission(ccm, stable_id)
+        else:
+            return queryset
+
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        """
+            This method deletes the LGD-cross cutting modifier.
+        """
+        stable_id = self.kwargs['stable_id']
+        ccm = self.kwargs['ccm']
+
+        # Get G2P entry to be updated
+        lgd_ccm_obj = self.get_queryset().first()
+
+        lgd_ccm_obj.is_deleted = 1
+
+        try:
+            lgd_ccm_obj.save()
+        except:
+            return Response({"errors": f"Could not delete cross cutting modifier '{ccm}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+                {"message": f"Cross cutting modifier '{ccm}' successfully deleted for ID '{stable_id}'"},
+                 status=status.HTTP_200_OK)

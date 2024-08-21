@@ -48,6 +48,7 @@ class BaseUpdate(generics.UpdateAPIView):
         else:
             raise Http404(f"Could not find '{data}' for ID '{stable_id}'")
 
+
 @api_view(['GET'])
 def ListEndpoints(request):
     """

@@ -1,6 +1,7 @@
 from .base import BaseView, BaseAdd, BaseUpdate, ListEndpoints
 
-from .panel import PanelList, PanelDetail, PanelRecordsSummary, PanelDownload
+from .panel import (PanelList, PanelDetail, PanelRecordsSummary, PanelDownload,
+                    LGDDeletePanel)
 
 from .locus import LocusGene, LocusGeneSummary, GeneFunction
 
@@ -24,6 +25,6 @@ from .locus_genotype_disease import (ListMolecularMechanisms, VariantTypesList,
                                      LocusGenotypeDiseaseAddComment, LGDAddVariantConsequences,
                                      LocusGenotypeDiseaseAddCCM, LGDAddPhenotypeSummary,
                                      LGDAddVariantTypes, LGDAddVariantTypeDescriptions,
-                                     LGDUpdateConfidence)
+                                     LGDUpdateConfidence, LGDDeleteCCM)
 
 from .phenotype import AddPhenotype, PhenotypeDetail
