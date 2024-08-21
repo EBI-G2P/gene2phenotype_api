@@ -19,7 +19,7 @@ from gene2phenotype_app.serializers import (UserSerializer,
 from gene2phenotype_app.models import (User, Attrib,
                                        LocusGenotypeDisease, OntologyTerm,
                                        G2PStableID, CVMolecularMechanism,
-                                       LGDCrossCuttingModifier)
+                                       LGDCrossCuttingModifier, LGDVariantGenccConsequence)
 
 from .base import BaseView, BaseAdd, BaseUpdate
 
@@ -767,4 +767,63 @@ class LGDDeleteCCM(BaseUpdate):
 
         return Response(
                 {"message": f"Cross cutting modifier '{ccm}' successfully deleted for ID '{stable_id}'"},
+                 status=status.HTTP_200_OK)
+
+class LGDDeleteVariantConsequence(BaseUpdate):
+    """
+        Delete a variant GenCC consequence associated with the LGD.
+        The deletion does not remove the entry from the database, instead
+        it sets the flag 'is_deleted' to 1.
+    """
+
+    http_method_names = ['put', 'options']
+    serializer_class = LGDVariantGenCCConsequenceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """
+            Fetch the list of LGD-variant GenCC consequences
+        """
+        stable_id = self.kwargs['stable_id']
+        consequence = self.kwargs['consequence'].replace("_", " ")
+        user = self.request.user # TODO check if user has permission
+
+        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # Get variant gencc consequence value from ontology_term
+        try:
+            consequence_obj = OntologyTerm.objects.get(
+                term = consequence,
+                group_type__value = "variant_type"
+            )
+        except OntologyTerm.DoesNotExist:
+            raise Http404(f"Invalid variant consequence '{consequence}'")
+
+        queryset = LGDVariantGenccConsequence.objects.filter(lgd=lgd_obj, variant_consequence=consequence_obj, is_deleted=0)
+
+        if not queryset.exists():
+            self.handle_no_permission(consequence, stable_id)
+        else:
+            return queryset
+
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        """
+            This method deletes the LGD-variant gencc consequence.
+        """
+        stable_id = self.kwargs['stable_id']
+        consequence = self.kwargs['consequence']
+
+        # Get G2P entry to be updated
+        lgd_consequence_obj = self.get_queryset().first()
+
+        lgd_consequence_obj.is_deleted = 1
+
+        try:
+            lgd_consequence_obj.save()
+        except:
+            return Response({"errors": f"Could not delete variant GenCC consequence '{consequence}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+                {"message": f"Variant GenCC consequence '{consequence}' successfully deleted for ID '{stable_id}'"},
                  status=status.HTTP_200_OK)

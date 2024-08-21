@@ -25,6 +25,6 @@ from .locus_genotype_disease import (ListMolecularMechanisms, VariantTypesList,
                                      LocusGenotypeDiseaseAddComment, LGDAddVariantConsequences,
                                      LocusGenotypeDiseaseAddCCM, LGDAddPhenotypeSummary,
                                      LGDAddVariantTypes, LGDAddVariantTypeDescriptions,
-                                     LGDUpdateConfidence, LGDDeleteCCM)
+                                     LGDUpdateConfidence, LGDDeleteCCM, LGDDeleteVariantConsequence)
 
 from .phenotype import AddPhenotype, PhenotypeDetail
