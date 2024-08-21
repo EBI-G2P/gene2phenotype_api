@@ -19,7 +19,8 @@ from gene2phenotype_app.serializers import (UserSerializer,
 from gene2phenotype_app.models import (User, Attrib,
                                        LocusGenotypeDisease, OntologyTerm,
                                        G2PStableID, CVMolecularMechanism,
-                                       LGDCrossCuttingModifier, LGDVariantGenccConsequence)
+                                       LGDCrossCuttingModifier, LGDVariantGenccConsequence,
+                                       LGDVariantType, LGDVariantTypeComment)
 
 from .base import BaseView, BaseAdd, BaseUpdate
 
@@ -827,3 +828,74 @@ class LGDDeleteVariantConsequence(BaseUpdate):
         return Response(
                 {"message": f"Variant GenCC consequence '{consequence}' successfully deleted for ID '{stable_id}'"},
                  status=status.HTTP_200_OK)
+
+class LGDDeleteVariantType(BaseUpdate):
+    """
+        Delete a variant type associated with the LGD.
+        The deletion does not remove the entry from the database, instead
+        it sets the flag 'is_deleted' to 1.
+    """
+
+    http_method_names = ['put', 'options']
+    serializer_class = LGDVariantTypeSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """
+            Fetch the list of LGD-variant types
+        """
+        stable_id = self.kwargs['stable_id']
+        variant_type = self.kwargs['type']
+        user = self.request.user # TODO check if user has permission
+
+        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # Get variant type value from ontology_term
+        try:
+            var_type_obj = OntologyTerm.objects.get(
+                term = variant_type,
+                group_type__value = "variant_type"
+            )
+        except OntologyTerm.DoesNotExist:
+            raise Http404(f"Invalid variant type '{variant_type}'")
+
+        queryset = LGDVariantType.objects.filter(lgd=lgd_obj, variant_type_ot=var_type_obj, is_deleted=0)
+
+        if not queryset.exists():
+            self.handle_no_permission(variant_type, stable_id)
+        else:
+            return queryset
+
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        """
+            This method deletes the LGD-variant type
+        """
+        stable_id = self.kwargs['stable_id']
+        variant_type = self.kwargs['type']
+
+        # Get G2P entries to be deleted
+        # Different rows mean the lgd-variant type is associated with multiple publications
+        # We have to delete all of the rows
+        lgd_var_type_set = self.get_queryset()
+
+        for lgd_var_type_obj in lgd_var_type_set:
+            # Check if the lgd-variant type has comments
+            # If so, delete the comments too
+            comments_set = LGDVariantTypeComment.objects.filter(lgd_variant_type=lgd_var_type_obj, is_deleted=0)
+
+            if comments_set.exists():
+                for comment in comments_set:
+                    comment.is_deleted = 1
+                    comment.save()
+
+            lgd_var_type_obj.is_deleted = 1
+
+            try:
+                lgd_var_type_obj.save()
+            except:
+                return Response({"errors": f"Could not delete variant type '{variant_type}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+                {"message": f"Variant type '{variant_type}' successfully deleted for ID '{stable_id}'"},
+                status=status.HTTP_200_OK)
