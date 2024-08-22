@@ -20,8 +20,8 @@ from .publication import PublicationDetail, AddPublication, LGDEditPublications
 
 from .locus_genotype_disease import (ListMolecularMechanisms, VariantTypesList,
                                      LocusGenotypeDiseaseDetail, LGDEditCCM,
-                                     LocusGenotypeDiseaseAddComment, LGDEditVariantConsequences,
+                                     LGDEditComment, LGDEditVariantConsequences,
                                      LGDEditVariantTypes, LGDEditVariantTypeDescriptions,
-                                     LGDUpdateConfidence)
+                                     LGDUpdateConfidence, LocusGenotypeDiseaseDelete)
 
 from .phenotype import AddPhenotype, PhenotypeDetail, LGDEditPhenotypes, LGDEditPhenotypeSummary

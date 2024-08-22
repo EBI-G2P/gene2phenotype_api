@@ -17,7 +17,9 @@ from gene2phenotype_app.serializers import (UserSerializer, LocusGenotypeDisease
 from gene2phenotype_app.models import (User, Attrib, LocusGenotypeDisease, OntologyTerm,
                                        G2PStableID, CVMolecularMechanism, LGDCrossCuttingModifier, 
                                        LGDVariantGenccConsequence, LGDVariantType, LGDVariantTypeComment,
-                                       LGDVariantTypeDescription)
+                                       LGDVariantTypeDescription, LGDPanel, LGDPhenotype, LGDPhenotypeSummary,
+                                       LGDMolecularMechanism, LGDMolecularMechanismEvidence, LGDPublication,
+                                       LGDComment)
 
 from .base import BaseView, BaseAdd, BaseUpdate
 
@@ -146,7 +148,7 @@ class LocusGenotypeDiseaseDetail(generics.ListAPIView):
         return Response(serializer.data)
 
 
-### Update data ###
+### Add or delete data ###
 class LGDUpdateConfidence(generics.UpdateAPIView):
     http_method_names = ['put', 'options']
     serializer_class = LocusGenotypeDiseaseSerializer
@@ -319,23 +321,16 @@ class LGDEditVariantConsequences(APIView):
             raise Http404(f"Invalid variant consequence '{consequence}'")
 
         try:
-            lgd_consequence_obj = LGDVariantGenccConsequence.objects.get(lgd=lgd_obj, variant_consequence=consequence_obj, is_deleted=0)
-        except LGDVariantGenccConsequence.DoesNotExist:
+            LGDVariantGenccConsequence.objects.filter(lgd=lgd_obj, variant_consequence=consequence_obj, is_deleted=0).update(is_deleted=1)
+        except:
             return Response(
-                {"errors": f"Could not find variant consequence '{consequence}' for ID '{stable_id}'"},
+                {"errors": f"Could not delete variant consequence '{consequence}' for ID '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-        lgd_consequence_obj.is_deleted = 1
-
-        try:
-            lgd_consequence_obj.save()
-        except:
-            return Response({"errors": f"Could not delete variant consequence '{consequence}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(
+        else:
+            return Response(
                 {"message": f"Variant consequence '{consequence}' successfully deleted for ID '{stable_id}'"},
-                 status=status.HTTP_200_OK)
+                status=status.HTTP_200_OK)
 
 class LGDEditCCM(APIView):
     """
@@ -446,18 +441,13 @@ class LGDEditCCM(APIView):
             raise Http404(f"Invalid cross cutting modifier '{ccm}'")
 
         try:
-            lgd_ccm_obj = LGDCrossCuttingModifier.objects.get(lgd=lgd_obj, ccm=ccm_obj, is_deleted=0)
-        except LGDCrossCuttingModifier.DoesNotExist:
-            return Response({"errors": f"Could not find cross cutting modifier '{ccm}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
-
-        lgd_ccm_obj.is_deleted = 1
-
-        try:
-            lgd_ccm_obj.save()
+            LGDCrossCuttingModifier.objects.filter(lgd=lgd_obj, ccm=ccm_obj, is_deleted=0).update(is_deleted=1)
         except:
-            return Response({"errors": f"Could not delete cross cutting modifier '{ccm}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(
+            return Response(
+                {"errors": f"Could not delete cross cutting modifier '{ccm}' for ID '{stable_id}'"},
+                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(
                 {"message": f"Cross cutting modifier '{ccm}' successfully deleted for ID '{stable_id}'"},
                  status=status.HTTP_200_OK)
 
@@ -589,18 +579,13 @@ class LGDEditVariantTypes(APIView):
         lgd_var_type_set = LGDVariantType.objects.filter(lgd=lgd_obj, variant_type_ot=var_type_obj, is_deleted=0)
 
         if not lgd_var_type_set.exists():
-            return Response({"errors": f"Could not find variant type '{variant_type}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"errors": f"Could not find variant type '{variant_type}' for ID '{stable_id}'"},
+                            status=status.HTTP_404_NOT_FOUND)
 
         for lgd_var_type_obj in lgd_var_type_set:
             # Check if the lgd-variant type has comments
             # If so, delete the comments too
-            comments_set = LGDVariantTypeComment.objects.filter(lgd_variant_type=lgd_var_type_obj, is_deleted=0)
-
-            if comments_set.exists():
-                for comment in comments_set:
-                    comment.is_deleted = 1
-                    comment.save()
-
+            LGDVariantTypeComment.objects.filter(lgd_variant_type=lgd_var_type_obj, is_deleted=0).update(is_deleted=1)
             lgd_var_type_obj.is_deleted = 1
 
             try:
@@ -719,35 +704,30 @@ class LGDEditVariantTypeDescriptions(APIView):
         # Get entries to be deleted
         # Different rows mean the lgd-variant type description is associated with multiple publications
         # We have to delete all rows
-        lgd_var_desc_set = LGDVariantTypeDescription.objects.filter(lgd=lgd_obj, description=var_desc, is_deleted=0)
-
-        if not lgd_var_desc_set.exists():
-            return Response({"errors": f"Could not find variant type description '{var_desc}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
-
-        for lgd_var_desc_obj in lgd_var_desc_set:
-            lgd_var_desc_obj.is_deleted = 1
-
-            try:
-                lgd_var_desc_obj.save()
-            except:
-                return Response({"errors": f"Could not delete variant type description '{var_desc}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(
+        try:
+            LGDVariantTypeDescription.objects.filter(lgd=lgd_obj, description=var_desc, is_deleted=0).update(is_deleted=1)
+        except:
+            return Response(
+                {"errors": f"Could not delete variant type description '{var_desc}' for ID '{stable_id}'"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            return Response(
                 {"message": f"Variant type description '{var_desc}' successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK)
 
-### Add data ###
-class LocusGenotypeDiseaseAddComment(BaseAdd):
+class LGDEditComment(APIView):
     """
-        Add a comment to a G2P record (LGD).
+        Add or delete a comment to a G2P record (LGD).
     """
+    http_method_names = ['post', 'update', 'options']
     serializer_class = LGDCommentSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     @transaction.atomic
     def post(self, request, stable_id):
         """
-            The post method links the current LGD record to the new comment.
+            The post method adds a comment.
+            It links the current LGD record to the new comment.
             We want to whole process to be done in one db transaction.
         """
         user = self.request.user
@@ -786,3 +766,99 @@ class LocusGenotypeDiseaseAddComment(BaseAdd):
             response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return response
+
+    @transaction.atomic
+    def update(self, request, stable_id):
+        """
+            This method deletes the LGD-comment
+        """
+        comment = request.data.get('comment')
+        user = request.user # TODO check if user has permission
+
+        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        try:
+            LGDComment.objects.filter(lgd=lgd_obj, comment=comment, is_deleted=0).update(is_deleted=1)
+        except:
+            return Response(
+                {"message": f"Cannot delete comment for ID '{stable_id}'"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            return Response(
+                    {"message": f"Comment successfully deleted for ID '{stable_id}'"},
+                    status=status.HTTP_200_OK)
+
+class LocusGenotypeDiseaseDelete(APIView):
+    """
+        Delete a LGD record
+    """
+    http_method_names = ['update', 'options']
+    serializer_class = LocusGenotypeDiseaseSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    @transaction.atomic
+    def update(self, request, stable_id):
+        """
+            This method deletes the LGD record.
+            The deletion does not remove the entry from the database, instead
+            it sets the flag 'is_deleted' to 1.
+        """
+        user = request.user # TODO check if user has permission
+
+        stable_id_obj = get_object_or_404(G2PStableID, stable_id=stable_id, is_deleted=0)
+        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id=stable_id_obj, is_deleted=0)
+
+        # Delete the LGD record
+        lgd_obj.is_deleted = 1
+        lgd_obj.save()
+
+        # Delete the stable id used by the LGD record
+        stable_id_obj.is_deleted = 1
+        stable_id_obj.is_live = 0
+        stable_id_obj.save()
+
+        # Delete lgd-cross cutting modifiers
+        LGDCrossCuttingModifier.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
+ 
+        # Delete comments
+        LGDComment.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
+
+        # Delete lgd-panels
+        LGDPanel.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
+
+        # Delete phenotypes
+        LGDPhenotype.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
+
+        # Delete phenotype summary
+        LGDPhenotypeSummary.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
+
+        # Delete variant types + comments
+        lgd_var_type_set = LGDVariantType.objects.filter(lgd=lgd_obj, is_deleted=0)
+
+        for lgd_var_type_obj in lgd_var_type_set:
+            # Check if the lgd-variant type has comments
+            # If so, delete the comments too
+            LGDVariantTypeComment.objects.filter(lgd_variant_type=lgd_var_type_obj, is_deleted=0).update(is_deleted=1)
+            lgd_var_type_obj.is_deleted = 1
+            lgd_var_type_obj.save()
+
+        # Delete variant type description
+        LGDVariantTypeDescription.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
+
+        # Delete variant consequences
+        LGDVariantGenccConsequence.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
+
+        # Delete molecular mechanism + evidence (if applicable)
+        lgd_mechanism_set = LGDMolecularMechanism.objects.filter(lgd=lgd_obj, is_deleted=0)
+
+        for lgd_mechanism_obj in lgd_mechanism_set:
+            LGDMolecularMechanismEvidence.objects.filter(molecular_mechanism=lgd_mechanism_obj, is_deleted=0).update(is_deleted=1)
+            lgd_mechanism_obj.is_deleted = 1
+            lgd_mechanism_obj.save()
+
+        # Delete publications
+        LGDPublication.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
+
+        return Response(
+                {"message": f"ID '{stable_id}' successfully deleted"},
+                status=status.HTTP_200_OK)

@@ -185,22 +185,14 @@ class LGDEditPhenotypes(APIView):
 
         # Fetch LGD-phenotype list
         # Each phenotype can be linked to several publications
-        lgd_pheno_set = LGDPhenotype.objects.filter(lgd=lgd_obj, phenotype=phenotype_obj, is_deleted=0)
-
-        if not lgd_pheno_set.exists():
-            return Response({"errors": f"Could not find phenotype '{accession}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Different rows mean the lgd-phenotype is associated with multiple publications
-        # We have to delete all rows
-        for lgd_pheno_obj in lgd_pheno_set:
-            lgd_pheno_obj.is_deleted = 1
-
-            try:
-                lgd_pheno_obj.save()
-            except:
-                return Response({"errors": f"Could not delete phenotype '{accession}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(
+        try:
+            LGDPhenotype.objects.filter(lgd=lgd_obj, phenotype=phenotype_obj, is_deleted=0).update(is_deleted=1)
+        except:
+            return Response(
+                {"errors": f"Could not delete phenotype '{accession}' for ID '{stable_id}'"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            return Response(
                 {"message": f"Phenotype '{accession}' successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK)
 
@@ -270,20 +262,14 @@ class LGDEditPhenotypeSummary(APIView):
         # Fetch LGD-phenotype summary list
         # Different rows mean the lgd-phenotype summary is associated with multiple publications
         # We have to delete all rows
-        lgd_pheno_summary_set = LGDPhenotypeSummary.objects.filter(lgd=lgd_obj, summary=summary, is_deleted=0)
-
-        if not lgd_pheno_summary_set.exists():
-            return Response({"errors": f"Could not find phenotype summary for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
-
-        for lgd_pheno_summary_obj in lgd_pheno_summary_set:
-            lgd_pheno_summary_obj.is_deleted = 1
-
-            try:
-                lgd_pheno_summary_obj.save()
-            except:
-                return Response({"errors": f"Could not delete phenotype summary for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(
+        try:
+            LGDPhenotypeSummary.objects.filter(lgd=lgd_obj, summary=summary, is_deleted=0).update(is_deleted=1)
+        except:
+            return Response(
+                {"errors": f"Could not delete phenotype summary for ID '{stable_id}'"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            return Response(
                 {"message": f"Phenotype summary successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK)
 

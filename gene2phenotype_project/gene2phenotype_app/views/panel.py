@@ -196,19 +196,13 @@ class LGDEditPanel(APIView):
             raise Http404(f"Cannot delete panel for ID '{stable_id}'")
 
         try:
-            lgd_panel_obj = LGDPanel.objects.get(lgd=lgd_obj, panel=panel_obj, is_deleted=0)
-        except LGDPanel.DoesNotExist:
-            return Response({"errors": f"Could not find panel '{panel}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Set lgd-panel to deleted
-        lgd_panel_obj.is_deleted = 1
-
-        try:
-            lgd_panel_obj.save()
+            LGDPanel.objects.filter(lgd=lgd_obj, panel=panel_obj, is_deleted=0).update(is_deleted=1)
         except:
-            return Response({"errors": f"Could not delete panel '{panel}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(
+            return Response(
+                {"errors": f"Could not delete panel '{panel}' for ID '{stable_id}'"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            return Response(
                 {"message": f"Panel '{panel}' successfully deleted for ID '{stable_id}'"},
                  status=status.HTTP_200_OK)
 

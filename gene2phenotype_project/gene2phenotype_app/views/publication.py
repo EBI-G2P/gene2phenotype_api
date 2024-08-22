@@ -224,7 +224,9 @@ class LGDEditPublications(APIView):
         try:
             lgd_publication_obj = LGDPublication.objects.get(lgd=lgd_obj, publication=publication_obj, is_deleted=0)
         except LGDPublication.DoesNotExist:
-            return Response({"errors": f"Could not find publication '{pmid}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"errors": f"Could not find publication '{pmid}' for ID '{stable_id}'"},
+                status=status.HTTP_404_NOT_FOUND)
 
         # Before deleting this publication check if LGD record is linked to other publications
         queryset_all = LGDPublication.objects.filter(lgd=lgd_publication_obj.lgd, is_deleted=0)
@@ -236,58 +238,66 @@ class LGDEditPublications(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Remove the publication from the LGD
         lgd_publication_obj.is_deleted = 1
 
         try:
             lgd_publication_obj.save()
         except:
-            return Response({"errors": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"errors": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # Check if this publication is being used in other tables (linked to the LGD record)
-        # lgd_phenotype
-        lgd_phenotype_set = LGDPhenotype.objects.filter(
-            lgd=lgd_publication_obj.lgd,
-            publication=lgd_publication_obj.publication,
-            is_deleted=0)
-        # different phenotypes can be linked to the same publication
-        for lgd_phenotype_obj in lgd_phenotype_set:
-            if(lgd_phenotype_obj):
-                lgd_phenotype_obj.is_deleted = 1
-                lgd_phenotype_obj.save()
+        # Delete publication from other tables
+        # lgd_phenotype - different phenotypes can be linked to the same publication
+        try:
+            LGDPhenotype.objects.filter(
+                lgd=lgd_publication_obj.lgd,
+                publication=lgd_publication_obj.publication,
+                is_deleted=0).update(is_deleted=1)
+        except:
+            return Response(
+                {"errors": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
         # lgd_phenotype_summary - the phenotype summary is directly associated with the LGD record
         # A LGD record should only have one phenotype summary but to make sure we delete everything correctly
         # we'll run the filter to catch all objects
-        lgd_phenotype_summary_set = LGDPhenotypeSummary.objects.filter(
-            lgd=lgd_publication_obj.lgd,
-            publication=lgd_publication_obj.publication,
-            is_deleted=0)
-        for lgd_phenotype_summary_obj in lgd_phenotype_summary_set:
-            if(lgd_phenotype_summary_obj):
-                lgd_phenotype_summary_obj.is_deleted = 1
-                lgd_phenotype_summary_obj.save()
+        try:
+            LGDPhenotypeSummary.objects.filter(
+                lgd=lgd_publication_obj.lgd,
+                publication=lgd_publication_obj.publication,
+                is_deleted=0).update(is_deleted=1)
+        except:
+            return Response(
+                {"errors": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
-        # lgd_variant_type
-        lgd_var_type_set = LGDVariantType.objects.filter(
-            lgd=lgd_publication_obj.lgd,
-            publication=lgd_publication_obj.publication,
-            is_deleted=0)
-        # different variant types can be linked to the same publication
-        for lgd_var_type_obj in lgd_var_type_set:
-            if(lgd_var_type_obj):
-                lgd_var_type_obj.is_deleted = 1
-                lgd_var_type_obj.save()
+        # lgd_variant_type - different variant types can be linked to the same publication
+        try:
+            LGDVariantType.objects.filter(
+                lgd=lgd_publication_obj.lgd,
+                publication=lgd_publication_obj.publication,
+                is_deleted=0).update(is_deleted=1)
+        except:
+            return Response(
+                {"errors": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
-        # lgd_variant_type_description
-        lgd_var_desc_set = LGDVariantTypeDescription.objects.filter(
-            lgd=lgd_publication_obj.lgd,
-            publication=lgd_publication_obj.publication,
-            is_deleted=0)
-        # different descriptions can be linked to the same publication
-        for lgd_var_desc_obj in lgd_var_desc_set:
-            if(lgd_var_desc_obj):
-                lgd_var_desc_obj.is_deleted = 1
-                lgd_var_desc_obj.save()
+        # lgd_variant_type_description - different descriptions can be linked to the same publication
+        try:
+            LGDVariantTypeDescription.objects.filter(
+                lgd=lgd_publication_obj.lgd,
+                publication=lgd_publication_obj.publication,
+                is_deleted=0).update(is_deleted=1)
+        except:
+            return Response(
+                {"errors": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
         # lgd_molecular_mechanism_evidence - only the molecular mechanism evidence is linked to a publication
         lgd_mechanism_obj = LGDMolecularMechanism.objects.get(
@@ -297,14 +307,10 @@ class LGDEditPublications(APIView):
         # If the mechanism support is evidence then get the list of LGDMolecularMechanismEvidence
         # Different types of evidence can be linked to the same publication
         if(lgd_mechanism_obj and lgd_mechanism_obj.mechanism_support.value == "evidence"):
-            lgd_mechanism_evidence_set = LGDMolecularMechanismEvidence.objects.filter(
+            LGDMolecularMechanismEvidence.objects.filter(
                 molecular_mechanism=lgd_mechanism_obj,
                 publication=lgd_publication_obj.publication,
-                is_deleted=0)
-
-            for lgd_mechanism_evidence_obj in lgd_mechanism_evidence_set:
-                lgd_mechanism_evidence_obj.is_deleted = 1
-                lgd_mechanism_evidence_obj.save()
+                is_deleted=0).update(is_deleted=1)
 
             # Check if LGDMolecularMechanism has evidence linked to other publications
             lgd_check_evidence_set = LGDMolecularMechanismEvidence.objects.filter(

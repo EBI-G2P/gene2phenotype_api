@@ -51,8 +51,10 @@ urlpatterns = [
     path('lgd/<str:stable_id>/variant_type/', views.LGDEditVariantTypes.as_view(), name="lgd_variant_type"),
     # Add or delete variant description(s) from LGD record. Actions: UPDATE (to delete one variant description), POST (to add multiple variant descriptions)
     path('lgd/<str:stable_id>/variant_description/', views.LGDEditVariantTypeDescriptions.as_view(), name="lgd_variant_description"),
-
-    path('lgd/<str:stable_id>/add_comment/', views.LocusGenotypeDiseaseAddComment.as_view(), name="lgd_add_comment"),
+    # Add or delete comment from LGD record. Actions: UPDATE (to delete comment), POST (to add comment)
+    path('lgd/<str:stable_id>/comment/', views.LGDEditComment.as_view(), name="lgd_comment"),
+    # Delete LGD record. Action: UPDATE
+    path('lgd/<str:stable_id>/delete/', views.LocusGenotypeDiseaseDelete.as_view(), name="lgd_delete"),
 
     ### Curation endpoints ###
     path('add/curation/', views.AddCurationData.as_view(), name="add_curation_data"),

@@ -5,6 +5,7 @@ from django.db import transaction
 from django.urls import get_resolver
 from rest_framework.decorators import api_view
 from gene2phenotype_app.models import User
+import re
 
 
 class BaseView(generics.ListAPIView):
@@ -78,11 +79,17 @@ def ListEndpoints(request):
             # Remove 'gene2phenotype/api/' from the urls
             pattern = pattern.replace("%(", "<").replace(")s", ">").replace("gene2phenotype/api/", "")
 
+            # To filter the endpoints to update LGD records
+            match = re.match(r"lgd\/\<stable_id\>\/\w+\/", pattern)
+
+            print(pattern,":",match)
+
             # Authenticated users have access to all endpoints
             # Non-authenticated users can only search data
-            if user_obj is not None and pattern != "":
+            if(user_obj is not None and pattern != ""):
                 list_urls.add(pattern)
-            elif user_obj is None and pattern != "" and "add" not in pattern and "curation" not in pattern:
+            elif(user_obj is None and pattern != "" and "add" not in pattern
+                 and "curation" not in pattern and not match):
                 list_urls.add(pattern)
 
     return Response({"endpoints": sorted(list_urls)})
