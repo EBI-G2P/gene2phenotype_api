@@ -106,8 +106,6 @@ config = ConfigParser()
 config.read(config_path)
 
 
-CSRF_TRUSTED_ORIGINS = ['http://localhost:5173']
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
