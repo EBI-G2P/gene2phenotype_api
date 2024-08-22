@@ -1,7 +1,7 @@
 from .base import BaseView, BaseAdd, BaseUpdate, ListEndpoints
 
-from .panel import (PanelList, PanelDetail, PanelRecordsSummary, PanelDownload,
-                    LGDDeletePanel)
+from .panel import (PanelList, PanelDetail, PanelRecordsSummary, 
+                    PanelDownload, LGDEditPanel)
 
 from .locus import LocusGene, LocusGeneSummary, GeneFunction
 
@@ -16,16 +16,12 @@ from .attrib import AttribTypeList, AttribList
 
 from .user import UserList
 
-from .publication import (PublicationDetail, AddPublication, LocusGenotypeDiseaseAddPublications,
-                          LGDDeletePublication)
+from .publication import PublicationDetail, AddPublication, LGDEditPublications
 
 from .locus_genotype_disease import (ListMolecularMechanisms, VariantTypesList,
-                                     LocusGenotypeDiseaseDetail, LocusGenotypeDiseaseAddPanel,
-                                     LocusGenotypeDiseaseAddComment, LGDAddVariantConsequences,
-                                     LocusGenotypeDiseaseAddCCM,
-                                     LGDAddVariantTypes, LGDAddVariantTypeDescriptions,
-                                     LGDUpdateConfidence, LGDDeleteCCM, LGDDeleteVariantConsequence,
-                                     LGDDeleteVariantType, LGDDeleteVariantTypeDesc)
+                                     LocusGenotypeDiseaseDetail, LGDEditCCM,
+                                     LocusGenotypeDiseaseAddComment, LGDEditVariantConsequences,
+                                     LGDEditVariantTypes, LGDEditVariantTypeDescriptions,
+                                     LGDUpdateConfidence)
 
-from .phenotype import (AddPhenotype, PhenotypeDetail, LGDDeletePhenotype, LGDDeletePhenotypeSummary,
-                        LocusGenotypeDiseaseAddPhenotypes, LGDAddPhenotypeSummary)
+from .phenotype import AddPhenotype, PhenotypeDetail, LGDEditPhenotypes, LGDEditPhenotypeSummary

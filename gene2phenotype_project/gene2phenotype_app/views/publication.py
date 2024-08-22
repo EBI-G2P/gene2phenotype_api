@@ -1,4 +1,5 @@
-from rest_framework import generics, permissions, status
+from rest_framework import permissions, status
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.db import transaction
@@ -105,17 +106,39 @@ class AddPublication(BaseAdd):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
 ### LGD-publication ###
-# Add data
-class LocusGenotypeDiseaseAddPublications(BaseAdd):
+# Add or delete data
+class LGDEditPublications(APIView):
     """
-        Add a list of publications to an existing G2P record (LGD).
-        When adding a publication it can also add:
-            - comment
-            - family info as reported in the publication
-    """
+        Add or delete lgd-publication.
 
-    serializer_class = LGDPublicationListSerializer
+        Add data (action: POST)
+            Add a list of publications to an existing G2P record (LGD).
+            When adding a publication it can also add:
+                - comment
+                - family info as reported in the publication
+        
+        Delete data (action: UPDATE)
+            Delete a publication associated with the LGD.
+            The deletion does not remove the entry from the database, instead
+            it sets the flag 'is_deleted' to 1.
+    """
+    http_method_names = ['post', 'update', 'options']
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_serializer_class(self, action):
+        """
+            Returns the appropriate serializer class based on the action.
+            To add data use LGDPublicationListSerializer: it accepts a list of publications.
+            To delete data use LGDPublicationSerializer: it accepts one publication.
+        """
+        action = action.lower()
+
+        if action == "post":
+            return LGDPublicationListSerializer
+        elif action == "update":
+            return LGDPublicationSerializer
+        else:
+            return None
 
     @transaction.atomic
     def post(self, request, stable_id):
@@ -136,7 +159,6 @@ class LocusGenotypeDiseaseAddPublications(BaseAdd):
                     ]
                 }
         """
-
         user = self.request.user
 
         if not user.is_authenticated:
@@ -185,46 +207,24 @@ class LocusGenotypeDiseaseAddPublications(BaseAdd):
 
         return response
 
-# Delete data
-class LGDDeletePublication(BaseUpdate):
-    """
-        Delete a publication associated with the LGD.
-        The deletion does not remove the entry from the database, instead
-        it sets the flag 'is_deleted' to 1.
-    """
-
-    http_method_names = ['put', 'options']
-    serializer_class = LGDPublicationSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
+    @transaction.atomic
+    def update(self, request, stable_id):
         """
-            Fetch the list of LGD-publication
+            This method deletes the LGD-publication.
+
+            Args:
+                { "pmid": 1234 }
         """
-        stable_id = self.kwargs['stable_id']
-        pmid = self.kwargs['pmid']
-        user = self.request.user # TODO check if user has permission
+        pmid = request.data.get("pmid", None)
+        user = request.user # TODO check if user has permission
 
         lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
         publication_obj = get_object_or_404(Publication, pmid=pmid)
 
-        queryset = LGDPublication.objects.filter(lgd=lgd_obj, publication=publication_obj, is_deleted=0)
-
-        if not queryset.exists():
-            self.handle_no_permission(pmid, stable_id)
-        else:
-            return queryset
-
-    @transaction.atomic
-    def update(self, request, *args, **kwargs):
-        """
-            This method 'deletes' the LGD-publication.
-        """
-        stable_id = self.kwargs['stable_id']
-        pmid = self.kwargs['pmid']
-
-        # Get G2P entry to be updated
-        lgd_publication_obj = self.get_queryset().first()
+        try:
+            lgd_publication_obj = LGDPublication.objects.get(lgd=lgd_obj, publication=publication_obj, is_deleted=0)
+        except LGDPublication.DoesNotExist:
+            return Response({"errors": f"Could not find publication '{pmid}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Before deleting this publication check if LGD record is linked to other publications
         queryset_all = LGDPublication.objects.filter(lgd=lgd_publication_obj.lgd, is_deleted=0)
@@ -234,7 +234,7 @@ class LGDDeletePublication(BaseUpdate):
             return Response(
                 {"errors": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST
-        )
+            )
 
         lgd_publication_obj.is_deleted = 1
 
@@ -320,3 +320,4 @@ class LGDDeletePublication(BaseUpdate):
         return Response(
                 {"message": f"Publication '{pmid}' successfully deleted for ID '{stable_id}'"},
                  status=status.HTTP_200_OK)
+

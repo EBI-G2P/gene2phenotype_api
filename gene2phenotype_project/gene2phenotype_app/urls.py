@@ -32,29 +32,27 @@ urlpatterns = [
     path('add/disease/', views.AddDisease.as_view(), name="add_disease"),
     path('add/phenotype/', views.AddPhenotype.as_view(), name="add_phenotype"),
     path('add/publication/', views.AddPublication.as_view(), name="add_publication"),
-    # Add data to the G2P record (LGD)
-    path('lgd/<str:stable_id>/add_panel/', views.LocusGenotypeDiseaseAddPanel.as_view(), name="lgd_add_panel"),
-    path('lgd/<str:stable_id>/add_comment/', views.LocusGenotypeDiseaseAddComment.as_view(), name="lgd_add_comment"),
-    path('lgd/<str:stable_id>/add_publications/', views.LocusGenotypeDiseaseAddPublications.as_view(), name="lgd_add_publications"),
-    path('lgd/<str:stable_id>/add_phenotypes/', views.LocusGenotypeDiseaseAddPhenotypes.as_view(), name="lgd_add_phenotypes"),
-    path('lgd/<str:stable_id>/add_phenotype_summary/', views.LGDAddPhenotypeSummary.as_view(), name="lgd_add_phenotype_summary"),
-    path('lgd/<str:stable_id>/add_variant_consequences/', views.LGDAddVariantConsequences.as_view(), name="lgd_add_var_consequences"),
-    path('lgd/<str:stable_id>/add_cross_cutting_modifiers/', views.LocusGenotypeDiseaseAddCCM.as_view(), name="lgd_add_ccm"),
-    path('lgd/<str:stable_id>/add_variant_types/', views.LGDAddVariantTypes.as_view(), name="lgd_add_variant_types"),
-    path('lgd/<str:stable_id>/add_variant_descriptions/', views.LGDAddVariantTypeDescriptions.as_view(), name="lgd_add_variant_descriptions"),
 
-    ### Endpoints to update data ###
+    ### Endpoints to update/add/delete the G2P record (LGD) ###
     path('lgd/<str:stable_id>/update_confidence/', views.LGDUpdateConfidence.as_view(), name="lgd_update_confidence"),
+    # Add or delete panel from LGD record. Actions: UPDATE (to delete one panel), POST (to add one panel)
+    path('lgd/<str:stable_id>/panel/', views.LGDEditPanel.as_view(), name="lgd_panel"),
+    # Add or delete publication(s) from LGD record. Actions: UPDATE (to delete one publication), POST (to add multiple publications)
+    path('lgd/<str:stable_id>/publication/', views.LGDEditPublications.as_view(), name="lgd_publication"),
+    # Add or delete phenotype(s) from LGD record. Actions: UPDATE (to delete one phenotype), POST (to add multiple phenotypes)
+    path('lgd/<str:stable_id>/phenotype/', views.LGDEditPhenotypes.as_view(), name="lgd_phenotype"),
+    # Add or delete a phenotype summary from LGD record. Actions: UPDATE (to delete data), POST (to add data)
+    path('lgd/<str:stable_id>/phenotype_summary/', views.LGDEditPhenotypeSummary.as_view(), name="lgd_phenotype_summary"),
+    # Add or delete variant consequence(s) from LGD record. Actions: UPDATE (to delete one consequence), POST (to add multiple consequences)
+    path('lgd/<str:stable_id>/variant_consequence/', views.LGDEditVariantConsequences.as_view(), name="lgd_var_consequence"),
+    # Add or delete cross cutting modifier(s) from LGD record. Actions: UPDATE (to delete one ccm), POST (to add multiple ccm)
+    path('lgd/<str:stable_id>/cross_cutting_modifier/', views.LGDEditCCM.as_view(), name="lgd_cross_cutting_modifier"),
+    # Add or delete variant type(s) from LGD record. Actions: UPDATE (to delete one variant type), POST (to add multiple variant types)
+    path('lgd/<str:stable_id>/variant_type/', views.LGDEditVariantTypes.as_view(), name="lgd_variant_type"),
+    # Add or delete variant description(s) from LGD record. Actions: UPDATE (to delete one variant description), POST (to add multiple variant descriptions)
+    path('lgd/<str:stable_id>/variant_description/', views.LGDEditVariantTypeDescriptions.as_view(), name="lgd_variant_description"),
 
-    ### Endpoints to delete data ###
-    path('lgd/<str:stable_id>/delete_lgd_publication/<int:pmid>/', views.LGDDeletePublication.as_view(), name="delete_lgd_publication"),
-    path('lgd/<str:stable_id>/delete_lgd_panel/<str:name>/', views.LGDDeletePanel.as_view(), name="delete_lgd_panel"),
-    path('lgd/<str:stable_id>/delete_lgd_cross_cutting_modifier/<str:ccm>/', views.LGDDeleteCCM.as_view(), name="delete_lgd_cross_cutting_modifier"),
-    path('lgd/<str:stable_id>/delete_lgd_variant_gencc_consequence/<str:consequence>/', views.LGDDeleteVariantConsequence.as_view(), name="delete_lgd_variant_gencc_consequence"),
-    path('lgd/<str:stable_id>/delete_lgd_variant_type/<str:type>/', views.LGDDeleteVariantType.as_view(), name="delete_lgd_variant_type"),
-    path('lgd/<str:stable_id>/delete_lgd_variant_type_desc/<str:var_desc>/', views.LGDDeleteVariantTypeDesc.as_view(), name="delete_lgd_variant_type_desc"),
-    path('lgd/<str:stable_id>/delete_lgd_phenotype/<str:accession>/', views.LGDDeletePhenotype.as_view(), name="delete_lgd_Phenotype"),
-    path('lgd/<str:stable_id>/delete_lgd_phenotype_summary/<str:summary>/', views.LGDDeletePhenotypeSummary.as_view(), name="delete_lgd_phenotype_summary"),
+    path('lgd/<str:stable_id>/add_comment/', views.LocusGenotypeDiseaseAddComment.as_view(), name="lgd_add_comment"),
 
     ### Curation endpoints ###
     path('add/curation/', views.AddCurationData.as_view(), name="add_curation_data"),

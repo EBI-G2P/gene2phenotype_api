@@ -1,5 +1,6 @@
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from django.http import Http404
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -7,7 +8,7 @@ from django.db import transaction
 
 
 from gene2phenotype_app.serializers import (UserSerializer, LocusGenotypeDiseaseSerializer,
-                                            LGDPanelSerializer, LGDCrossCuttingModifierSerializer,
+                                            LGDCrossCuttingModifierSerializer,
                                             LGDCommentSerializer, LGDVariantConsequenceListSerializer,
                                             LGDVariantGenCCConsequenceSerializer, LGDCrossCuttingModifierListSerializer,
                                             LGDVariantTypeListSerializer, LGDVariantTypeSerializer,
@@ -96,7 +97,7 @@ class VariantTypesList(generics.ListAPIView):
                          'protein_changing_variants': list_protein,
                          'other_variants': list})
 
-class LocusGenotypeDiseaseDetail(BaseView):
+class LocusGenotypeDiseaseDetail(generics.ListAPIView):
     """
         Display all data for a specific G2P stable ID.
 
@@ -135,7 +136,7 @@ class LocusGenotypeDiseaseDetail(BaseView):
             queryset = queryset.filter(~Q(confidence__value='refuted') & ~Q(confidence__value='disputed'))
 
         if not queryset.exists():
-            self.handle_no_permission('Entry', stable_id)
+            raise Http404(f"No matching Entry found for: {stable_id}")
         else:
             return queryset
 
@@ -200,108 +201,35 @@ class LGDUpdateConfidence(generics.UpdateAPIView):
         else:
             return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-### Add data ###
-class LocusGenotypeDiseaseAddPanel(BaseAdd):
+class LGDEditVariantConsequences(APIView):
     """
-        Add panel to an existing G2P record (LGD).
-        A single record can be linked to more than one panel.
+        Add or delete lgd-variant consequence(s).
+
+        Add data (action: POST)
+            Add a list of variant GenCC consequences to an existing G2P record (LGD).
+
+        Delete data (action: UPDATE)
+            Delete a variant GenCC consequence associated with the LGD.
+            The deletion does not remove the entry from the database, instead
+            it sets the flag 'is_deleted' to 1.
     """
-    serializer_class = LGDPanelSerializer
+    http_method_names = ['post', 'update', 'options']
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
-    @transaction.atomic
-    def post(self, request, stable_id):
+    def get_serializer_class(self, action):
         """
-            The post method links the current LGD record to the panel.
-            We want to whole process to be done in one db transaction.
+            Returns the appropriate serializer class based on the action.
+            To add data use LGDVariantConsequenceListSerializer: it accepts a list of consequences.
+            To delete data use LGDVariantGenCCConsequenceSerializer: it accepts one consequence.
         """
-        user = self.request.user
+        action = action.lower()
 
-        if not user.is_authenticated:
-            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-
-        # Check if user can update panel
-        user_obj = get_object_or_404(User, email=user)
-        serializer = UserSerializer(user_obj, context={"user" : user})
-        user_panel_list_lower = [panel.lower() for panel in serializer.panels_names(user_obj)]
-
-        panel_name_input = request.data.get("name", None)
-
-        if panel_name_input is None:
-            return Response({"message": f"Please enter a panel name"}, status=status.HTTP_400_BAD_REQUEST)
-
-        if panel_name_input.lower() not in user_panel_list_lower:
-            return Response({"message": f"No permission to update panel {panel_name_input}"}, status=status.HTTP_403_FORBIDDEN)
-
-        lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
-
-        serializer_class = LGDPanelSerializer(data={"name": panel_name_input}, context={"lgd": lgd})
-
-        if serializer_class.is_valid():
-            serializer_class.save()
-            response = Response({"message": "Panel added to the G2P entry successfully."}, status=status.HTTP_200_OK)
+        if action == "post":
+            return LGDVariantConsequenceListSerializer
+        elif action == "update":
+            return LGDVariantGenCCConsequenceSerializer
         else:
-            response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        return response
-
-class LocusGenotypeDiseaseAddComment(BaseAdd):
-    """
-        Add a comment to a G2P record (LGD).
-    """
-    serializer_class = LGDCommentSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    @transaction.atomic
-    def post(self, request, stable_id):
-        """
-            The post method links the current LGD record to the new comment.
-            We want to whole process to be done in one db transaction.
-        """
-        user = self.request.user
-
-        if not user.is_authenticated:
-            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-
-        # Check if G2P ID exists
-        lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
-
-        # Check if user can edit this LGD entry
-        permission = 0
-        lgd_serializer = LocusGenotypeDiseaseSerializer(lgd)
-        lgd_panels = lgd_serializer.get_panels(lgd)
-        # Example of lgd_panels:
-        # [{'name': 'DD', 'description': 'Developmental disorders'}, {'name': 'Eye', 'description': 'Eye disorders'}]
-        user_obj = get_object_or_404(User, email=user)
-        user_serializer = UserSerializer(user_obj, context={"user": user})
-        for panel_name in lgd_panels:
-            if user_serializer.check_panel_permission(panel_name["name"]):
-                permission = 1
-
-        if(not permission):
-            return Response({"message": f"No permission to edit {stable_id}"}, status=status.HTTP_403_FORBIDDEN)
-
-        comment = request.data.get("comment", None)
-        is_public = request.data.get("is_public", None)
-
-        serializer_class = LGDCommentSerializer(data={"comment": comment, "is_public": is_public},
-                                                context={"lgd": lgd, "user": user})
-
-        if serializer_class.is_valid():
-            serializer_class.save()
-            response = Response({"message": "Comment added to the G2P entry successfully."}, status=status.HTTP_200_OK)
-        else:
-            response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        return response
-
-class LGDAddVariantConsequences(BaseAdd):
-    """
-        Add a list of variant GenCC consequences to an existing G2P record (LGD).
-    """
-
-    serializer_class = LGDVariantConsequenceListSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+            return None
 
     @transaction.atomic
     def post(self, request, stable_id):
@@ -370,13 +298,198 @@ class LGDAddVariantConsequences(BaseAdd):
 
         return response
 
-class LGDAddVariantTypes(BaseAdd):
-    """
-        Add a list of variant types to an existing G2P record (LGD).
-    """
+    @transaction.atomic
+    def update(self, request, stable_id):
+        """
+            This method deletes the LGD-variant gencc consequence.
+        """
+        consequence = request.data.get('consequence').replace("_", " ")
+        user = self.request.user # TODO check if user has permission
 
-    serializer_class = LGDVariantTypeListSerializer
+        # Fecth G2P record to update
+        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # Get variant gencc consequence value from ontology_term
+        try:
+            consequence_obj = OntologyTerm.objects.get(
+                term = consequence,
+                group_type__value = "variant_type"
+            )
+        except OntologyTerm.DoesNotExist:
+            raise Http404(f"Invalid variant consequence '{consequence}'")
+
+        try:
+            lgd_consequence_obj = LGDVariantGenccConsequence.objects.get(lgd=lgd_obj, variant_consequence=consequence_obj, is_deleted=0)
+        except LGDVariantGenccConsequence.DoesNotExist:
+            return Response(
+                {"errors": f"Could not find variant consequence '{consequence}' for ID '{stable_id}'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        lgd_consequence_obj.is_deleted = 1
+
+        try:
+            lgd_consequence_obj.save()
+        except:
+            return Response({"errors": f"Could not delete variant consequence '{consequence}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+                {"message": f"Variant consequence '{consequence}' successfully deleted for ID '{stable_id}'"},
+                 status=status.HTTP_200_OK)
+
+class LGDEditCCM(APIView):
+    """
+        Add or delete LGD-cross cutting modifier(s).
+
+        Add data (action: POST)
+            Add a list of cross cutting modifiers to an existing G2P record (LGD).
+
+        Delete data (action: UPDATE)
+            Delete a cross cutting modifier associated with the LGD.
+            The deletion does not remove the entry from the database, instead
+            it sets the flag 'is_deleted' to 1.
+    """
+    http_method_names = ['post', 'update', 'options']
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_serializer_class(self, action):
+        """
+            Returns the appropriate serializer class based on the action.
+            To add data use LGDCrossCuttingModifierListSerializer: it accepts a list of ccm.
+            To delete data use LGDCrossCuttingModifierSerializer: it accepts one ccm.
+        """
+        action = action.lower()
+
+        if action == "post":
+            return LGDCrossCuttingModifierListSerializer
+        elif action == "update":
+            return LGDCrossCuttingModifierSerializer
+        else:
+            return None
+
+    @transaction.atomic
+    def post(self, request, stable_id):
+        """
+            The post method creates an association between the current LGD record and a list of cross cutting modifiers.
+            We want to whole process to be done in one db transaction.
+
+            Args:
+                (dict) request
+
+                Example:
+                    {
+                        "cross_cutting_modifiers": [{"term": "typically mosaic"}]
+                    }
+        """
+        user = self.request.user
+        if not user.is_authenticated:
+            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # LGDCrossCuttingModifierListSerializer accepts a list of cross cutting modifiers
+        serializer_list = LGDCrossCuttingModifierListSerializer(data=request.data)
+
+        if serializer_list.is_valid():
+            ccm_data = serializer_list.validated_data.get('cross_cutting_modifiers')
+
+            # Check if list of consequences is empty
+            if(not ccm_data):
+                response = Response(
+                    {"message": "Empty cross cutting modifier. Please provide valid data."},
+                     status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Add each cross cutting modifier from the input list
+            for ccm in ccm_data:
+                # The data is created in LGDCrossCuttingModifierSerializer
+                # Input the expected data format
+                serializer_class = LGDCrossCuttingModifierSerializer(
+                    data={"term": ccm["ccm"]["value"]},
+                    context={"lgd": lgd}
+                )
+
+                if serializer_class.is_valid():
+                    serializer_class.save()
+                    response = Response(
+                        {"message": "Cross cutting modifier added to the G2P entry successfully."},
+                        status=status.HTTP_200_OK
+                    )
+                else:
+                    response = Response(
+                        {"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    )
+
+        else:
+            response = Response(
+                {"errors": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        return response
+
+    @transaction.atomic
+    def update(self, request, stable_id):
+        """
+            This method deletes the LGD-cross cutting modifier.
+        """
+        ccm = request.data.get('ccm')
+        user = request.user # TODO check if user has permission
+
+        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        try:
+            ccm_obj = Attrib.objects.get(
+                value = ccm,
+                type__code = 'cross_cutting_modifier'
+            )
+        except Attrib.DoesNotExist:
+            raise Http404(f"Invalid cross cutting modifier '{ccm}'")
+
+        try:
+            lgd_ccm_obj = LGDCrossCuttingModifier.objects.get(lgd=lgd_obj, ccm=ccm_obj, is_deleted=0)
+        except LGDCrossCuttingModifier.DoesNotExist:
+            return Response({"errors": f"Could not find cross cutting modifier '{ccm}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
+
+        lgd_ccm_obj.is_deleted = 1
+
+        try:
+            lgd_ccm_obj.save()
+        except:
+            return Response({"errors": f"Could not delete cross cutting modifier '{ccm}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+                {"message": f"Cross cutting modifier '{ccm}' successfully deleted for ID '{stable_id}'"},
+                 status=status.HTTP_200_OK)
+
+class LGDEditVariantTypes(APIView):
+    """
+        Add or delete LGD-variant type(s).
+
+        Add data (action: POST)
+            Add a list of variant types to an existing G2P record (LGD).
+
+        Delete data (action: UPDATE)
+            Delete a variant type associated with the LGD.
+            The deletion does not remove the entry from the database, instead
+            it sets the flag 'is_deleted' to 1.
+    """
+    http_method_names = ['post', 'update', 'options']
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_serializer_class(self, action):
+        """
+            Returns the appropriate serializer class based on the action.
+            To add data use LGDVariantTypeListSerializer: it accepts a list of variant types.
+            To delete data use LGDVariantTypeSerializer: it accepts one variant type.
+        """
+        action = action.lower()
+
+        if action == "post":
+            return LGDVariantTypeListSerializer
+        elif action == "update":
+            return LGDVariantTypeSerializer
+        else:
+            return None
 
     @transaction.atomic
     def post(self, request, stable_id):
@@ -451,82 +564,83 @@ class LGDAddVariantTypes(BaseAdd):
 
         return response
 
-class LocusGenotypeDiseaseAddCCM(BaseAdd):
-    """
-        Add a list of cross cutting modifiers to an existing G2P record (LGD).
-    """
-
-    serializer_class = LGDCrossCuttingModifierListSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
     @transaction.atomic
-    def post(self, request, stable_id):
+    def update(self, request, stable_id):
         """
-            The post method creates an association between the current LGD record and a list of cross cutting modifiers.
-            We want to whole process to be done in one db transaction.
-
-            Args:
-                (dict) request
-
-                Example:
-                    {
-                        "cross_cutting_modifiers": [{"term": "typically mosaic"}]
-                    }
+            This method deletes the LGD-variant type
         """
+        variant_type = request.data.get('type')
+        user = request.user # TODO check if user has permission
 
-        user = self.request.user
-        if not user.is_authenticated:
-            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
 
-        lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
-
-        # LGDCrossCuttingModifierListSerializer accepts a list of cross cutting modifiers
-        serializer_list = LGDCrossCuttingModifierListSerializer(data=request.data)
-
-        if serializer_list.is_valid():
-            ccm_data = serializer_list.validated_data.get('cross_cutting_modifiers')
-
-            # Check if list of consequences is empty
-            if(not ccm_data):
-                response = Response(
-                    {"message": "Empty cross cutting modifier. Please provide valid data."},
-                     status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # Add each cross cutting modifier from the input list
-            for ccm in ccm_data:
-                # The data is created in LGDCrossCuttingModifierSerializer
-                # Input the expected data format
-                serializer_class = LGDCrossCuttingModifierSerializer(
-                    data={"term": ccm["ccm"]["value"]},
-                    context={"lgd": lgd}
-                )
-
-                if serializer_class.is_valid():
-                    serializer_class.save()
-                    response = Response(
-                        {"message": "Cross cutting modifier added to the G2P entry successfully."},
-                        status=status.HTTP_200_OK
-                    )
-                else:
-                    response = Response(
-                        {"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                    )
-
-        else:
-            response = Response(
-                {"errors": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        # Get variant type value from ontology_term
+        try:
+            var_type_obj = OntologyTerm.objects.get(
+                term = variant_type,
+                group_type__value = "variant_type"
             )
+        except OntologyTerm.DoesNotExist:
+            raise Http404(f"Invalid variant type '{variant_type}'")
 
-        return response
+        # Get entries to be deleted
+        # Different rows mean the lgd-variant type is associated with multiple publications
+        # We have to delete all rows
+        lgd_var_type_set = LGDVariantType.objects.filter(lgd=lgd_obj, variant_type_ot=var_type_obj, is_deleted=0)
 
-class LGDAddVariantTypeDescriptions(BaseAdd):
+        if not lgd_var_type_set.exists():
+            return Response({"errors": f"Could not find variant type '{variant_type}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
+
+        for lgd_var_type_obj in lgd_var_type_set:
+            # Check if the lgd-variant type has comments
+            # If so, delete the comments too
+            comments_set = LGDVariantTypeComment.objects.filter(lgd_variant_type=lgd_var_type_obj, is_deleted=0)
+
+            if comments_set.exists():
+                for comment in comments_set:
+                    comment.is_deleted = 1
+                    comment.save()
+
+            lgd_var_type_obj.is_deleted = 1
+
+            try:
+                lgd_var_type_obj.save()
+            except:
+                return Response({"errors": f"Could not delete variant type '{variant_type}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+                {"message": f"Variant type '{variant_type}' successfully deleted for ID '{stable_id}'"},
+                status=status.HTTP_200_OK)
+
+class LGDEditVariantTypeDescriptions(APIView):
     """
-        Add a list of variant description (HGVS) to an existing G2P record (LGD).
-    """
+        Add or delete LGD-variant type(s)
 
-    serializer_class = LGDVariantTypeDescriptionListSerializer
+        Add data (action: POST)
+            Add a list of variant description (HGVS) to an existing G2P record (LGD).
+
+        Delete data (action: UPDATE)
+            Delete a variant type description associated with the LGD.
+            The deletion does not remove the entry from the database, instead
+            it sets the flag 'is_deleted' to 1.
+    """
+    http_method_names = ['post', 'update', 'options']
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_serializer_class(self, action):
+        """
+            Returns the appropriate serializer class based on the action.
+            To add data use LGDVariantTypeDescriptionListSerializer: it accepts a list of variant type descriptions.
+            To delete data use LGDVariantTypeDescriptionSerializer: it accepts one variant type description.
+        """
+        action = action.lower()
+
+        if action == "post":
+            return LGDVariantTypeDescriptionListSerializer
+        elif action == "update":
+            return LGDVariantTypeDescriptionSerializer
+        else:
+            return None
 
     @transaction.atomic
     def post(self, request, stable_id):
@@ -593,235 +707,22 @@ class LGDAddVariantTypeDescriptions(BaseAdd):
 
         return response
 
-### Delete data ###
-class LGDDeleteCCM(BaseUpdate):
-    """
-        Delete a cross cutting modifier associated with the LGD.
-        The deletion does not remove the entry from the database, instead
-        it sets the flag 'is_deleted' to 1.
-    """
-
-    http_method_names = ['put', 'options']
-    serializer_class = LGDCrossCuttingModifierSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        """
-            Fetch the list of LGD-cross cutting modifiers
-        """
-        stable_id = self.kwargs['stable_id']
-        ccm = self.kwargs['ccm']
-        user = self.request.user # TODO check if user has permission
-
-        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
-
-        try:
-            ccm_obj = Attrib.objects.get(
-                value = ccm,
-                type__code = 'cross_cutting_modifier'
-            )
-        except Attrib.DoesNotExist:
-            raise Http404(f"Invalid cross cutting modifier '{ccm}'")
-
-        queryset = LGDCrossCuttingModifier.objects.filter(lgd=lgd_obj, ccm=ccm_obj, is_deleted=0)
-
-        if not queryset.exists():
-            self.handle_no_permission(ccm, stable_id)
-        else:
-            return queryset
-
     @transaction.atomic
-    def update(self, request, *args, **kwargs):
-        """
-            This method deletes the LGD-cross cutting modifier.
-        """
-        stable_id = self.kwargs['stable_id']
-        ccm = self.kwargs['ccm']
-
-        # Get G2P entry to be updated
-        lgd_ccm_obj = self.get_queryset().first()
-
-        lgd_ccm_obj.is_deleted = 1
-
-        try:
-            lgd_ccm_obj.save()
-        except:
-            return Response({"errors": f"Could not delete cross cutting modifier '{ccm}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(
-                {"message": f"Cross cutting modifier '{ccm}' successfully deleted for ID '{stable_id}'"},
-                 status=status.HTTP_200_OK)
-
-class LGDDeleteVariantConsequence(BaseUpdate):
-    """
-        Delete a variant GenCC consequence associated with the LGD.
-        The deletion does not remove the entry from the database, instead
-        it sets the flag 'is_deleted' to 1.
-    """
-
-    http_method_names = ['put', 'options']
-    serializer_class = LGDVariantGenCCConsequenceSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        """
-            Fetch the list of LGD-variant GenCC consequences
-        """
-        stable_id = self.kwargs['stable_id']
-        consequence = self.kwargs['consequence'].replace("_", " ")
-        user = self.request.user # TODO check if user has permission
-
-        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
-
-        # Get variant gencc consequence value from ontology_term
-        try:
-            consequence_obj = OntologyTerm.objects.get(
-                term = consequence,
-                group_type__value = "variant_type"
-            )
-        except OntologyTerm.DoesNotExist:
-            raise Http404(f"Invalid variant consequence '{consequence}'")
-
-        queryset = LGDVariantGenccConsequence.objects.filter(lgd=lgd_obj, variant_consequence=consequence_obj, is_deleted=0)
-
-        if not queryset.exists():
-            self.handle_no_permission(consequence, stable_id)
-        else:
-            return queryset
-
-    @transaction.atomic
-    def update(self, request, *args, **kwargs):
-        """
-            This method deletes the LGD-variant gencc consequence.
-        """
-        stable_id = self.kwargs['stable_id']
-        consequence = self.kwargs['consequence']
-
-        # Get G2P entry to be updated
-        lgd_consequence_obj = self.get_queryset().first()
-
-        lgd_consequence_obj.is_deleted = 1
-
-        try:
-            lgd_consequence_obj.save()
-        except:
-            return Response({"errors": f"Could not delete variant GenCC consequence '{consequence}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(
-                {"message": f"Variant GenCC consequence '{consequence}' successfully deleted for ID '{stable_id}'"},
-                 status=status.HTTP_200_OK)
-
-class LGDDeleteVariantType(BaseUpdate):
-    """
-        Delete a variant type associated with the LGD.
-        The deletion does not remove the entry from the database, instead
-        it sets the flag 'is_deleted' to 1.
-    """
-
-    http_method_names = ['put', 'options']
-    serializer_class = LGDVariantTypeSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        """
-            Fetch the list of LGD-variant types
-        """
-        stable_id = self.kwargs['stable_id']
-        variant_type = self.kwargs['type']
-        user = self.request.user # TODO check if user has permission
-
-        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
-
-        # Get variant type value from ontology_term
-        try:
-            var_type_obj = OntologyTerm.objects.get(
-                term = variant_type,
-                group_type__value = "variant_type"
-            )
-        except OntologyTerm.DoesNotExist:
-            raise Http404(f"Invalid variant type '{variant_type}'")
-
-        queryset = LGDVariantType.objects.filter(lgd=lgd_obj, variant_type_ot=var_type_obj, is_deleted=0)
-
-        if not queryset.exists():
-            self.handle_no_permission(variant_type, stable_id)
-        else:
-            return queryset
-
-    @transaction.atomic
-    def update(self, request, *args, **kwargs):
-        """
-            This method deletes the LGD-variant type
-        """
-        stable_id = self.kwargs['stable_id']
-        variant_type = self.kwargs['type']
-
-        # Get G2P entries to be deleted
-        # Different rows mean the lgd-variant type is associated with multiple publications
-        # We have to delete all rows
-        lgd_var_type_set = self.get_queryset()
-
-        for lgd_var_type_obj in lgd_var_type_set:
-            # Check if the lgd-variant type has comments
-            # If so, delete the comments too
-            comments_set = LGDVariantTypeComment.objects.filter(lgd_variant_type=lgd_var_type_obj, is_deleted=0)
-
-            if comments_set.exists():
-                for comment in comments_set:
-                    comment.is_deleted = 1
-                    comment.save()
-
-            lgd_var_type_obj.is_deleted = 1
-
-            try:
-                lgd_var_type_obj.save()
-            except:
-                return Response({"errors": f"Could not delete variant type '{variant_type}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(
-                {"message": f"Variant type '{variant_type}' successfully deleted for ID '{stable_id}'"},
-                status=status.HTTP_200_OK)
-
-class LGDDeleteVariantTypeDesc(BaseUpdate):
-    """
-        Delete a variant type description associated with the LGD.
-        The deletion does not remove the entry from the database, instead
-        it sets the flag 'is_deleted' to 1.
-    """
-
-    http_method_names = ['put', 'options']
-    serializer_class = LGDVariantTypeDescriptionSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        """
-            Fetch the list of LGD-variant type descriptions
-        """
-        stable_id = self.kwargs['stable_id']
-        var_desc = self.kwargs['var_desc']
-        user = self.request.user # TODO check if user has permission
-
-        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
-
-        queryset = LGDVariantTypeDescription.objects.filter(lgd=lgd_obj, description=var_desc, is_deleted=0)
-
-        if not queryset.exists():
-            self.handle_no_permission(var_desc, stable_id)
-        else:
-            return queryset
-
-    @transaction.atomic
-    def update(self, request, *args, **kwargs):
+    def update(self, request, stable_id):
         """
             This method deletes the LGD-variant type descriptions
         """
-        stable_id = self.kwargs['stable_id']
-        var_desc = self.kwargs['var_desc']
+        var_desc = request.data.get('var_desc')
+        user = request.user # TODO check if user has permission
 
-        # Get G2P entries to be deleted
+        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+        # Get entries to be deleted
         # Different rows mean the lgd-variant type description is associated with multiple publications
         # We have to delete all rows
-        lgd_var_desc_set = self.get_queryset()
+        lgd_var_desc_set = LGDVariantTypeDescription.objects.filter(lgd=lgd_obj, description=var_desc, is_deleted=0)
+
+        if not lgd_var_desc_set.exists():
+            return Response({"errors": f"Could not find variant type description '{var_desc}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
 
         for lgd_var_desc_obj in lgd_var_desc_set:
             lgd_var_desc_obj.is_deleted = 1
@@ -834,3 +735,54 @@ class LGDDeleteVariantTypeDesc(BaseUpdate):
         return Response(
                 {"message": f"Variant type description '{var_desc}' successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK)
+
+### Add data ###
+class LocusGenotypeDiseaseAddComment(BaseAdd):
+    """
+        Add a comment to a G2P record (LGD).
+    """
+    serializer_class = LGDCommentSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    @transaction.atomic
+    def post(self, request, stable_id):
+        """
+            The post method links the current LGD record to the new comment.
+            We want to whole process to be done in one db transaction.
+        """
+        user = self.request.user
+
+        if not user.is_authenticated:
+            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        # Check if G2P ID exists
+        lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # Check if user can edit this LGD entry
+        permission = 0
+        lgd_serializer = LocusGenotypeDiseaseSerializer(lgd)
+        lgd_panels = lgd_serializer.get_panels(lgd)
+        # Example of lgd_panels:
+        # [{'name': 'DD', 'description': 'Developmental disorders'}, {'name': 'Eye', 'description': 'Eye disorders'}]
+        user_obj = get_object_or_404(User, email=user)
+        user_serializer = UserSerializer(user_obj, context={"user": user})
+        for panel_name in lgd_panels:
+            if user_serializer.check_panel_permission(panel_name["name"]):
+                permission = 1
+
+        if(not permission):
+            return Response({"message": f"No permission to edit {stable_id}"}, status=status.HTTP_403_FORBIDDEN)
+
+        comment = request.data.get("comment", None)
+        is_public = request.data.get("is_public", None)
+
+        serializer_class = LGDCommentSerializer(data={"comment": comment, "is_public": is_public},
+                                                context={"lgd": lgd, "user": user})
+
+        if serializer_class.is_valid():
+            serializer_class.save()
+            response = Response({"message": "Comment added to the G2P entry successfully."}, status=status.HTTP_200_OK)
+        else:
+            response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return response

@@ -1,6 +1,7 @@
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
+from rest_framework.views import APIView
 from django.http import Http404
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -76,24 +77,37 @@ def PhenotypeDetail(request, hpo_list):
     return response
 
 
-### Add data ###
-class AddPhenotype(BaseAdd):
+### LGD-phenotype ###
+# Add or delete data
+class LGDEditPhenotypes(APIView):
     """
-        Add new phenotype.
-        The create method is in the PhenotypeSerializer.
+        Add or delete lgd-phenotype.
 
-        Called by: endpoint add/phenotype/
+        Add data (action: POST)
+            Add a list of phenotypes to an existing G2P record (LGD).
+
+        Delete data (action: UPDATE)
+            Delete a phenotype associated with the LGD.
+            The deletion does not remove the entry from the database, instead
+            it sets the flag 'is_deleted' to 1.
     """
-    serializer_class = PhenotypeOntologyTermSerializer
+    http_method_names = ['post', 'update', 'options']
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
-class LocusGenotypeDiseaseAddPhenotypes(BaseAdd):
-    """
-        Add a list of phenotypes to an existing G2P record (LGD).
-    """
+    def get_serializer_class(self, action):
+        """
+            Returns the appropriate serializer class based on the action.
+            To add data use LGDPhenotypeListSerializer: it accepts a list of phenotypes.
+            To delete data use LGDPhenotypeSerializer: it accepts one phenotype.
+        """
+        action = action.lower()
 
-    serializer_class = LGDPhenotypeListSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+        if action == "post":
+            return LGDPhenotypeListSerializer
+        elif action == "update":
+            return LGDPhenotypeSerializer
+        else:
+            return None
 
     @transaction.atomic
     def post(self, request, stable_id):
@@ -112,7 +126,6 @@ class LocusGenotypeDiseaseAddPhenotypes(BaseAdd):
                         }]
                     }
         """
-
         user = self.request.user
 
         if not user.is_authenticated:
@@ -154,12 +167,56 @@ class LocusGenotypeDiseaseAddPhenotypes(BaseAdd):
 
         return response
 
+    @transaction.atomic
+    def update(self, request, stable_id):
+        """
+            This method deletes the LGD-phenotypes
+        """
+        accession = request.data.get('accession')
+        user = self.request.user # TODO check if user has permission
 
-class LGDAddPhenotypeSummary(BaseAdd):
-    """
-        Add a phenotype summary to an existing G2P record (LGD).
-    """
+        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
 
+        # Fetch phenotype from Ontology Term
+        try:
+            phenotype_obj = OntologyTerm.objects.get(accession=accession)
+        except OntologyTerm.DoesNotExist:
+            raise Http404(f"Cannot find phenotype for accession '{accession}'")
+
+        # Fetch LGD-phenotype list
+        # Each phenotype can be linked to several publications
+        lgd_pheno_set = LGDPhenotype.objects.filter(lgd=lgd_obj, phenotype=phenotype_obj, is_deleted=0)
+
+        if not lgd_pheno_set.exists():
+            return Response({"errors": f"Could not find phenotype '{accession}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Different rows mean the lgd-phenotype is associated with multiple publications
+        # We have to delete all rows
+        for lgd_pheno_obj in lgd_pheno_set:
+            lgd_pheno_obj.is_deleted = 1
+
+            try:
+                lgd_pheno_obj.save()
+            except:
+                return Response({"errors": f"Could not delete phenotype '{accession}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+                {"message": f"Phenotype '{accession}' successfully deleted for ID '{stable_id}'"},
+                status=status.HTTP_200_OK)
+
+class LGDEditPhenotypeSummary(APIView):
+    """
+        Add or delete a LGD-phenotype summary
+
+        Add data (action: POST)
+            Add a phenotype summary to an existing G2P record (LGD).
+
+        Delete data (action: UPDATE)
+            Delete the phenotype summary associated with the LGD.
+            The deletion does not remove the entry from the database, instead
+            it sets the flag 'is_deleted' to 1.
+    """
+    http_method_names = ['post', 'update', 'options']
     serializer_class = LGDPhenotypeSummarySerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
@@ -182,7 +239,6 @@ class LGDAddPhenotypeSummary(BaseAdd):
                         "publication": [1, 12345]
                     }
         """
-
         user = self.request.user
 
         if not user.is_authenticated:
@@ -201,111 +257,23 @@ class LGDAddPhenotypeSummary(BaseAdd):
 
         return response
 
-
-### Delete data ###
-class LGDDeletePhenotype(BaseUpdate):
-    """
-        Delete a phenotype associated with the LGD.
-        The deletion does not remove the entry from the database, instead
-        it sets the flag 'is_deleted' to 1.
-    """
-
-    http_method_names = ['put', 'options']
-    serializer_class = LGDPhenotypeSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        """
-            Fetch the list of LGD-phenotypes
-        """
-        stable_id = self.kwargs['stable_id']
-        accession = self.kwargs['accession']
-        user = self.request.user # TODO check if user has permission
-
-        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
-
-        # Fetch phenotype from Ontology Term
-        try:
-            phenotype_obj = OntologyTerm.objects.get(accession=accession)
-
-        except OntologyTerm.DoesNotExist:
-            raise Http404(f"Cannot find phenotype for accession '{accession}'")
-
-        # Fetch LGD-phenotype list
-        # Each phenotype can be linked to several publications
-        queryset = LGDPhenotype.objects.filter(lgd=lgd_obj, phenotype=phenotype_obj, is_deleted=0)
-
-        if not queryset.exists():
-            self.handle_no_permission(accession, stable_id)
-        else:
-            return queryset
-
     @transaction.atomic
-    def update(self, request, *args, **kwargs):
-        """
-            This method deletes the LGD-phenotypes
-        """
-        stable_id = self.kwargs['stable_id']
-        accession = self.kwargs['accession']
-
-        # Get G2P entries to be deleted
-        # Different rows mean the lgd-phenotype is associated with multiple publications
-        # We have to delete all rows
-        lgd_pheno_set = self.get_queryset()
-
-        for lgd_pheno_obj in lgd_pheno_set:
-            lgd_pheno_obj.is_deleted = 1
-
-            try:
-                lgd_pheno_obj.save()
-            except:
-                return Response({"errors": f"Could not delete phenotype '{accession}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(
-                {"message": f"Phenotype '{accession}' successfully deleted for ID '{stable_id}'"},
-                status=status.HTTP_200_OK)
-
-class LGDDeletePhenotypeSummary(BaseUpdate):
-    """
-        Delete the phenotype summary associated with the LGD.
-        The deletion does not remove the entry from the database, instead
-        it sets the flag 'is_deleted' to 1.
-    """
-
-    http_method_names = ['put', 'options']
-    serializer_class = LGDPhenotypeSummarySerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        """
-            Fetch the LGD-phenotype summary
-        """
-        stable_id = self.kwargs['stable_id']
-        summary = self.kwargs['summary']
-        user = self.request.user # TODO check if user has permission
-
-        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
-
-        # Fetch LGD-phenotype summary list
-        # Each summary can be linked to several publications
-        queryset = LGDPhenotypeSummary.objects.filter(lgd=lgd_obj, summary=summary, is_deleted=0)
-
-        if not queryset.exists():
-            self.handle_no_permission(summary, stable_id)
-        else:
-            return queryset
-
-    @transaction.atomic
-    def update(self, request, *args, **kwargs):
+    def update(self, request, stable_id):
         """
             This method deletes the LGD-phenotype summary
         """
-        stable_id = self.kwargs['stable_id']
+        summary = request.data.get('summary')
 
         # Get G2P entries to be deleted
+        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # Fetch LGD-phenotype summary list
         # Different rows mean the lgd-phenotype summary is associated with multiple publications
         # We have to delete all rows
-        lgd_pheno_summary_set = self.get_queryset()
+        lgd_pheno_summary_set = LGDPhenotypeSummary.objects.filter(lgd=lgd_obj, summary=summary, is_deleted=0)
+
+        if not lgd_pheno_summary_set.exists():
+            return Response({"errors": f"Could not find phenotype summary for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
 
         for lgd_pheno_summary_obj in lgd_pheno_summary_set:
             lgd_pheno_summary_obj.is_deleted = 1
@@ -318,3 +286,14 @@ class LGDDeletePhenotypeSummary(BaseUpdate):
         return Response(
                 {"message": f"Phenotype summary successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK)
+
+### Add phenotype ###
+class AddPhenotype(BaseAdd):
+    """
+        Add new phenotype.
+        The create method is in the PhenotypeSerializer.
+
+        Called by: endpoint add/phenotype/
+    """
+    serializer_class = PhenotypeOntologyTermSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
