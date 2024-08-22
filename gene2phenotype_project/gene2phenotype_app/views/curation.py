@@ -33,6 +33,8 @@ class AddCurationData(BaseAdd):
             Returns:
                 A Response object with appropriate status and message.
         """
+        user = self.request.user
+
         json_file_path = settings.BASE_DIR.joinpath("gene2phenotype_app", "utils", "curation_schema.json")
         try:
             with open(json_file_path, 'r') as file:
@@ -51,7 +53,7 @@ class AddCurationData(BaseAdd):
         except jsonschema.exceptions.ValidationError as e:
             return Response({"message": "JSON data does not follow the required format. Required format is" + str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = self.serializer_class(data=request.data, context={'user': self.request.user})
+        serializer = self.serializer_class(data=request.data, context={'user': user})
 
         if serializer.is_valid():
             instance = serializer.save()
@@ -188,6 +190,8 @@ class UpdateCurationData(generics.UpdateAPIView):
             return queryset
 
     def update(self, request, *args, **kwargs):
+        user = self.request.user
+ 
         # Get curation entry to be updated
         curation_obj = self.get_queryset().first()
 
@@ -213,7 +217,7 @@ class UpdateCurationData(generics.UpdateAPIView):
         serializer = CurationDataSerializer(
             curation_obj,
             data=request.data,
-            context={'user': self.request.user,'session_name': curation_obj.session_name}
+            context={'user': user,'session_name': curation_obj.session_name}
         )
 
         if serializer.is_valid():
@@ -221,7 +225,7 @@ class UpdateCurationData(generics.UpdateAPIView):
             return Response({"message": f"Data updated successfully for session name '{instance.session_name}'"}, status=status.HTTP_200_OK)
 
         else:
-            return Response({"message": "Failed to update data", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 class PublishRecord(APIView):
     """
@@ -270,3 +274,66 @@ class PublishRecord(APIView):
             return Response({
                 "message": f"Curation data not found for ID '{stable_id}'"
                 }, status=status.HTTP_404_NOT_FOUND)
+
+class DeleteCurationData(generics.DestroyAPIView):
+    """
+        Deletes a curation record.
+        Removes entry from curation table, it also deletes the G2P ID (set 'is_deleted' to 1).
+
+        Args:
+            (string) stable_id : G2P ID associated with entry to be deleted
+
+        Returns:
+                Response message
+    """
+
+    http_method_names = ['delete', 'head']
+    serializer_class = CurationDataSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        stable_id = self.kwargs['stable_id']
+        user = self.request.user
+
+        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
+        # Get the entry for this user
+        queryset = CurationData.objects.filter(stable_id=g2p_stable_id, user__email=user)
+
+        if not queryset.exists():
+            return None
+        else:
+            return queryset
+
+    def perform_destroy(self, instance, stable_id):
+        """
+            Overwrite method perform_destroy()
+            This method deletes the G2P ID (set 'is_deleted' to 1) and calls the delete() method
+            to remove the record from the curation table.
+        """
+        # Delete the G2P ID linked to this instance
+        # to delete we set the flag 'is_deleted' to 1
+        g2p_obj = instance.first().stable_id
+        g2p_obj.is_deleted = 1
+        g2p_obj.save()
+
+        # Delete data
+        instance.delete()
+
+    def destroy(self, request, *args, **kwargs):
+        """
+            Delete a curation instance.
+        """
+        # Get curation entry to be deleted
+        curation_obj = self.get_queryset()
+        stable_id = self.kwargs['stable_id']
+
+        if not curation_obj or len(curation_obj) == 0:
+            return Response({"error": f"Cannot find ID {stable_id}"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            # delete record + G2P ID
+            self.perform_destroy(curation_obj, stable_id)
+        except:
+            return Response({"message": f"Cannot delete data for ID {stable_id}"}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response({"message": f"Data deleted successfully for ID {stable_id}"}, status=status.HTTP_204_NO_CONTENT)

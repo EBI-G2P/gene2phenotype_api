@@ -1,7 +1,8 @@
 from rest_framework import serializers
 import re
 
-from ..models import (OntologyTerm, Source, LGDPhenotype, Publication)
+from ..models import (OntologyTerm, Source, LGDPhenotype, Publication,
+                      LGDPhenotypeSummary)
 
 from ..utils import validate_phenotype
 
@@ -10,6 +11,10 @@ class PhenotypeOntologyTermSerializer(serializers.ModelSerializer):
     """
         Serializer for the OntologyTerm model.
         The phenotypes are represented in OntologyTerm model.
+
+        Called by:
+                - AddPhenotype()
+                - LGDPhenotypeSerializer()
     """
 
     name = serializers.CharField(source="term", read_only=True)
@@ -129,3 +134,74 @@ class LGDPhenotypeListSerializer(serializers.Serializer):
         Called by: LocusGenotypeDiseaseAddPhenotypes()
     """
     phenotypes = LGDPhenotypeSerializer(many=True)
+
+class LGDPhenotypeSummarySerializer(serializers.ModelSerializer):
+    """
+        Serializer for the LGDPhenotypeSummary model.
+        It represents the summary of the phenotypes reported in a publication 
+        for a G2P record.
+
+        Called by:
+    """
+
+    summary = serializers.CharField()
+    publication = serializers.ListField(
+        child=serializers.IntegerField()
+    )
+
+    def create(self, validated_data):
+        """
+            Create an entry LGDPhenotypeSummary.
+
+            Input example:
+                    {
+                        "summary": "This is a summary",
+                        "publication": [1, 12345]
+                    }
+
+            Returns:
+                    LGDPhenotypeSummary object
+        """
+        lgd = self.context['lgd']
+
+        summary = validated_data.get("summary")
+        list_pmids = validated_data.get("publication")
+
+        # Create a LGD phenotype summary for each pmid
+        for pmid in list_pmids:
+            try:
+                # Get publication object
+                # The G2P entry (LGD) is linked to publications
+                # When we add a phenotype summary the publications are
+                # already supposed to be inserted into the db 
+                publication_obj = Publication.objects.get(pmid=pmid)
+
+                # Check if LGD phenotype summary already exists
+                try:
+                    lgd_phenotype_summary = LGDPhenotypeSummary.objects.get(
+                        lgd = lgd,
+                        summary = summary,
+                        publication = publication_obj
+                    )
+                except LGDPhenotypeSummary.DoesNotExist:
+                    lgd_phenotype_summary = LGDPhenotypeSummary.objects.create(
+                        lgd = lgd,
+                        summary = summary,
+                        is_deleted = 0,
+                        publication = publication_obj
+                    )
+                else:
+                    # The LGD phenotype summary can be deleted
+                    # If it is deleted then update to not deleted
+                    if lgd_phenotype_summary.is_deleted != 0:
+                        lgd_phenotype_summary.is_deleted = 0
+                        lgd_phenotype_summary.save()
+
+            except Publication.DoesNotExist:
+                raise serializers.ValidationError({"message": f"Problem fetching the phenotype source 'HPO'"})
+
+        return 1
+
+    class Meta:
+        model = LGDPhenotypeSummary
+        fields = ['summary', 'publication']
