@@ -17,7 +17,7 @@ from gene2phenotype_app.models import (Panel, User, LocusGenotypeDisease,
 
 from gene2phenotype_app.serializers import PanelDetailSerializer, LGDPanelSerializer, UserSerializer
 
-from .base import BaseView, BaseUpdate, BaseAdd
+from .base import BaseView
 
 
 class PanelList(generics.ListAPIView):
@@ -270,15 +270,74 @@ def PanelDownload(request, name):
             lgd_varianconsequence_data[data['lgd__id']].append(data['variant_consequence__term'])
 
     # Preload molecular mechanism
-    lgd_mechanism_data = {} # key = lgd_id; value = molecular mechanism value
+    lgd_mechanism_data = {} # key = lgd_id; {value = molecular mechanism value, support = mechanism support ('inferred' or 'evidence')}
     queryset_lgd_mechanism = LGDMolecularMechanism.objects.filter(
-        is_deleted=0).select_related('lgd__id','mechanism__value').values('lgd__id', 'mechanism__value')
-    
+        is_deleted=0).select_related('lgd__id','mechanism__value', 'mechanism_support__value'
+        ).prefetch_related('lgd_molecular_mechanism_evidence').values(
+            'lgd__id',
+            'mechanism__value',
+            'mechanism_support__value',
+            'lgdmolecularmechanismevidence__evidence__subtype',
+            'lgdmolecularmechanismevidence__evidence__value',
+            'lgdmolecularmechanismevidence__publication__pmid')
+
+    evidence_data = {}
+
+    # First collect the evidence data for each lgd_id
+    for data in queryset_lgd_mechanism:
+        if data['mechanism_support__value'] == "evidence":
+            mechanism_value = data['mechanism__value']
+            subtype = data['lgdmolecularmechanismevidence__evidence__subtype']
+            value = data['lgdmolecularmechanismevidence__evidence__value']
+            pmid = data['lgdmolecularmechanismevidence__publication__pmid']
+
+            if data['lgd__id'] not in evidence_data:
+                evidence_data[data['lgd__id']] = {
+                    mechanism_value: [{"subtype": subtype, "value": value, "pmid" :pmid}]
+                }
+            else:
+                # this should be the most common scenario
+                if mechanism_value in evidence_data[data['lgd__id']]:
+                    evidence_data[data['lgd__id']][mechanism_value].append({"subtype": subtype, "value": value, "pmid":pmid})
+                else:
+                    # if lgd_id has multiple mechanisms
+                    evidence_data[data['lgd__id']].update({
+                        mechanism_value: [{subtype: 1, value: 1, pmid :pmid}]
+                    })
+
+    # Prepare final dict of mechanisms + evidence (if applicable)
     for data in queryset_lgd_mechanism:
         if data['lgd__id'] not in lgd_mechanism_data:
-            lgd_mechanism_data[data['lgd__id']] = [data['mechanism__value']]
+            # check if there is evidence
+            if data['lgd__id'] in evidence_data:
+                evidence = evidence_data[data['lgd__id']][data['mechanism__value']]
+                lgd_mechanism_data[data['lgd__id']] = [{
+                    "value": data['mechanism__value'],
+                    "support": data['mechanism_support__value'],
+                    "evidence": evidence
+                }]
+
+            else:
+                lgd_mechanism_data[data['lgd__id']] = [{
+                    "value": data['mechanism__value'],
+                    "support": data['mechanism_support__value']
+                }]
+
         else:
-            lgd_mechanism_data[data['lgd__id']].append(data['mechanism__value'])
+            # check if there is evidence
+            if data['lgd__id'] in evidence_data:
+                evidence = evidence_data[data['lgd__id']][data['mechanism__value']]
+                lgd_mechanism_data[data['lgd__id']].append({
+                    "value": data['mechanism__value'],
+                    "support": data['mechanism_support__value'],
+                    "evidence": evidence
+                })
+
+            else:
+                lgd_mechanism_data[data['lgd__id']].append({
+                    "value": data['mechanism__value'],
+                    "support": data['mechanism_support__value']
+                })
 
     # Preload phenotypes
     lgd_phenotype_data = {} # key = lgd_id; value = phenotype accession
@@ -328,6 +387,7 @@ def PanelDownload(request, name):
             "variant consequence",
             "variant type",
             "molecular mechanism",
+            "molecular mechanism evidence",
             "phenotypes",
             "publications",
             "cross cutting modifier",
@@ -394,6 +454,7 @@ def PanelDownload(request, name):
             variant_types = ""
             variant_consequences = ""
             molecular_mechanism = ""
+            molecular_mechanism_evidence = ""
             phenotypes = ""
             publications = ""
             ccm = ""
@@ -421,7 +482,16 @@ def PanelDownload(request, name):
 
             # Get preloaded molecular mechanism for this g2p entry
             if lgd_id in lgd_mechanism_data:
-                molecular_mechanism = ', '.join(lgd_mechanism_data[lgd_id])
+                final_mechanisms = set()
+                mechanism_evidence = set()
+                for mechanism_data in lgd_mechanism_data[lgd_id]:
+                    final_mechanisms.add(f"{mechanism_data["value"]} ({mechanism_data["support"]})")
+
+                    if "evidence" in mechanism_data:
+                        for element in mechanism_data["evidence"]:
+                            mechanism_evidence.add(f"{element["subtype"]}:{element["value"]}:{element["pmid"]}")
+                molecular_mechanism = ", ".join(final_mechanisms)
+                molecular_mechanism_evidence = ", ".join(mechanism_evidence)
 
             # Get preloaded phenotypes for this g2p entry
             if lgd_id in lgd_phenotype_data:
@@ -448,6 +518,7 @@ def PanelDownload(request, name):
                 variant_consequences,
                 variant_types,
                 molecular_mechanism,
+                molecular_mechanism_evidence,
                 phenotypes,
                 publications,
                 ccm,
