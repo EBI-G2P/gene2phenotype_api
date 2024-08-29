@@ -173,27 +173,9 @@ class LGDEditPublications(APIView):
             publications_data = serializer_list.validated_data.get('publications')
 
             for publication in publications_data:
-                # the comment and family info are inputted in the context
-                comment = None
-                families = None
-
-                # get extra data: comments, families
-                # "comment": {"comment": "comment text", "is_public": 1},
-                # "families": {
-                #               "families": 5, 
-                #               "consanguinity": "", 
-                #               "ancestries": "", 
-                #               "affected_individuals": 5
-                #              }
-                if "comment" in publication:
-                    comment = publication.get("comment")
-
-                if "families" in publication:
-                    families = publication.get("families")
-
                 serializer_class = LGDPublicationSerializer(
                     data=publication,
-                    context={"lgd": lgd, "user": user, "comment": comment, "families": families}
+                    context={"lgd": lgd, "user": user}
                 )
 
                 if serializer_class.is_valid():
