@@ -82,8 +82,6 @@ def ListEndpoints(request):
             # To filter the endpoints to update LGD records
             match = re.match(r"lgd\/\<stable_id\>\/\w+\/", pattern)
 
-            print(pattern,":",match)
-
             # Authenticated users have access to all endpoints
             # Non-authenticated users can only search data
             if(user_obj is not None and pattern != ""):

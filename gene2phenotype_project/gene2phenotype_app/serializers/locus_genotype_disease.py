@@ -348,13 +348,11 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             for publication_data in publications_list:
                 # PublicationSerializer is instantiated with the publication data and context
                 lgd_publication_serializer = LGDPublicationSerializer(
-                    # the data argument ignores fields not included in the serializer
-                    # to pass extra fields we can use the context
+                    # the data argument accepts all the publication data (pmid, families, comment)
+                    # pass the user info and the lgd obj as context
                     data={'publication':publication_data},
                     context={
                         'lgd': lgd_obj,
-                        'comment': publication_data['comment'],
-                        'families': publication_data['families'],
                         'user': self.context.get('user')
                         }
                 )
