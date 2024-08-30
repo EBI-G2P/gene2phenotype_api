@@ -718,6 +718,12 @@ class LGDEditVariantTypeDescriptions(APIView):
 class LGDEditComment(APIView):
     """
         Add or delete a comment to a G2P record (LGD).
+
+        Example:
+                {
+                    "comment": "This is a comment",
+                    "is_public": 1
+                }
     """
     http_method_names = ['post', 'update', 'options']
     serializer_class = LGDCommentSerializer
