@@ -496,12 +496,28 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
         except Attrib.DoesNotExist:
             raise serializers.ValidationError({"message": f"Invalid support value '{support}'"})
 
-        lgd_var_consequence_obj = LGDVariantGenccConsequence.objects.get_or_create(
+        # Check if the same term is already linked to the LGD record
+        try:
+            lgd_var_consequence_obj = LGDVariantGenccConsequence.objects.get(
+                variant_consequence = consequence_obj,
+                lgd = lgd
+            )
+        except LGDVariantGenccConsequence.DoesNotExist:
+            lgd_var_consequence_obj = LGDVariantGenccConsequence.objects.create(
                 variant_consequence = consequence_obj,
                 support = support_obj,
                 lgd = lgd,
                 is_deleted = 0
-            )
+        )
+        else:
+            # Check if existing entry is deleted
+            # If not deleted throw error 'entry already exists'
+            if(lgd_var_consequence_obj.is_deleted == 0):
+                raise serializers.ValidationError({"message": f"'{term}' already linked to '{lgd.stable_id.stable_id}'"})
+            # If deleted then update to not deleted
+            else:
+                lgd_var_consequence_obj.is_deleted = 0
+                lgd_var_consequence_obj.save()
 
         return lgd_var_consequence_obj
 
