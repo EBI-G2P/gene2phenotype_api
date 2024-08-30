@@ -304,9 +304,19 @@ class LGDEditVariantConsequences(APIView):
     def update(self, request, stable_id):
         """
             This method deletes the LGD-variant gencc consequence.
+
+            Example: {"consequence": "altered_gene_product_level"}
         """
-        consequence = request.data.get('consequence').replace("_", " ")
+        consequence = request.data.get('consequence')
         user = self.request.user # TODO check if user has permission
+
+        if consequence is None:
+            return Response(
+                {"errors": f"Empty variant consequence"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        consequence = consequence.replace("_", " ")
 
         # Fecth G2P record to update
         lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
