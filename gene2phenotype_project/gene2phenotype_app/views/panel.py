@@ -483,7 +483,9 @@ def PanelDownload(request, name):
                     final_mechanisms = set()
                     mechanism_evidence = set()
                     for mechanism_data in lgd_mechanism_data[lgd_id]:
-                        final_mechanisms.add(f"{mechanism_data["value"]} ({mechanism_data["support"]})")
+                        m_value = mechanism_data["value"]
+                        m_support = mechanism_data["support"]
+                        final_mechanisms.add(f"{m_value} ({m_support})")
 
                         if "evidence" in mechanism_data:
                             for element in mechanism_data["evidence"]:
