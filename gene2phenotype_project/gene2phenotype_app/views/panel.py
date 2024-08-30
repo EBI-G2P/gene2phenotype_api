@@ -239,6 +239,7 @@ def PanelDownload(request, name):
 
     # Get date to attach to filename
     date_now = datetime.today().strftime('%Y-%m-%d')
+    filename_final = f"G2P_{name}_{date_now}.csv.gz"
 
     # Preload data attached to the g2p entries
     # Preload variant types
@@ -421,7 +422,8 @@ def PanelDownload(request, name):
                     extra_data_dict[g2p_id]['locus_ids'].append(data['locus__locusidentifier__identifier'])
 
         with tempfile.NamedTemporaryFile(suffix='.csv.gz', delete=False) as temp_file:
-            filename = f"G2P_{name}_{date_now}.csv.gz"
+            # Use the tmp file name
+            filename = temp_file.name
 
             # Prepare to write to output file
             with gzip.open(filename, "wt") as fh:
@@ -536,7 +538,7 @@ def PanelDownload(request, name):
     response = HttpResponse(
         open(filename, 'rb'),
         content_type="text/gzip",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        headers={"Content-Disposition": f'attachment; filename="{filename_final}"'}
     )
 
     # clean temp file
