@@ -489,7 +489,10 @@ def PanelDownload(request, name):
 
                         if "evidence" in mechanism_data:
                             for element in mechanism_data["evidence"]:
-                                mechanism_evidence.add(f"{element["subtype"]}:{element["value"]}:{element["pmid"]}")
+                                m_subtype = element["subtype"]
+                                e_value = element["value"]
+                                e_pmid = element["pmid"]
+                                mechanism_evidence.add(f"{m_subtype}:{e_value}:{e_pmid}")
                     molecular_mechanism = "; ".join(final_mechanisms)
                     molecular_mechanism_evidence = "; ".join(mechanism_evidence)
 
