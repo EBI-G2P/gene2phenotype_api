@@ -39,12 +39,12 @@ class UserSerializer(serializers.ModelSerializer):
         user_login = self.context.get('user')
         if user_login and user_login.is_authenticated:
             user_panels = UserPanel.objects.filter(
-                user=id
+                user=id, is_deleted=0
                 ).select_related('panel'
                                  ).values_list('panel__description', flat=True)
         else:
             user_panels = UserPanel.objects.filter(
-                user=id, panel__is_visible=1
+                user=id, is_deleted=0, panel__is_visible=1
                 ).select_related('panel'
                                  ).values_list('panel__description', flat=True)
 
@@ -61,44 +61,44 @@ class UserSerializer(serializers.ModelSerializer):
         user_login = self.context.get('user')
         if user_login and user_login.is_authenticated:
             user_panels = UserPanel.objects.filter(
-                user=id
+                user=id, is_deleted=0
                 ).select_related('panel'
                                  ).values_list('panel__name', flat=True)
         else:
             user_panels = UserPanel.objects.filter(
-                user=id, panel__is_visible=1
+                user=id, is_deleted=0, panel__is_visible=1
                 ).select_related('panel'
                                  ).values_list('panel__name', flat=True)
 
         return user_panels
 
-    def check_panel_permission(self, panel_name):
+    def check_panel_permission(self, panels):
         """
-            Check if user has permission to edit the panel.
+            Check if user has permission to edit the panels.
 
             Args:
                     self: user
-                    panel_name: name of the panel
+                    panels: a list of panels 
 
             Returns:
-                        1 if user has permission to edit
-                        0 if user does not have permission to edit
+                        True if user has permission to edit all panels from the list
+                        False if user does not have permission to edit at least one panel
         """
-        permission = 0
         user_login = self.context.get('user')
 
         if user_login and user_login.is_authenticated:
-            try:
-                user_panel_obj = UserPanel.objects.get(
-                    user = user_login.id,
-                    panel__name = panel_name
-                )
-            except UserPanel.DoesNotExist:
-                permission = 0
-            else:
-                permission = 1
+            for panel in panels:
+                panel_name = panel.get("name")
+                try:
+                    user_panel_obj = UserPanel.objects.get(
+                        user = user_login.id,
+                        panel__name = panel_name,
+                        is_deleted = 0
+                    )
+                except UserPanel.DoesNotExist:
+                    return False
 
-        return permission
+        return True
 
     class Meta:
         model = User

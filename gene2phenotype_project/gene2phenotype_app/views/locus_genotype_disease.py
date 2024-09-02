@@ -779,18 +779,14 @@ class LGDEditComment(APIView):
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
 
         # Check if user can edit this LGD entry
-        permission = 0
         lgd_serializer = LocusGenotypeDiseaseSerializer(lgd)
         lgd_panels = lgd_serializer.get_panels(lgd)
         # Example of lgd_panels:
         # [{'name': 'DD', 'description': 'Developmental disorders'}, {'name': 'Eye', 'description': 'Eye disorders'}]
         user_obj = get_object_or_404(User, email=user)
         user_serializer = UserSerializer(user_obj, context={"user": user})
-        for panel_name in lgd_panels:
-            if user_serializer.check_panel_permission(panel_name["name"]):
-                permission = 1
 
-        if(not permission):
+        if not user_serializer.check_panel_permission(lgd_panels):
             return Response({"message": f"No permission to edit {stable_id}"}, status=status.HTTP_403_FORBIDDEN)
 
         comment = request.data.get("comment", None)
