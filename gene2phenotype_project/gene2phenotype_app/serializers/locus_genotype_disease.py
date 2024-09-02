@@ -6,7 +6,7 @@ from ..models import (Panel, Attrib,
                      LGDPanel, LocusGenotypeDisease, LGDVariantGenccConsequence,
                      LGDCrossCuttingModifier, LGDPublication,
                      LGDPhenotype, LGDVariantType, Locus,
-                     LGDComment, LGDVariantTypeComment,
+                     LGDComment, LGDVariantTypeComment, User,
                      LGDMolecularMechanism, LGDMolecularMechanismEvidence,
                      OntologyTerm, Publication, LGDPhenotypeSummary,
                      LGDVariantTypeDescription, CVMolecularMechanism)
@@ -213,8 +213,21 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             Comments can be public or private. Private comments can only be
             seen by curators.
         """
-        # TODO check if comment is public
-        lgd_comments = LGDComment.objects.filter(lgd_id=id, is_deleted=0).prefetch_related()
+        # Check if user is authenticated
+        user = self.context.get("user")
+        try:
+            User.objects.get(email=user)
+            authenticated_user = 1
+        except User.DoesNotExist:
+            authenticated_user = 0
+
+        # If user is authenticated return all comments
+        # otherwise return only the public comments
+        if authenticated_user == 1:
+            lgd_comments = LGDComment.objects.filter(lgd_id=id, is_deleted=0).prefetch_related()
+        else:
+            lgd_comments = LGDComment.objects.filter(lgd_id=id, is_deleted=0, is_public=1).prefetch_related()
+
         data = []
         for comment in lgd_comments:
             text = { 'text':comment.comment,
@@ -726,7 +739,8 @@ class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
         """
 
         lgd = self.context['lgd']
-        term = validate_data.get("ccm")["value"]
+        term_tmp = validate_data.get("ccm")["value"]
+        term = term_tmp.replace("_", " ")
 
         # Get cross cutting modifier from attrib
         try:

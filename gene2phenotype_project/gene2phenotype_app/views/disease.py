@@ -74,7 +74,7 @@ class DiseaseDetail(BaseView):
         Display information for a specific disease.
 
         Args:
-            (str) disease id: disease name or ontology ID (Mondo)
+            (str) disease id: disease name or ontology ID (Mondo, OMIM)
 
         Returns:
             Disease object
@@ -85,8 +85,8 @@ class DiseaseDetail(BaseView):
     def get_queryset(self):
         id = self.kwargs['id']
 
-        # Fetch disease by MONDO ID
-        if id.startswith('MONDO'):
+        # Fetch disease by MONDO ID or by OMIM ID (only digits)
+        if id.startswith('MONDO') or id.isdigit():
             ontology_term = OntologyTerm.objects.filter(accession=id)
 
             if not ontology_term.exists():

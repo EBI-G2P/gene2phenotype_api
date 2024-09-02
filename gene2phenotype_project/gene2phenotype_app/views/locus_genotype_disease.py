@@ -305,9 +305,16 @@ class LGDEditVariantConsequences(APIView):
         """
             This method deletes the LGD-variant gencc consequence.
 
-            Example: {"consequence": "altered_gene_product_level"}
+            Example: {"variant_consequence": "altered_gene_product_level"}
         """
-        consequence = request.data.get('consequence')
+        # Check if input has the expected value
+        if "variant_consequence" not in request.data or request.data.get('variant_consequence') == "":
+            return Response(
+                {"errors": f"Empty variant consequence. Please provide the 'variant_consequence'."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        consequence = request.data.get('variant_consequence')
         user = self.request.user # TODO check if user has permission
 
         if consequence is None:
@@ -436,8 +443,14 @@ class LGDEditCCM(APIView):
     def update(self, request, stable_id):
         """
             This method deletes the LGD-cross cutting modifier.
+            Example:
+                    { "term": "typically mosaic" }
         """
-        ccm = request.data.get('ccm')
+        if "term" not in request.data or request.data.get('term') == "":
+            return Response({"errors": f"Empty cross cutting modifier. Please provide the 'term'."}, status=status.HTTP_400_BAD_REQUEST)
+
+        ccm_tmp = request.data.get('term')
+        ccm = ccm_tmp.replace("_", " ")
         user = request.user # TODO check if user has permission
 
         lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
@@ -567,9 +580,15 @@ class LGDEditVariantTypes(APIView):
     @transaction.atomic
     def update(self, request, stable_id):
         """
-            This method deletes the LGD-variant type
+            This method deletes the LGD-variant type.
+
+            Example: { "secondary_type": "stop_gained" }
         """
-        variant_type = request.data.get('type')
+        # Check if the input has the expected data
+        if "secondary_type" not in request.data or request.data.get('secondary_type') == "":
+            return Response({"errors": f"Empty variant type. Please provide the 'secondary_type'."}, status=status.HTTP_400_BAD_REQUEST)
+
+        variant_type = request.data.get('secondary_type')
         user = request.user # TODO check if user has permission
 
         lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
@@ -655,7 +674,6 @@ class LGDEditVariantTypeDescriptions(APIView):
                         }]
                     }
         """
-
         user = self.request.user
         if not user.is_authenticated:
             return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
@@ -705,9 +723,15 @@ class LGDEditVariantTypeDescriptions(APIView):
     @transaction.atomic
     def update(self, request, stable_id):
         """
-            This method deletes the LGD-variant type descriptions
+            This method deletes the LGD-variant type descriptions.
+
+            Example: { "description": "NM_000546.6:c.794T>C (p.Leu265Pro)" }
         """
-        var_desc = request.data.get('var_desc')
+        # Check if the input has the expected data
+        if "description" not in request.data or request.data.get('description') == "":
+            return Response({"errors": f"Empty variant type description. Please provide the 'description'."}, status=status.HTTP_400_BAD_REQUEST)
+
+        var_desc = request.data.get('description')
         user = request.user # TODO check if user has permission
 
         lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
@@ -786,7 +810,9 @@ class LGDEditComment(APIView):
     @transaction.atomic
     def update(self, request, stable_id):
         """
-            This method deletes the LGD-comment
+            This method deletes the LGD-comment.
+
+            Example: { "comment": "This is a comment" }
         """
         comment = request.data.get('comment')
         user = request.user # TODO check if user has permission
