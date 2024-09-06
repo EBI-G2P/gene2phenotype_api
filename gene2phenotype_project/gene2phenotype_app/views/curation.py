@@ -57,7 +57,10 @@ class AddCurationData(BaseAdd):
 
         if serializer.is_valid():
             instance = serializer.save()
-            return Response({"message": f"Data saved successfully for session name '{instance.session_name}'"}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": f"Data saved successfully for session name '{instance.session_name}'",
+                 "stableId": instance.stable_id.stable_id},
+                status=status.HTTP_200_OK)
         else:
             return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
