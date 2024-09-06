@@ -83,6 +83,40 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
+    """
+        Serializer for creating a new user.
+
+        This serializer is used to validate and create a new user object. It extends 
+        `ModelSerializer` to automatically handle the fields related to the `User` model.
+
+        Methods:
+            - create(validated_data): 
+                Overrides the default `create` method to create a user using 
+                `create_user` method, which ensures that the password is hashed 
+                before storing it in the database.
+
+        Fields:
+            - username: The username of the user.
+            - email: The email of the user. It has a `UniqueValidator` to ensure that 
+            the email is unique in the system.
+            - password: The password for the user. This field is write-only and 
+            has a minimum length of 5 characters to ensure password strength.
+            - first_name: The user's first name.
+            - last_name: The user's last name.
+
+        Meta Options:
+            - model: Specifies the `User` model to serialize.
+            - fields: Lists the fields included in the serialization.
+            - extra_kwargs: 
+                - password: Write-only field with a minimum length of 5 characters.
+                - email: Includes a `UniqueValidator` to enforce unique email addresses.
+
+        Usage:
+            This serializer can be used to create a new user by passing validated 
+            data (username, email, password, first_name, last_name) and calling 
+            the `create` method.
+    """
+
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
 
@@ -99,7 +133,34 @@ class CreateUserSerializer(serializers.ModelSerializer):
 
 
 class AuthSerializer(serializers.Serializer):
-    '''serializer for the user authentication object'''
+    """
+        Serializer class for user authentication.
+
+        Fields:
+            - username: A CharField representing the user's username.
+            - password: A CharField representing the user's password. The 'input_type' 
+            is set to 'password' to mask the input during entry, and 'trim_whitespace'
+        is set to False to ensure the password is not altered.
+
+        Methods:
+             - validate(attrs): 
+                This method is responsible for validating the provided username and 
+                password. It attempts to authenticate the user using the `authenticate` 
+                function with the given credentials.
+
+            Parameters:
+                attrs (dict): A dictionary containing 'username' and 'password'.
+
+            Returns:
+                user: If authentication is successful, the authenticated user 
+                object is added to the `attrs` dictionary and returned.
+
+            Raises:
+                serializers.ValidationError: If authentication fails, an exception 
+                is raised with an error message indicating that the username or 
+                password is incorrect.
+    """
+
     username = serializers.CharField()
     password = serializers.CharField(
         style={'input_type': 'password'},
