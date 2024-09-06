@@ -70,7 +70,7 @@ REST_FRAMEWORK = {
 REST_KNOX = {
   'SECURE_HASH_ALGORITHM': 'hashlib.sha512',
   'AUTH_TOKEN_CHARACTER_LENGTH': 64,
-  'TOKEN_TTL': timedelta(minutes=30), # time before it logs you out 
+  'TOKEN_TTL': timedelta(minutes=480), # time before it logs you out 
   'USER_SERIALIZER': 'gene2phenotype_app.serializers.UserSerializer',
   'TOKEN_LIMIT_PER_USER': None,
   'AUTO_REFRESH': False,
