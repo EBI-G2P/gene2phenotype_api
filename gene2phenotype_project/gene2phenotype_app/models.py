@@ -160,7 +160,7 @@ class LGDVariantTypeDescription(models.Model):
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
-    description = models.CharField(max_length=250, null=False, default='')
+    description = models.CharField(max_length=250, null=False)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 

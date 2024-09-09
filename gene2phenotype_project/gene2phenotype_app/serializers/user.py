@@ -14,7 +14,6 @@ class UserSerializer(serializers.ModelSerializer):
     email = serializers.CharField(read_only=True)
     panels = serializers.SerializerMethodField()
     is_active = serializers.CharField(read_only=True)
-    username = serializers.CharField(write_only=True)
 
     def get_user_name(self, id):
         """
@@ -78,7 +77,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['user_name', 'email', 'is_active', 'panels', 'username']
+        fields = ['user_name', 'email', 'is_active', 'panels']
         extra_kwargs = {'password': {'write_only': True }}
 
 
