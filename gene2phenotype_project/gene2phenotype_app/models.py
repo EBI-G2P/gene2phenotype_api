@@ -137,9 +137,9 @@ class LGDVariantType(models.Model):
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     variant_type_ot = models.ForeignKey("OntologyTerm", related_name="variant_type", on_delete=models.PROTECT)
-    inherited = models.BooleanField()
-    de_novo = models.BooleanField()
-    unknown_inheritance = models.BooleanField()
+    inherited = models.BooleanField(default=False)
+    de_novo = models.BooleanField(default=False)
+    unknown_inheritance = models.BooleanField(default=False)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
@@ -588,6 +588,7 @@ class User(AbstractUser):
     is_superuser = models.SmallIntegerField(default=False)
     first_name = models.CharField(max_length=100, null=True, default=None)
     last_name = models.CharField(max_length=100, null=True, default=None)
+ 
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]

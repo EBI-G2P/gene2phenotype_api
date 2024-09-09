@@ -13,7 +13,7 @@ from .search import SearchView
 
 from .attrib import AttribTypeList, AttribList
 
-from .user import UserList
+from .user import UserList, CreateUserView, LoginView, ManageUserView
 
 from .publication import PublicationDetail, AddPublication
 
