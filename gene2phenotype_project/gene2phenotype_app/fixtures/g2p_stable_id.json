@@ -1,0 +1,3 @@
+[
+	{"model": "gene2phenotype_app.g2pstableid", "pk": 1, "fields": {"stable_id": "G2P00001", "is_live": true, "is_deleted": 0}}
+]

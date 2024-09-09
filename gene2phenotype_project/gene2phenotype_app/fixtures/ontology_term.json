@@ -1,0 +1,63 @@
+[
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 1, "fields": {"accession": "SO:0002317", "term": "absent gene product", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 2, "fields": {"accession": "SO:0002318", "term": "altered gene product structure", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 3, "fields": {"accession": "SO:0002315", "term": "increased gene product level", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 4, "fields": {"accession": "SO:0002220", "term": "uncertain", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 5, "fields": {"accession": "SO:0002316", "term": "decreased gene product level", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 6, "fields": {"accession": "SO:0001630", "term": "splice_region_variant", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 7, "fields": {"accession": "SO:0001574", "term": "splice_acceptor_variant", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 8, "fields": {"accession": "SO:0001575", "term": "splice_donor_variant", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 9, "fields": {"accession": "SO:0002012", "term": "start_lost", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 10, "fields": {"accession": "SO:0001589", "term": "frameshift_variant", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 11, "fields": {"accession": "SO:0001587", "term": "stop_gained", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 12, "fields": {"accession": "SO:0001578", "term": "stop_lost", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 13, "fields": {"accession": "SO:0001583", "term": "missense_variant", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 14, "fields": {"accession": "SO:0001822", "term": "inframe_deletion", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 15, "fields": {"accession": "SO:0001623", "term": "5_prime_UTR_variant", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 16, "fields": {"accession": "SO:0001624", "term": "3_prime_UTR_variant", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 17, "fields": {"accession": "SO:0001819", "term": "synonymous_variant", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 18, "fields": {"accession": "SO:0001627", "term": "intron_variant", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 19, "fields": {"accession": "SO:0001566", "term": "regulatory_region_variant", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 20, "fields": {"accession": "SO:0001628", "term": "intergenic_variant", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 21, "fields": {"accession": "SO:0001821", "term": "inframe_insertion", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 22, "fields": {"accession": "SO:0002319", "term": "NMD_triggering", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 23, "fields": {"accession": "SO:0002320", "term": "NMD_escaping", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 24, "fields": {"accession": "SO:0002321", "term": "stop_gained_NMD_triggering", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 25, "fields": {"accession": "SO:0002322", "term": "stop_gained_NMD_escaping", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 26, "fields": {"accession": "SO:0002325", "term": "splice_donor_variant_NMD_triggering", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 27, "fields": {"accession": "SO:0002323", "term": "frameshift_variant_NMD_triggering", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 28, "fields": {"accession": "SO:0002328", "term": "splice_acceptor_variant_NMD_escaping", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 29, "fields": {"accession": "SO:0002327", "term": "splice_acceptor_variant_NMD_triggering", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 30, "fields": {"accession": "SO:0002326", "term": "splice_donor_variant_NMD_escaping", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 31, "fields": {"accession": "SO:0002324", "term": "frameshift_variant_NMD_escaping", "description": null, "source": 1, "group_type": 53}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 32, "fields": {"accession": "HP:0100881", "term": "Congenital mesoblastic nephroma", "description": null, "source": 2, "group_type": 52}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 33, "fields": {"accession": "HP:0003549", "term": "Abnormality of connective tissue", "description": null, "source": 2, "group_type": 52}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 34, "fields": {"accession": "HP:0033127", "term": "Abnormality of the musculoskeletal system", "description": null, "source": 2, "group_type": 52}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 35, "fields": {"accession": "HP:0000118", "term": "Phenotypic abnormality", "description": null, "source": 2, "group_type": 52}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 37, "fields": {"accession": "HP:0011794", "term": "Embryonal renal neoplasm", "description": null, "source": 2, "group_type": 52}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 38, "fields": {"accession": "HP:0009726", "term": "Renal neoplasm", "description": null, "source": 2, "group_type": 52}}, 
+	{"model": "gene2phenotype_app.ontologyterm", "pk": 39, "fields": {"accession": "HP:0010786", "term": "Urinary tract neoplasm", "description": null, "source": 2, "group_type": 52}}, 	
+	{
+		"model": "gene2phenotype_app.ontologyterm", "pk": 40,
+		"fields": {"accession": "MONDO:0007808", "term": "MONDO:0007808", "description": "Ichthyosis hystrix of Curth-Macklin (IHCM) is a rare type of keratinopathic ichthyosis that is characterized by the presence of severe hyperkeratotic lesions and palmoplantar keratoderma (PPK).", "source": 3, "group_type": 51}
+	},
+	{
+		"model": "gene2phenotype_app.ontologyterm", "pk": 41,
+		"fields": {"accession": "MONDO:0009441", "term": "MONDO:0009441", "description": "Any autosomal recessive congenital ichthyosis in which the cause of the disease is a mutation in the TGM1 gene.", "source": 3, "group_type": 51}
+	},
+	{
+		"model": "gene2phenotype_app.ontologyterm", "pk": 42,
+		"fields": {"accession": "612379", "term": "CONGENITAL DISORDER OF GLYCOSYLATION, TYPE Iq", "description": "COLOBOMA, OCULAR, WITH ICHTHYOSIS, BRAIN MALFORMATIONS, AND ENDOCRINE ABNORMALITIES; CDG Iq", "source": 4, "group_type": 51}
+	},
+	{
+		"model": "gene2phenotype_app.ontologyterm", "pk": 43,
+		"fields": {"accession": "610188", "term": "JOUBERT SYNDROME 5", "description": null, "source": 4, "group_type": 51}
+	},
+	{
+		"model": "gene2phenotype_app.ontologyterm", "pk": 44,
+		"fields": {"accession": "601186", "term": "MICROPHTHALMIA, SYNDROMIC 9", "description": "ANOPHTHALMIA, CLINICAL, WITH MILD FACIAL DYSMORPHISM AND VARIABLE MALFORMATIONS OF THE LUNG, HEART, AND DIAPHRAGM; ANOPHTHALMIA/MICROPHTHALMIA AND PULMONARY HYPOPLASIA; PULMONARY HYPOPLASIA-DIAPHRAGMATIC HERNIA-ANOPHTHALMIA-CARDIAC DEFECT; SPEAR SYNDROME; MATTHEW-WOOD SYNDROME; PULMONARY AGENESIS, MICROPHTHALMIA, AND DIAPHRAGMATIC DEFECT", "source": 4, "group_type": 51}
+	},
+	{
+		"model": "gene2phenotype_app.ontologyterm", "pk": 45, "fields": {"accession": "300998", "term": "INTELLECTUAL DEVELOPMENTAL DISORDER, X-LINKED, SYNDROMIC 35", "description": "MENTAL RETARDATION, X-LINKED, SYNDROMIC 35", "source": 4, "group_type": 51}
+	}
+]

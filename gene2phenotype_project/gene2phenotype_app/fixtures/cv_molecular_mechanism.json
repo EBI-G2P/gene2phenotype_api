@@ -1,0 +1,86 @@
+[
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 1, "fields": {"type": "mechanism", "subtype": null, "value": "loss of function"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 2, "fields": {"type": "mechanism", "subtype": null, "value": "dominant negative"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 3, "fields": {"type": "mechanism", "subtype": null, "value": "gain of function"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 4, "fields": {"type": "mechanism", "subtype": null, "value": "undetermined non-loss-of-function"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 5, "fields": {"type": "mechanism", "subtype": null, "value": "undetermined"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 6, "fields": {"type": "mechanism_synopsis", "subtype": null, "value": "destabilising LOF"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 7, "fields": {"type": "mechanism_synopsis", "subtype": null, "value": "interaction-disrupting LOF"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 8, "fields": {"type": "mechanism_synopsis", "subtype": null, "value": "loss of activity LOF"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 9, "fields": {"type": "mechanism_synopsis", "subtype": null, "value": "LOF due to protein mislocalisation"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 10, "fields": {"type": "mechanism_synopsis", "subtype": null, "value": "assembly-mediated dominant negative"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 11, "fields": {"type": "mechanism_synopsis", "subtype": null, "value": "competitive dominant-negative"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 12, "fields": {"type": "mechanism_synopsis", "subtype": null, "value": "assembly-mediated GOF"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 13, "fields": {"type": "mechanism_synopsis", "subtype": null, "value": "protein aggregation"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 14, "fields": {"type": "mechanism_synopsis", "subtype": null, "value": "local LOF leading to overall GOF"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 15, "fields": {"type": "mechanism_synopsis", "subtype": null, "value": "other GOF"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 16, "fields": {"type": "support", "subtype": null, "value": "inferred"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 17, "fields": {"type": "support", "subtype": null, "value": "evidence"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 18, "fields": {"type": "evidence", "subtype": "function", "value": "biochemical"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 19, "fields": {"type": "evidence", "subtype": "function", "value": "protein interaction"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 20, "fields": {"type": "evidence", "subtype": "function", "value": "protein expression"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 21, "fields": {"type": "evidence", "subtype": "functional_alteration", "value": "patient cells"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 22, "fields": {"type": "evidence", "subtype": "rescue", "value": "patient cells"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 23, "fields": {"type": "evidence", "subtype": "functional_alteration", "value": "non patient cells"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 24, "fields": {"type": "evidence", "subtype": "models", "value": "non-human model organism"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 25, "fields": {"type": "evidence", "subtype": "rescue", "value": "non-human model organism"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 26, "fields": {"type": "evidence", "subtype": "models", "value": "cell culture model"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 27, "fields": {"type": "evidence", "subtype": "rescue", "value": "cell culture model"}
+	},
+	{
+		"model": "gene2phenotype_app.cvmolecularmechanism", "pk": 28, "fields": {"type": "evidence", "subtype": "rescue", "value": "human"}
+	}
+]

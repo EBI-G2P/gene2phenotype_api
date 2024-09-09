@@ -1,0 +1,16 @@
+[
+	{
+		"model": "gene2phenotype_app.locusgenotypedisease", "pk": 1,
+		"fields": {
+			"stable_id": 1,
+			"locus": 1,
+			"genotype": 9,
+			"disease": 2,
+			"confidence": 1,
+			"confidence_support": null,
+			"date_review": "2017-04-24T16:33:40Z",
+			"is_reviewed": 1,
+			"is_deleted": 0
+		}
+	}
+]
