@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 from pathlib import Path
 import os
 from configparser import ConfigParser
+from datetime import timedelta
+from rest_framework.settings import api_settings
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,7 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'gene2phenotype_app',
     'rest_framework',
-    'simple_history'
+    'simple_history',
+    'knox',
 ]
 
 MIDDLEWARE = [
@@ -56,7 +59,22 @@ MIDDLEWARE = [
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 50
+    'PAGE_SIZE': 50,
+    'DEFAULT_AUTHENTICATION_CLASSES': ('knox.auth.TokenAuthentication',),
+    'DEFAULT_PERMISSION_CLASSES': (
+        "rest_framework.permissions.AllowAny",
+    ),
+}
+
+
+REST_KNOX = {
+  'SECURE_HASH_ALGORITHM': 'hashlib.sha512',
+  'AUTH_TOKEN_CHARACTER_LENGTH': 64,
+  'TOKEN_TTL': timedelta(hours=8), # time before it logs you out 
+  'USER_SERIALIZER': 'gene2phenotype_app.serializers.UserSerializer',
+  'TOKEN_LIMIT_PER_USER': None,
+  'AUTO_REFRESH': False,
+  'EXPIRY_DATETIME_FORMAT': api_settings.DATETIME_FORMAT,
 }
 
 ROOT_URLCONF = 'gene2phenotype_project.urls'
@@ -86,6 +104,7 @@ WSGI_APPLICATION = 'gene2phenotype_project.wsgi.application'
 config_path = os.environ.get('PROJECT_CONFIG_PATH')
 config = ConfigParser()
 config.read(config_path)
+
 
 DATABASES = {
     'default': {

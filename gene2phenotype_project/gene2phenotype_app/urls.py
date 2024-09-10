@@ -1,6 +1,8 @@
 from django.urls import path, include
 from rest_framework.urlpatterns import format_suffix_patterns
+from rest_framework.authtoken import views as authviews
 from gene2phenotype_app import views
+from knox import views as knox_views
 
 def perform_create(self, serializer):
     serializer.save(owner=self.request.user)
@@ -22,7 +24,7 @@ urlpatterns = [
     path('gene/<str:name>/function/', views.GeneFunction.as_view(), name="locus_gene_function"),
     path('gene/<str:name>/disease/', views.GeneDiseaseView.as_view(), name="locus_gene_disease"),
     path('disease/<str:id>/', views.DiseaseDetail.as_view(), name="disease_details"),
-    path('disease/<str:id>/summary', views.DiseaseSummary.as_view(), name="disease_summary"),
+    path('disease/<str:id>/summary/', views.DiseaseSummary.as_view(), name="disease_summary"),
     path('publication/<str:pmids>/', views.PublicationDetail, name="publication_details"),
     path('phenotype/<str:hpo_list>/', views.PhenotypeDetail, name="phenotype_details"),
     path('lgd/<str:stable_id>/', views.LocusGenotypeDiseaseDetail.as_view(), name="lgd"),
@@ -65,10 +67,14 @@ urlpatterns = [
 
     ### Publish data
     path('curation/publish/<str:stable_id>/', views.PublishRecord.as_view(), name="publish_record"),
+
+    #user management
+    path("create/user/", views.CreateUserView.as_view(), name="create"),
+    path('profile/', views.ManageUserView.as_view(), name='profile'),
+    path('login/', views.LoginView.as_view(), name='knox_login'),
+    path('logout/', knox_views.LogoutView.as_view(), name='knox_logout'),
+    path('logoutall/', knox_views.LogoutAllView.as_view(), name='knox_logoutall'),
+
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)
-
-urlpatterns += [
-    path('api-auth/', include('rest_framework.urls'))
-]
