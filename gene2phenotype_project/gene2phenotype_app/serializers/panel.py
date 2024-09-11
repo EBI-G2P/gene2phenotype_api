@@ -51,15 +51,17 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         """
             Retrives the date of the last time a record associated with the panel was updated.
         """
+        lgd_panel = None
 
-        lgd_panel = LGDPanel.objects.filter(
+        queryset = LGDPanel.objects.filter(
             panel=id,
             lgd__is_reviewed=1,
             lgd__is_deleted=0,
             lgd__date_review__isnull=False
-            ).select_related('lgd'
-                             ).latest('lgd__date_review'
-                                      ).lgd.date_review
+            ).select_related('lgd').order_by('-lgd__date_review')
+
+        if queryset:
+            lgd_panel = queryset.first().lgd.date_review
 
         return lgd_panel.date() if lgd_panel else None
 
