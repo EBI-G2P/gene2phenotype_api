@@ -158,7 +158,7 @@ class LGDVariantTypeDescription(models.Model):
         The HGVS is not directly linked to the variant type.
     """
     id = models.AutoField(primary_key=True)
-    lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
+    lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT, default=0)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     description = models.CharField(max_length=250, null=False)
     is_deleted = models.SmallIntegerField(null=False, default=False)
@@ -637,8 +637,8 @@ class GeneStats(models.Model):
     id = models.AutoField(primary_key=True)
     gene = models.ForeignKey("Locus", on_delete=models.PROTECT)
     gene_symbol = models.CharField(max_length=100, null=False)
-    hgnc = models.ForeignKey("Locus_identifier", on_delete=models.PROTECT)
-    score = models.FloatField(max_digits=50, on_delete=models.PROTECT)
+    hgnc = models.ForeignKey("LocusIdentifier", on_delete=models.PROTECT)
+    score = models.FloatField(default='0.0')
     source = models.ForeignKey("Source", on_delete=models.PROTECT)
 
     class Meta:
