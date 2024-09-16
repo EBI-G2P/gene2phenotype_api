@@ -103,7 +103,7 @@ class AddPublication(BaseAdd):
         The create method is in the PublicationSerializer.
     """
     serializer_class = PublicationSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
 
 ### LGD-publication ###
 # Add or delete data
@@ -123,7 +123,7 @@ class LGDEditPublications(APIView):
             it sets the flag 'is_deleted' to 1.
     """
     http_method_names = ['post', 'update', 'options']
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self, action):
         """
@@ -161,9 +161,6 @@ class LGDEditPublications(APIView):
         """
         user = self.request.user
 
-        if not user.is_authenticated:
-            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
 
         # LGDPublicationListSerializer accepts a list of publications
@@ -180,7 +177,7 @@ class LGDEditPublications(APIView):
 
                 if serializer_class.is_valid():
                     serializer_class.save()
-                    response = Response({'message': 'Publication added to the G2P entry successfully.'}, status=status.HTTP_200_OK)
+                    response = Response({'message': 'Publication added to the G2P entry successfully.'}, status=status.HTTP_201_CREATED)
                 else:
                     response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

@@ -146,4 +146,4 @@ class DiseaseSummary(DiseaseDetail):
 """
 class AddDisease(BaseAdd):
     serializer_class = CreateDiseaseSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]

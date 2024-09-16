@@ -160,14 +160,14 @@ class LGDUpdateConfidence(generics.UpdateAPIView):
 
         g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
         # Get the entry for this user
-        queryset = LocusGenotypeDisease.objects.filter(stable_id=g2p_stable_id)
+        queryset = LocusGenotypeDisease.objects.filter(stable_id=g2p_stable_id, is_deleted=0)
 
         if not queryset.exists():
             self.handle_no_permission('Entry', stable_id)
         else:
             return queryset
 
-    def update(self, request, *args, **kwargs):
+    def update(self, request):
         """
             This method updates the LGD confidence.
 
@@ -182,7 +182,7 @@ class LGDUpdateConfidence(generics.UpdateAPIView):
                 Invalid confidence value
                 G2P record already has same confidence value
         """
-        user = self.request.user
+        user = request.user
 
         # Get G2P entry to be updated
         lgd_obj = self.get_queryset().first()
@@ -193,6 +193,17 @@ class LGDUpdateConfidence(generics.UpdateAPIView):
             data=request.data,
             context={'user': user}
         )
+
+        # Check if user has permission to update panel
+        user_obj = get_object_or_404(User, email=user, is_active=1)
+        serializer_user = UserSerializer(user_obj, context={"user" : user})
+        user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
+        has_common = serializer.check_user_permission(lgd_obj, user_panel_list)
+        if has_common is False:
+            return Response(
+                {"message": f"No permission to update record '{lgd_obj.stable_id.stable_id}'"},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         if serializer.is_valid():
             instance = serializer.save()
@@ -216,7 +227,7 @@ class LGDEditVariantConsequences(APIView):
             it sets the flag 'is_deleted' to 1.
     """
     http_method_names = ['post', 'update', 'options']
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self, action):
         """
@@ -250,12 +261,16 @@ class LGDEditVariantConsequences(APIView):
                         }]
                     }
         """
-
-        user = self.request.user
-        if not user.is_authenticated:
-            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # Check if user has permission to update panel
+        user = self.request.user
+        user_obj = get_object_or_404(User, email=user, is_active=1)
+        serializer_user = UserSerializer(user_obj, context={"user" : user})
+        user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
+        has_common = LocusGenotypeDiseaseSerializer(lgd).check_user_permission(lgd, user_panel_list)
+        if has_common is False:
+            return Response({"message": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
 
         # LGDVariantConsequenceListSerializer accepts a list of variant consequences
         serializer_list = LGDVariantConsequenceListSerializer(data=request.data)
@@ -286,7 +301,7 @@ class LGDEditVariantConsequences(APIView):
                     serializer_class.save()
                     response = Response(
                         {"message": "Variant consequence added to the G2P entry successfully."},
-                        status=status.HTTP_200_OK
+                        status=status.HTTP_201_CREATED
                     )
                 else:
                     response = Response(
@@ -315,7 +330,6 @@ class LGDEditVariantConsequences(APIView):
             )
 
         consequence = request.data.get('variant_consequence')
-        user = self.request.user # TODO check if user has permission
 
         if consequence is None:
             return Response(
@@ -327,6 +341,15 @@ class LGDEditVariantConsequences(APIView):
 
         # Fecth G2P record to update
         lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # Check if user has permission to update panel
+        user = self.request.user
+        user_obj = get_object_or_404(User, email=user, is_active=1)
+        serializer_user = UserSerializer(user_obj, context={"user" : user})
+        user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
+        has_common = LocusGenotypeDiseaseSerializer(lgd_obj).check_user_permission(lgd_obj, user_panel_list)
+        if has_common is False:
+            return Response({"message": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
 
         # Get variant gencc consequence value from ontology_term
         try:
@@ -362,7 +385,7 @@ class LGDEditCCM(APIView):
             it sets the flag 'is_deleted' to 1.
     """
     http_method_names = ['post', 'update', 'options']
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self, action):
         """
@@ -393,11 +416,16 @@ class LGDEditCCM(APIView):
                         "cross_cutting_modifiers": [{"term": "typically mosaic"}]
                     }
         """
-        user = self.request.user
-        if not user.is_authenticated:
-            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # Check if user has permission to update panel
+        user = self.request.user
+        user_obj = get_object_or_404(User, email=user, is_active=1)
+        serializer_user = UserSerializer(user_obj, context={"user" : user})
+        user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
+        has_common = LocusGenotypeDiseaseSerializer(lgd).check_user_permission(lgd, user_panel_list)
+        if has_common is False:
+            return Response({"message": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
 
         # LGDCrossCuttingModifierListSerializer accepts a list of cross cutting modifiers
         serializer_list = LGDCrossCuttingModifierListSerializer(data=request.data)
@@ -425,7 +453,7 @@ class LGDEditCCM(APIView):
                     serializer_class.save()
                     response = Response(
                         {"message": "Cross cutting modifier added to the G2P entry successfully."},
-                        status=status.HTTP_200_OK
+                        status=status.HTTP_201_CREATED
                     )
                 else:
                     response = Response(
@@ -451,9 +479,17 @@ class LGDEditCCM(APIView):
 
         ccm_tmp = request.data.get('term')
         ccm = ccm_tmp.replace("_", " ")
-        user = request.user # TODO check if user has permission
+        user = request.user
 
         lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # Check if user has permission to update panel
+        user_obj = get_object_or_404(User, email=user, is_active=1)
+        serializer_user = UserSerializer(user_obj, context={"user" : user})
+        user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
+        has_common = LocusGenotypeDiseaseSerializer(lgd_obj).check_user_permission(lgd_obj, user_panel_list)
+        if has_common is False:
+            return Response({"message": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
 
         try:
             ccm_obj = Attrib.objects.get(
@@ -487,7 +523,7 @@ class LGDEditVariantTypes(APIView):
             it sets the flag 'is_deleted' to 1.
     """
     http_method_names = ['post', 'update', 'options']
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self, action):
         """
@@ -528,15 +564,17 @@ class LGDEditVariantTypes(APIView):
                             }]
                     }
         """
-
         user = self.request.user # email
-        if not user.is_authenticated:
-            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-
-        # Get user object
-        user_obj = User.objects.get(email=user, is_active=1)
 
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # Check if user has permission to update panel
+        user_obj = get_object_or_404(User, email=user, is_active=1)
+        serializer_user = UserSerializer(user_obj, context={"user" : user})
+        user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
+        has_common = LocusGenotypeDiseaseSerializer(lgd).check_user_permission(lgd, user_panel_list)
+        if has_common is False:
+            return Response({"message": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
 
         # LGDVariantTypeListSerializer accepts a list of variant types
         serializer_list = LGDVariantTypeListSerializer(data=request.data)
@@ -563,7 +601,7 @@ class LGDEditVariantTypes(APIView):
                     serializer_class.save()
                     response = Response(
                         {"message": "Variant type added to the G2P entry successfully."},
-                        status=status.HTTP_200_OK
+                        status=status.HTTP_201_CREATED
                     )
                 else:
                     response = Response(
@@ -589,9 +627,17 @@ class LGDEditVariantTypes(APIView):
             return Response({"errors": f"Empty variant type. Please provide the 'secondary_type'."}, status=status.HTTP_400_BAD_REQUEST)
 
         variant_type = request.data.get('secondary_type')
-        user = request.user # TODO check if user has permission
 
         lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # Check if user has permission to update panel
+        user = request.user
+        user_obj = get_object_or_404(User, email=user, is_active=1)
+        serializer_user = UserSerializer(user_obj, context={"user" : user})
+        user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
+        has_common = LocusGenotypeDiseaseSerializer(lgd_obj).check_user_permission(lgd_obj, user_panel_list)
+        if has_common is False:
+            return Response({"message": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
 
         # Get variant type value from ontology_term
         try:
@@ -639,7 +685,7 @@ class LGDEditVariantTypeDescriptions(APIView):
             it sets the flag 'is_deleted' to 1.
     """
     http_method_names = ['post', 'update', 'options']
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self, action):
         """
@@ -675,10 +721,16 @@ class LGDEditVariantTypeDescriptions(APIView):
                     }
         """
         user = self.request.user
-        if not user.is_authenticated:
-            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
 
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # Check if user has permission to update panel
+        user_obj = get_object_or_404(User, email=user, is_active=1)
+        serializer_user = UserSerializer(user_obj, context={"user" : user})
+        user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
+        has_common = LocusGenotypeDiseaseSerializer(lgd).check_user_permission(lgd, user_panel_list)
+        if has_common is False:
+            return Response({"message": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
 
         # LGDVariantTypeDescriptionListSerializer accepts a list of HGVS
         serializer_list = LGDVariantTypeDescriptionListSerializer(data=request.data)
@@ -706,7 +758,7 @@ class LGDEditVariantTypeDescriptions(APIView):
                     serializer_class.save()
                     response = Response(
                         {"message": "Variant description added to the G2P entry successfully."},
-                        status=status.HTTP_200_OK
+                        status=status.HTTP_201_CREATED
                     )
                 else:
                     response = Response(
@@ -732,9 +784,18 @@ class LGDEditVariantTypeDescriptions(APIView):
             return Response({"errors": f"Empty variant type description. Please provide the 'description'."}, status=status.HTTP_400_BAD_REQUEST)
 
         var_desc = request.data.get('description')
-        user = request.user # TODO check if user has permission
+        user = request.user
 
         lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # Check if user has permission to update panel
+        user_obj = get_object_or_404(User, email=user, is_active=1)
+        serializer_user = UserSerializer(user_obj, context={"user" : user})
+        user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
+        has_common = LocusGenotypeDiseaseSerializer(lgd_obj).check_user_permission(lgd_obj, user_panel_list)
+        if has_common is False:
+            return Response({"message": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
+
         # Get entries to be deleted
         # Different rows mean the lgd-variant type description is associated with multiple publications
         # We have to delete all rows
@@ -761,7 +822,7 @@ class LGDEditComment(APIView):
     """
     http_method_names = ['post', 'update', 'options']
     serializer_class = LGDCommentSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
 
     @transaction.atomic
     def post(self, request, stable_id):
@@ -772,9 +833,6 @@ class LGDEditComment(APIView):
         """
         user = self.request.user
 
-        if not user.is_authenticated:
-            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-
         # Check if G2P ID exists
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
 
@@ -783,7 +841,7 @@ class LGDEditComment(APIView):
         lgd_panels = lgd_serializer.get_panels(lgd)
         # Example of lgd_panels:
         # [{'name': 'DD', 'description': 'Developmental disorders'}, {'name': 'Eye', 'description': 'Eye disorders'}]
-        user_obj = get_object_or_404(User, email=user)
+        user_obj = get_object_or_404(User, email=user, is_active=1)
         user_serializer = UserSerializer(user_obj, context={"user": user})
 
         if not user_serializer.check_panel_permission(lgd_panels):
@@ -797,7 +855,7 @@ class LGDEditComment(APIView):
 
         if serializer_class.is_valid():
             serializer_class.save()
-            response = Response({"message": "Comment added to the G2P entry successfully."}, status=status.HTTP_200_OK)
+            response = Response({"message": "Comment added to the G2P entry successfully."}, status=status.HTTP_201_CREATED)
         else:
             response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -811,9 +869,17 @@ class LGDEditComment(APIView):
             Example: { "comment": "This is a comment" }
         """
         comment = request.data.get('comment')
-        user = request.user # TODO check if user has permission
+        user = request.user
 
         lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        # Check if user has permission to update panel
+        user_obj = get_object_or_404(User, email=user, is_active=1)
+        serializer_user = UserSerializer(user_obj, context={"user" : user})
+        user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
+        has_common = LocusGenotypeDiseaseSerializer(lgd_obj).check_user_permission(lgd_obj, user_panel_list)
+        if has_common is False:
+            return Response({"message": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
 
         try:
             LGDComment.objects.filter(lgd=lgd_obj, comment=comment, is_deleted=0).update(is_deleted=1)
@@ -832,7 +898,7 @@ class LocusGenotypeDiseaseDelete(APIView):
     """
     http_method_names = ['update', 'options']
     serializer_class = LocusGenotypeDiseaseSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
 
     @transaction.atomic
     def update(self, request, stable_id):
@@ -841,10 +907,18 @@ class LocusGenotypeDiseaseDelete(APIView):
             The deletion does not remove the entry from the database, instead
             it sets the flag 'is_deleted' to 1.
         """
-        user = request.user # TODO check if user has permission
+        user = request.user
 
         stable_id_obj = get_object_or_404(G2PStableID, stable_id=stable_id, is_deleted=0)
         lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id=stable_id_obj, is_deleted=0)
+
+        # Check if user has permission to update panel
+        user_obj = get_object_or_404(User, email=user, is_active=1)
+        serializer_user = UserSerializer(user_obj, context={"user" : user})
+        user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
+        has_common = LocusGenotypeDiseaseSerializer(lgd_obj).check_user_permission(lgd_obj, user_panel_list)
+        if has_common is False:
+            return Response({"message": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
 
         # Delete the LGD record
         lgd_obj.is_deleted = 1
