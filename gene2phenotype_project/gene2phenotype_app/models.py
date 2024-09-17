@@ -635,16 +635,17 @@ class UniprotAnnotation(models.Model):
 
 class GeneStats(models.Model):
     id = models.AutoField(primary_key=True)
-    gene = models.ForeignKey("Locus", on_delete=models.PROTECT)
+    gene_id = models.ForeignKey("Locus", on_delete=models.PROTECT)
     gene_symbol = models.CharField(max_length=100, null=False)
-    hgnc = models.ForeignKey("LocusIdentifier", on_delete=models.PROTECT)
+    locus_identifier_id = models.ForeignKey("LocusIdentifier", on_delete=models.PROTECT)
     score = models.FloatField(default='0.0')
-    source = models.ForeignKey("Source", on_delete=models.PROTECT)
+    source_id = models.ForeignKey("Source", on_delete=models.PROTECT)
+    description_id = models.ForeignKey("Attrib", on_delete=models.PROTECT)
 
     class Meta:
         db_table = "gene_stats"
         indexes = [
-            models.Index(fields=['gene'])
+            models.Index(fields=['gene_id, locus_identifier_id, description_id'])
         ]
 
 class GeneDisease(models.Model):
