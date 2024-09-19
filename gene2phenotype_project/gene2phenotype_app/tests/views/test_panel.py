@@ -51,6 +51,7 @@ class PanelDetailsEndpointTests(TestCase):
         """
         response = self.client.get(self.url_panels)
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data.get("description"), "Developmental disorders")
 
 class PanelSummaryEndpointTests(TestCase):
     """
