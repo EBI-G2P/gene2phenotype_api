@@ -198,7 +198,9 @@ class LGDPhenotypeSummarySerializer(serializers.ModelSerializer):
                         lgd_phenotype_summary.save()
 
             except Publication.DoesNotExist:
-                raise serializers.ValidationError({"message": f"Problem fetching the phenotype source 'HPO'"})
+                raise serializers.ValidationError(
+                    {"message": f"Problem fetching the publication '{pmid}'"}
+                )
 
         return 1
 

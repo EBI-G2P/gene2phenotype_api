@@ -736,18 +736,18 @@ class LGDEditVariantTypeDescriptions(APIView):
         serializer_list = LGDVariantTypeDescriptionListSerializer(data=request.data)
 
         if serializer_list.is_valid():
-            descriptions_data = serializer_list.validated_data.get('variant_descriptions')
+            descriptions_data = request.data.get('variant_descriptions')
 
-            # Check if list of consequences is empty
+            # Check if list of descriptions is empty
             if(not descriptions_data):
                 response = Response(
                     {"message": "Empty variant descriptions. Please provide valid data."},
                      status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Add each cross cutting modifier from the input list
+            # Add each variant description from the input list
             for description in descriptions_data:
-                # The data is created in LGDCrossCuttingModifierSerializer
+                # The data is created in LGDVariantTypeDescriptionSerializer
                 # Input the expected data format
                 serializer_class = LGDVariantTypeDescriptionSerializer(
                     data=description,
