@@ -213,7 +213,7 @@ class PublicationSerializer(serializers.ModelSerializer):
             families to the existing PMID.
             This method is called when publishing a record.
 
-            The extra fields 'comments' and 'families' are passed in the context.
+            The extra fields 'comment' and 'families' are passed in the context.
 
             Args:
                 (dict) validated_data: valid PublicationSerializer fields 

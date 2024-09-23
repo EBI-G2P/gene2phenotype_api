@@ -100,8 +100,9 @@ class PanelDetailSerializer(serializers.ModelSerializer):
     def records_summary(self, panel):
         """
             A summary of the last 10 records associated with the panel.
+            TODO: check refuted and disputed records
         """
-
+        # TODO: improve query, this can be done in a single query
         lgd_panels = LGDPanel.objects.filter(panel=panel.id, is_deleted=0)
 
         lgd_panels_selected = lgd_panels.select_related('lgd',
