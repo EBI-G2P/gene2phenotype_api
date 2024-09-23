@@ -1,0 +1,34 @@
+[
+	{
+		"model": "gene2phenotype_app.source", "pk": 1, 
+		"fields": {"name": "SO", "description": "Sequence Ontology", "version": null, "url": "https://www.sequenceontology.org"}
+	},
+	{
+		"model": "gene2phenotype_app.source", "pk": 2,
+		"fields": {"name": "HPO", "description": "Human Phenotype Ontology", "version": null, "url": "https://hpo.jax.org"}
+	},
+	{
+		"model": "gene2phenotype_app.source", "pk": 3,
+		"fields": {"name": "Mondo", "description": "Mondo Disease Ontology", "version": null, "url": "https://www.ebi.ac.uk/ols4/ontologies/mondo"}
+	},
+	{
+		"model": "gene2phenotype_app.source", "pk": 4,
+		"fields": {"name": "OMIM", "description": "Online Catalog of Human Genes and Genetic Disorders", "version": null, "url": "https://www.omim.org"}
+	},
+	{
+		"model": "gene2phenotype_app.source", "pk": 5,
+		"fields": {"name": "Orphanet", "description": "The portal for rare diseases and orphan drugs", "version": null, "url": "https://www.orpha.net/consor/cgi-bin/index.php"}
+	},
+	{
+		"model": "gene2phenotype_app.source", "pk": 6,
+		"fields": {"name": "HGNC", "description": "HUGO Gene Nomenclature Committee", "version": null, "url": "https://www.genenames.org"}
+	},
+	{
+		"model": "gene2phenotype_app.source", "pk": 7,
+		"fields": {"name": "Ensembl", "description": "Ensembl", "version": null, "url": "https://www.ensembl.org"}
+	},
+	{
+		"model": "gene2phenotype_app.source", "pk": 8,
+		"fields": {"name": "UniProt", "description": "Gene function imported from UniProt", "version": null, "url": "https://www.uniprot.org"}
+	}
+]
