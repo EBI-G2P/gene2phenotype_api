@@ -137,7 +137,7 @@ class LGDEditPanel(APIView):
     """
     http_method_names = ['post', 'update', 'options']
     serializer_class = LGDPanelSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
 
     @transaction.atomic
     def post(self, request, stable_id):
@@ -146,9 +146,6 @@ class LGDEditPanel(APIView):
             We want to whole process to be done in one db transaction.
         """
         user = self.request.user
-
-        if not user.is_authenticated:
-            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
 
         panel_name_input = request.data.get("name", None)
 
@@ -172,7 +169,7 @@ class LGDEditPanel(APIView):
 
         if serializer_class.is_valid():
             serializer_class.save()
-            response = Response({"message": "Panel added to the G2P entry successfully."}, status=status.HTTP_200_OK)
+            response = Response({"message": "Panel added to the G2P entry successfully."}, status=status.HTTP_201_CREATED)
         else:
             response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

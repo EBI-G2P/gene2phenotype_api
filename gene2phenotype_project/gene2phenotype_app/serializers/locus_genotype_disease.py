@@ -254,6 +254,23 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         return date
 
+    def check_user_permission(self, id, user_panels):
+        """
+            Check if user has permission to update this G2P record.
+
+            Args:
+                    (lgd obj) id: locus genotype disease object
+                    (list) user_panels: list of panel names user can edit
+
+            Return:
+                    True: if user has permission
+                    False: if user has no permission
+        """
+        lgd_panels = [panel.get('name') for panel in self.get_panels(id)]
+        has_common = any(item in list(lgd_panels) for item in user_panels)
+
+        return has_common
+
     def create(self, data, disease_obj, publications_list):
         """
             Method to create a G2P record (LGD record).

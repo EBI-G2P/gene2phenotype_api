@@ -142,8 +142,9 @@ class DiseaseSummary(DiseaseDetail):
 ### Add data
 """
     Add new disease.
+    This view is called by the endpoint that directly adds a disease (add/disease/).
     The create method is in the CreateDiseaseSerializer.
 """
 class AddDisease(BaseAdd):
     serializer_class = CreateDiseaseSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]

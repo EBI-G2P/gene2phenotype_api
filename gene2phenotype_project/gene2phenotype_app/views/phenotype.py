@@ -92,7 +92,7 @@ class LGDEditPhenotypes(APIView):
             it sets the flag 'is_deleted' to 1.
     """
     http_method_names = ['post', 'update', 'options']
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self, action):
         """
@@ -126,11 +126,6 @@ class LGDEditPhenotypes(APIView):
                         }]
                     }
         """
-        user = self.request.user
-
-        if not user.is_authenticated:
-            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-        
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
 
         # LGDPhenotypeListSerializer accepts a list of phenotypes
@@ -158,7 +153,7 @@ class LGDEditPhenotypes(APIView):
 
                 if serializer_class.is_valid():
                     serializer_class.save()
-                    response = Response({"message": "Phenotype added to the G2P entry successfully."}, status=status.HTTP_200_OK)
+                    response = Response({"message": "Phenotype added to the G2P entry successfully."}, status=status.HTTP_201_CREATED)
                 else:
                     response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -210,7 +205,7 @@ class LGDEditPhenotypeSummary(APIView):
     """
     http_method_names = ['post', 'update', 'options']
     serializer_class = LGDPhenotypeSummarySerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
 
     @transaction.atomic
     def post(self, request, stable_id):
@@ -233,9 +228,6 @@ class LGDEditPhenotypeSummary(APIView):
         """
         user = self.request.user
 
-        if not user.is_authenticated:
-            return Response({"message": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
 
         # LGDPhenotypeSummarySerializer accepts a summary of phenotypes associated with pmids
@@ -243,7 +235,7 @@ class LGDEditPhenotypeSummary(APIView):
 
         if serializer.is_valid():
             serializer.save()
-            response = Response({"message": "Phenotype added to the G2P entry successfully."}, status=status.HTTP_200_OK)
+            response = Response({"message": "Phenotype added to the G2P entry successfully."}, status=status.HTTP_201_CREATED)
         else:
             response = Response({"errors": serializer.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -282,4 +274,4 @@ class AddPhenotype(BaseAdd):
         Called by: endpoint add/phenotype/
     """
     serializer_class = PhenotypeOntologyTermSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]

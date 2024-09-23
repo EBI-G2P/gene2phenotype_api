@@ -79,8 +79,9 @@ class DiseaseDetailSerializer(DiseaseSerializer):
     def records_summary(self, id, user):
         """
             Returns a summary of the LGD records associated with the disease.
+            TODO: check refuted and disputed records
         """
-
+        # TODO: improve query, this can be done in a single query
         lgd_list = LocusGenotypeDisease.objects.filter(disease=id, is_deleted=0)
 
         if user.is_authenticated:
@@ -92,7 +93,6 @@ class DiseaseDetailSerializer(DiseaseSerializer):
             lgd_select = lgd_list.select_related('disease', 'genotype', 'confidence'
                                                ).prefetch_related('lgd_panel', 'panel', 'lgd_variant_gencc_consequence', 'lgd_variant_type', 'lgd_molecular_mechanism', 'g2pstable_id'
                                                                   ).order_by('-date_review').filter(lgdpanel__panel__is_visible=1)
-
 
         lgd_objects_list = list(lgd_select.values('disease__name',
                                                   'lgdpanel__panel__name',
@@ -161,6 +161,7 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
 
             Args:
                 validate_data: disease data to be inserted
+                               keys are 'name' (string) and 'ontology_terms' (list of dict)
 
             Returns:
                     disease object
