@@ -1,15 +1,50 @@
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework import generics, authentication, permissions
-from rest_framework.settings import api_settings
+from rest_framework import generics, permissions
+from django.db.models import F
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from django.contrib.auth import login
 from knox.views import LoginView as KnoxLoginView
-from knox.auth import TokenAuthentication
-from gene2phenotype_app.serializers import UserSerializer, AuthSerializer, CreateUserSerializer
-from gene2phenotype_app.models import User
-from django.views import View
 
+from gene2phenotype_app.serializers import (UserSerializer, AuthSerializer,
+                                            CreateUserSerializer)
+from gene2phenotype_app.models import User, UserPanel
+from .base import BaseView
+
+
+class UserPanels(BaseView):
+    """
+        Returns the list of panels the current user can edit
+
+        Returns:
+                (dict) list of panels
+
+    """
+    lookup_field = 'name'
+    serializer_class = User
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user_email = self.request.user
+
+        queryset = User.objects.filter(email=user_email, is_deleted=0, is_active=1)
+
+        if not queryset.exists():
+            self.handle_no_permission('User', user_email)
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        user_obj = self.get_queryset().first()
+
+        queryset_user_panels = UserPanel.objects.filter(
+            user = user_obj,
+            is_deleted = 0).select_related(
+                'panel').annotate(
+                name=F('panel__name'),
+                description=F('panel__description')).values(
+                    'name', 'description')
+
+        return Response(queryset_user_panels)
 
 
 class UserList(generics.ListAPIView):
@@ -44,9 +79,8 @@ class UserList(generics.ListAPIView):
         serializer = UserSerializer(queryset, many=True, context={'user': self.request.user})
 
         return Response({'results': serializer.data, 'count':len(serializer.data)})
-    
-    
-    
+
+
 class CreateUserView(generics.CreateAPIView):
     """
         view for creating a new user.
@@ -70,7 +104,6 @@ class CreateUserView(generics.CreateAPIView):
 
     serializer_class = CreateUserSerializer
     permission_classes = (permissions.AllowAny,)
-    
 
 
 class LoginView(KnoxLoginView):
@@ -147,4 +180,3 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         """Retrieve and return authenticated user"""
         return self.request.user
-

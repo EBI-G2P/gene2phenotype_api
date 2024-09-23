@@ -1,0 +1,23 @@
+
+[
+	{
+		"model": "gene2phenotype_app.publication", "pk": 1,
+		"fields": {"pmid": 3897232, "title": "Acetyl coenzyme A: alpha-glucosaminide N-acetyltransferase. Evidence for a transmembrane acetylation mechanism.", "authors": "Bame KJ, Rome LH.", "source": "J Biol Chem. 260: 11293-11299, 1985.", "doi": null, "year": 1985}
+	},
+	{
+		"model": "gene2phenotype_app.publication", "pk": 2,
+		"fields": {"pmid": 15214012, "title": "Cardiomyopathy in Coffin-Lowry syndrome.", "authors": "Facher JJ, Regier EJ, Jacobs GH, Siwik E, Delaunoy JP, Robin NH.", "source": "Am J Med Genet A. 128A: 176-178, 2004.", "doi": null, "year": 2004}
+	},
+	{
+		"model": "gene2phenotype_app.publication", "pk": 3,
+		"fields": {"pmid": 12451214, "title": "Late infantile Hirschsprung disease-mental retardation syndrome with a 3-bp deletion in ZFHX1B.", "authors": "Yoneda M, Fujita T, Yamada Y, Yamada K, Fujii A, Inagaki T, Nakagawa H, Shimada A, Kishikawa M, Nagaya M, Azuma T, Kuriyama M, Wakamatsu N.", "source": "Neurology. 59: 1637-1640, 2002.", "doi": null, "year": 2002}
+	}, 
+	{
+		"model": "gene2phenotype_app.publication", "pk": 4,
+		"fields": {"pmid": 20512146, "title": "Mutations in TMEM216 perturb ciliogenesis and cause Joubert, Meckel and related syndromes.", "authors": "Valente EM et al.", "source": "Nat Genet. 42: 619-625, 2010.", "doi": null, "year": 2010}
+	},
+	{
+		"model": "gene2phenotype_app.publication", "pk": 5,
+		"fields": {"pmid": 1882842, "title": "Molecular characterization of variant alpha-subunit of electron transfer flavoprotein in three patients with glutaric acidemia type II--and identification of glycine substitution for valine-157 in the sequence of the precursor, producing an unstable mature protein in a patient.", "authors": "Indo Y, Glassberg R, Yokota I, Tanaka K.", "source": "Am J Hum Genet. 49: 575-580, 1991.", "doi": null, "year": 1991}
+	},
+]

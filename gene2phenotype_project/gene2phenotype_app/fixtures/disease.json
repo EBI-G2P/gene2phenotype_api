@@ -1,0 +1,18 @@
+[
+	{"model": "gene2phenotype_app.disease", "pk": 1, "fields": {"name": "CONGENITAL DISORDERS OF GLYCOSYLATION"}},
+	{"model": "gene2phenotype_app.disease", "pk": 2, "fields": {"name": "JOUBERT SYNDROME TYPE 5"}},
+	{"model": "gene2phenotype_app.disease", "pk": 3, "fields": {"name": "MICROPHTHALMIA SYNDROMIC TYPE 9"}},
+	{"model": "gene2phenotype_app.disease", "pk": 4, "fields": {"name": "HYPOMYELINATION WITH ATROPHY OF THE BASAL GANGLIA AND CEREBELLUM"}},
+	{"model": "gene2phenotype_app.disease", "pk": 5, "fields": {"name": "Griscelli Type 2"}},
+	{"model": "gene2phenotype_app.disease", "pk": 6, "fields": {"name": "INTELLECTUAL DEVELOPMENTAL DISORDER, X-LINKED, SYNDROMIC, 35"}},
+	{"model": "gene2phenotype_app.disease", "pk": 7, "fields": {"name": "Ichthyosis hystrix, Curth-Macklin type"}},
+	{"model": "gene2phenotype_app.disease", "pk": 8, "fields": {"name": "Congenital ichthyosis type 1"}},
+	{"model": "gene2phenotype_app.disease", "pk": 9, "fields": {"name": "Hypercholesterolaemia, autosomal dominant, type B"}},
+
+	{"model": "gene2phenotype_app.diseaseontologyterm", "pk": 1, "fields": {"disease": 1, "ontology_term": 42, "mapped_by_attrib": 36}},
+	{"model": "gene2phenotype_app.diseaseontologyterm", "pk": 2, "fields": {"disease": 2, "ontology_term": 43, "mapped_by_attrib": 36}},
+	{"model": "gene2phenotype_app.diseaseontologyterm", "pk": 3, "fields": {"disease": 3, "ontology_term": 44, "mapped_by_attrib": 36}},
+	{"model": "gene2phenotype_app.diseaseontologyterm", "pk": 5, "fields": {"disease": 6, "ontology_term": 45, "mapped_by_attrib": 36}},
+	{"model": "gene2phenotype_app.diseaseontologyterm", "pk": 6, "fields": {"disease": 7, "ontology_term": 40, "mapped_by_attrib": 36}},
+	{"model": "gene2phenotype_app.diseaseontologyterm", "pk": 7, "fields": {"disease": 8, "ontology_term": 41, "mapped_by_attrib": 36}}
+]
