@@ -1,13 +1,14 @@
-from .base import BaseView, BaseAdd, ListEndpoints
+from .base import BaseView, BaseAdd, BaseUpdate, ListEndpoints
 
-from .panel import PanelList, PanelDetail, PanelRecordsSummary, PanelDownload
+from .panel import (PanelList, PanelDetail, PanelRecordsSummary, 
+                    PanelDownload, LGDEditPanel)
 
 from .locus import LocusGene, LocusGeneSummary, GeneFunction
 
 from .disease import GeneDiseaseView, DiseaseDetail, DiseaseSummary, AddDisease
 
 from .curation import (AddCurationData, ListCurationEntries, CurationDataDetail,
-                       UpdateCurationData, PublishRecord)
+                       UpdateCurationData, PublishRecord, DeleteCurationData)
 
 from .search import SearchView
 
@@ -16,10 +17,12 @@ from .attrib import AttribTypeList, AttribList
 from .user import (UserList, CreateUserView, LoginView, ManageUserView,
                    UserPanels)
 
-from .publication import PublicationDetail, AddPublication
+from .publication import PublicationDetail, AddPublication, LGDEditPublications
 
 from .locus_genotype_disease import (ListMolecularMechanisms, VariantTypesList,
-                                     LocusGenotypeDiseaseDetail, LocusGenotypeDiseaseAddPanel,
-                                     LocusGenotypeDiseaseAddPublications, LocusGenotypeDiseaseAddPhenotypes)
+                                     LocusGenotypeDiseaseDetail, LGDEditCCM,
+                                     LGDEditComment, LGDEditVariantConsequences,
+                                     LGDEditVariantTypes, LGDEditVariantTypeDescriptions,
+                                     LGDUpdateConfidence, LocusGenotypeDiseaseDelete)
 
-from .phenotype import AddPhenotype, PhenotypeDetail
+from .phenotype import AddPhenotype, PhenotypeDetail, LGDEditPhenotypes, LGDEditPhenotypeSummary

@@ -14,6 +14,7 @@ class G2PStableID(models.Model):
     id = models.AutoField(primary_key=True)
     stable_id = models.CharField(max_length=100, null=False, unique=True)
     is_live = models.BooleanField(default=False)
+    is_deleted = models.SmallIntegerField(null=False, default=False)
     class Meta:
         """
             Meta:

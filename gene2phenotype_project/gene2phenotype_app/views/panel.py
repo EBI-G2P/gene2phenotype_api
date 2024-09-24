@@ -1,17 +1,21 @@
-from rest_framework import generics
+from rest_framework import generics, permissions, status
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import Http404, HttpResponse
 from rest_framework.decorators import api_view
+from django.db import transaction
+from django.shortcuts import get_object_or_404
 from django.db.models import Q
-import csv
+import csv, gzip, tempfile, os
 from datetime import datetime
 
 from gene2phenotype_app.models import (Panel, User, LocusGenotypeDisease,
                                        LGDVariantType, LGDVariantGenccConsequence,
                                        LGDMolecularMechanism, LGDPhenotype,
-                                       LGDPublication, LGDCrossCuttingModifier)
+                                       LGDPublication, LGDCrossCuttingModifier,
+                                       LGDPanel)
 
-from gene2phenotype_app.serializers import PanelDetailSerializer
+from gene2phenotype_app.serializers import PanelDetailSerializer, LGDPanelSerializer, UserSerializer
 
 from .base import BaseView
 
@@ -126,6 +130,78 @@ class PanelRecordsSummary(BaseView):
         else:
             self.handle_no_permission('Panel', name)
 
+### Edit data ###
+class LGDEditPanel(APIView):
+    """
+        Method to add or delete LGD-panel association.
+    """
+    http_method_names = ['post', 'update', 'options']
+    serializer_class = LGDPanelSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request, stable_id):
+        """
+            The post method links the current LGD record to the panel.
+            We want to whole process to be done in one db transaction.
+        """
+        user = self.request.user
+
+        panel_name_input = request.data.get("name", None)
+
+        if panel_name_input is None:
+            return Response({"message": f"Please enter a panel name"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if panel name is valid
+        panel_obj = get_object_or_404(Panel, name=panel_name_input)
+
+        # Check if user can update panel
+        user_obj = get_object_or_404(User, email=user)
+        serializer = UserSerializer(user_obj, context={"user" : user})
+        user_panel_list_lower = [panel.lower() for panel in serializer.panels_names(user_obj)]
+
+        if panel_name_input.lower() not in user_panel_list_lower:
+            return Response({"message": f"No permission to update panel {panel_name_input}"}, status=status.HTTP_403_FORBIDDEN)
+
+        lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+
+        serializer_class = LGDPanelSerializer(data={"name": panel_name_input}, context={"lgd": lgd})
+
+        if serializer_class.is_valid():
+            serializer_class.save()
+            response = Response({"message": "Panel added to the G2P entry successfully."}, status=status.HTTP_201_CREATED)
+        else:
+            response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return response
+
+    @transaction.atomic
+    def update(self, request, stable_id):
+        """
+            This method deletes the LGD-panel
+        """
+        panel = request.data.get("name", None)
+        user = request.user # TODO check if user has permission to edit the panel and the record
+
+        # Get G2P entry to be updated
+        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+        panel_obj = get_object_or_404(Panel, name=panel)
+
+        queryset_all_panels = LGDPanel.objects.filter(lgd=lgd_obj, is_deleted=0)
+
+        if(len(queryset_all_panels) == 1):
+            raise Http404(f"Cannot delete panel for ID '{stable_id}'")
+
+        try:
+            LGDPanel.objects.filter(lgd=lgd_obj, panel=panel_obj, is_deleted=0).update(is_deleted=1)
+        except:
+            return Response(
+                {"errors": f"Could not delete panel '{panel}' for ID '{stable_id}'"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            return Response(
+                {"message": f"Panel '{panel}' successfully deleted for ID '{stable_id}'"},
+                 status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def PanelDownload(request, name):
@@ -160,12 +236,7 @@ def PanelDownload(request, name):
 
     # Get date to attach to filename
     date_now = datetime.today().strftime('%Y-%m-%d')
-    filename = f"G2P_{name}_{date_now}.csv"
-
-    response = HttpResponse(
-        content_type="text/csv",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
-    )
+    filename_final = f"G2P_{name}_{date_now}.csv.gz"
 
     # Preload data attached to the g2p entries
     # Preload variant types
@@ -191,15 +262,74 @@ def PanelDownload(request, name):
             lgd_varianconsequence_data[data['lgd__id']].append(data['variant_consequence__term'])
 
     # Preload molecular mechanism
-    lgd_mechanism_data = {} # key = lgd_id; value = molecular mechanism value
+    lgd_mechanism_data = {} # key = lgd_id; {value = molecular mechanism value, support = mechanism support ('inferred' or 'evidence')}
     queryset_lgd_mechanism = LGDMolecularMechanism.objects.filter(
-        is_deleted=0).select_related('lgd__id','mechanism__value').values('lgd__id', 'mechanism__value')
-    
+        is_deleted=0).select_related('lgd__id','mechanism__value', 'mechanism_support__value'
+        ).prefetch_related('lgd_molecular_mechanism_evidence').values(
+            'lgd__id',
+            'mechanism__value',
+            'mechanism_support__value',
+            'lgdmolecularmechanismevidence__evidence__subtype',
+            'lgdmolecularmechanismevidence__evidence__value',
+            'lgdmolecularmechanismevidence__publication__pmid')
+
+    evidence_data = {}
+
+    # First collect the evidence data for each lgd_id
+    for data in queryset_lgd_mechanism:
+        if data['mechanism_support__value'] == "evidence":
+            mechanism_value = data['mechanism__value']
+            subtype = data['lgdmolecularmechanismevidence__evidence__subtype']
+            value = data['lgdmolecularmechanismevidence__evidence__value']
+            pmid = data['lgdmolecularmechanismevidence__publication__pmid']
+
+            if data['lgd__id'] not in evidence_data:
+                evidence_data[data['lgd__id']] = {
+                    mechanism_value: [{"subtype": subtype, "value": value, "pmid" :pmid}]
+                }
+            else:
+                # this should be the most common scenario
+                if mechanism_value in evidence_data[data['lgd__id']]:
+                    evidence_data[data['lgd__id']][mechanism_value].append({"subtype": subtype, "value": value, "pmid":pmid})
+                else:
+                    # if lgd_id has multiple mechanisms
+                    evidence_data[data['lgd__id']].update({
+                        mechanism_value: [{subtype: 1, value: 1, pmid :pmid}]
+                    })
+
+    # Prepare final dict of mechanisms + evidence (if applicable)
     for data in queryset_lgd_mechanism:
         if data['lgd__id'] not in lgd_mechanism_data:
-            lgd_mechanism_data[data['lgd__id']] = [data['mechanism__value']]
+            # check if there is evidence
+            if data['lgd__id'] in evidence_data:
+                evidence = evidence_data[data['lgd__id']][data['mechanism__value']]
+                lgd_mechanism_data[data['lgd__id']] = [{
+                    "value": data['mechanism__value'],
+                    "support": data['mechanism_support__value'],
+                    "evidence": evidence
+                }]
+
+            else:
+                lgd_mechanism_data[data['lgd__id']] = [{
+                    "value": data['mechanism__value'],
+                    "support": data['mechanism_support__value']
+                }]
+
         else:
-            lgd_mechanism_data[data['lgd__id']].append(data['mechanism__value'])
+            # check if there is evidence
+            if data['lgd__id'] in evidence_data:
+                evidence = evidence_data[data['lgd__id']][data['mechanism__value']]
+                lgd_mechanism_data[data['lgd__id']].append({
+                    "value": data['mechanism__value'],
+                    "support": data['mechanism_support__value'],
+                    "evidence": evidence
+                })
+
+            else:
+                lgd_mechanism_data[data['lgd__id']].append({
+                    "value": data['mechanism__value'],
+                    "support": data['mechanism_support__value']
+                })
 
     # Preload phenotypes
     lgd_phenotype_data = {} # key = lgd_id; value = phenotype accession
@@ -233,27 +363,6 @@ def PanelDownload(request, name):
             lgd_ccm_data[data['lgd__id']] = [data['ccm__value']]
         else:
             lgd_ccm_data[data['lgd__id']].append(data['ccm__value'])
-
-    # Prepare to write to output file
-    writer = csv.writer(response)
-    # Write file header
-    writer.writerow([
-            "g2p id",
-            "gene symbol",
-            "gene ids",
-            "gene previous symbols",
-            "disease name",
-            "disease ids",
-            "allelic requirement",
-            "confidence",
-            "variant consequence",
-            "variant type",
-            "molecular mechanism",
-            "phenotypes",
-            "publications",
-            "cross cutting modifier",
-            "date of last review"
-    ])
 
     # Authenticated users can download all panels
     # Non authenticated users can only download visible panels
@@ -309,75 +418,127 @@ def PanelDownload(request, name):
                     and data['locus__locusidentifier__identifier'] not in extra_data_dict[g2p_id]['locus_ids']):
                     extra_data_dict[g2p_id]['locus_ids'].append(data['locus__locusidentifier__identifier'])
 
-        # Prepare final data
-        for lgd in queryset_list:
-            lgd_id = lgd.id
-            variant_types = ""
-            variant_consequences = ""
-            molecular_mechanism = ""
-            phenotypes = ""
-            publications = ""
-            ccm = ""
+        with tempfile.NamedTemporaryFile(suffix='.csv.gz', delete=False) as temp_file:
+            # Use the tmp file name
+            filename = temp_file.name
 
-            # extra data for disease and locus
-            disease_ids = ""
-            locus_ids = ""
-            locus_previous = ""
+            # Prepare to write to output file
+            with gzip.open(filename, "wt") as fh:
+                writer = csv.writer(fh, delimiter=',')
 
-            if lgd_id in extra_data_dict:
-                if 'disease_ids' in extra_data_dict[lgd_id]:
-                    disease_ids = ', '.join(extra_data_dict[lgd_id]['disease_ids'])
-                if 'locus_ids' in extra_data_dict[lgd_id]:
-                    locus_ids = ', '.join(extra_data_dict[lgd_id]['locus_ids'])
-                if 'locus_previous_symbols' in extra_data_dict[lgd_id]:
-                    locus_previous = ', '.join(extra_data_dict[lgd_id]['locus_previous_symbols'])
+                # Write file header
+                writer.writerow([
+                    "g2p id",
+                    "gene symbol",
+                    "gene ids",
+                    "gene previous symbols",
+                    "disease name",
+                    "disease ids",
+                    "allelic requirement",
+                    "confidence",
+                    "variant consequence",
+                    "variant type",
+                    "molecular mechanism",
+                    "molecular mechanism evidence",
+                    "phenotypes",
+                    "publications",
+                    "cross cutting modifier",
+                    "date of last review"
+                ])
 
-            # Get preloaded variant types for this g2p entry
-            if lgd_id in lgd_variantype_data:
-                variant_types = ', '.join(lgd_variantype_data[lgd_id])
+                # Prepare final data
+                for lgd in queryset_list:
+                    lgd_id = lgd.id
+                    variant_types = ""
+                    variant_consequences = ""
+                    molecular_mechanism = ""
+                    molecular_mechanism_evidence = ""
+                    phenotypes = ""
+                    publications = ""
+                    ccm = ""
 
-            # Get preloaded variant consequenes for this g2p entry
-            if lgd_id in lgd_varianconsequence_data:
-                variant_consequences = ', '.join(lgd_varianconsequence_data[lgd_id])
+                    # extra data for disease and locus
+                    disease_ids = ""
+                    locus_ids = ""
+                    locus_previous = ""
 
-            # Get preloaded molecular mechanism for this g2p entry
-            if lgd_id in lgd_mechanism_data:
-                molecular_mechanism = ', '.join(lgd_mechanism_data[lgd_id])
+                    if lgd_id in extra_data_dict:
+                        if 'disease_ids' in extra_data_dict[lgd_id]:
+                            disease_ids = '; '.join(extra_data_dict[lgd_id]['disease_ids'])
+                        if 'locus_ids' in extra_data_dict[lgd_id]:
+                            locus_ids = '; '.join(extra_data_dict[lgd_id]['locus_ids'])
+                        if 'locus_previous_symbols' in extra_data_dict[lgd_id]:
+                            locus_previous = '; '.join(extra_data_dict[lgd_id]['locus_previous_symbols'])
 
-            # Get preloaded phenotypes for this g2p entry
-            if lgd_id in lgd_phenotype_data:
-                phenotypes = ', '.join(lgd_phenotype_data[lgd_id])
-            
-            # Get preloaded publications for this g2p entry
-            if lgd_id in lgd_publication_data:
-                publications = ', '.join(lgd_publication_data[lgd_id])
+                    # Get preloaded variant types for this g2p entry
+                    if lgd_id in lgd_variantype_data:
+                        variant_types = '; '.join(lgd_variantype_data[lgd_id])
 
-            # Get preloaded cross cutting modifier for this g2p entry
-            if lgd_id in lgd_ccm_data:
-                ccm = ', '.join(lgd_ccm_data[lgd_id])
+                    # Get preloaded variant consequenes for this g2p entry
+                    if lgd_id in lgd_varianconsequence_data:
+                        variant_consequences = '; '.join(lgd_varianconsequence_data[lgd_id])
 
-            # Write data to output file
-            writer.writerow([
-                lgd.stable_id.stable_id,
-                lgd.locus.name,
-                locus_ids, # locus ids (hgnc, ensembl)
-                locus_previous, # gene previous symbols
-                lgd.disease.name,
-                disease_ids, # omim and mondo ids
-                lgd.genotype.value,
-                lgd.confidence.value,
-                variant_consequences,
-                variant_types,
-                molecular_mechanism,
-                phenotypes,
-                publications,
-                ccm,
-                lgd.date_review
-            ])
+                    # Get preloaded molecular mechanism for this g2p entry
+                    if lgd_id in lgd_mechanism_data:
+                        final_mechanisms = set()
+                        mechanism_evidence = set()
+                        for mechanism_data in lgd_mechanism_data[lgd_id]:
+                            m_value = mechanism_data["value"]
+                            m_support = mechanism_data["support"]
+                            final_mechanisms.add(f"{m_value} ({m_support})")
 
+                            if "evidence" in mechanism_data:
+                                for element in mechanism_data["evidence"]:
+                                    m_subtype = element["subtype"]
+                                    e_value = element["value"]
+                                    e_pmid = element["pmid"]
+                                    mechanism_evidence.add(f"{m_subtype}:{e_value}:{e_pmid}")
+                        molecular_mechanism = "; ".join(final_mechanisms)
+                        molecular_mechanism_evidence = "; ".join(mechanism_evidence)
+
+                    # Get preloaded phenotypes for this g2p entry
+                    if lgd_id in lgd_phenotype_data:
+                        phenotypes = '; '.join(lgd_phenotype_data[lgd_id])
+
+                    # Get preloaded publications for this g2p entry
+                    if lgd_id in lgd_publication_data:
+                        publications = '; '.join(lgd_publication_data[lgd_id])
+
+                    # Get preloaded cross cutting modifier for this g2p entry
+                    if lgd_id in lgd_ccm_data:
+                        ccm = '; '.join(lgd_ccm_data[lgd_id])
+
+                    # Write data to output file
+                    writer.writerow([
+                        lgd.stable_id.stable_id,
+                        lgd.locus.name,
+                        locus_ids,
+                        locus_previous,
+                        lgd.disease.name,
+                        disease_ids,
+                        lgd.genotype.value,
+                        lgd.confidence.value,
+                        variant_consequences,
+                        variant_types,
+                        molecular_mechanism,
+                        molecular_mechanism_evidence,
+                        phenotypes,
+                        publications,
+                        ccm,
+                        lgd.date_review
+                    ])
     else:
         # If user is not authenticated then it can only download visible panels
         # Return no matching panel
         raise Http404(f"No matching panel found for: {name}")
+
+    response = HttpResponse(
+        open(filename, 'rb'),
+        content_type="text/gzip",
+        headers={"Content-Disposition": f'attachment; filename="{filename_final}"'}
+    )
+
+    # clean temp file
+    os.remove(filename)
 
     return response

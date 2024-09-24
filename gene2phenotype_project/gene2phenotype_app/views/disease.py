@@ -74,7 +74,7 @@ class DiseaseDetail(BaseView):
         Display information for a specific disease.
 
         Args:
-            (str) disease id: disease name or ontology ID (Mondo)
+            (str) disease id: disease name or ontology ID (Mondo, OMIM)
 
         Returns:
             Disease object
@@ -85,8 +85,8 @@ class DiseaseDetail(BaseView):
     def get_queryset(self):
         id = self.kwargs['id']
 
-        # Fetch disease by MONDO ID
-        if id.startswith('MONDO'):
+        # Fetch disease by MONDO ID or by OMIM ID (only digits)
+        if id.startswith('MONDO') or id.isdigit():
             ontology_term = OntologyTerm.objects.filter(accession=id)
 
             if not ontology_term.exists():
@@ -142,8 +142,9 @@ class DiseaseSummary(DiseaseDetail):
 ### Add data
 """
     Add new disease.
+    This view is called by the endpoint that directly adds a disease (add/disease/).
     The create method is in the CreateDiseaseSerializer.
 """
 class AddDisease(BaseAdd):
     serializer_class = CreateDiseaseSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]

@@ -5,6 +5,7 @@ from django.db import transaction
 from django.urls import get_resolver
 from rest_framework.decorators import api_view
 from gene2phenotype_app.models import User
+import re
 
 
 class BaseView(generics.ListAPIView):
@@ -38,6 +39,17 @@ class BaseAdd(generics.CreateAPIView):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+class BaseUpdate(generics.UpdateAPIView):
+    """
+        Generic methods to handle expection and permissions.
+    """
+    def handle_no_permission(self, data, stable_id):
+        if data is None:
+            raise Http404(f"{data}")
+        else:
+            raise Http404(f"Could not find '{data}' for ID '{stable_id}'")
+
+
 @api_view(['GET'])
 def ListEndpoints(request):
     """
@@ -67,11 +79,15 @@ def ListEndpoints(request):
             # Remove 'gene2phenotype/api/' from the urls
             pattern = pattern.replace("%(", "<").replace(")s", ">").replace("gene2phenotype/api/", "")
 
+            # To filter the endpoints to update LGD records
+            match = re.match(r"lgd\/\<stable_id\>\/\w+\/", pattern)
+
             # Authenticated users have access to all endpoints
             # Non-authenticated users can only search data
-            if user_obj is not None and pattern != "":
+            if(user_obj is not None and pattern != ""):
                 list_urls.add(pattern)
-            elif user_obj is None and pattern != "" and "add" not in pattern and "curation" not in pattern:
+            elif(user_obj is None and pattern != "" and "add" not in pattern
+                 and "curation" not in pattern and not match):
                 list_urls.add(pattern)
 
     return Response({"endpoints": sorted(list_urls)})

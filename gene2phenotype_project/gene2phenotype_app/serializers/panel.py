@@ -51,17 +51,19 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         """
             Retrives the date of the last time a record associated with the panel was updated.
         """
+        panel_last_update = None
 
-        lgd_panel = LGDPanel.objects.filter(
+        queryset = LGDPanel.objects.filter(
             panel=id,
             lgd__is_reviewed=1,
             lgd__is_deleted=0,
             lgd__date_review__isnull=False
-            ).select_related('lgd'
-                             ).latest('lgd__date_review'
-                                      ).lgd.date_review
+            ).select_related('lgd').order_by('-lgd__date_review')
 
-        return lgd_panel.date() if lgd_panel else None
+        if queryset:
+            panel_last_update = queryset.first().lgd.date_review
+
+        return panel_last_update.date() if panel_last_update else None
 
     # Calculates the stats on the fly
     # Returns a JSON object
@@ -98,8 +100,9 @@ class PanelDetailSerializer(serializers.ModelSerializer):
     def records_summary(self, panel):
         """
             A summary of the last 10 records associated with the panel.
+            TODO: check refuted and disputed records
         """
-
+        # TODO: improve query, this can be done in a single query
         lgd_panels = LGDPanel.objects.filter(panel=panel.id, is_deleted=0)
 
         lgd_panels_selected = lgd_panels.select_related('lgd',

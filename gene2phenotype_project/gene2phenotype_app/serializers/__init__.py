@@ -8,13 +8,18 @@ from .publication import PublicationSerializer, LGDPublicationSerializer, LGDPub
 
 from .locus import LocusSerializer, LocusGeneSerializer
 
-from .phenotype import PhenotypeOntologyTermSerializer, LGDPhenotypeSerializer, LGDPhenotypeListSerializer
+from .phenotype import (PhenotypeOntologyTermSerializer, LGDPhenotypeSerializer,
+                        LGDPhenotypeListSerializer, LGDPhenotypeSummarySerializer)
 
 from .disease import (DiseaseSerializer, DiseaseOntologyTermSerializer,
                       CreateDiseaseSerializer, DiseaseDetailSerializer,
                       GeneDiseaseSerializer)
 
-from .locus_genotype_disease import LocusGenotypeDiseaseSerializer
+from .locus_genotype_disease import (LocusGenotypeDiseaseSerializer, LGDCommentSerializer,
+                                     LGDVariantConsequenceListSerializer, LGDVariantGenCCConsequenceSerializer,
+                                     LGDCrossCuttingModifierListSerializer, LGDCrossCuttingModifierSerializer,
+                                     LGDVariantTypeListSerializer, LGDVariantTypeSerializer,
+                                     LGDVariantTypeDescriptionListSerializer, LGDVariantTypeDescriptionSerializer)
 
 from .stable_id import G2PStableIDSerializer
 

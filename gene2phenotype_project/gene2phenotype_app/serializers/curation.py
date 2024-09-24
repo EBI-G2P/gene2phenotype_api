@@ -144,8 +144,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             )
 
             raise serializers.ValidationError({
-                "message": "Found another record with same locus, genotype and disease",
-                "Please check G2P record": lgd_obj.stable_id.stable_id
+                "message": f"Found another record with same locus, genotype and disease. Please check G2P ID '{lgd_obj.stable_id.stable_id}'"
             })
         except LocusGenotypeDisease.DoesNotExist:
             return locus_obj
@@ -444,7 +443,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 lgd_ccm_serializer.save()
 
         ### Variant (GenCC) consequences ###
-        # Example: 'variant_consequences': [{'variant_consequence': 'altered_gene_product_level', 'support': 'inferred'}
+        # Example: 'variant_consequences': [{'variant_consequence': 'altered_gene_product_level', 'support': 'inferred'}]
         for var_consequence in data.json_data["variant_consequences"]:
             lgd_var_cons_serializer = LGDVariantGenCCConsequenceSerializer(
                 data=var_consequence,
@@ -455,13 +454,13 @@ class CurationDataSerializer(serializers.ModelSerializer):
             if lgd_var_cons_serializer.is_valid(raise_exception=True):
                 # save() is going to call create()
                 lgd_var_cons_serializer.save()
-
+ 
         ### Variant types ###
         # Example: {'comment': 'This is a frameshift', 'inherited': false, 'de_novo': false, 
         # 'unknown_inheritance': false, 'nmd_escape': True, 'primary_type': 'protein_changing',
         # 'secondary_type': 'frameshift_variant', 'supporting_papers': [38737272, 38768424]}
         for variant_type in data.json_data["variant_types"]:
-            LGDVariantTypeSerializer(context={'lgd': lgd_obj}).create(variant_type)
+            LGDVariantTypeSerializer(context={'lgd': lgd_obj, 'user': user_obj}).create(variant_type)
 
         # Variant description (HGVS)
         for variant_type_desc in data.json_data["variant_descriptions"]:

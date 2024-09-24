@@ -35,16 +35,36 @@ urlpatterns = [
     path('add/disease/', views.AddDisease.as_view(), name="add_disease"),
     path('add/phenotype/', views.AddPhenotype.as_view(), name="add_phenotype"),
     path('add/publication/', views.AddPublication.as_view(), name="add_publication"),
-    # Add data to the G2P record (LGD)
-    path('lgd/<str:stable_id>/add_panel/', views.LocusGenotypeDiseaseAddPanel.as_view(), name="lgd_add_panel"),
-    path('lgd/<str:stable_id>/add_publications/', views.LocusGenotypeDiseaseAddPublications.as_view(), name="lgd_add_publications"),
-    path('lgd/<str:stable_id>/add_phenotypes/', views.LocusGenotypeDiseaseAddPhenotypes.as_view(), name="lgd_add_phenotypes"),
+
+    ### Endpoints to update/add/delete the G2P record (LGD) ###
+    path('lgd/<str:stable_id>/update_confidence/', views.LGDUpdateConfidence.as_view(), name="lgd_update_confidence"),
+    # Add or delete panel from LGD record. Actions: UPDATE (to delete one panel), POST (to add one panel)
+    path('lgd/<str:stable_id>/panel/', views.LGDEditPanel.as_view(), name="lgd_panel"),
+    # Add or delete publication(s) from LGD record. Actions: UPDATE (to delete one publication), POST (to add multiple publications)
+    path('lgd/<str:stable_id>/publication/', views.LGDEditPublications.as_view(), name="lgd_publication"),
+    # Add or delete phenotype(s) from LGD record. Actions: UPDATE (to delete one phenotype), POST (to add multiple phenotypes)
+    path('lgd/<str:stable_id>/phenotype/', views.LGDEditPhenotypes.as_view(), name="lgd_phenotype"),
+    # Add or delete a phenotype summary from LGD record. Actions: UPDATE (to delete data), POST (to add data)
+    path('lgd/<str:stable_id>/phenotype_summary/', views.LGDEditPhenotypeSummary.as_view(), name="lgd_phenotype_summary"),
+    # Add or delete variant consequence(s) from LGD record. Actions: UPDATE (to delete one consequence), POST (to add multiple consequences)
+    path('lgd/<str:stable_id>/variant_consequence/', views.LGDEditVariantConsequences.as_view(), name="lgd_var_consequence"),
+    # Add or delete cross cutting modifier(s) from LGD record. Actions: UPDATE (to delete one ccm), POST (to add multiple ccm)
+    path('lgd/<str:stable_id>/cross_cutting_modifier/', views.LGDEditCCM.as_view(), name="lgd_cross_cutting_modifier"),
+    # Add or delete variant type(s) from LGD record. Actions: UPDATE (to delete one variant type), POST (to add multiple variant types)
+    path('lgd/<str:stable_id>/variant_type/', views.LGDEditVariantTypes.as_view(), name="lgd_variant_type"),
+    # Add or delete variant description(s) from LGD record. Actions: UPDATE (to delete one variant description), POST (to add multiple variant descriptions)
+    path('lgd/<str:stable_id>/variant_description/', views.LGDEditVariantTypeDescriptions.as_view(), name="lgd_variant_description"),
+    # Add or delete comment from LGD record. Actions: UPDATE (to delete comment), POST (to add comment)
+    path('lgd/<str:stable_id>/comment/', views.LGDEditComment.as_view(), name="lgd_comment"),
+    # Delete LGD record. Action: UPDATE
+    path('lgd/<str:stable_id>/delete/', views.LocusGenotypeDiseaseDelete.as_view(), name="lgd_delete"),
 
     ### Curation endpoints ###
     path('add/curation/', views.AddCurationData.as_view(), name="add_curation_data"),
     path('curations/', views.ListCurationEntries.as_view(), name="list_curation_entries"),
     path('curation/<str:stable_id>/', views.CurationDataDetail.as_view(), name="curation_details"),
     path('curation/<str:stable_id>/update/', views.UpdateCurationData.as_view(), name="update_curation"),
+    path('curation/<str:stable_id>/delete', views.DeleteCurationData.as_view(), name="delete_curation"),
 
     ### Publish data
     path('curation/publish/<str:stable_id>/', views.PublishRecord.as_view(), name="publish_record"),

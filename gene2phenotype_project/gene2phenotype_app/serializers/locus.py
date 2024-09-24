@@ -86,8 +86,9 @@ class LocusGeneSerializer(LocusSerializer):
     def records_summary(self, user):
         """
             Returns a summary of the G2P records associated with the locus.
+            TODO: check refuted and disputed records
         """
-
+        # TODO: improve query, this can be done in a single query
         lgd_list = LocusGenotypeDisease.objects.filter(locus=self.id, is_deleted=0)
 
         if user.is_authenticated:
