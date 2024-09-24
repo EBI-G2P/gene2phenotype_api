@@ -6,12 +6,19 @@ class AttribTypeSerializer(serializers.ModelSerializer):
     """
         Return the list of attribs for a specific type.
     """
-
+    # to do - the way we presently fetch mutation mechanism is wrong 
     def get_all_attribs(self, id):
         # Get list of attribs for the specific type
-        queryset = Attrib.objects.filter(type=id)
+        queryset = Attrib.objects.filter(type=id, is_deleted=0)
         code_list = [attrib.value for attrib in queryset]
         return code_list
+
+    def get_all_attrib_description(self, id):
+        queryset = Attrib.objects.filter(type=id, is_deleted=0)
+        print(queryset)
+        code_description = [{attrib.value: attrib.description} for attrib in queryset]
+        return code_description
+    
 
     class Meta:
         model = AttribType
@@ -25,3 +32,6 @@ class AttribSerializer(serializers.ModelSerializer):
     class Meta:
         model = Attrib
         fields = ['value']
+
+
+

@@ -13,7 +13,6 @@ class AttribTypeList(generics.ListAPIView):
         Returns:
                 (dict) response: list of attribs for each attrib type.
     """
-    # TODO: add column 'is_deleted' and select only non deleted attrib
     queryset = AttribType.objects.all()
 
     def list(self, request, *args, **kwargs):
@@ -23,6 +22,20 @@ class AttribTypeList(generics.ListAPIView):
             serializer = AttribTypeSerializer(attrib_type)
             all_attribs = serializer.get_all_attribs(attrib_type.id)
             result[attrib_type.code] = all_attribs
+
+        return Response(result)
+
+class AttribTypeDescriptionList(generics.ListAPIView):
+
+    queryset = AttribType.objects.all()
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        result = {}
+        for attrib_type in queryset:
+            serializer = AttribTypeSerializer(attrib_type)
+            all_attribs_description = serializer.get_all_attrib_description(attrib_type.id)
+            result[attrib_type.code] = all_attribs_description
 
         return Response(result)
 

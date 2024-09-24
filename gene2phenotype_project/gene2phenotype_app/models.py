@@ -380,6 +380,8 @@ class Attrib(models.Model):
     id = models.AutoField(primary_key=True)
     type = models.ForeignKey("AttribType", on_delete=models.PROTECT)
     value = models.CharField(max_length=255, null=False)
+    description = models.CharField(max_length=255)
+    is_deleted = models.SmallIntegerField(null=False, default=False)
 
     def __str__(self):
         return self.value
