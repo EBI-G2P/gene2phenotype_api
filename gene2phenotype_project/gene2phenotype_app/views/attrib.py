@@ -26,6 +26,41 @@ class AttribTypeList(generics.ListAPIView):
         return Response(result)
 
 class AttribTypeDescriptionList(generics.ListAPIView):
+    """
+        API view to list all attribute types with their associated attribute descriptions.
+
+        This view inherits from Django REST Framework's `ListAPIView` and is responsible
+        for retrieving and returning a dictionary where each key corresponds to an 
+        attribute type code, and each value is a list of dictionaries. Each dictionary 
+        in the list contains a mapping of an attribute's value to its description.
+
+        Attributes:
+            queryset (QuerySet): The base queryset of `AttribType` objects.
+
+        Methods:
+            list(request, *args, **kwargs):
+                Customizes the default list method to return a dictionary where each key 
+                is an attribute type code and each value is a list of attribute descriptions.
+
+        Example:
+            Suppose the `AttribType` model has entries with `code = "type1"` and an `id` of `1`.
+            If `Attrib` objects related to this type have values and descriptions, the 
+            response might look like this:
+
+            {
+                "type1": [
+                    {"definitive": "This category is well-supported by evidence."},
+                    {"disputed": "This category has conflicting evidence."},
+                    ...
+                ],
+                "type2": [
+                    {"limited": "This category is based on limited evidence."},
+                        {"strong": "This category is strongly supported by evidence."},
+                    ...
+                ]
+            }
+    """
+    
 
     queryset = AttribType.objects.all()
     
