@@ -13,7 +13,7 @@ class AttribTypeList(generics.ListAPIView):
         Returns:
                 (dict) response: list of attribs for each attrib type.
     """
-    queryset = AttribType.objects.all()
+    queryset = AttribType.objects.filter(is_deleted=0)
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -62,7 +62,7 @@ class AttribTypeDescriptionList(generics.ListAPIView):
     """
     
 
-    queryset = AttribType.objects.all()
+    queryset = AttribType.objects.filter(is_deleted=0)
     
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
