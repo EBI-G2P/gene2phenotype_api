@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from django.db.models import Q
+
 from ..models import Panel, User, UserPanel, LGDPanel, Attrib
 
 
@@ -97,15 +99,18 @@ class PanelDetailSerializer(serializers.ModelSerializer):
             'by_confidence': confidences
         }
 
-    def records_summary(self, panel):
+    def records_summary(self, panel, user):
         """
             A summary of the last 10 records associated with the panel.
-            TODO: check refuted and disputed records
+            If the user is non-authenticated:
+                - it does not return refuted and disputed records
+                - only returns records linked to visible panels
         """
         # TODO: improve query, this can be done in a single query
         lgd_panels = LGDPanel.objects.filter(panel=panel.id, is_deleted=0)
 
-        lgd_panels_selected = lgd_panels.select_related('lgd',
+        if user.is_authenticated:
+            lgd_panels_selected = lgd_panels.select_related('lgd',
                                                         'lgd__locus',
                                                         'lgd__disease',
                                                         'lgd__genotype',
@@ -115,6 +120,20 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                                                         'lgd__lgd_variant_type',
                                                         'lgd__lgd_molecular_mechanism'
                                                     ).order_by('-lgd__date_review').filter(lgd__is_deleted=0)
+        else:
+            lgd_panels_selected = lgd_panels.select_related('lgd',
+                                                        'lgd__locus',
+                                                        'lgd__disease',
+                                                        'lgd__genotype',
+                                                        'lgd__confidence'
+                                                    ).prefetch_related(
+                                                        'lgd__lgd_variant_gencc_consequence',
+                                                        'lgd__lgd_variant_type',
+                                                        'lgd__lgd_molecular_mechanism'
+                                                    ).order_by('-lgd__date_review').filter(Q(lgd__is_deleted=0) &
+                                                                                           Q(panel__is_visible=1) &
+                                                                                           ~Q(lgd__confidence__value='disputed') &
+                                                                                           ~Q(lgd__confidence__value='refuted'))
 
         lgd_objects_list = list(lgd_panels_selected.values('lgd__locus__name',
                                                            'lgd__disease__name',

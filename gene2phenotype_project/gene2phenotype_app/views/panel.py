@@ -120,7 +120,7 @@ class PanelRecordsSummary(BaseView):
 
         if flag == 1:
             serializer = PanelDetailSerializer()
-            summary = serializer.records_summary(queryset.first())
+            summary = serializer.records_summary(queryset.first(), self.request.user)
             response_data = {
                 'panel_name': queryset.first().name,
                 'records_summary': summary,

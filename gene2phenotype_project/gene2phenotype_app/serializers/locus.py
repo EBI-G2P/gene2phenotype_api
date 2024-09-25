@@ -1,7 +1,9 @@
 from rest_framework import serializers
+from django.db.models import Q
+
 from ..models import (Locus, LocusIdentifier, LocusAttrib,
-                      Attrib, AttribType, Sequence, UniprotAnnotation,
-                      GeneDisease, Source, LocusGenotypeDisease)
+                      AttribType, UniprotAnnotation,
+                      LocusGenotypeDisease)
 
 from ..utils import validate_gene
 
@@ -86,7 +88,9 @@ class LocusGeneSerializer(LocusSerializer):
     def records_summary(self, user):
         """
             Returns a summary of the G2P records associated with the locus.
-            TODO: check refuted and disputed records
+            If the user is non-authenticated:
+                - it does not return refuted and disputed records
+                - only returns records linked to visible panels
         """
         # TODO: improve query, this can be done in a single query
         lgd_list = LocusGenotypeDisease.objects.filter(locus=self.id, is_deleted=0)
@@ -99,7 +103,9 @@ class LocusGeneSerializer(LocusSerializer):
         else:
             lgd_select = lgd_list.select_related('disease', 'genotype', 'confidence'
                                                ).prefetch_related('lgd_panel', 'panel', 'lgd_variant_gencc_consequence', 'lgd_variant_type', 'lgd_molecular_mechanism'
-                                                                  ).order_by('-date_review').filter(lgdpanel__panel__is_visible=1)
+                                                                  ).order_by('-date_review').filter(Q(lgdpanel__panel__is_visible=1) &
+                                                                                                    ~Q(confidence__value='disputed') &
+                                                                                                    ~Q(confidence__value='refuted'))
 
         lgd_objects_list = list(lgd_select.values('disease__name',
                                                   'lgdpanel__panel__name',
