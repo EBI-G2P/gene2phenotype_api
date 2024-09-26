@@ -6,7 +6,6 @@ class AttribTypeSerializer(serializers.ModelSerializer):
     """
         Return the list of attribs for a specific type.
     """
-    # to do - the way we presently fetch mutation mechanism is wrong 
     def get_all_attribs(self, id):
         # Get list of attribs for the specific type
         queryset = Attrib.objects.filter(type=id, is_deleted=0)
