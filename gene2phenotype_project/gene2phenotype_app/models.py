@@ -637,10 +637,9 @@ class GeneStats(models.Model):
     id = models.AutoField(primary_key=True)
     gene = models.ForeignKey("Locus", on_delete=models.PROTECT)
     gene_symbol = models.CharField(max_length=100, null=False)
-    locus_identifier = models.ForeignKey("LocusIdentifier", on_delete=models.PROTECT)
     score = models.FloatField(default='0.0')
     source = models.ForeignKey("Source", on_delete=models.PROTECT)
-    description  = models.ForeignKey("Attrib", default='', on_delete=models.PROTECT)
+    description_attrib  = models.ForeignKey("Attrib", default='', on_delete=models.PROTECT)
 
     class Meta:
         db_table = "gene_stats"
