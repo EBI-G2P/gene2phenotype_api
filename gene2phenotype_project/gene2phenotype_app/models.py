@@ -231,6 +231,7 @@ class CVMolecularMechanism(models.Model):
     # the subtype is only populated for the evidence
     subtype = models.CharField(max_length=100, choices=choices_evidence_types, null=True)
     value = models.CharField(max_length=100)
+    description = models.TextField(null=True, blank=True)
 
     class Meta:
         db_table = "cv_molecular_mechanism"
