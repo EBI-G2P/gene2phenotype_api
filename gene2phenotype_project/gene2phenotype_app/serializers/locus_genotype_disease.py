@@ -395,6 +395,13 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         return lgd_obj
 
     def update(self, instance, validated_data):
+        """
+            Method to update the record confidence.
+
+            Mandatory fields to update confidence:
+                            - confidence value
+                            - confidence_support
+        """
         # validated_data example:
         # {'confidence': {'value': 'definitive'}, 'confidence_support': '', 'is_reviewed': None}
         confidence = validated_data.get("confidence")["value"]
@@ -408,20 +415,22 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 type__code = "confidence_category"
             )
         except Attrib.DoesNotExist:
-            raise serializers.ValidationError({"message": f"Invalid confidence value {confidence}"})
+            raise serializers.ValidationError({"error": f"Invalid confidence value {confidence}"})
 
         # Check new confidence is not the same as current value
         if(instance.confidence == confidence_obj):
             raise serializers.ValidationError(
-                {"message": f"G2P record '{instance.stable_id.stable_id}' already has confidence value {confidence}"}
+                {"error": f"G2P record '{instance.stable_id.stable_id}' already has confidence value {confidence}"}
             )
 
         # Update confidence
         instance.confidence = confidence_obj
 
-        if(confidence_support != ""):
-            # Update confidence support
-            instance.confidence_support = confidence_support
+        # Support is mandatory
+        if(confidence_support == "" or confidence_support is None):
+            raise serializers.ValidationError({"error": f"Cannot update confidence value without supporting evidence. Please input a 'confidence_support'."})
+        # Update confidence support
+        instance.confidence_support = confidence_support
 
         # is_reviewed only accepts 1 or 0
         if(is_reviewed is not None and (is_reviewed == 1 or is_reviewed == 0)):

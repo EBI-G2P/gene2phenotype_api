@@ -156,7 +156,6 @@ class LGDUpdateConfidence(generics.UpdateAPIView):
 
     def get_queryset(self):
         stable_id = self.kwargs['stable_id']
-        user = self.request.user
 
         g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
         # Get the entry for this user
@@ -167,9 +166,13 @@ class LGDUpdateConfidence(generics.UpdateAPIView):
         else:
             return queryset
 
-    def update(self, request):
+    def update(self, request, stable_id):
         """
             This method updates the LGD confidence.
+
+            Mandatory fields to update confidence:
+                            - confidence value
+                            - confidence_support
 
             Input example:
                     {
@@ -179,8 +182,10 @@ class LGDUpdateConfidence(generics.UpdateAPIView):
                     }
 
             Raises:
+                No permission to update record
                 Invalid confidence value
                 G2P record already has same confidence value
+                Cannot update confidence value without supporting evidence.
         """
         user = request.user
 
@@ -199,9 +204,10 @@ class LGDUpdateConfidence(generics.UpdateAPIView):
         serializer_user = UserSerializer(user_obj, context={"user" : user})
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
         has_common = serializer.check_user_permission(lgd_obj, user_panel_list)
+
         if has_common is False:
             return Response(
-                {"message": f"No permission to update record '{lgd_obj.stable_id.stable_id}'"},
+                {"error": f"No permission to update record '{lgd_obj.stable_id.stable_id}'"},
                 status=status.HTTP_403_FORBIDDEN
             )
 
