@@ -121,7 +121,14 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                                                         'lgd__lgd_molecular_mechanism'
                                                     ).order_by('-lgd__date_review').filter(lgd__is_deleted=0)
         else:
-            lgd_panels_selected = lgd_panels.select_related('lgd',
+            filters = (
+                Q(lgd__is_deleted=0) &
+                Q(panel__is_visible=1) &
+                ~Q(lgd__confidence__value='disputed') &
+                ~Q(lgd__confidence__value='refuted')
+            )
+
+            lgd_panels_selected = lgd_panels.filter(filters).select_related('lgd',
                                                         'lgd__locus',
                                                         'lgd__disease',
                                                         'lgd__genotype',
@@ -130,10 +137,7 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                                                         'lgd__lgd_variant_gencc_consequence',
                                                         'lgd__lgd_variant_type',
                                                         'lgd__lgd_molecular_mechanism'
-                                                    ).order_by('-lgd__date_review').filter(Q(lgd__is_deleted=0) &
-                                                                                           Q(panel__is_visible=1) &
-                                                                                           ~Q(lgd__confidence__value='disputed') &
-                                                                                           ~Q(lgd__confidence__value='refuted'))
+                                                    ).order_by('-lgd__date_review')
 
         lgd_objects_list = list(lgd_panels_selected.values('lgd__locus__name',
                                                            'lgd__disease__name',

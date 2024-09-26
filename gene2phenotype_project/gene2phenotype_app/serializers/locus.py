@@ -101,11 +101,15 @@ class LocusGeneSerializer(LocusSerializer):
                                                                   ).order_by('-date_review')
 
         else:
-            lgd_select = lgd_list.select_related('disease', 'genotype', 'confidence'
+            filters = (
+                Q(lgdpanel__panel__is_visible=1) &
+                ~Q(confidence__value='disputed') &
+                ~Q(confidence__value='refuted')
+            )
+
+            lgd_select = lgd_list.filter(filters).select_related('disease', 'genotype', 'confidence'
                                                ).prefetch_related('lgd_panel', 'panel', 'lgd_variant_gencc_consequence', 'lgd_variant_type', 'lgd_molecular_mechanism'
-                                                                  ).order_by('-date_review').filter(Q(lgdpanel__panel__is_visible=1) &
-                                                                                                    ~Q(confidence__value='disputed') &
-                                                                                                    ~Q(confidence__value='refuted'))
+                                                                  ).order_by('-date_review')
 
         lgd_objects_list = list(lgd_select.values('disease__name',
                                                   'lgdpanel__panel__name',
