@@ -428,7 +428,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         # Support is mandatory
         if(confidence_support == "" or confidence_support is None):
-            raise serializers.ValidationError({"error": f"Cannot update confidence value without supporting evidence. Please input a 'confidence_support'."})
+            raise serializers.ValidationError({"error": f"Cannot update confidence value without supporting justification. Please input a 'confidence_support'."})
         # Update confidence support
         instance.confidence_support = confidence_support
 
