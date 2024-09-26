@@ -638,14 +638,14 @@ class GeneStats(models.Model):
     id = models.AutoField(primary_key=True)
     gene = models.ForeignKey("Locus", on_delete=models.PROTECT)
     gene_symbol = models.CharField(max_length=100, null=False)
-    hgnc = models.CharField(max_length=50, null=False)
-    statistic = models.ForeignKey("Publication", on_delete=models.PROTECT)
+    score = models.FloatField(default='0.0')
     source = models.ForeignKey("Source", on_delete=models.PROTECT)
+    description_attrib  = models.ForeignKey("Attrib", default='', on_delete=models.PROTECT)
 
     class Meta:
         db_table = "gene_stats"
         indexes = [
-            models.Index(fields=['gene'])
+            models.Index(fields=['gene']),
         ]
 
 class GeneDisease(models.Model):
