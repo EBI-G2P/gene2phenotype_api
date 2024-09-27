@@ -66,16 +66,19 @@ class DiseaseDetailSerializer(DiseaseSerializer):
         """
             Returns the date an entry linked to the disease has been updated.
         """
+        disease_last_update = None
 
         filtered_lgd_list = LocusGenotypeDisease.objects.filter(
             disease=id,
             is_reviewed=1,
             is_deleted=0,
             date_review__isnull=False
-            ).latest('date_review'
-                     ).date_review
+            ).order_by('-date_review')
 
-        return filtered_lgd_list.date() if filtered_lgd_list else []
+        if filtered_lgd_list:
+            disease_last_update = filtered_lgd_list.first().date_review
+
+        return disease_last_update.date() if disease_last_update else None
 
     def records_summary(self, id, user):
         """
