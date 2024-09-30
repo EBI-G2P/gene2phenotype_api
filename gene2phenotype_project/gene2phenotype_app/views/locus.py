@@ -105,6 +105,7 @@ class GeneFunction(BaseView):
             Response object includes:
                             (string) gene_symbol
                             (dict) function: gene product function from UniProt
+                            (dict) gene_stats: gene scores from the Badonyi probabilities
     """
 
     serializer_class = LocusGeneSerializer
