@@ -126,9 +126,11 @@ class GeneFunction(BaseView):
 
         serializer = LocusGeneSerializer
         summmary = serializer.function(queryset.first())
+        gene_stats = serializer.badonyi_score(queryset.first())
         response_data = {
             'gene_symbol': queryset.first().name,
             'function': summmary,
+            'gene_stats': gene_stats
         }
 
         return Response(response_data)

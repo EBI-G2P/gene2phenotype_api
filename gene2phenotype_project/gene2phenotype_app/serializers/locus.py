@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.db.models import Q
 
 from ..models import (Locus, LocusIdentifier, LocusAttrib,
-                      AttribType, UniprotAnnotation,
+                      AttribType, UniprotAnnotation, GeneStats,
                       LocusGenotypeDisease)
 
 from ..utils import validate_gene
@@ -169,6 +169,18 @@ class LocusGeneSerializer(LocusSerializer):
         for function_obj in uniprot_annotation_objs:
             result_data['protein_function'] = function_obj.protein_function
             result_data['uniprot_accession'] = function_obj.uniprot_accession
+
+        return result_data
+
+
+    def badonyi_score(self):
+
+        result_data = {}
+        badonyi_stats_objs = GeneStats.objects.filter(gene=self.id)
+
+        for badonyi_obj in badonyi_stats_objs:
+            result_data["score"] = badonyi_obj.score
+            result_data["score_attribute"] = badonyi_obj.description_attrib.value
 
         return result_data
 
