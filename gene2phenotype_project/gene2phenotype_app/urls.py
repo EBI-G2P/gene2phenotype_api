@@ -17,6 +17,7 @@ urlpatterns = [
     path('users/', views.UserList.as_view(), name="list_users"),
     path('user/panels/', views.UserPanels.as_view(), name="user_panels"),
     path('attribs/', views.AttribTypeList.as_view(), name="list_attrib_type"),
+    path('attribs/description', views.AttribTypeDescriptionList.as_view(), name="description_attrib_type"),
     path('attrib/<str:code>/', views.AttribList.as_view(), name="list_attribs_by_type"),
     path('molecular_mechanisms/', views.ListMolecularMechanisms.as_view(), name="list_mechanisms"),
     path('ontology_terms/variant_types/', views.VariantTypesList.as_view(), name="list_variant_types"),

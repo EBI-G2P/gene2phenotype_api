@@ -34,7 +34,7 @@ class ListMolecularMechanisms(generics.ListAPIView):
                 (dict) response: list of molecular mechanisms by type and subtype.
     """
 
-    queryset = CVMolecularMechanism.objects.all().values('type', 'subtype', 'value').order_by('type')
+    queryset = CVMolecularMechanism.objects.all().values('type', 'subtype', 'value', 'description').order_by('type')
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -43,22 +43,23 @@ class ListMolecularMechanisms(generics.ListAPIView):
             mechanismtype = mechanism["type"]
             subtype = mechanism["subtype"]
             value = mechanism["value"]
+            description = mechanism["description"]
 
             if mechanismtype not in result:
                 result[mechanismtype] = {}
                 # evidence has subtypes
                 if mechanismtype == "evidence":
-                    result[mechanismtype][subtype] = [value]
+                    result[mechanismtype][subtype] = [{value: description}]
                 else:
-                    result[mechanismtype] = [value]
+                    result[mechanismtype] = [{value: description}]
             else:
                 if mechanismtype == "evidence":
                     if subtype not in result[mechanismtype]:
-                        result[mechanismtype][subtype] = [value]
+                        result[mechanismtype][subtype] = [{value:description}]
                     else:
-                        result[mechanismtype][subtype].append(value)
+                        result[mechanismtype][subtype].append({value:description})
                 else:
-                    result[mechanismtype].append(value)
+                    result[mechanismtype].append({value:description})
 
         return Response(result)
 

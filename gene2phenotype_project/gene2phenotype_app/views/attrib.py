@@ -13,8 +13,7 @@ class AttribTypeList(generics.ListAPIView):
         Returns:
                 (dict) response: list of attribs for each attrib type.
     """
-    # TODO: add column 'is_deleted' and select only non deleted attrib
-    queryset = AttribType.objects.all()
+    queryset = AttribType.objects.filter(is_deleted=0)
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -23,6 +22,55 @@ class AttribTypeList(generics.ListAPIView):
             serializer = AttribTypeSerializer(attrib_type)
             all_attribs = serializer.get_all_attribs(attrib_type.id)
             result[attrib_type.code] = all_attribs
+
+        return Response(result)
+
+class AttribTypeDescriptionList(generics.ListAPIView):
+    """
+        API view to list all attribute types with their associated attribute descriptions.
+
+        This view inherits from Django REST Framework's `ListAPIView` and is responsible
+        for retrieving and returning a dictionary where each key corresponds to an 
+        attribute type code, and each value is a list of dictionaries. Each dictionary 
+        in the list contains a mapping of an attribute's value to its description.
+
+        Attributes:
+            queryset (QuerySet): The base queryset of `AttribType` objects.
+
+        Methods:
+            list(request, *args, **kwargs):
+                Customizes the default list method to return a dictionary where each key 
+                is an attribute type code and each value is a list of attribute descriptions.
+
+        Example:
+            Suppose the `AttribType` model has entries with `code = "type1"` and an `id` of `1`.
+            If `Attrib` objects related to this type have values and descriptions, the 
+            response might look like this:
+
+            {
+                "type1": [
+                    {"definitive": "This category is well-supported by evidence."},
+                    {"disputed": "This category has conflicting evidence."},
+                    ...
+                ],
+                "type2": [
+                    {"limited": "This category is based on limited evidence."},
+                        {"strong": "This category is strongly supported by evidence."},
+                    ...
+                ]
+            }
+    """
+    
+
+    queryset = AttribType.objects.filter(is_deleted=0)
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        result = {}
+        for attrib_type in queryset:
+            serializer = AttribTypeSerializer(attrib_type)
+            all_attribs_description = serializer.get_all_attrib_description(attrib_type.id)
+            result[attrib_type.code] = all_attribs_description
 
         return Response(result)
 
