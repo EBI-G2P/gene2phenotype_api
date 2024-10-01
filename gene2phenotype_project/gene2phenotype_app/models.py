@@ -60,6 +60,7 @@ class LocusGenotypeDisease(models.Model):
     locus = models.ForeignKey("Locus", on_delete=models.PROTECT)
     genotype = models.ForeignKey("Attrib", related_name='genotype', on_delete=models.PROTECT)
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
+    molecular_mechanism = models.ForeignKey("LGDMolecularMechanism", on_delete=models.PROTECT)
     confidence = models.ForeignKey("Attrib", related_name='confidence', on_delete=models.PROTECT) # confidence value
     confidence_support = models.TextField(null=True, default=None) # text summary to support the confidence value
     date_review = models.DateTimeField(null=True)
@@ -69,7 +70,7 @@ class LocusGenotypeDisease(models.Model):
 
     class Meta:
         db_table = "locus_genotype_disease"
-        unique_together = ["locus", "genotype", "disease"]
+        unique_together = ["locus", "genotype", "disease", "molecular_mechanism"]
         indexes = [
             models.Index(fields=['locus']),
             models.Index(fields=['disease']),
@@ -239,7 +240,7 @@ class CVMolecularMechanism(models.Model):
 
 class LGDMolecularMechanism(models.Model):
     id = models.AutoField(primary_key=True)
-    lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT, null=False)
+    # lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT, null=False)
     mechanism = models.ForeignKey("CVMolecularMechanism", related_name='mechanism', on_delete=models.PROTECT, null=False)
     mechanism_support = models.ForeignKey("CVMolecularMechanism", related_name='mechanism_support', on_delete=models.PROTECT, null=False)
     synopsis = models.ForeignKey("CVMolecularMechanism", related_name='synopsis', on_delete=models.PROTECT, null=True)
@@ -250,7 +251,7 @@ class LGDMolecularMechanism(models.Model):
 
     class Meta:
         db_table = "lgd_molecular_mechanism"
-        unique_together = ["lgd", "mechanism"]
+        # unique_together = ["lgd", "mechanism"]
         indexes = [
             models.Index(fields=['mechanism'])
         ]
