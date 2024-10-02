@@ -105,6 +105,7 @@ class GeneFunction(BaseView):
             Response object includes:
                             (string) gene_symbol
                             (dict) function: gene product function from UniProt
+                            (dict) gene_stats: gene scores from the Badonyi probabilities
     """
 
     serializer_class = LocusGeneSerializer
@@ -126,9 +127,11 @@ class GeneFunction(BaseView):
 
         serializer = LocusGeneSerializer
         summmary = serializer.function(queryset.first())
+        gene_stats = serializer.badonyi_score(queryset.first())
         response_data = {
             'gene_symbol': queryset.first().name,
             'function': summmary,
+            'gene_stats': gene_stats
         }
 
         return Response(response_data)
