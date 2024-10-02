@@ -366,7 +366,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                         lgd_panel_serializer.save()
 
             # Insert LGD-publications
-            # If the publication (PMID) is not in G2P, it will create the Publication obj
+            # The publication should be already stored in the db but
+            # if the publication (PMID) is not found, it will create the Publication obj
             # Example: publications_list = [{ "pmid": 1234,
             #                                 "comment": {"comment": "comment text", "is_public": 1},
             #                                 "families": {
@@ -376,6 +377,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             #                                        "affected_individuals": 5
             #                                  }
             #                              }]
+            # TODO: update to accept the publication objs to avoid creating the serializer here too
             for publication_data in publications_list:
                 # PublicationSerializer is instantiated with the publication data and context
                 lgd_publication_serializer = LGDPublicationSerializer(
@@ -633,7 +635,6 @@ class MolecularMechanismSerializer(serializers.ModelSerializer):
 
         return data
 
-    # TODO: fix
     def create(self, mechanism, mechanism_synopsis, mechanism_evidence):
         """
             Create MolecularMechanism and MolecularMechanismEvidence (if support = 'evidence')

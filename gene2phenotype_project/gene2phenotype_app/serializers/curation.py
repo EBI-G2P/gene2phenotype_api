@@ -20,6 +20,7 @@ from .locus_genotype_disease import (LocusGenotypeDiseaseSerializer,
                                      LGDVariantTypeSerializer, LGDVariantTypeDescriptionSerializer)
 from .stable_id import G2PStableIDSerializer
 from .phenotype import LGDPhenotypeSerializer
+from .publication import PublicationSerializer
 
 class CurationDataSerializer(serializers.ModelSerializer):
     """
@@ -342,6 +343,14 @@ class CurationDataSerializer(serializers.ModelSerializer):
                                  "families": family
                                }
 
+            # Get or create publications
+            # Publications should be stored in the db before any data is stored
+            publication_serializer = PublicationSerializer(data=publication_data)
+            # Validate the input data
+            if publication_serializer.is_valid(raise_exception=True):
+                # save and create publication obj
+                publication_obj = publication_serializer.save()
+
             publications_list.append(publication_data)
         ####################
 
@@ -385,6 +394,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
         ### Mechanism ###
         # The curation form only supports one mechanism
         # Curators cannot create a record with multiple mechanisms
+        # The evidence attaches the data to a publication - the new PMIDs
+        # have to already be stored in G2P
         molecular_mechanism_obj = MolecularMechanismSerializer().create(
             data.json_data["molecular_mechanism"],
             data.json_data["mechanism_synopsis"],
@@ -393,7 +404,6 @@ class CurationDataSerializer(serializers.ModelSerializer):
         #################################################################
 
         ### Locus-Genotype-Disease ###
-        print("Before creating lgd")
         lgd_data = {"locus": data.json_data["locus"],
                     "stable_id": data.stable_id, # stable id obj
                     "allelic_requirement": data.json_data["allelic_requirement"], # value string
