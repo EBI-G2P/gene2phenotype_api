@@ -231,6 +231,7 @@ class CVMolecularMechanism(models.Model):
     # the subtype is only populated for the evidence
     subtype = models.CharField(max_length=100, choices=choices_evidence_types, null=True)
     value = models.CharField(max_length=100)
+    description = models.TextField(null=True, blank=True)
 
     class Meta:
         db_table = "cv_molecular_mechanism"
@@ -380,6 +381,8 @@ class Attrib(models.Model):
     id = models.AutoField(primary_key=True)
     type = models.ForeignKey("AttribType", on_delete=models.PROTECT)
     value = models.CharField(max_length=255, null=False)
+    description = models.TextField(null=True, blank=True)
+    is_deleted = models.SmallIntegerField(null=False, default=False)
 
     def __str__(self):
         return self.value
@@ -396,6 +399,7 @@ class AttribType(models.Model):
     code = models.CharField(max_length=255, unique=True, null=False)
     name = models.CharField(max_length=255, null=False)
     description = models.CharField(max_length=255, null=False)
+    is_deleted = models.SmallIntegerField(null=False, default=False)
 
     class Meta:
         db_table = "attrib_type"
@@ -638,14 +642,14 @@ class GeneStats(models.Model):
     id = models.AutoField(primary_key=True)
     gene = models.ForeignKey("Locus", on_delete=models.PROTECT)
     gene_symbol = models.CharField(max_length=100, null=False)
-    hgnc = models.CharField(max_length=50, null=False)
-    statistic = models.ForeignKey("Publication", on_delete=models.PROTECT)
+    score = models.FloatField(default='0.0')
     source = models.ForeignKey("Source", on_delete=models.PROTECT)
+    description_attrib  = models.ForeignKey("Attrib", default='', on_delete=models.PROTECT)
 
     class Meta:
         db_table = "gene_stats"
         indexes = [
-            models.Index(fields=['gene'])
+            models.Index(fields=['gene']),
         ]
 
 class GeneDisease(models.Model):

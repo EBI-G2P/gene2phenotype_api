@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db.models import Q
 import re
 
 from ..models import (Disease, DiseaseOntologyTerm, DiseaseSynonym,
@@ -65,21 +66,26 @@ class DiseaseDetailSerializer(DiseaseSerializer):
         """
             Returns the date an entry linked to the disease has been updated.
         """
+        disease_last_update = None
 
         filtered_lgd_list = LocusGenotypeDisease.objects.filter(
             disease=id,
             is_reviewed=1,
             is_deleted=0,
             date_review__isnull=False
-            ).latest('date_review'
-                     ).date_review
+            ).order_by('-date_review')
 
-        return filtered_lgd_list.date() if filtered_lgd_list else []
+        if filtered_lgd_list:
+            disease_last_update = filtered_lgd_list.first().date_review
+
+        return disease_last_update.date() if disease_last_update else None
 
     def records_summary(self, id, user):
         """
             Returns a summary of the LGD records associated with the disease.
-            TODO: check refuted and disputed records
+            If the user is non-authenticated:
+                - it does not return refuted and disputed records
+                - only returns records linked to visible panels
         """
         # TODO: improve query, this can be done in a single query
         lgd_list = LocusGenotypeDisease.objects.filter(disease=id, is_deleted=0)
@@ -90,9 +96,15 @@ class DiseaseDetailSerializer(DiseaseSerializer):
                                                                   ).order_by('-date_review')
 
         else:
-            lgd_select = lgd_list.select_related('disease', 'genotype', 'confidence'
+            filters = (
+                Q(lgdpanel__panel__is_visible=1) &
+                ~Q(confidence__value='disputed') &
+                ~Q(confidence__value='refuted')
+            )
+
+            lgd_select = lgd_list.filter(filters).select_related('disease', 'genotype', 'confidence'
                                                ).prefetch_related('lgd_panel', 'panel', 'lgd_variant_gencc_consequence', 'lgd_variant_type', 'lgd_molecular_mechanism', 'g2pstable_id'
-                                                                  ).order_by('-date_review').filter(lgdpanel__panel__is_visible=1)
+                                                                  ).order_by('-date_review')
 
         lgd_objects_list = list(lgd_select.values('disease__name',
                                                   'lgdpanel__panel__name',

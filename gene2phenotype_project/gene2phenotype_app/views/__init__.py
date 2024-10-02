@@ -12,7 +12,7 @@ from .curation import (AddCurationData, ListCurationEntries, CurationDataDetail,
 
 from .search import SearchView
 
-from .attrib import AttribTypeList, AttribList
+from .attrib import AttribTypeList, AttribTypeDescriptionList, AttribList
 
 from .user import (UserList, CreateUserView, LoginView, ManageUserView,
                    UserPanels)

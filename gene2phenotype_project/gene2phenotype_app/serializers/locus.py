@@ -1,7 +1,9 @@
 from rest_framework import serializers
+from django.db.models import Q
+
 from ..models import (Locus, LocusIdentifier, LocusAttrib,
-                      Attrib, AttribType, Sequence, UniprotAnnotation,
-                      GeneDisease, Source, LocusGenotypeDisease)
+                      AttribType, UniprotAnnotation, GeneStats,
+                      LocusGenotypeDisease)
 
 from ..utils import validate_gene
 
@@ -86,7 +88,9 @@ class LocusGeneSerializer(LocusSerializer):
     def records_summary(self, user):
         """
             Returns a summary of the G2P records associated with the locus.
-            TODO: check refuted and disputed records
+            If the user is non-authenticated:
+                - it does not return refuted and disputed records
+                - only returns records linked to visible panels
         """
         # TODO: improve query, this can be done in a single query
         lgd_list = LocusGenotypeDisease.objects.filter(locus=self.id, is_deleted=0)
@@ -97,9 +101,15 @@ class LocusGeneSerializer(LocusSerializer):
                                                                   ).order_by('-date_review')
 
         else:
-            lgd_select = lgd_list.select_related('disease', 'genotype', 'confidence'
+            filters = (
+                Q(lgdpanel__panel__is_visible=1) &
+                ~Q(confidence__value='disputed') &
+                ~Q(confidence__value='refuted')
+            )
+
+            lgd_select = lgd_list.filter(filters).select_related('disease', 'genotype', 'confidence'
                                                ).prefetch_related('lgd_panel', 'panel', 'lgd_variant_gencc_consequence', 'lgd_variant_type', 'lgd_molecular_mechanism'
-                                                                  ).order_by('-date_review').filter(lgdpanel__panel__is_visible=1)
+                                                                  ).order_by('-date_review')
 
         lgd_objects_list = list(lgd_select.values('disease__name',
                                                   'lgdpanel__panel__name',
@@ -161,6 +171,47 @@ class LocusGeneSerializer(LocusSerializer):
             result_data['uniprot_accession'] = function_obj.uniprot_accession
 
         return result_data
+
+
+    def badonyi_score(self):
+        """
+            Retrieve the Badonyi scores for the current gene, organizing the results
+            in a dictionary where each key is the score's attribute (description_attrib.value)
+            and the value is the score.
+
+            This method filters `GeneStats` objects associated with the current gene (via `self.id`),
+            then creates a dictionary where the key is the `description_attrib.value` and the value 
+            is the `score`.
+
+            Returns:
+            -------
+            dict
+                A dictionary where:
+                - Key: The value of `description_attrib` (score's attribute) from each `GeneStats` object.
+                - Value: The score associated with that attribute.
+
+            Example:
+            -------
+            {
+                "gain_of_function": 1.5,
+                "loss_of_function": 0.7,
+                ...
+            }
+
+            Notes:
+            -----
+            - Each unique attribute will have its own entry in the dictionary.
+        """
+
+        result_data = {}
+        badonyi_stats_objs = GeneStats.objects.filter(gene=self.id)
+
+        for badonyi_obj in badonyi_stats_objs:
+            key = badonyi_obj.description_attrib.value
+            result_data[key] = badonyi_obj.score
+
+        return result_data
+    
 
     class Meta:
         model = Locus

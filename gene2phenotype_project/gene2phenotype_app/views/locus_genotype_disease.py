@@ -34,7 +34,7 @@ class ListMolecularMechanisms(generics.ListAPIView):
                 (dict) response: list of molecular mechanisms by type and subtype.
     """
 
-    queryset = CVMolecularMechanism.objects.all().values('type', 'subtype', 'value').order_by('type')
+    queryset = CVMolecularMechanism.objects.all().values('type', 'subtype', 'value', 'description').order_by('type')
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -43,22 +43,23 @@ class ListMolecularMechanisms(generics.ListAPIView):
             mechanismtype = mechanism["type"]
             subtype = mechanism["subtype"]
             value = mechanism["value"]
+            description = mechanism["description"]
 
             if mechanismtype not in result:
                 result[mechanismtype] = {}
                 # evidence has subtypes
                 if mechanismtype == "evidence":
-                    result[mechanismtype][subtype] = [value]
+                    result[mechanismtype][subtype] = [{value: description}]
                 else:
-                    result[mechanismtype] = [value]
+                    result[mechanismtype] = [{value: description}]
             else:
                 if mechanismtype == "evidence":
                     if subtype not in result[mechanismtype]:
-                        result[mechanismtype][subtype] = [value]
+                        result[mechanismtype][subtype] = [{value:description}]
                     else:
-                        result[mechanismtype][subtype].append(value)
+                        result[mechanismtype][subtype].append({value:description})
                 else:
-                    result[mechanismtype].append(value)
+                    result[mechanismtype].append({value:description})
 
         return Response(result)
 
@@ -156,7 +157,6 @@ class LGDUpdateConfidence(generics.UpdateAPIView):
 
     def get_queryset(self):
         stable_id = self.kwargs['stable_id']
-        user = self.request.user
 
         g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
         # Get the entry for this user
@@ -167,9 +167,13 @@ class LGDUpdateConfidence(generics.UpdateAPIView):
         else:
             return queryset
 
-    def update(self, request):
+    def update(self, request, stable_id):
         """
             This method updates the LGD confidence.
+
+            Mandatory fields to update confidence:
+                            - confidence value
+                            - confidence_support
 
             Input example:
                     {
@@ -179,8 +183,10 @@ class LGDUpdateConfidence(generics.UpdateAPIView):
                     }
 
             Raises:
+                No permission to update record
                 Invalid confidence value
                 G2P record already has same confidence value
+                Cannot update confidence value without supporting evidence.
         """
         user = request.user
 
@@ -199,9 +205,10 @@ class LGDUpdateConfidence(generics.UpdateAPIView):
         serializer_user = UserSerializer(user_obj, context={"user" : user})
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
         has_common = serializer.check_user_permission(lgd_obj, user_panel_list)
+
         if has_common is False:
             return Response(
-                {"message": f"No permission to update record '{lgd_obj.stable_id.stable_id}'"},
+                {"error": f"No permission to update record '{lgd_obj.stable_id.stable_id}'"},
                 status=status.HTTP_403_FORBIDDEN
             )
 
