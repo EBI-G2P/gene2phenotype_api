@@ -488,6 +488,7 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
     """
 
     variant_consequence = serializers.CharField(source="variant_consequence.term")
+    accession = serializers.CharField(source="variant_consequence.accession")
     support = serializers.CharField(source="support.value")
     publication = serializers.CharField(source="publication.pmid", allow_null=True, required=False)
 
@@ -562,7 +563,7 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LGDVariantGenccConsequence
-        fields = ['variant_consequence', 'support', 'publication']
+        fields = ['variant_consequence', 'accession', 'support', 'publication']
 
 class LGDVariantConsequenceListSerializer(serializers.Serializer):
     """

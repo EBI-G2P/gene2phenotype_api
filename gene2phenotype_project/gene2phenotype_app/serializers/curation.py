@@ -359,7 +359,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             for cr in data.json_data["disease"]["cross_references"]:
                 ontology_term = {
                     "accession": cr["identifier"],
-                    "term": cr["identifier"], # TODO This should be the disease name
+                    "term": cr["original_disease_name"],
                     "description": cr["original_disease_name"] # TODO This should be the full description
                 }
                 # Format the cross_reference dictionary according to the expected format in CreateDiseaseSerializer
