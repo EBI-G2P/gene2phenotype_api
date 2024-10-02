@@ -169,6 +169,7 @@ class SearchView(BaseView):
                      'gene':lgd.locus.name,
                      'genotype':lgd.genotype.value,
                      'disease':lgd.disease.name,
+                     'mechanism':lgd.molecular_mechanism.mechanism.value,
                      'panel':lgd.panels
                    }
             list_output.append(data)
