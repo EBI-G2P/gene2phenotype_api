@@ -20,6 +20,74 @@ class DiseaseOntologyTermSerializer(serializers.ModelSerializer):
     description = serializers.CharField(source="ontology_term.description", allow_null=True, required=False) # the description is optional
     source = serializers.CharField(source="ontology_term.source.name", required=False) # external source (ex: OMIM)
 
+    def create(self, validated_data):
+        """
+            Add new disease-ontology term.
+
+            This method is only called if the data passes the validation.
+
+            Args:
+                validate_data: ontology_term (dict)
+
+            Returns:
+                    DiseaseOntologyTerm object
+        """
+
+        disease_obj = self.context['disease']
+        ontology_accession = validated_data.get('ontology_term')['accession']
+        ontology_term = validated_data.get('ontology_term')['term']
+        ontology_desc = validated_data.get('ontology_term')['description']
+        ontology_source = validated_data.get('ontology_term')['source']
+        disease_ontology_obj = None
+
+        # Check if ontology is in db
+        # The disease ontology is saved in the db as attrib type 'disease'
+        try:
+            ontology_obj = OntologyTerm.objects.get(accession=ontology_accession)
+
+        except OntologyTerm.DoesNotExist:
+            source = Source.objects.get(name=ontology_source['name'])
+            # Get attrib 'disease'
+            attrib_disease = Attrib.objects.get(
+                value = "disease",
+                type__code = "ontology_term_group"
+            )
+
+            ontology_obj = OntologyTerm.objects.create(
+                accession = ontology_accession,
+                term = ontology_term,
+                description = ontology_desc,
+                source = source,
+                group_type = attrib_disease
+            )
+
+        try:
+            attrib = Attrib.objects.get(
+                value="Data source",
+                type__code = "ontology_mapping"
+            )
+        except Attrib.DoesNotExist:
+            raise serializers.ValidationError({
+                "message": f"Cannot find attrib 'Data source'"
+            })
+
+        try:
+            # Check if disease-ontology is stored in G2P
+            disease_ontology_obj = DiseaseOntologyTerm.objects.get(
+                disease = disease_obj,
+                ontology_term = ontology_obj,
+                mapped_by_attrib = attrib,
+            )
+        except DiseaseOntologyTerm.DoesNotExist:
+            # Insert disease-ontology
+            disease_ontology_obj = DiseaseOntologyTerm.objects.create(
+                disease = disease_obj,
+                ontology_term = ontology_obj,
+                mapped_by_attrib = attrib,
+            )
+
+        return disease_ontology_obj
+
     class Meta:
         model = DiseaseOntologyTerm
         fields = ['accession', 'term', 'description', 'source']
@@ -166,9 +234,15 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """
             Add new disease and associated ontology terms (optional).
-            To add a new disease first it checks if the disease name
-            or the synonym name is already stored in G2P. If so, returns
-            existing disease.
+
+            This method is only called if the disease passes the validation.
+            One of the constraints is the unique 'name'.
+
+            To avoid duplicated names caused by really similar names,
+            this method cleans the disease name and tries to find it in the db:
+                it checks if the disease name or the synonym name is already stored in G2P.
+                If so, returns existing disease.
+
             If applicable, it associates the ontology terms to the disease.
 
             Args:
