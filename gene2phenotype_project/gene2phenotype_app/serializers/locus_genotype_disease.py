@@ -286,12 +286,12 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                             - confidence
                             - publications
         """
-
         locus_name = data.get('locus') # Usually this is the gene symbol
         stable_id_obj = data.get('stable_id') # stable id obj
         genotype = data.get('allelic_requirement') # allelic requirement
         panels = data.get('panels') # Array of panel names
         confidence = data.get('confidence') # confidence level and justification
+        molecular_mechanism_obj = data.get('molecular_mechanism')
 
         if not panels or not publications_list:
             raise serializers.ValidationError({"message": f"Missing data to create the G2P record {stable_id_obj.stable_id}"})
@@ -327,7 +327,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             except Attrib.DoesNotExist:
                 raise serializers.ValidationError({"message": f"Invalid confidence value {confidence['level']}"})
 
-            # Text to justify the confidence value (optional)
+            # Text to justify the confidence value (optional) TODO: make it mandatory
             if confidence["justification"] == "":
                 confidence_support = None
             else:
@@ -339,6 +339,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 stable_id = stable_id_obj,
                 genotype = genotype_obj,
                 disease = disease_obj,
+                molecular_mechanism = molecular_mechanism_obj,
                 confidence = confidence_obj,
                 confidence_support = confidence_support,
                 is_reviewed = 1,
@@ -488,6 +489,7 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
     """
 
     variant_consequence = serializers.CharField(source="variant_consequence.term")
+    accession = serializers.CharField(source="variant_consequence.accession")
     support = serializers.CharField(source="support.value")
     publication = serializers.CharField(source="publication.pmid", allow_null=True, required=False)
 
@@ -562,7 +564,7 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LGDVariantGenccConsequence
-        fields = ['variant_consequence', 'support', 'publication']
+        fields = ['variant_consequence', 'accession', 'support', 'publication']
 
 class LGDVariantConsequenceListSerializer(serializers.Serializer):
     """
@@ -636,8 +638,6 @@ class MolecularMechanismSerializer(serializers.ModelSerializer):
         """
             Create MolecularMechanism and MolecularMechanismEvidence (if support = 'evidence')
         """
-    
-        lgd = self.context['lgd']
         mechanism_name = mechanism["name"]
         mechanism_support = mechanism["support"]
         synopsis_name = mechanism_synopsis["name"] # optional

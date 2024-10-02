@@ -140,11 +140,12 @@ class CurationDataSerializer(serializers.ModelSerializer):
             lgd_obj = LocusGenotypeDisease.objects.get(
                 locus__name = json_data["locus"],
                 genotype__value = json_data["allelic_requirement"],
-                disease__name = json_data["disease"]["disease_name"]
+                disease__name = json_data["disease"]["disease_name"],
+                molecular_mechanism__mechanism__value = json_data["molecular_mechanism"]["name"]
             )
 
             raise serializers.ValidationError({
-                "message": f"Found another record with same locus, genotype and disease. Please check G2P ID '{lgd_obj.stable_id.stable_id}'"
+                "message": f"Found another record with same locus, genotype, disease and molecular mechanism. Please check G2P ID '{lgd_obj.stable_id.stable_id}'"
             })
         except LocusGenotypeDisease.DoesNotExist:
             return locus_obj
@@ -359,7 +360,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             for cr in data.json_data["disease"]["cross_references"]:
                 ontology_term = {
                     "accession": cr["identifier"],
-                    "term": cr["identifier"], # TODO This should be the disease name
+                    "term": cr["original_disease_name"],
                     "description": cr["original_disease_name"] # TODO This should be the full description
                 }
                 # Format the cross_reference dictionary according to the expected format in CreateDiseaseSerializer
@@ -374,20 +375,33 @@ class CurationDataSerializer(serializers.ModelSerializer):
         # The CreateDiseaseSerializer is going to first check if the disease is stored in G2P
         # It only inserts data that is not in G2P
         disease_serializer = CreateDiseaseSerializer(data=disease)
+
         # Validate the input data
         if disease_serializer.is_valid(raise_exception=True):
             # save and create
             disease_obj = disease_serializer.save()
         ###############
 
+        ### Mechanism ###
+        # The curation form only supports one mechanism
+        # Curators cannot create a record with multiple mechanisms
+        molecular_mechanism_obj = MolecularMechanismSerializer().create(
+            data.json_data["molecular_mechanism"],
+            data.json_data["mechanism_synopsis"],
+            data.json_data["mechanism_evidence"] # array of evidence values for each publication
+        )
+        #################################################################
+
         ### Locus-Genotype-Disease ###
+        print("Before creating lgd")
         lgd_data = {"locus": data.json_data["locus"],
                     "stable_id": data.stable_id, # stable id obj
                     "allelic_requirement": data.json_data["allelic_requirement"], # value string
                     "panels": data.json_data["panels"],
                     "confidence": data.json_data["confidence"],
                     "phenotypes": data.json_data["phenotypes"],
-                    "variant_types": data.json_data["variant_types"]
+                    "variant_types": data.json_data["variant_types"],
+                    "molecular_mechanism": molecular_mechanism_obj
                 }
 
         lgd_obj = LocusGenotypeDiseaseSerializer(context={'user':user_obj}).create(lgd_data, disease_obj, publications_list)
@@ -467,18 +481,6 @@ class CurationDataSerializer(serializers.ModelSerializer):
             LGDVariantTypeDescriptionSerializer(context={'lgd': lgd_obj}).create(variant_type_desc)
 
         # TODO: add comment
-
-        ### Mechanism ###
-        # The curation form only supports one mechanism
-        # Curators cannot create a record with multiple mechanisms
-        if data.json_data["molecular_mechanism"]:
-            MolecularMechanismSerializer(context={'lgd': lgd_obj}).create(
-                data.json_data["molecular_mechanism"],
-                data.json_data["mechanism_synopsis"],
-                data.json_data["mechanism_evidence"] # array of evidence values for each publication
-            )
-
-        #################################################################
 
         # Update stable_id status to live (is_live=1)
         G2PStableIDSerializer(context={'stable_id': data.stable_id.stable_id}).update_g2p_id_status(1)
