@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.db.models import Q
 
 from ..models import (Locus, LocusIdentifier, LocusAttrib,
-                      AttribType, UniprotAnnotation,
+                      AttribType, UniprotAnnotation, GeneStats,
                       LocusGenotypeDisease)
 
 from ..utils import validate_gene
@@ -171,6 +171,47 @@ class LocusGeneSerializer(LocusSerializer):
             result_data['uniprot_accession'] = function_obj.uniprot_accession
 
         return result_data
+
+
+    def badonyi_score(self):
+        """
+            Retrieve the Badonyi scores for the current gene, organizing the results
+            in a dictionary where each key is the score's attribute (description_attrib.value)
+            and the value is the score.
+
+            This method filters `GeneStats` objects associated with the current gene (via `self.id`),
+            then creates a dictionary where the key is the `description_attrib.value` and the value 
+            is the `score`.
+
+            Returns:
+            -------
+            dict
+                A dictionary where:
+                - Key: The value of `description_attrib` (score's attribute) from each `GeneStats` object.
+                - Value: The score associated with that attribute.
+
+            Example:
+            -------
+            {
+                "gain_of_function": 1.5,
+                "loss_of_function": 0.7,
+                ...
+            }
+
+            Notes:
+            -----
+            - Each unique attribute will have its own entry in the dictionary.
+        """
+
+        result_data = {}
+        badonyi_stats_objs = GeneStats.objects.filter(gene=self.id)
+
+        for badonyi_obj in badonyi_stats_objs:
+            key = badonyi_obj.description_attrib.value
+            result_data[key] = badonyi_obj.score
+
+        return result_data
+    
 
     class Meta:
         model = Locus
