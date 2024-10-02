@@ -15,7 +15,7 @@ from .user import UserSerializer
 from .disease import CreateDiseaseSerializer
 from .locus_genotype_disease import (LocusGenotypeDiseaseSerializer,
                                      LGDCrossCuttingModifierSerializer,
-                                     LGDMolecularMechanismSerializer,
+                                     MolecularMechanismSerializer,
                                      LGDVariantGenCCConsequenceSerializer,
                                      LGDVariantTypeSerializer, LGDVariantTypeDescriptionSerializer)
 from .stable_id import G2PStableIDSerializer
@@ -472,7 +472,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         # The curation form only supports one mechanism
         # Curators cannot create a record with multiple mechanisms
         if data.json_data["molecular_mechanism"]:
-            LGDMolecularMechanismSerializer(context={'lgd': lgd_obj}).create(
+            MolecularMechanismSerializer(context={'lgd': lgd_obj}).create(
                 data.json_data["molecular_mechanism"],
                 data.json_data["mechanism_synopsis"],
                 data.json_data["mechanism_evidence"] # array of evidence values for each publication

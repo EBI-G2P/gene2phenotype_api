@@ -11,7 +11,7 @@ from datetime import datetime
 
 from gene2phenotype_app.models import (Panel, User, LocusGenotypeDisease,
                                        LGDVariantType, LGDVariantGenccConsequence,
-                                       LGDMolecularMechanism, LGDPhenotype,
+                                       MolecularMechanism, LGDPhenotype,
                                        LGDPublication, LGDCrossCuttingModifier,
                                        LGDPanel)
 
@@ -204,6 +204,7 @@ class LGDEditPanel(APIView):
                  status=status.HTTP_200_OK)
 
 @api_view(['GET'])
+# TODO: fix
 def PanelDownload(request, name):
     """
         Method to download the panel data.
@@ -263,10 +264,10 @@ def PanelDownload(request, name):
 
     # Preload molecular mechanism
     lgd_mechanism_data = {} # key = lgd_id; {value = molecular mechanism value, support = mechanism support ('inferred' or 'evidence')}
-    queryset_lgd_mechanism = LGDMolecularMechanism.objects.filter(
-        is_deleted=0).select_related('lgd__id','mechanism__value', 'mechanism_support__value'
-        ).prefetch_related('lgd_molecular_mechanism_evidence').values(
-            'lgd__id',
+    queryset_lgd_mechanism = MolecularMechanism.objects.filter(
+        is_deleted=0).select_related('mechanism__value', 'mechanism_support__value'
+        ).prefetch_related('molecular_mechanism_evidence').values(
+            'id',
             'mechanism__value',
             'mechanism_support__value',
             'lgdmolecularmechanismevidence__evidence__subtype',
@@ -283,50 +284,50 @@ def PanelDownload(request, name):
             value = data['lgdmolecularmechanismevidence__evidence__value']
             pmid = data['lgdmolecularmechanismevidence__publication__pmid']
 
-            if data['lgd__id'] not in evidence_data:
-                evidence_data[data['lgd__id']] = {
+            if data['id'] not in evidence_data:
+                evidence_data[data['id']] = {
                     mechanism_value: [{"subtype": subtype, "value": value, "pmid" :pmid}]
                 }
             else:
                 # this should be the most common scenario
-                if mechanism_value in evidence_data[data['lgd__id']]:
-                    evidence_data[data['lgd__id']][mechanism_value].append({"subtype": subtype, "value": value, "pmid":pmid})
+                if mechanism_value in evidence_data[data['id']]:
+                    evidence_data[data['id']][mechanism_value].append({"subtype": subtype, "value": value, "pmid":pmid})
                 else:
                     # if lgd_id has multiple mechanisms
-                    evidence_data[data['lgd__id']].update({
+                    evidence_data[data['id']].update({
                         mechanism_value: [{subtype: 1, value: 1, pmid :pmid}]
                     })
 
     # Prepare final dict of mechanisms + evidence (if applicable)
     for data in queryset_lgd_mechanism:
-        if data['lgd__id'] not in lgd_mechanism_data:
+        if data['id'] not in lgd_mechanism_data:
             # check if there is evidence
-            if data['lgd__id'] in evidence_data:
-                evidence = evidence_data[data['lgd__id']][data['mechanism__value']]
-                lgd_mechanism_data[data['lgd__id']] = [{
+            if data['id'] in evidence_data:
+                evidence = evidence_data[data['id']][data['mechanism__value']]
+                lgd_mechanism_data[data['id']] = [{
                     "value": data['mechanism__value'],
                     "support": data['mechanism_support__value'],
                     "evidence": evidence
                 }]
 
             else:
-                lgd_mechanism_data[data['lgd__id']] = [{
+                lgd_mechanism_data[data['id']] = [{
                     "value": data['mechanism__value'],
                     "support": data['mechanism_support__value']
                 }]
 
         else:
             # check if there is evidence
-            if data['lgd__id'] in evidence_data:
-                evidence = evidence_data[data['lgd__id']][data['mechanism__value']]
-                lgd_mechanism_data[data['lgd__id']].append({
+            if data['id'] in evidence_data:
+                evidence = evidence_data[data['id']][data['mechanism__value']]
+                lgd_mechanism_data[data['id']].append({
                     "value": data['mechanism__value'],
                     "support": data['mechanism_support__value'],
                     "evidence": evidence
                 })
 
             else:
-                lgd_mechanism_data[data['lgd__id']].append({
+                lgd_mechanism_data[data['id']].append({
                     "value": data['mechanism__value'],
                     "support": data['mechanism_support__value']
                 })
