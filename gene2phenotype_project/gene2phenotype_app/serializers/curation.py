@@ -9,10 +9,10 @@ import json
 import pytz
 
 from ..models import (CurationData, Disease, User, LocusGenotypeDisease,
-                      Locus, Attrib)
+                      Locus, Attrib, DiseaseOntologyTerm)
 
 from .user import UserSerializer
-from .disease import CreateDiseaseSerializer
+from .disease import CreateDiseaseSerializer, DiseaseOntologyTermSerializer
 from .locus_genotype_disease import (LocusGenotypeDiseaseSerializer,
                                      LGDCrossCuttingModifierSerializer,
                                      MolecularMechanismSerializer,
@@ -370,25 +370,45 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 ontology_term = {
                     "accession": cr["identifier"],
                     "term": cr["original_disease_name"],
-                    "description": cr["original_disease_name"] # TODO This should be the full description
+                    "description": cr["original_disease_name"], # TODO This should be the full description
+                    "source": cr["source"]
                 }
                 # Format the cross_reference dictionary according to the expected format in CreateDiseaseSerializer
                 cross_references.append(ontology_term)
 
-        # Use CreateDiseaseSerializer to get or create disease
+        # First check if disease is already saved in G2P
+        # if not, use CreateDiseaseSerializer to create newdisease
         disease = {
             "name": data.json_data["disease"]["disease_name"],
             "ontology_terms": cross_references, # if we have more ids the serializer should add them
         }
 
-        # The CreateDiseaseSerializer is going to first check if the disease is stored in G2P
-        # It only inserts data that is not in G2P
-        disease_serializer = CreateDiseaseSerializer(data=disease)
+        try:
+            disease_obj = Disease.objects.get(name=disease.get("name"))
+            # Disease was found in G2P
+            # Check if disease is already associated with ontology terms
+            # If not, add ontology terms to disease
+            for ontology in cross_references:
+                try:
+                    disease_ontology_obj = DiseaseOntologyTerm.objects.get(
+                        disease = disease_obj,
+                        ontology_term__accession = ontology['accession']
+                    )
+                except DiseaseOntologyTerm.DoesNotExist:
+                    disease_ontology_serializer = DiseaseOntologyTermSerializer(data=ontology, context={'disease':disease_obj})
+                    if disease_ontology_serializer.is_valid(raise_exception=True):
+                        disease_ontology_obj = disease_ontology_serializer.save()
 
-        # Validate the input data
-        if disease_serializer.is_valid(raise_exception=True):
-            # save and create
-            disease_obj = disease_serializer.save()
+        except Disease.DoesNotExist:
+            # The CreateDiseaseSerializer is going to validate the data
+            # It only calls the create method if data is valid
+            # Create method also populates the ontology terms associated
+            # with this disease
+            disease_serializer = CreateDiseaseSerializer(data=disease)
+            # Validate the input data
+            if disease_serializer.is_valid(raise_exception=True):
+                # save and create
+                disease_obj = disease_serializer.save()
         ###############
 
         ### Mechanism ###
