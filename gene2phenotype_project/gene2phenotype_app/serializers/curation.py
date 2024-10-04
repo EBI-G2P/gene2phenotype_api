@@ -345,13 +345,18 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
             # Get or create publications
             # Publications should be stored in the db before any data is stored
-            publication_serializer = PublicationSerializer(data=publication_data)
-            # Validate the input data
-            if publication_serializer.is_valid(raise_exception=True):
-                # save and create publication obj
-                publication_obj = publication_serializer.save()
+            try:
+                publication_serializer = PublicationSerializer(data=publication_data)
+                # Validate the input data
+                if publication_serializer.is_valid(raise_exception=True):
+                    # save and create publication obj
+                    publication_obj = publication_serializer.save()
 
-            publications_list.append(publication_data)
+                publications_list.append(publication_data)
+            except serializers.ValidationError as e:
+                raise serializers.ValidationError({
+                    "error" : str(e)
+                })
         ####################
 
         ### Disease ###
@@ -404,11 +409,16 @@ class CurationDataSerializer(serializers.ModelSerializer):
             # It only calls the create method if data is valid
             # Create method also populates the ontology terms associated
             # with this disease
-            disease_serializer = CreateDiseaseSerializer(data=disease)
-            # Validate the input data
-            if disease_serializer.is_valid(raise_exception=True):
-                # save and create
-                disease_obj = disease_serializer.save()
+            try:
+                disease_serializer = CreateDiseaseSerializer(data=disease)
+                # Validate the input data
+                if disease_serializer.is_valid(raise_exception=True):
+                    # save and create
+                    disease_obj = disease_serializer.save()
+            except serializers.ValidationError as e:
+                raise serializers.ValidationError({
+                    "error" : str(e)
+                })
         ###############
 
         ### Mechanism ###
@@ -462,43 +472,56 @@ class CurationDataSerializer(serializers.ModelSerializer):
                     "accession": hpo["accession"],
                     "publication": phenotype_pmid["pmid"]
                 }
-
-                lgd_phenotype_serializer = LGDPhenotypeSerializer(
-                    data = phenotype_data,
-                    context = {'lgd': lgd_obj}
-                )
-
-                # Validate the input data
-                if lgd_phenotype_serializer.is_valid(raise_exception=True):
-                    # save() is going to call create()
-                    lgd_phenotype_serializer.save()
+                try:
+                    lgd_phenotype_serializer = LGDPhenotypeSerializer(
+                        data = phenotype_data,
+                        context = {'lgd': lgd_obj}
+                    )
+                    # Validate the input data
+                    if lgd_phenotype_serializer.is_valid(raise_exception=True):
+                        # save() is going to call create()
+                        lgd_phenotype_serializer.save()
+                except serializers.ValidationError as e:
+                    raise serializers.ValidationError({
+                        "error" : str(e)
+                    })
 
         ### Cross cutting modifier ###
         # "cross_cutting_modifier" is an array of strings
         for ccm in data.json_data["cross_cutting_modifier"]:
-            lgd_ccm_serializer = LGDCrossCuttingModifierSerializer(
-                data={"term":ccm}, # valid fields is 'term'
-                context={"lgd": lgd_obj}
-            )
+            try:
+                lgd_ccm_serializer = LGDCrossCuttingModifierSerializer(
+                    data={"term":ccm}, # valid fields is 'term'
+                    context={"lgd": lgd_obj}
+                )
 
-            # Validate the input data
-            if lgd_ccm_serializer.is_valid(raise_exception=True):
-                # save() is going to call create()
-                lgd_ccm_serializer.save()
+                # Validate the input data
+                if lgd_ccm_serializer.is_valid(raise_exception=True):
+                    # save() is going to call create()
+                    lgd_ccm_serializer.save()
+            except serializers.ValidationError as e:
+                raise serializers.ValidationError({
+                    "error" : str(e)
+                })
 
         ### Variant (GenCC) consequences ###
         # Example: 'variant_consequences': [{'variant_consequence': 'altered_gene_product_level', 'support': 'inferred'}]
         for var_consequence in data.json_data["variant_consequences"]:
-            lgd_var_cons_serializer = LGDVariantGenCCConsequenceSerializer(
-                data=var_consequence,
-                context={'lgd': lgd_obj}
-            )
+            try:
+                lgd_var_cons_serializer = LGDVariantGenCCConsequenceSerializer(
+                    data=var_consequence,
+                    context={'lgd': lgd_obj}
+                )
 
-            # Validate the input data
-            if lgd_var_cons_serializer.is_valid(raise_exception=True):
-                # save() is going to call create()
-                lgd_var_cons_serializer.save()
- 
+                # Validate the input data
+                if lgd_var_cons_serializer.is_valid(raise_exception=True):
+                    # save() is going to call create()
+                    lgd_var_cons_serializer.save()
+            except serializers.ValidationError as e:
+                raise serializers.ValidationError({
+                    "error" : str(e)
+                })
+
         ### Variant types ###
         # Example: {'comment': 'This is a frameshift', 'inherited': false, 'de_novo': false, 
         # 'unknown_inheritance': false, 'nmd_escape': True, 'primary_type': 'protein_changing',

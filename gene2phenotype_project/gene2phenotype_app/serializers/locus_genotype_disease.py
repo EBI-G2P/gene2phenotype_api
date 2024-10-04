@@ -491,7 +491,7 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
     """
 
     variant_consequence = serializers.CharField(source="variant_consequence.term")
-    accession = serializers.CharField(source="variant_consequence.accession")
+    accession = serializers.CharField(source="variant_consequence.accession", required=False) # curation/draft page doesn't input the accession
     support = serializers.CharField(source="support.value")
     publication = serializers.CharField(source="publication.pmid", allow_null=True, required=False)
 

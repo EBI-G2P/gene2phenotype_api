@@ -56,7 +56,7 @@ class SearchView(BaseView):
                     base_phenotype & Q(lgdpanel__panel__name=search_panel) |
                     base_phenotype_2 & Q(lgdpanel__panel__name=search_panel) |
                     base_g2p_id & Q(lgdpanel__panel__name=search_panel)
-                ).order_by('locus__name', 'stable_id__stable_id').distinct()
+                ).order_by('locus__name', 'disease__name').distinct()
             else:
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_locus |
@@ -68,7 +68,7 @@ class SearchView(BaseView):
                     base_phenotype |
                     base_phenotype_2 |
                     base_g2p_id
-                ).order_by('locus__name', 'stable_id__stable_id').distinct()
+                ).order_by('locus__name', 'disease__name').distinct()
 
             if not queryset.exists():
                 self.handle_no_permission('results', search_query)
@@ -79,13 +79,13 @@ class SearchView(BaseView):
                     base_locus & Q(lgdpanel__panel__name=search_panel) |
                     base_locus_2 & Q(lgdpanel__panel__name=search_panel) |
                     base_locus_3 & Q(lgdpanel__panel__name=search_panel)
-                ).order_by('locus__name', 'stable_id__stable_id').distinct()
+                ).order_by('locus__name', 'disease__name').distinct()
             else:
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_locus |
                     base_locus_2 |
                     base_locus_3
-                ).order_by('locus__name', 'stable_id__stable_id').distinct()
+                ).order_by('locus__name', 'disease__name').distinct()
 
             if not queryset.exists():
                 self.handle_no_permission('Gene', search_query)
@@ -96,13 +96,13 @@ class SearchView(BaseView):
                     base_disease & Q(lgdpanel__panel__name=search_panel) |
                     base_disease_2 & Q(lgdpanel__panel__name=search_panel) |
                     base_disease_3 & Q(lgdpanel__panel__name=search_panel)
-                ).order_by('locus__name', 'stable_id__stable_id').distinct()
+                ).order_by('locus__name', 'disease__name').distinct()
             else:
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_disease |
                     base_disease_2 |
                     base_disease_3
-                ).order_by('locus__name', 'stable_id__stable_id').distinct()
+                ).order_by('locus__name', 'disease__name').distinct()
 
             if not queryset.exists():
                 self.handle_no_permission('Disease', search_query)
@@ -112,12 +112,12 @@ class SearchView(BaseView):
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_phenotype & Q(lgdpanel__panel__name=search_panel) |
                     base_phenotype_2 & Q(lgdpanel__panel__name=search_panel)
-                ).order_by('locus__name', 'stable_id__stable_id').distinct()
+                ).order_by('locus__name', 'disease__name').distinct()
             else:
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_phenotype |
                     base_phenotype_2
-                ).order_by('locus__name', 'stable_id__stable_id').distinct()
+                ).order_by('locus__name', 'disease__name').distinct()
 
             if not queryset.exists():
                 self.handle_no_permission('Phenotype', search_query)
@@ -126,11 +126,11 @@ class SearchView(BaseView):
             if search_panel:
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_g2p_id & Q(lgdpanel__panel__name=search_panel)
-                ).order_by('locus__name', 'stable_id__stable_id').distinct()
+                ).order_by('locus__name', 'disease__name').distinct()
             else:
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_g2p_id
-                ).order_by('locus__name', 'stable_id__stable_id').distinct()
+                ).order_by('locus__name', 'disease__name').distinct()
 
             if not queryset.exists():
                 self.handle_no_permission('g2p_id', search_query)
