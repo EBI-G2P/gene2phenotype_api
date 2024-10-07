@@ -40,6 +40,7 @@ class CurationData(models.Model):
     date_last_update = models.DateTimeField(null=False)
     session_name = models.CharField(max_length=100, null=False, unique=True)
     json_data = models.JSONField(null=False)
+    locus = models.CharField(max_length=50, null=False, unique=True)
     history = HistoricalRecords()
 
     class Meta:
@@ -47,7 +48,8 @@ class CurationData(models.Model):
         indexes = [
             models.Index(fields=["user"]),
             models.Index(fields=["stable_id"]),
-            models.Index(fields=["session_name"])
+            models.Index(fields=["session_name"]),
+            models.Index(fields=["locus"])
         ]
 
 class LocusGenotypeDisease(models.Model):

@@ -2,9 +2,9 @@ from rest_framework.response import Response
 from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
 
-from gene2phenotype_app.serializers import LocusGenotypeDiseaseSerializer
+from gene2phenotype_app.serializers import LocusGenotypeDiseaseSerializer, CurationDataSerializer
 
-from gene2phenotype_app.models import LGDPanel, LocusGenotypeDisease
+from gene2phenotype_app.models import LGDPanel, LocusGenotypeDisease, CurationData
 
 from .base import BaseView
 
@@ -16,6 +16,7 @@ class SearchView(BaseView):
                                             - disease
                                             - phenotype
                                             - G2P ID
+                                            - draft
         If no search type is specified then it performs a generic search.
         The search can be specific to one panel if using parameter 'panel'.
     """
@@ -134,15 +135,23 @@ class SearchView(BaseView):
 
             if not queryset.exists():
                 self.handle_no_permission('g2p_id', search_query)
-
+        
+        elif search_type == "draft" and user.is_authenticated is True:
+            queryset = CurationData.objects.filter(
+                gene_symbol=search_query
+                ).order_by('stable_id__stable_id').distinct()
+            
+            if not queryset.exists():
+                self.handle_no_permission("draft", search_query)
+            
         else:
             self.handle_no_permission('Search type is not valid', None)
-
+        
         new_queryset = []
         if queryset.exists():
             for lgd in queryset:
                 # If the user is not logged in, only show visible panels and remove disputed and refuted records
-                if user.is_authenticated == False:
+                if user.is_authenticated is False:
                     lgdpanel_select = LGDPanel.objects.filter(
                         Q(lgd=lgd, panel__is_visible=1, is_deleted=0)
                         & ~Q(lgd__confidence__value='disputed') & ~Q(lgd__confidence__value='refuted'))
