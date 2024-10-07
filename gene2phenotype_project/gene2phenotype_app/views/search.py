@@ -1,5 +1,5 @@
 from rest_framework.response import Response
-from django.db.models import Q
+from django.db.models import Q, F
 from rest_framework.pagination import PageNumberPagination
 
 from gene2phenotype_app.serializers import LocusGenotypeDiseaseSerializer, CurationDataSerializer
@@ -147,6 +147,8 @@ class SearchView(BaseView):
                 gene_symbol=search_query
                 ).order_by('stable_id__stable_id').distinct()
             
+            queryset = queryset.annotate(user_name=F('user_id__username'))
+            
             if not queryset.exists():
                 self.handle_no_permission("draft", search_query)
     
@@ -174,7 +176,6 @@ class SearchView(BaseView):
                     if lgd_panels:
                         new_queryset.append(lgd)
             else:
-                # print(queryset)
                 return queryset
 
         return new_queryset
@@ -207,7 +208,7 @@ class SearchView(BaseView):
                     "gene": c_data.gene_symbol,
                     "date_created": c_data.date_created,
                     "date_last_updated": c_data.date_last_update,
-                    "curator": c_data.user_id
+                    "curator": c_data.user_name
                 }
                 list_output.append(data)
 
