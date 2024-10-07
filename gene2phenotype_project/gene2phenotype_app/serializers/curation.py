@@ -251,7 +251,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         date_reviewed = date_created
         session_name = json_data.get('session_name')
         stable_id = G2PStableIDSerializer.create_stable_id()
-        locus = json_data.get("locus")
+        gene_symbol = json_data.get("locus")
 
         if session_name is None or session_name == "":
             session_name = stable_id.stable_id
@@ -270,7 +270,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 session_name=session_name,
                 json_data=json_data,
                 stable_id=stable_id,
-                locus=locus,
+                gene_symbol=gene_symbol,
                 date_created=date_created,
                 date_last_update=date_reviewed,
                 user=user_obj

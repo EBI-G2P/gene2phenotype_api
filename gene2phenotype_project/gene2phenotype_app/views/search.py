@@ -20,8 +20,14 @@ class SearchView(BaseView):
         If no search type is specified then it performs a generic search.
         The search can be specific to one panel if using parameter 'panel'.
     """
-    serializer_class = LocusGenotypeDiseaseSerializer
+
     pagination_class = PageNumberPagination
+
+    def get_serializer_class(self):
+        if self.request.query_params.get('type', None) == 'draft':
+            return CurationDataSerializer
+
+        return LocusGenotypeDiseaseSerializer
 
     def get_queryset(self):
         user = self.request.user
@@ -136,54 +142,79 @@ class SearchView(BaseView):
             if not queryset.exists():
                 self.handle_no_permission('g2p_id', search_query)
         
-        elif search_type == "draft" and user.is_authenticated is True:
+        elif search_type == 'draft':
             queryset = CurationData.objects.filter(
                 gene_symbol=search_query
                 ).order_by('stable_id__stable_id').distinct()
             
             if not queryset.exists():
                 self.handle_no_permission("draft", search_query)
-            
+    
         else:
             self.handle_no_permission('Search type is not valid', None)
         
         new_queryset = []
         if queryset.exists():
-            for lgd in queryset:
+            if search_type != 'draft':
+                for lgd in queryset:
                 # If the user is not logged in, only show visible panels and remove disputed and refuted records
-                if user.is_authenticated is False:
-                    lgdpanel_select = LGDPanel.objects.filter(
-                        Q(lgd=lgd, panel__is_visible=1, is_deleted=0)
-                        & ~Q(lgd__confidence__value='disputed') & ~Q(lgd__confidence__value='refuted'))
-                else:
-                    lgdpanel_select = LGDPanel.objects.filter(lgd=lgd, is_deleted=0)
+                    if user.is_authenticated is False:
+                        lgdpanel_select = LGDPanel.objects.filter(
+                            Q(lgd=lgd, panel__is_visible=1, is_deleted=0)
+                            & ~Q(lgd__confidence__value='disputed') & ~Q(lgd__confidence__value='refuted'))
+                    else:
+                        lgdpanel_select = LGDPanel.objects.filter(lgd=lgd, is_deleted=0)
 
-                lgd_panels = []
-                for lp in lgdpanel_select:
-                    lgd_panels.append(lp.panel.name)
+                    lgd_panels = []
+                    for lp in lgdpanel_select:
+                        lgd_panels.append(lp.panel.name)
 
-                # Add new property to LGD object
-                lgd.panels = lgd_panels
-                if lgd_panels:
-                    new_queryset.append(lgd)
+                    # Add new property to LGD object
+                    lgd.panels = lgd_panels
+                    if lgd_panels:
+                        new_queryset.append(lgd)
+            else:
+                # print(queryset)
+                return queryset
 
         return new_queryset
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
+        serializer = self.get_serializer_class()
+
+        
         list_output = []
+        if serializer == "LocusGenotypeDisease.Serializer":
+            for lgd in queryset:
+                data = { 'id':lgd.stable_id.stable_id,
+                        'gene':lgd.locus.name,
+                        'genotype':lgd.genotype.value,
+                        'disease':lgd.disease.name,
+                        'panel':lgd.panels
+                    }
+                list_output.append(data)
+            paginated_output = self.paginate_queryset(list_output)
 
-        for lgd in queryset:
-            data = { 'id':lgd.stable_id.stable_id,
-                     'gene':lgd.locus.name,
-                     'genotype':lgd.genotype.value,
-                     'disease':lgd.disease.name,
-                     'panel':lgd.panels
-                   }
-            list_output.append(data)
-        paginated_output = self.paginate_queryset(list_output)
+            if paginated_output is not None:
+                return self.get_paginated_response(paginated_output)
 
-        if paginated_output is not None:
-            return self.get_paginated_response(paginated_output)
+            return Response({"results": list_output, "count": len(list_output)})
+        else:
+            for c_data in queryset:
+                data = {
+                    "id" : c_data.stable_id.stable_id,
+                    "gene": c_data.gene_symbol,
+                    "date_created": c_data.date_created,
+                    "date_last_updated": c_data.date_last_update,
+                    "curator": c_data.user_id
+                }
+                list_output.append(data)
 
-        return Response({"results": list_output, "count": len(list_output)})
+            paginated_output = self.paginate_queryset(list_output)
+
+            if paginated_output is not None:
+                return self.get_paginated_response(paginated_output)
+
+            return Response({"results": list_output, "count": len(list_output)})
+
