@@ -147,7 +147,10 @@ class SearchView(BaseView):
                 gene_symbol=search_query
                 ).order_by('stable_id__stable_id').distinct()
             
-            queryset = queryset.annotate(user_name=F('user_id__username'))
+            # to extend the queryset being annotated when it is draft,
+            # want to return username so curator can see who is curating
+            queryset = queryset.annotate(user_name=F('user_id__username'), user_email=F('user__email'))
+
             
             if not queryset.exists():
                 self.handle_no_permission("draft", search_query)
@@ -208,7 +211,8 @@ class SearchView(BaseView):
                     "gene": c_data.gene_symbol,
                     "date_created": c_data.date_created,
                     "date_last_updated": c_data.date_last_update,
-                    "curator": c_data.user_name
+                    "curator": c_data.user_name,
+                    "curator_email": c_data.user_email
                 }
                 list_output.append(data)
 
