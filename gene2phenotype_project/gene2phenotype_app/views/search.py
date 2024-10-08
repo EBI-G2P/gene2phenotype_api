@@ -142,7 +142,7 @@ class SearchView(BaseView):
             if not queryset.exists():
                 self.handle_no_permission('g2p_id', search_query)
         
-        elif search_type == 'draft':
+        elif search_type == 'draft' and user.is_authenticated:
             queryset = CurationData.objects.filter(
                 gene_symbol=search_query
                 ).order_by('stable_id__stable_id').distinct()
