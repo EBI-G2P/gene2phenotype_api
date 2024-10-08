@@ -16,7 +16,7 @@ class SearchView(BaseView):
                                             - disease
                                             - phenotype
                                             - G2P ID
-                                            - draft
+                                            - draft (only available for authenticated users)
         If no search type is specified then it performs a generic search.
         The search can be specific to one panel if using parameter 'panel'.
     """
@@ -190,7 +190,7 @@ class SearchView(BaseView):
 
         
         list_output = []
-        if serializer == "LocusGenotypeDisease.Serializer":
+        if issubclass(serializer, LocusGenotypeDiseaseSerializer):
             for lgd in queryset:
                 data = { 'id':lgd.stable_id.stable_id,
                         'gene':lgd.locus.name,
