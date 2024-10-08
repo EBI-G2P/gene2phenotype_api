@@ -149,6 +149,7 @@ class SearchView(BaseView):
             
             # to extend the queryset being annotated when it is draft,
             # want to return username so curator can see who is curating
+            # adding the curator email, incase of the notification.
             queryset = queryset.annotate(user_name=F('user_id__username'), user_email=F('user__email'))
 
             
