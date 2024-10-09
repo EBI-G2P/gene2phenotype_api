@@ -150,8 +150,10 @@ class SearchView(BaseView):
             # to extend the queryset being annotated when it is draft,
             # want to return username so curator can see who is curating
             # adding the curator email, incase of the notification.
-            queryset = queryset.annotate(user_name=F('user_id__username'), user_email=F('user__email'))
+            queryset = queryset.annotate(first_name=F('user_id__first_name'), last_name=F('user_id__last_name'), user_email=F('user__email'))
 
+            for obj in queryset:
+                obj.json_data_info = CurationDataSerializer.get_entry_info_from_json_data(self, obj.json_data)
             
             if not queryset.exists():
                 self.handle_no_permission("draft", search_query)
@@ -212,7 +214,9 @@ class SearchView(BaseView):
                     "gene": c_data.gene_symbol,
                     "date_created": c_data.date_created,
                     "date_last_updated": c_data.date_last_update,
-                    "curator": c_data.user_name,
+                    "curator_first": c_data.first_name,
+                    "curator_last_name": c_data.last_name,
+                    "json_data": c_data.json_data_info,
                     "curator_email": c_data.user_email
                 }
                 list_output.append(data)
