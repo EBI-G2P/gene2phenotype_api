@@ -216,7 +216,9 @@ class SearchView(BaseView):
                     "date_last_updated": c_data.date_last_update,
                     "curator_first": c_data.first_name,
                     "curator_last_name": c_data.last_name,
-                    "json_data": c_data.json_data_info,
+                    "genotype": c_data.json_data_info["genotype"],
+                    "disease_name" : c_data.json_data_info["disease"],
+                    "panels" : c_data.json_data_info["panel"],
                     "curator_email": c_data.user_email
                 }
                 list_output.append(data)
