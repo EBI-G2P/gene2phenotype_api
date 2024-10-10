@@ -15,11 +15,12 @@ from .user import UserSerializer
 from .disease import CreateDiseaseSerializer, DiseaseOntologyTermSerializer
 from .locus_genotype_disease import (LocusGenotypeDiseaseSerializer,
                                      LGDCrossCuttingModifierSerializer,
-                                     LGDMolecularMechanismSerializer,
+                                     MolecularMechanismSerializer,
                                      LGDVariantGenCCConsequenceSerializer,
                                      LGDVariantTypeSerializer, LGDVariantTypeDescriptionSerializer)
 from .stable_id import G2PStableIDSerializer
 from .phenotype import LGDPhenotypeSerializer
+from .publication import PublicationSerializer
 
 class CurationDataSerializer(serializers.ModelSerializer):
     """
@@ -140,11 +141,12 @@ class CurationDataSerializer(serializers.ModelSerializer):
             lgd_obj = LocusGenotypeDisease.objects.get(
                 locus__name = json_data["locus"],
                 genotype__value = json_data["allelic_requirement"],
-                disease__name = json_data["disease"]["disease_name"]
+                disease__name = json_data["disease"]["disease_name"],
+                molecular_mechanism__mechanism__value = json_data["molecular_mechanism"]["name"]
             )
 
             raise serializers.ValidationError({
-                "message": f"Found another record with same locus, genotype and disease. Please check G2P ID '{lgd_obj.stable_id.stable_id}'"
+                "message": f"Found another record with same locus, genotype, disease and molecular mechanism. Please check G2P ID '{lgd_obj.stable_id.stable_id}'"
             })
         except LocusGenotypeDisease.DoesNotExist:
             return locus_obj
@@ -368,7 +370,20 @@ class CurationDataSerializer(serializers.ModelSerializer):
                                  "families": family
                                }
 
-            publications_list.append(publication_data)
+            # Get or create publications
+            # Publications should be stored in the db before any data is stored
+            try:
+                publication_serializer = PublicationSerializer(data=publication_data)
+                # Validate the input data
+                if publication_serializer.is_valid(raise_exception=True):
+                    # save and create publication obj
+                    publication_obj = publication_serializer.save()
+
+                publications_list.append(publication_data)
+            except serializers.ValidationError as e:
+                raise serializers.ValidationError({
+                    "error" : str(e)
+                })
         ####################
 
         ### Disease ###
@@ -421,12 +436,29 @@ class CurationDataSerializer(serializers.ModelSerializer):
             # It only calls the create method if data is valid
             # Create method also populates the ontology terms associated
             # with this disease
-            disease_serializer = CreateDiseaseSerializer(data=disease)
-            # Validate the input data
-            if disease_serializer.is_valid(raise_exception=True):
-                # save and create
-                disease_obj = disease_serializer.save()
+            try:
+                disease_serializer = CreateDiseaseSerializer(data=disease)
+                # Validate the input data
+                if disease_serializer.is_valid(raise_exception=True):
+                    # save and create
+                    disease_obj = disease_serializer.save()
+            except serializers.ValidationError as e:
+                raise serializers.ValidationError({
+                    "error" : str(e)
+                })
         ###############
+
+        ### Mechanism ###
+        # The curation form only supports one mechanism
+        # Curators cannot create a record with multiple mechanisms
+        # The evidence attaches the data to a publication - the new PMIDs
+        # have to already be stored in G2P
+        molecular_mechanism_obj = MolecularMechanismSerializer().create(
+            data.json_data["molecular_mechanism"],
+            data.json_data["mechanism_synopsis"],
+            data.json_data["mechanism_evidence"] # array of evidence values for each publication
+        )
+        #################################################################
 
         ### Locus-Genotype-Disease ###
         lgd_data = {"locus": data.json_data["locus"],
@@ -435,7 +467,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
                     "panels": data.json_data["panels"],
                     "confidence": data.json_data["confidence"],
                     "phenotypes": data.json_data["phenotypes"],
-                    "variant_types": data.json_data["variant_types"]
+                    "variant_types": data.json_data["variant_types"],
+                    "molecular_mechanism": molecular_mechanism_obj
                 }
 
         lgd_obj = LocusGenotypeDiseaseSerializer(context={'user':user_obj}).create(lgd_data, disease_obj, publications_list)
@@ -466,43 +499,56 @@ class CurationDataSerializer(serializers.ModelSerializer):
                     "accession": hpo["accession"],
                     "publication": phenotype_pmid["pmid"]
                 }
-
-                lgd_phenotype_serializer = LGDPhenotypeSerializer(
-                    data = phenotype_data,
-                    context = {'lgd': lgd_obj}
-                )
-
-                # Validate the input data
-                if lgd_phenotype_serializer.is_valid(raise_exception=True):
-                    # save() is going to call create()
-                    lgd_phenotype_serializer.save()
+                try:
+                    lgd_phenotype_serializer = LGDPhenotypeSerializer(
+                        data = phenotype_data,
+                        context = {'lgd': lgd_obj}
+                    )
+                    # Validate the input data
+                    if lgd_phenotype_serializer.is_valid(raise_exception=True):
+                        # save() is going to call create()
+                        lgd_phenotype_serializer.save()
+                except serializers.ValidationError as e:
+                    raise serializers.ValidationError({
+                        "error" : str(e)
+                    })
 
         ### Cross cutting modifier ###
         # "cross_cutting_modifier" is an array of strings
         for ccm in data.json_data["cross_cutting_modifier"]:
-            lgd_ccm_serializer = LGDCrossCuttingModifierSerializer(
-                data={"term":ccm}, # valid fields is 'term'
-                context={"lgd": lgd_obj}
-            )
+            try:
+                lgd_ccm_serializer = LGDCrossCuttingModifierSerializer(
+                    data={"term":ccm}, # valid fields is 'term'
+                    context={"lgd": lgd_obj}
+                )
 
-            # Validate the input data
-            if lgd_ccm_serializer.is_valid(raise_exception=True):
-                # save() is going to call create()
-                lgd_ccm_serializer.save()
+                # Validate the input data
+                if lgd_ccm_serializer.is_valid(raise_exception=True):
+                    # save() is going to call create()
+                    lgd_ccm_serializer.save()
+            except serializers.ValidationError as e:
+                raise serializers.ValidationError({
+                    "error" : str(e)
+                })
 
         ### Variant (GenCC) consequences ###
         # Example: 'variant_consequences': [{'variant_consequence': 'altered_gene_product_level', 'support': 'inferred'}]
         for var_consequence in data.json_data["variant_consequences"]:
-            lgd_var_cons_serializer = LGDVariantGenCCConsequenceSerializer(
-                data=var_consequence,
-                context={'lgd': lgd_obj}
-            )
+            try:
+                lgd_var_cons_serializer = LGDVariantGenCCConsequenceSerializer(
+                    data=var_consequence,
+                    context={'lgd': lgd_obj}
+                )
 
-            # Validate the input data
-            if lgd_var_cons_serializer.is_valid(raise_exception=True):
-                # save() is going to call create()
-                lgd_var_cons_serializer.save()
- 
+                # Validate the input data
+                if lgd_var_cons_serializer.is_valid(raise_exception=True):
+                    # save() is going to call create()
+                    lgd_var_cons_serializer.save()
+            except serializers.ValidationError as e:
+                raise serializers.ValidationError({
+                    "error" : str(e)
+                })
+
         ### Variant types ###
         # Example: {'comment': 'This is a frameshift', 'inherited': false, 'de_novo': false, 
         # 'unknown_inheritance': false, 'nmd_escape': True, 'primary_type': 'protein_changing',
@@ -515,18 +561,6 @@ class CurationDataSerializer(serializers.ModelSerializer):
             LGDVariantTypeDescriptionSerializer(context={'lgd': lgd_obj}).create(variant_type_desc)
 
         # TODO: add comment
-
-        ### Mechanism ###
-        # The curation form only supports one mechanism
-        # Curators cannot create a record with multiple mechanisms
-        if data.json_data["molecular_mechanism"]:
-            LGDMolecularMechanismSerializer(context={'lgd': lgd_obj}).create(
-                data.json_data["molecular_mechanism"],
-                data.json_data["mechanism_synopsis"],
-                data.json_data["mechanism_evidence"] # array of evidence values for each publication
-            )
-
-        #################################################################
 
         # Update stable_id status to live (is_live=1)
         G2PStableIDSerializer(context={'stable_id': data.stable_id.stable_id}).update_g2p_id_status(1)

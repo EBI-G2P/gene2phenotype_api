@@ -201,6 +201,11 @@ class PublicationSerializer(serializers.ModelSerializer):
         return data
 
     def validate(self, data):
+        """
+            Overwrite the validate method to accept extra fields:
+             - comments
+             - families
+        """
         if hasattr(self, 'initial_data'):
             data = self.initial_data
 
