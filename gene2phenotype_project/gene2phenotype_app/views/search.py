@@ -165,11 +165,10 @@ class SearchView(BaseView):
         if queryset.exists():
             if search_type != 'draft':
                 for lgd in queryset:
-                # If the user is not logged in, only show visible panels and remove disputed and refuted records
+                # If the user is not logged in, only show visible panels
                     if user.is_authenticated is False:
                         lgdpanel_select = LGDPanel.objects.filter(
-                            Q(lgd=lgd, panel__is_visible=1, is_deleted=0)
-                            & ~Q(lgd__confidence__value='disputed') & ~Q(lgd__confidence__value='refuted'))
+                            Q(lgd=lgd, panel__is_visible=1, is_deleted=0))
                     else:
                         lgdpanel_select = LGDPanel.objects.filter(lgd=lgd, is_deleted=0)
 

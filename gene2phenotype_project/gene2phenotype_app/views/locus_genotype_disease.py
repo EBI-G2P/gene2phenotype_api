@@ -130,13 +130,10 @@ class LocusGenotypeDiseaseDetail(generics.ListAPIView):
         # Authenticated users (curators) can see all entries:
         #   - in visible and non-visible panels
         #   - entries flagged as not reviewed (is_reviewed=0)
-        #   - entries with 'refuted' and 'disputed' confidence category
         if user.is_authenticated:
             queryset = LocusGenotypeDisease.objects.filter(stable_id=g2p_stable_id, is_deleted=0)
         else:
             queryset = LocusGenotypeDisease.objects.filter(stable_id=g2p_stable_id, is_reviewed=1, is_deleted=0, lgdpanel__panel__is_visible=1).distinct()
-            # Remove entries with 'refuted' and 'disputed' confidence category
-            queryset = queryset.filter(~Q(confidence__value='refuted') & ~Q(confidence__value='disputed'))
 
         if not queryset.exists():
             raise Http404(f"No matching Entry found for: {stable_id}")
