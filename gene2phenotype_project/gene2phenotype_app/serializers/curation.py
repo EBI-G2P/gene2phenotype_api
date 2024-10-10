@@ -235,6 +235,31 @@ class CurationDataSerializer(serializers.ModelSerializer):
         else:
             raise serializers.ValidationError({"message" : "To publish a curated entry, locus, allelic requirement and disease are neccessary"})
 
+    def get_entry_info_from_json_data(self, json_data):
+        """
+            Extracts specific information from a given JSON data structure related to genotype, disease, and panel.
+
+            This method parses the provided `json_data` dictionary to extract the following fields:
+            - "genotype": Retrieved from the "allelic_requirement" key.
+            - "disease": Retrieved from the nested "disease_name" key inside the "disease" dictionary.
+            - "panel": Retrieved from the "panels" key.
+
+            If any of the keys are missing, the method returns `None` for the corresponding fields.
+
+            Args:
+                json_data (dict): A dictionary containing the JSON data to extract information from.
+
+            Returns:
+                dict: A dictionary containing the extracted fields with the following keys:
+                    - "genotype" (str or None): The value of the "allelic_requirement" field, or `None` if not present.
+                    - "disease" (str or None): The value of the "disease_name" field inside the "disease" dictionary, or `None` if not present.       
+        """
+        return {
+            "genotype": json_data.get("allelic_requirement"),
+            "disease": json_data.get("disease", {}).get("disease_name"),
+            "panel": json_data.get("panels")
+        }
+
     @transaction.atomic
     def create(self, validated_data):
         """
@@ -253,6 +278,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         date_reviewed = date_created
         session_name = json_data.get('session_name')
         stable_id = G2PStableIDSerializer.create_stable_id()
+        gene_symbol = json_data.get("locus")
 
         if session_name is None or session_name == "":
             session_name = stable_id.stable_id
@@ -271,6 +297,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 session_name=session_name,
                 json_data=json_data,
                 stable_id=stable_id,
+                gene_symbol=gene_symbol,
                 date_created=date_created,
                 date_last_update=date_reviewed,
                 user=user_obj

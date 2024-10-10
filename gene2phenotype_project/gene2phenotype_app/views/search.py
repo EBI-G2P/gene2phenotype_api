@@ -1,10 +1,10 @@
 from rest_framework.response import Response
-from django.db.models import Q
+from django.db.models import Q, F
 from rest_framework.pagination import PageNumberPagination
 
-from gene2phenotype_app.serializers import LocusGenotypeDiseaseSerializer
+from gene2phenotype_app.serializers import LocusGenotypeDiseaseSerializer, CurationDataSerializer
 
-from gene2phenotype_app.models import LGDPanel, LocusGenotypeDisease
+from gene2phenotype_app.models import LGDPanel, LocusGenotypeDisease, CurationData
 
 from .base import BaseView
 
@@ -16,11 +16,18 @@ class SearchView(BaseView):
                                             - disease
                                             - phenotype
                                             - G2P ID
+                                            - draft (only available for authenticated users)
         If no search type is specified then it performs a generic search.
         The search can be specific to one panel if using parameter 'panel'.
     """
-    serializer_class = LocusGenotypeDiseaseSerializer
+
     pagination_class = PageNumberPagination
+
+    def get_serializer_class(self):
+        if self.request.query_params.get('type', None) == 'draft':
+            return CurationDataSerializer
+
+        return LocusGenotypeDiseaseSerializer
 
     def get_queryset(self):
         user = self.request.user
@@ -134,45 +141,82 @@ class SearchView(BaseView):
 
             if not queryset.exists():
                 self.handle_no_permission('g2p_id', search_query)
+        
+        elif search_type == 'draft' and user.is_authenticated:
+            queryset = CurationData.objects.filter(
+                gene_symbol=search_query
+                ).order_by('stable_id__stable_id').distinct()
+            
+            # to extend the queryset being annotated when it is draft,
+            # want to return username so curator can see who is curating
+            # adding the curator email, incase of the notification.
+            queryset = queryset.annotate(first_name=F('user_id__first_name'), last_name=F('user_id__last_name'), user_email=F('user__email'))
 
+            for obj in queryset:
+                obj.json_data_info = CurationDataSerializer.get_entry_info_from_json_data(self, obj.json_data)
+            
+            if not queryset.exists():
+                self.handle_no_permission("draft", search_query)
+    
         else:
             self.handle_no_permission('Search type is not valid', None)
-
+        
         new_queryset = []
         if queryset.exists():
-            for lgd in queryset:
+            if search_type != 'draft':
+                for lgd in queryset:
                 # If the user is not logged in, only show visible panels and remove disputed and refuted records
-                if user.is_authenticated == False:
-                    lgdpanel_select = LGDPanel.objects.filter(
-                        Q(lgd=lgd, panel__is_visible=1, is_deleted=0)
-                        & ~Q(lgd__confidence__value='disputed') & ~Q(lgd__confidence__value='refuted'))
-                else:
-                    lgdpanel_select = LGDPanel.objects.filter(lgd=lgd, is_deleted=0)
+                    if user.is_authenticated is False:
+                        lgdpanel_select = LGDPanel.objects.filter(
+                            Q(lgd=lgd, panel__is_visible=1, is_deleted=0)
+                            & ~Q(lgd__confidence__value='disputed') & ~Q(lgd__confidence__value='refuted'))
+                    else:
+                        lgdpanel_select = LGDPanel.objects.filter(lgd=lgd, is_deleted=0)
 
-                lgd_panels = []
-                for lp in lgdpanel_select:
-                    lgd_panels.append(lp.panel.name)
+                    lgd_panels = []
+                    for lp in lgdpanel_select:
+                        lgd_panels.append(lp.panel.name)
 
-                # Add new property to LGD object
-                lgd.panels = lgd_panels
-                if lgd_panels:
-                    new_queryset.append(lgd)
+                    # Add new property to LGD object
+                    lgd.panels = lgd_panels
+                    if lgd_panels:
+                        new_queryset.append(lgd)
+            else:
+                return queryset
 
         return new_queryset
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        list_output = []
+        serializer = self.get_serializer_class()
 
-        for lgd in queryset:
-            data = { 'id':lgd.stable_id.stable_id,
-                     'gene':lgd.locus.name,
-                     'genotype':lgd.genotype.value,
-                     'disease':lgd.disease.name,
-                     'mechanism':lgd.molecular_mechanism.mechanism.value,
-                     'panel':lgd.panels
-                   }
-            list_output.append(data)
+        list_output = []
+        if issubclass(serializer, LocusGenotypeDiseaseSerializer):
+            for lgd in queryset:
+                data = { 'id':lgd.stable_id.stable_id,
+                        'gene':lgd.locus.name,
+                        'genotype':lgd.genotype.value,
+                        'disease':lgd.disease.name,
+                        'mechanism':lgd.molecular_mechanism.mechanism.value,
+                        'panel':lgd.panels
+                    }
+                list_output.append(data)
+        else:
+            for c_data in queryset:
+                data = {
+                    "id" : c_data.stable_id.stable_id,
+                    "gene": c_data.gene_symbol,
+                    "date_created": c_data.date_created,
+                    "date_last_updated": c_data.date_last_update,
+                    "curator_first": c_data.first_name,
+                    "curator_last_name": c_data.last_name,
+                    "genotype": c_data.json_data_info["genotype"],
+                    "disease_name" : c_data.json_data_info["disease"],
+                    "panels" : c_data.json_data_info["panel"],
+                    "curator_email": c_data.user_email
+                }
+                list_output.append(data)
+
         paginated_output = self.paginate_queryset(list_output)
 
         if paginated_output is not None:
