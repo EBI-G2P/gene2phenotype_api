@@ -103,7 +103,6 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         """
             A summary of the last 10 records associated with the panel.
             If the user is non-authenticated:
-                - it does not return refuted and disputed records
                 - only returns records linked to visible panels
         """
         # TODO: improve query, this can be done in a single query
@@ -123,9 +122,7 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         else:
             filters = (
                 Q(lgd__is_deleted=0) &
-                Q(panel__is_visible=1) &
-                ~Q(lgd__confidence__value='disputed') &
-                ~Q(lgd__confidence__value='refuted')
+                Q(panel__is_visible=1)
             )
 
             lgd_panels_selected = lgd_panels.filter(filters).select_related('lgd',
