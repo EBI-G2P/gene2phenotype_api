@@ -152,7 +152,6 @@ class DiseaseDetailSerializer(DiseaseSerializer):
         """
             Returns a summary of the LGD records associated with the disease.
             If the user is non-authenticated:
-                - it does not return refuted and disputed records
                 - only returns records linked to visible panels
         """
         # TODO: improve query, this can be done in a single query
@@ -165,9 +164,7 @@ class DiseaseDetailSerializer(DiseaseSerializer):
 
         else:
             filters = (
-                Q(lgdpanel__panel__is_visible=1) &
-                ~Q(confidence__value='disputed') &
-                ~Q(confidence__value='refuted')
+                Q(lgdpanel__panel__is_visible=1)
             )
 
             lgd_select = lgd_list.filter(filters).select_related('disease', 'genotype', 'confidence', 'molecular_mechanism'

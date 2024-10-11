@@ -404,11 +404,6 @@ def PanelDownload(request, name):
         ).distinct().select_related('stable_id', 'locus', 'disease', 'genotype', 'confidence', 'molecular_mechanism'
                                     ).prefetch_related('disease', 'locus', 'molecular_mechanism')
 
-        # Non authenticated users cannot download entries with the following confidence values:
-        # 'disputed' and 'refuted'
-        if not user_obj:
-            queryset_list = queryset_list.filter(~Q(confidence__value='refuted') & ~Q(confidence__value='disputed'))
-
         # Get extra info for the disease and the locus:
         #  disease - ids from external dbs (omim, mondo)
         #  locus - previous gene symbols (from ensembl) and external ids (hgnc, ensembl)

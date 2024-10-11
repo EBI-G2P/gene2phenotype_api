@@ -89,7 +89,6 @@ class LocusGeneSerializer(LocusSerializer):
         """
             Returns a summary of the G2P records associated with the locus.
             If the user is non-authenticated:
-                - it does not return refuted and disputed records
                 - only returns records linked to visible panels
         """
         # TODO: improve query, this can be done in a single query
@@ -102,9 +101,7 @@ class LocusGeneSerializer(LocusSerializer):
 
         else:
             filters = (
-                Q(lgdpanel__panel__is_visible=1) &
-                ~Q(confidence__value='disputed') &
-                ~Q(confidence__value='refuted')
+                Q(lgdpanel__panel__is_visible=1)
             )
 
             lgd_select = lgd_list.filter(filters).select_related('disease', 'genotype', 'confidence', 'molecular_mechanism'

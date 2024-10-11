@@ -33,6 +33,25 @@ ALLOWED_HOSTS = []
 
 # Application definition
 
+### The following variable prints all the db queries to the command line
+### This is useful to debug sql queries
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'console': {
+#             'level': 'DEBUG',
+#             'class': 'logging.StreamHandler',
+#         },
+#     },
+#     'loggers': {
+#         'django.db.backends': {
+#             'level': 'DEBUG',
+#             'handlers': ['console'],
+#         },
+#     },
+# }
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -101,28 +120,30 @@ WSGI_APPLICATION = 'gene2phenotype_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-config_path = os.environ.get('PROJECT_CONFIG_PATH')
-config = ConfigParser()
-config.read(config_path)
-
-
-DATABASES = {
+# For testing
+if 'test' in sys.argv or 'test_coverage' in sys.argv:
+    DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': config.get('database', 'name'),
-        'USER': config.get('database', 'user'),
-        'PASSWORD': config.get('database', 'password'),
-        'HOST': config.get('database', 'host'),
-        'PORT': config.get('database', 'port'),
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': ':memory:'
     }
 }
 
-# For testing
-if 'test' in sys.argv or 'test_coverage' in sys.argv:
-    DATABASES['default'] = {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': ':memory:'
-}
+else:
+    config_path = os.environ.get('PROJECT_CONFIG_PATH')
+    config = ConfigParser()
+    config.read(config_path)
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': config.get('database', 'name'),
+            'USER': config.get('database', 'user'),
+            'PASSWORD': config.get('database', 'password'),
+            'HOST': config.get('database', 'host'),
+            'PORT': config.get('database', 'port'),
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
