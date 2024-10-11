@@ -32,6 +32,7 @@ jobs:
           
       - name: Create project config file
         run: |
+          echo "# config.ini" > /home/runner/work/config.ini
           echo "[database]" > /home/runner/work/config.ini
           echo "name=test_db" >> /home/runner/work/config.ini
           echo "user=root" >> /home/runner/work/config.ini
