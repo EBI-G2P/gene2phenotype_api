@@ -10,7 +10,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Change to the root directory
-        run: cd gene2phenotype_api
+        run: cd home/runner/work/gene2phenotype_api
 
       - name: Set up Python
         uses: actions/setup-python@v2
