@@ -7,7 +7,7 @@ from ..models import (Panel, Attrib,
                      LGDCrossCuttingModifier, LGDPublication,
                      LGDPhenotype, LGDVariantType, Locus,
                      LGDComment, LGDVariantTypeComment, User,
-                     LGDMolecularMechanism, LGDMolecularMechanismEvidence,
+                     MolecularMechanism, MolecularMechanismEvidence,
                      OntologyTerm, Publication, LGDPhenotypeSummary,
                      LGDVariantTypeDescription, CVMolecularMechanism)
 
@@ -80,8 +80,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         """
             Molecular mechanisms associated with the LGD record.
         """
-        queryset = LGDMolecularMechanism.objects.filter(lgd_id=id, is_deleted=0)
-        return LGDMolecularMechanismSerializer(queryset, many=True).data
+        mechanism = MolecularMechanismSerializer(id.molecular_mechanism).data
+        return mechanism
 
     def get_cross_cutting_modifier(self, id):
         """
@@ -286,12 +286,12 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                             - confidence
                             - publications
         """
-
         locus_name = data.get('locus') # Usually this is the gene symbol
         stable_id_obj = data.get('stable_id') # stable id obj
         genotype = data.get('allelic_requirement') # allelic requirement
         panels = data.get('panels') # Array of panel names
         confidence = data.get('confidence') # confidence level and justification
+        molecular_mechanism_obj = data.get('molecular_mechanism')
 
         if not panels or not publications_list:
             raise serializers.ValidationError({"message": f"Missing data to create the G2P record {stable_id_obj.stable_id}"})
@@ -327,7 +327,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             except Attrib.DoesNotExist:
                 raise serializers.ValidationError({"message": f"Invalid confidence value {confidence['level']}"})
 
-            # Text to justify the confidence value (optional)
+            # Text to justify the confidence value (optional) TODO: make it mandatory
             if confidence["justification"] == "":
                 confidence_support = None
             else:
@@ -339,6 +339,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 stable_id = stable_id_obj,
                 genotype = genotype_obj,
                 disease = disease_obj,
+                molecular_mechanism = molecular_mechanism_obj,
                 confidence = confidence_obj,
                 confidence_support = confidence_support,
                 is_reviewed = 1,
@@ -365,7 +366,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                         lgd_panel_serializer.save()
 
             # Insert LGD-publications
-            # If the publication (PMID) is not in G2P, it will create the Publication obj
+            # The publication should be already stored in the db but
+            # if the publication (PMID) is not found, it will create the Publication obj
             # Example: publications_list = [{ "pmid": 1234,
             #                                 "comment": {"comment": "comment text", "is_public": 1},
             #                                 "families": {
@@ -375,6 +377,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             #                                        "affected_individuals": 5
             #                                  }
             #                              }]
+            # TODO: update to accept the publication objs to avoid creating the serializer here too
             for publication_data in publications_list:
                 # PublicationSerializer is instantiated with the publication data and context
                 lgd_publication_serializer = LGDPublicationSerializer(
@@ -488,7 +491,7 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
     """
 
     variant_consequence = serializers.CharField(source="variant_consequence.term")
-    accession = serializers.CharField(source="variant_consequence.accession")
+    accession = serializers.CharField(source="variant_consequence.accession", required=False) # curation/draft page doesn't input the accession
     support = serializers.CharField(source="support.value")
     publication = serializers.CharField(source="publication.pmid", allow_null=True, required=False)
 
@@ -572,9 +575,9 @@ class LGDVariantConsequenceListSerializer(serializers.Serializer):
     """
     variant_consequences = LGDVariantGenCCConsequenceSerializer(many=True)
 
-class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
+class MolecularMechanismSerializer(serializers.ModelSerializer):
     """
-        Serializer for the LGDMolecularMechanism model.
+        Serializer for the MolecularMechanism model.
         A molecular mechanism can have a synopsis and/or evidence(s).
         If the support is 'evidence' then the type of evidence has to
         be provided.
@@ -589,7 +592,7 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
 
     def get_evidence(self, id):
         """
-            Return the mechanism evidence associated with the LGDMolecularMechanism by publication.
+            Return the mechanism evidence associated with the MolecularMechanism by publication.
             There are different types of evidence: function, models, rescue, etc.
 
             Output example:
@@ -605,7 +608,7 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
                                 }
                             }
         """
-        evidence_list = LGDMolecularMechanismEvidence.objects.filter(
+        evidence_list = MolecularMechanismEvidence.objects.filter(
             molecular_mechanism=id,
             is_deleted=0
             ).select_related('evidence', 'publication').values(
@@ -634,10 +637,8 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
 
     def create(self, mechanism, mechanism_synopsis, mechanism_evidence):
         """
-            Create LGDMolecularMechanism and LGDMolecularMechanismEvidence (if support = 'evidence')
+            Create MolecularMechanism and MolecularMechanismEvidence (if support = 'evidence')
         """
-    
-        lgd = self.context['lgd']
         mechanism_name = mechanism["name"]
         mechanism_support = mechanism["support"]
         synopsis_name = mechanism_synopsis["name"] # optional
@@ -688,15 +689,17 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
             except CVMolecularMechanism.DoesNotExist:
                 raise serializers.ValidationError({"message": f"Invalid mechanism synopsis support value '{synopsis_support}'"})
 
-        # Create new LGD-molecular mechanism
-        lgd_mechanism = LGDMolecularMechanism.objects.create(
-            lgd = lgd,
+        # Create new molecular mechanism
+        lgd_mechanism = MolecularMechanism.objects.create(
             mechanism = mechanism_obj,
             mechanism_support = mechanism_support_obj,
             synopsis = synopsis_obj,
             synopsis_support = synopsis_support_obj,
             is_deleted = 0
         )
+
+        # Link molecular mechanism to the LGD
+
 
         # Insert the mechanism evidence (if applicable)
         if mechanism_support == "evidence":
@@ -729,7 +732,7 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
                                 raise serializers.ValidationError({"message": f"Invalid mechanism evidence value '{v.lower()}'"})
 
                             else:
-                                lgd_mechanism_evidence = LGDMolecularMechanismEvidence.objects.create(
+                                lgd_mechanism_evidence = MolecularMechanismEvidence.objects.create(
                                 molecular_mechanism = lgd_mechanism,
                                 evidence = evidence_value,
                                 publication = publication_obj,
@@ -739,7 +742,7 @@ class LGDMolecularMechanismSerializer(serializers.ModelSerializer):
         return lgd_mechanism
 
     class Meta:
-        model = LGDMolecularMechanism
+        model = MolecularMechanism
         fields = ['mechanism', 'support', 'description', 'synopsis', 'synopsis_support', 'evidence']
 
 class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):

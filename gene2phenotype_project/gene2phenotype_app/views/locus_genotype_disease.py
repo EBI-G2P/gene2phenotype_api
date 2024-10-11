@@ -18,7 +18,7 @@ from gene2phenotype_app.models import (User, Attrib, LocusGenotypeDisease, Ontol
                                        G2PStableID, CVMolecularMechanism, LGDCrossCuttingModifier, 
                                        LGDVariantGenccConsequence, LGDVariantType, LGDVariantTypeComment,
                                        LGDVariantTypeDescription, LGDPanel, LGDPhenotype, LGDPhenotypeSummary,
-                                       LGDMolecularMechanism, LGDMolecularMechanismEvidence, LGDPublication,
+                                       MolecularMechanism, MolecularMechanismEvidence, LGDPublication,
                                        LGDComment)
 
 from .base import BaseView, BaseAdd, BaseUpdate
@@ -130,13 +130,10 @@ class LocusGenotypeDiseaseDetail(generics.ListAPIView):
         # Authenticated users (curators) can see all entries:
         #   - in visible and non-visible panels
         #   - entries flagged as not reviewed (is_reviewed=0)
-        #   - entries with 'refuted' and 'disputed' confidence category
         if user.is_authenticated:
             queryset = LocusGenotypeDisease.objects.filter(stable_id=g2p_stable_id, is_deleted=0)
         else:
             queryset = LocusGenotypeDisease.objects.filter(stable_id=g2p_stable_id, is_reviewed=1, is_deleted=0, lgdpanel__panel__is_visible=1).distinct()
-            # Remove entries with 'refuted' and 'disputed' confidence category
-            queryset = queryset.filter(~Q(confidence__value='refuted') & ~Q(confidence__value='disputed'))
 
         if not queryset.exists():
             raise Http404(f"No matching Entry found for: {stable_id}")
@@ -968,10 +965,10 @@ class LocusGenotypeDiseaseDelete(APIView):
         LGDVariantGenccConsequence.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
 
         # Delete molecular mechanism + evidence (if applicable)
-        lgd_mechanism_set = LGDMolecularMechanism.objects.filter(lgd=lgd_obj, is_deleted=0)
+        lgd_mechanism_set = MolecularMechanism.objects.filter(id=lgd_obj.molecular_mechanism, is_deleted=0)
 
         for lgd_mechanism_obj in lgd_mechanism_set:
-            LGDMolecularMechanismEvidence.objects.filter(molecular_mechanism=lgd_mechanism_obj, is_deleted=0).update(is_deleted=1)
+            MolecularMechanismEvidence.objects.filter(molecular_mechanism=lgd_mechanism_obj, is_deleted=0).update(is_deleted=1)
             lgd_mechanism_obj.is_deleted = 1
             lgd_mechanism_obj.save()
 

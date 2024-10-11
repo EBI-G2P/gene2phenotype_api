@@ -10,8 +10,8 @@ from gene2phenotype_app.serializers import (PublicationSerializer, LGDPublicatio
 
 from gene2phenotype_app.models import (Publication, LocusGenotypeDisease, LGDPublication,
                                        LGDPhenotype, LGDPhenotypeSummary, LGDVariantType,
-                                       LGDVariantTypeDescription, LGDMolecularMechanism,
-                                       LGDMolecularMechanismEvidence)
+                                       LGDVariantTypeDescription, MolecularMechanism,
+                                       MolecularMechanismEvidence)
 
 from .base import BaseAdd, BaseUpdate
 
@@ -278,29 +278,27 @@ class LGDEditPublications(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-        # lgd_molecular_mechanism_evidence - only the molecular mechanism evidence is linked to a publication
-        lgd_mechanism_obj = LGDMolecularMechanism.objects.get(
-            lgd=lgd_publication_obj.lgd,
-            is_deleted=0)
-        
-        # If the mechanism support is evidence then get the list of LGDMolecularMechanismEvidence
+        # molecular_mechanism_evidence - only the molecular mechanism evidence is linked to a publication
+        lgd_mechanism_obj = lgd_publication_obj.lgd.molecular_mechanism
+
+        # If the mechanism support is evidence then get the list of MolecularMechanismEvidence
         # Different types of evidence can be linked to the same publication
         if(lgd_mechanism_obj and lgd_mechanism_obj.mechanism_support.value == "evidence"):
-            LGDMolecularMechanismEvidence.objects.filter(
+            MolecularMechanismEvidence.objects.filter(
                 molecular_mechanism=lgd_mechanism_obj,
                 publication=lgd_publication_obj.publication,
                 is_deleted=0).update(is_deleted=1)
 
-            # Check if LGDMolecularMechanism has evidence linked to other publications
-            lgd_check_evidence_set = LGDMolecularMechanismEvidence.objects.filter(
+            # Check if MolecularMechanism has evidence linked to other publications
+            lgd_check_evidence_set = MolecularMechanismEvidence.objects.filter(
                 molecular_mechanism=lgd_mechanism_obj,
                 is_deleted=0)
 
-            # There are no other evidence for this lgd-mechanism
-            # In this case, delete the mechanism
-            if(not lgd_check_evidence_set.exists()):
-                lgd_mechanism_obj.is_deleted=1 # TODO if there is no mechanism then delete LGD record
-                lgd_mechanism_obj.save()
+            # # There are no other evidence for this lgd-mechanism
+            # # In this case, delete the mechanism
+            # if(not lgd_check_evidence_set.exists()):
+            #     lgd_mechanism_obj.is_deleted=1 # TODO if there is no mechanism then delete LGD record
+            #     lgd_mechanism_obj.save()
 
         return Response(
                 {"message": f"Publication '{pmid}' successfully deleted for ID '{stable_id}'"},
