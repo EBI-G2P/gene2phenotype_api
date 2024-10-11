@@ -6,6 +6,7 @@
 			"locus": 1,
 			"genotype": 9,
 			"disease": 2,
+			"molecular_mechanism": 1,
 			"confidence": 1,
 			"confidence_support": null,
 			"date_review": "2017-04-24T16:33:40Z",
