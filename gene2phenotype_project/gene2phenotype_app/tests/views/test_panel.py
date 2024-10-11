@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
-
+from knox.models import AuthToken
+from gene2phenotype_app.models import User
 
 class PanelListEndpointTests(TestCase):
     """
@@ -25,12 +26,16 @@ class PanelListEndpointTests(TestCase):
             Test for autenticated users.
             All panels are included in the response.
         """
-        login = self.client.login(username="user5@test.ac.uk", password="user5pass")
-        self.assertTrue(login)
+        user = User.objects.get(email="user5@test.ac.uk")
+        # Create token for the user
+        token_id = AuthToken.objects.create(user)[1]
+        # Authenticate using the token
+        self.client.defaults['HTTP_AUTHORIZATION'] = 'Token ' + token_id
 
         response = self.client.get(self.url_panels)
         self.assertEqual(response.status_code, 200)
-        # self.assertEqual(response.data.get("count"), 3)
+
+        self.assertEqual(response.data.get("count"), 3)
 
 class PanelDetailsEndpointTests(TestCase):
     """
