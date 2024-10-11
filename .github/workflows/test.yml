@@ -23,7 +23,6 @@ jobs:
           pip install -r requirements.txt
       - name: Run tests
         run: |
-          python manage.py migrate
           python manage.py test gene2phenotype_app.tests
         env:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
