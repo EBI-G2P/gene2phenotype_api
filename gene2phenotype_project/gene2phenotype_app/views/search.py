@@ -41,10 +41,10 @@ class SearchView(BaseView):
         base_locus = Q(locus__name=search_query, is_deleted=0)
         base_locus_2 = Q(locus__locusidentifier__isnull=False, locus__locusidentifier__identifier=search_query)
         base_locus_3 = Q(locus__locusattrib__isnull=False, locus__locusattrib__value=search_query, locus__locusattrib__is_deleted=0)
-        base_disease = Q(disease__name__icontains=search_query, is_deleted=0)
-        base_disease_2 = Q(disease__diseasesynonym__synonym__icontains=search_query, is_deleted=0)
+        base_disease = Q(disease__name__regex=fr"(?i)(?<![\w]){search_query}(?![\w])", is_deleted=0)
+        base_disease_2 = Q(disease__diseasesynonym__synonym__regex=fr"(?i)(?<![\w]){search_query}(?![\w])", is_deleted=0)
         base_disease_3 = Q(disease__diseaseontologyterm__ontology_term__accession=search_query, is_deleted=0)
-        base_phenotype = Q(lgdphenotype__phenotype__term__icontains=search_query, lgdphenotype__isnull=False, is_deleted=0)
+        base_phenotype = Q(lgdphenotype__phenotype__term__regex=fr"(?i)(?<![\w]){search_query}(?![\w])", lgdphenotype__isnull=False, is_deleted=0)
         base_phenotype_2 = Q(lgdphenotype__phenotype__accession=search_query, lgdphenotype__isnull=False, is_deleted=0)
         base_g2p_id = Q(stable_id__stable_id=search_query, is_deleted=0)
 
