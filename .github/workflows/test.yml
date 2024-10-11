@@ -1,0 +1,30 @@
+name: G2P API tests
+
+on: [pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Change to the root directory
+        run: cd /home/runner/work
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run tests
+        run: |
+          python manage.py migrate
+          python manage.py test gene2phenotype_app.tests
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        working-directory: gene2phenotype_project
