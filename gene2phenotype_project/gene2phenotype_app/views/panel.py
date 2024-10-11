@@ -283,7 +283,7 @@ def PanelDownload(request, name):
 
     evidence_data = {}
 
-    # First collect the evidence data for each lgd_id
+    # First collect the evidence data for each mechanism_id
     for data in queryset_lgd_mechanism:
         if data['mechanism_support__value'] == "evidence":
             mechanism_value = data['mechanism__value']
@@ -480,10 +480,12 @@ def PanelDownload(request, name):
                 variant_consequences = '; '.join(lgd_varianconsequence_data[lgd_id])
 
             # Get preloaded molecular mechanism for this g2p entry
-            if lgd_id in lgd_mechanism_data:
+            # For lgd_mechanism_data the key is the molecular_mechanism_id
+            mechanism_id = lgd.molecular_mechanism.id
+            if mechanism_id in lgd_mechanism_data:
                 final_mechanisms = set()
                 mechanism_evidence = set()
-                for mechanism_data in lgd_mechanism_data[lgd_id]:
+                for mechanism_data in lgd_mechanism_data[mechanism_id]:
                     m_value = mechanism_data["value"]
                     m_support = mechanism_data["support"]
                     final_mechanisms.add(f"{m_value} ({m_support})")
@@ -500,17 +502,6 @@ def PanelDownload(request, name):
             # Get preloaded phenotypes for this g2p entry
             if lgd_id in lgd_phenotype_data:
                 phenotypes = '; '.join(lgd_phenotype_data[lgd_id])
-
-            # Get preloaded molecular mechanism for this g2p entry
-            # For lgd_mechanism_data the key is the molecular_mechanism_id
-            mechanism_id = lgd.molecular_mechanism.id
-            if mechanism_id in lgd_mechanism_data:
-                final_mechanisms = set()
-                mechanism_evidence = set()
-                for mechanism_data in lgd_mechanism_data[mechanism_id]:
-                    m_value = mechanism_data["value"]
-                    m_support = mechanism_data["support"]
-                    final_mechanisms.add(f"{m_value} ({m_support})")
 
             # Get preloaded publications for this g2p entry
             if lgd_id in lgd_publication_data:
