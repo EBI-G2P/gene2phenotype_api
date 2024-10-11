@@ -52,7 +52,9 @@ class PanelList(generics.ListAPIView):
                 panel_info['stats'] = stats
                 panel_list.append(panel_info)
 
-        return Response({'results':panel_list, 'count':len(panel_list)})
+        sorted_panels = sorted(panel_list, key=lambda panel_info: panel_info['description'])
+
+        return Response({'results':sorted_panels, 'count':len(sorted_panels)})
 
 class PanelDetail(BaseView):
     """

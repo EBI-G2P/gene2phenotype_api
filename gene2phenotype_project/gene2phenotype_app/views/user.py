@@ -39,7 +39,7 @@ class UserPanels(BaseView):
         queryset_user_panels = UserPanel.objects.filter(
             user = user_obj,
             is_deleted = 0).select_related(
-                'panel').annotate(
+                'panel').order_by('panel__description').annotate(
                 name=F('panel__name'),
                 description=F('panel__description')).values(
                     'name', 'description')
