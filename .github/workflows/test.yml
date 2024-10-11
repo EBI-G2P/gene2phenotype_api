@@ -38,6 +38,7 @@ jobs:
           echo "password=root" >> /home/runner/work/config.ini
           echo "host=localhost" >> /home/runner/work/config.ini
           echo "port=3306" >> /home/runner/work/config.ini
+          cat /home/runner/work/config.ini
         
       - name: Run tests
         run: |
