@@ -278,9 +278,9 @@ class LGDEditPublications(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-        # lgd_molecular_mechanism_evidence - only the molecular mechanism evidence is linked to a publication
+        # molecular_mechanism_evidence - only the molecular mechanism evidence is linked to a publication
         lgd_mechanism_obj = lgd_publication_obj.lgd.molecular_mechanism
-        
+
         # If the mechanism support is evidence then get the list of MolecularMechanismEvidence
         # Different types of evidence can be linked to the same publication
         if(lgd_mechanism_obj and lgd_mechanism_obj.mechanism_support.value == "evidence"):
