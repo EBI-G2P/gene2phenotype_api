@@ -5,6 +5,14 @@ on: [pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_db
+        ports:
+          - 3306:3306
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -21,9 +29,22 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          
+      - name: Create project config file
+        run: |
+          echo "[database]" > /home/runner/work/config.ini
+          echo "name=test_db" >> /home/runner/work/config.ini
+          echo "user=root" >> /home/runner/work/config.ini
+          echo "password=root" >> /home/runner/work/config.ini
+          echo "host=localhost" >> /home/runner/work/config.ini
+          echo "port=3306" >> /home/runner/work/config.ini
+        
       - name: Run tests
         run: |
+          python manage.py makemigrations
+          python manage.py migrate
           python manage.py test gene2phenotype_app.tests
         env:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          PROJECT_CONFIG_PATH: ${{ secrets.PROJECT_CONFIG_PATH }}
         working-directory: gene2phenotype_project
