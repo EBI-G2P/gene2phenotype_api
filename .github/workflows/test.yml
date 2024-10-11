@@ -13,6 +13,10 @@ jobs:
           MYSQL_DATABASE: test_db
         ports:
           - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost" --health-interval=10s
+          --health-timeout=5s --health-retries=3
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -37,9 +41,8 @@ jobs:
           echo "name=test_db" >> /home/runner/work/config.ini
           echo "user=root" >> /home/runner/work/config.ini
           echo "password=root" >> /home/runner/work/config.ini
-          echo "host=localhost" >> /home/runner/work/config.ini
+          echo "host=127.0.0.1" >> /home/runner/work/config.ini
           echo "port=3306" >> /home/runner/work/config.ini
-          cat /home/runner/work/config.ini
         
       - name: Run tests
         run: |
