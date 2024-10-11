@@ -120,6 +120,8 @@ WSGI_APPLICATION = 'gene2phenotype_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+print("1: ", sys.argv)
+
 # For testing
 if 'test' in sys.argv or 'test_coverage' in sys.argv:
     DATABASES = {

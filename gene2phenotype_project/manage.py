@@ -19,4 +19,5 @@ def main():
 
 
 if __name__ == '__main__':
+    print(f"Arguments passed: {sys.argv}")
     main()
