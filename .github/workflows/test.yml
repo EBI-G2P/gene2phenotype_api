@@ -10,7 +10,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Change to the root directory
-        run: cd /home/runner/work/gene2phenotype_api
+        run: cd /home/runner/work
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -26,3 +26,4 @@ jobs:
         run: |
           python manage.py migrate
           python manage.py test gene2phenotype_app.tests
+        working-directory: gene2phenotype_project
