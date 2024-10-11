@@ -131,7 +131,6 @@ if 'test' in sys.argv or 'test_coverage' in sys.argv:
 
 else:
     config_path = os.environ.get('PROJECT_CONFIG_PATH')
-    print("->", config_path)
     config = ConfigParser()
     config.read(config_path)
 
