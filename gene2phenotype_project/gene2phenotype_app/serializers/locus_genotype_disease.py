@@ -439,6 +439,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         if(is_reviewed is not None and (is_reviewed == 1 or is_reviewed == 0)):
             instance.is_reviewed = is_reviewed
 
+        # Update the 'date_review'
+        instance.date_review = datetime.now()
+
         # Save all updates
         instance.save()
 
