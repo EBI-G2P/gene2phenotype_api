@@ -1029,7 +1029,7 @@ class LocusGenotypeDiseaseDelete(APIView):
         LGDVariantGenccConsequence.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
 
         # Delete molecular mechanism + evidence (if applicable)
-        lgd_mechanism_set = MolecularMechanism.objects.filter(id=lgd_obj.molecular_mechanism, is_deleted=0)
+        lgd_mechanism_set = MolecularMechanism.objects.filter(id=lgd_obj.molecular_mechanism.id, is_deleted=0)
 
         for lgd_mechanism_obj in lgd_mechanism_set:
             MolecularMechanismEvidence.objects.filter(molecular_mechanism=lgd_mechanism_obj, is_deleted=0).update(is_deleted=1)

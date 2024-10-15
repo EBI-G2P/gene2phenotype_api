@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.db.models import Q
+from datetime import datetime
 
 from ..models import Panel, User, UserPanel, LGDPanel, Attrib
 
@@ -244,6 +245,10 @@ class LGDPanelSerializer(serializers.ModelSerializer):
                 lgd_panel_obj.is_deleted = 0
                 lgd_panel_obj.save()
         
+        # Update the 'date_review' of the LocusGenotypeDisease obj
+        lgd.date_review = datetime.now()
+        lgd.save()
+
         return lgd_panel_obj
 
     class Meta:
