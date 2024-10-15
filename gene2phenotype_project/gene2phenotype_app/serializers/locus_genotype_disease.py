@@ -452,11 +452,132 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         return instance
 
-    def update_mechanism(self, instance, validated_data):
-        mechanism = validated_data.get('mechanism')
+    def update_mechanism(self, lgd_instance, validated_data):
+        """
+            Method to update the molecular mechanism of the LGD record.
+            It only allows to update mechanisms with value 'undetermined'.
+            Mandatory fields are "molecular_mechanism" and "mechanism_evidence".
 
-        print("Mechanism validated data:", mechanism)
+            Example:    "molecular_mechanism": {
+                            "name": "gain of function",
+                            "support": "evidence"
+                        },
+                        "mechanism_synopsis": {
+                            "name": "",
+                            "support": ""
+                        },
+                        "mechanism_evidence": [{'pmid': '25099252', 'description': 'text', 'evidence_types': 
+                            [{'primary_type': 'Rescue', 'secondary_type': ['Human', 'Patient Cells']}]}]
 
+        """
+        molecular_mechanism_value = validated_data.get("molecular_mechanism")["name"]
+        molecular_mechanism_support = validated_data.get("molecular_mechanism")["support"]
+        mechanism_synopsis = validated_data.get("mechanism_synopsis", None) # synopsis is optional
+        mechanism_evidence = validated_data.get("mechanism_evidence")
+
+        try:
+            cv_mechanism_obj = CVMolecularMechanism.objects.get(
+                value = molecular_mechanism_value,
+                type = "mechanism"
+            )
+        except CVMolecularMechanism.DoesNotExist:
+            raise serializers.ValidationError({"message": f"Invalid mechanism value '{molecular_mechanism_value}'"})
+
+        try:
+            cv_support_obj = CVMolecularMechanism.objects.get(
+                value = molecular_mechanism_support,
+                type = "support"
+            )
+        except CVMolecularMechanism.DoesNotExist:
+            raise serializers.ValidationError({"message": f"Invalid mechanism support '{molecular_mechanism_support}'"})
+
+        # The mechanism synopsis is optional
+        cv_synopsis_obj = None
+        cv_synopsis_support_obj = None
+        if mechanism_synopsis is not None and "name" in mechanism_synopsis and mechanism_synopsis["name"] != "":
+            mechanism_synopsis_value = mechanism_synopsis.get("name")
+            mechanism_synopsis_support = mechanism_synopsis.get("support")
+
+            try:
+                cv_synopsis_obj = CVMolecularMechanism.objects.get(
+                    value = mechanism_synopsis_value,
+                    type = "mechanism_synopsis"
+                )
+            except CVMolecularMechanism.DoesNotExist:
+                raise serializers.ValidationError({"message": f"Invalid mechanism synopsis value '{mechanism_synopsis_value}'"})
+
+            try:
+                cv_synopsis_support_obj = CVMolecularMechanism.objects.get(
+                    value = mechanism_synopsis_support,
+                    type = "support"
+                )
+            except CVMolecularMechanism.DoesNotExist:
+                raise serializers.ValidationError({"message": f"Invalid mechanism synopsis support '{mechanism_synopsis_support}'"})
+
+        # Insert mechanism
+        mechanism_obj = MolecularMechanism.objects.create(
+            mechanism = cv_mechanism_obj,
+            mechanism_support = cv_support_obj,
+            synopsis = cv_synopsis_obj,
+            synopsis_support = cv_synopsis_support_obj,
+            is_deleted = 0
+        )
+
+        # Get evidence - the mechanism evidence was validated in the view 'LGDUpdateMechanism'
+        # Example: {'pmid': '25099252', 'description': 'text', 'evidence_types': 
+        #          [{'primary_type': 'Rescue', 'secondary_type': ['Human', 'Patient Cells']}]}
+        for evidence in mechanism_evidence:
+            pmid = evidence.get("pmid")
+
+            try:
+                publication_obj = Publication.objects.get(pmid=pmid)
+            except Publication.DoesNotExist:
+                raise serializers.ValidationError({"message": f"Invalid pmid '{pmid}'"})
+
+            if evidence.get("description") != "":
+                description = evidence.get("description")
+            else:
+                description = None
+
+            evidence_types = evidence.get("evidence_types")
+            for evidence_type in evidence_types:
+                # primary_type is the evidence subtype ('rescue')
+                primary_type = evidence_type.get("primary_type").lower()
+                # secondary_type is the evidence value ('human')
+                secondary_type = evidence_type.get("secondary_type")
+                for m_type in secondary_type:
+                    try:
+                        cv_evidence_obj = CVMolecularMechanism.objects.get(
+                            value = m_type.lower(),
+                            type = "evidence",
+                            subtype = primary_type
+                        )
+                    except CVMolecularMechanism.DoesNotExist:
+                        raise serializers.ValidationError({"message": f"Invalid mechanism evidence '{m_type}'"})
+
+                    # Insert evidence
+                    mechanism_evidence_obj = MolecularMechanismEvidence.objects.create(
+                        molecular_mechanism = mechanism_obj,
+                        description = description,
+                        publication = publication_obj,
+                        evidence = cv_evidence_obj,
+                        is_deleted = 0
+                    )
+
+        # Save old molecular mechanism to update it later
+        old_mechanism_obj = lgd_instance.molecular_mechanism
+
+        # Update LGD record
+        lgd_instance.molecular_mechanism = mechanism_obj
+        lgd_instance.date_review = datetime.now()
+        lgd_instance.save()
+
+        # The old molecular mechanism has to be updated to is_deleted = 1
+        # As this method only allows to update 'undetermined' mechanisms, we don't need to 'delete' evidence
+        old_mechanism_obj.is_deleted = 1
+        old_mechanism_obj.save()
+
+        return lgd_instance
 
     class Meta:
         model = LocusGenotypeDisease
