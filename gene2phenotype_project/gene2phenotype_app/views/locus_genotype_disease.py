@@ -12,7 +12,8 @@ from gene2phenotype_app.serializers import (UserSerializer, LocusGenotypeDisease
                                             LGDCommentSerializer, LGDVariantConsequenceListSerializer,
                                             LGDVariantGenCCConsequenceSerializer, LGDCrossCuttingModifierListSerializer,
                                             LGDVariantTypeListSerializer, LGDVariantTypeSerializer,
-                                            LGDVariantTypeDescriptionListSerializer, LGDVariantTypeDescriptionSerializer)
+                                            LGDVariantTypeDescriptionListSerializer, LGDVariantTypeDescriptionSerializer,
+                                            MolecularMechanismSerializer)
 
 from gene2phenotype_app.models import (User, Attrib, LocusGenotypeDisease, OntologyTerm,
                                        G2PStableID, CVMolecularMechanism, LGDCrossCuttingModifier, 
@@ -147,7 +148,7 @@ class LocusGenotypeDiseaseDetail(generics.ListAPIView):
 
 
 ### Add or delete data ###
-class LGDUpdateConfidence(generics.UpdateAPIView):
+class LGDUpdateConfidence(BaseUpdate):
     http_method_names = ['put', 'options']
     serializer_class = LocusGenotypeDiseaseSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -217,6 +218,69 @@ class LGDUpdateConfidence(generics.UpdateAPIView):
 
         else:
             return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+class LGDUpdateMechanism(BaseUpdate):
+    http_method_names = ['patch', 'options']
+    serializer_class = MolecularMechanismSerializer # TO CHECK
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """
+            Retrieves a queryset of LocusGenotypeDisease objects associated with a stable ID
+            for the authenticated user.
+
+            Args:
+                stable_id (str): The stable ID from the URL kwargs.
+
+            Returns:
+                QuerySet: A queryset of LocusGenotypeDisease objects.
+
+            Raises:
+                Http404: If the stable ID does not exist.
+                PermissionDenied: If update is not allowed.
+        """
+        stable_id = self.kwargs['stable_id']
+        user = self.request.user
+
+        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
+        # Get the entry for this user
+        queryset = LocusGenotypeDisease.objects.filter(stable_id=g2p_stable_id, is_deleted=0)
+
+        if not queryset.exists():
+            self.handle_no_permission('Entry', stable_id)
+        else:
+            # Only 'undetermined' mechanisms can be updated
+            lgd_obj = queryset.first()
+            if lgd_obj.molecular_mechanism.mechanism.value != "undetermined":
+                self.handle_no_update('molecular mechanism', stable_id)
+
+            return queryset
+
+    def patch(self, request, stable_id):
+        """
+        """
+        user = request.user
+        mechanism_data = request.data
+
+        print("->", mechanism_data)
+        # Validate mechanism data
+        
+
+        # Get G2P entry to be updated
+        lgd_obj = self.get_queryset().first()
+
+        serializer = LocusGenotypeDiseaseSerializer()
+
+        # Separate method to update mechanism
+        # Updating the mechanism can be complex, specially if evidence data is provided
+        # To avoid problems with other LDG updates, the mechanism is going to be
+        # updated in a separate method - this implies extra validation
+        serializer.update_mechanism(lgd_obj, mechanism_data)
+
+
+        return Response(
+            {"message": f"Data updated successfully for "},
+             status=status.HTTP_200_OK)
 
 class LGDEditVariantConsequences(APIView):
     """

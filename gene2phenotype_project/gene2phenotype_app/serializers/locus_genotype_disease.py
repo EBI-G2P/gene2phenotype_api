@@ -407,9 +407,14 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         """
         # validated_data example:
         # {'confidence': {'value': 'definitive'}, 'confidence_support': '', 'is_reviewed': None}
-        confidence = validated_data.get("confidence")["value"]
-        confidence_support = validated_data.get("confidence_support")
-        is_reviewed = validated_data.get("is_reviewed")
+        validated_confidence = validated_data.get("confidence", None)
+        confidence_support = validated_data.get("confidence_support", None)
+        is_reviewed = validated_data.get("is_reviewed", None)
+
+        if validated_confidence is not None:
+            confidence = validated_confidence["value"]
+        else:
+            raise serializers.ValidationError({"error": f"Empty confidence value"})
 
         # Get confidence
         try:
@@ -443,6 +448,12 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
+
+    def update_mechanism(self, instance, validated_data):
+        mechanism = validated_data.get('mechanism')
+
+        print("Mechanism validated data:", mechanism)
+
 
     class Meta:
         model = LocusGenotypeDisease
