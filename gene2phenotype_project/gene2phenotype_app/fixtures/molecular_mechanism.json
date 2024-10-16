@@ -1,0 +1,14 @@
+[
+    {
+        "model": "gene2phenotype_app.molecularmechanism",
+        "pk": 1,
+        "fields": {
+            "mechanism": 1,
+            "mechanism_support": 16,
+            "synopsis": null,
+            "synopsis_support": null,
+            "mechanism_description": null,
+            "is_deleted": 0
+        }
+    }
+]
