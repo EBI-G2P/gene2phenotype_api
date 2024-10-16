@@ -39,7 +39,7 @@ class SearchView(BaseView):
             return LocusGenotypeDisease.objects.none()
 
         base_locus = Q(locus__name=search_query, is_deleted=0)
-        base_locus_2 = Q(locus__locusidentifier__isnull=False, locus__locusidentifier__identifier=search_query)
+        base_locus_2 = Q(locus__locusidentifier__isnull=False, locus__locusidentifier__identifier=search_query, is_deleted=0)
         base_locus_3 = Q(locus__locusattrib__isnull=False, locus__locusattrib__value=search_query, locus__locusattrib__is_deleted=0)
         base_disease = Q(disease__name__regex=fr"(?i)(?<![\w]){search_query}(?![\w])", is_deleted=0)
         base_disease_2 = Q(disease__diseasesynonym__synonym__regex=fr"(?i)(?<![\w]){search_query}(?![\w])", is_deleted=0)
@@ -160,7 +160,7 @@ class SearchView(BaseView):
     
         else:
             self.handle_no_permission('Search type is not valid', None)
-        
+
         new_queryset = []
         if queryset.exists():
             if search_type != 'draft':
@@ -197,7 +197,8 @@ class SearchView(BaseView):
                         'genotype':lgd.genotype.value,
                         'disease':lgd.disease.name,
                         'mechanism':lgd.molecular_mechanism.mechanism.value,
-                        'panel':lgd.panels
+                        'panel':lgd.panels,
+                        'confidence': lgd.confidence.value
                     }
                 list_output.append(data)
         else:
