@@ -141,12 +141,12 @@ class SearchView(BaseView):
 
             if not queryset.exists():
                 self.handle_no_permission('g2p_id', search_query)
-        
+
         elif search_type == 'draft' and user.is_authenticated:
             queryset = CurationData.objects.filter(
                 gene_symbol=search_query
                 ).order_by('stable_id__stable_id').distinct()
-            
+
             # to extend the queryset being annotated when it is draft,
             # want to return username so curator can see who is curating
             # adding the curator email, incase of the notification.
@@ -154,10 +154,10 @@ class SearchView(BaseView):
 
             for obj in queryset:
                 obj.json_data_info = CurationDataSerializer.get_entry_info_from_json_data(self, obj.json_data)
-            
+
             if not queryset.exists():
                 self.handle_no_permission("draft", search_query)
-    
+
         else:
             self.handle_no_permission('Search type is not valid', None)
 
@@ -213,6 +213,7 @@ class SearchView(BaseView):
                     "genotype": c_data.json_data_info["genotype"],
                     "disease_name" : c_data.json_data_info["disease"],
                     "panels" : c_data.json_data_info["panel"],
+                    "confidence" : c_data.json_data_info["confidence"],
                     "curator_email": c_data.user_email
                 }
                 list_output.append(data)
