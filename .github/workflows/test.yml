@@ -48,19 +48,12 @@ jobs:
           echo "host=127.0.0.1" >> /home/runner/work/config.ini
           echo "port=3306" >> /home/runner/work/config.ini
         
-      - name: Run migration
+      - name: Run Tests
         run: |
           python manage.py makemigrations
           python manage.py migrate
+          python manage.py test gene2phenotype_app.tests
         env:
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          SECRET_KEY: iqe!w(l&8g)k2!d4^#5mc5%&2^27=vbo#ta8+8u0z%!y^ie(*g
           PROJECT_CONFIG_PATH: /home/runner/work/config.ini
         working-directory: gene2phenotype_project
-
-      - name: Run Tests
-        env:
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
-          PROJECT_CONFIG_PATH: /home/runner/work/config.ini
-        working-directory: gene2phenotype_project
-        run: |
-          echo ${SECRET_KEY}
