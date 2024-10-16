@@ -456,6 +456,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         """
             Method to update the molecular mechanism of the LGD record.
             It only allows to update mechanisms with value 'undetermined'.
+
             Mandatory fields are "molecular_mechanism" and "mechanism_evidence".
 
             Example:    "molecular_mechanism": {
@@ -564,7 +565,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                         is_deleted = 0
                     )
 
-        # Save old molecular mechanism to update it later
+        # Save old molecular mechanism to delete it later
         old_mechanism_obj = lgd_instance.molecular_mechanism
 
         # Update LGD record
@@ -572,10 +573,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         lgd_instance.date_review = datetime.now()
         lgd_instance.save()
 
-        # The old molecular mechanism has to be updated to is_deleted = 1
-        # As this method only allows to update 'undetermined' mechanisms, we don't need to 'delete' evidence
-        old_mechanism_obj.is_deleted = 1
-        old_mechanism_obj.save()
+        # The old molecular mechanism can be deleted - the deletion is stored in the history table
+        # As this method only allows to update 'undetermined' mechanisms, there is no evidence to be deleted
+        old_mechanism_obj.delete()
 
         return lgd_instance
 
