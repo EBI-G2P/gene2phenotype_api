@@ -234,6 +234,8 @@ class PublicationSerializer(serializers.ModelSerializer):
         comment = validated_data.get('comment') # extra data - comment
         number_of_families = validated_data.get('families') # extra data - families reported in publication
 
+        user_obj = self.context.get('user')
+
         try:
             publication_obj = Publication.objects.get(pmid=pmid)
 
@@ -266,7 +268,7 @@ class PublicationSerializer(serializers.ModelSerializer):
         if comment is not None:
             PublicationCommentSerializer(
                 # the user is necessary to save the comment
-                context={'user': self.context.get('user')}
+                context={'user': user_obj}
             ).create(comment, publication_obj)
 
         # Add family info linked to publication
