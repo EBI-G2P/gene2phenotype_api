@@ -377,7 +377,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             # Get or create publications
             # Publications should be stored in the db before any data is stored
             try:
-                publication_serializer = PublicationSerializer(data=publication_data)
+                publication_serializer = PublicationSerializer(data=publication_data, context={'user':user_obj})
                 # Validate the input data
                 if publication_serializer.is_valid(raise_exception=True):
                     # save and create publication obj
