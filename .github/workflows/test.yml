@@ -48,12 +48,12 @@ jobs:
           echo "host=127.0.0.1" >> /home/runner/work/config.ini
           echo "port=3306" >> /home/runner/work/config.ini
         
-      - name: Run tests
+      - name: Run Tests
         run: |
+          export SECRET_KEY=$(openssl rand -base64 12)
           python manage.py makemigrations
           python manage.py migrate
           python manage.py test gene2phenotype_app.tests
         env:
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
           PROJECT_CONFIG_PATH: /home/runner/work/config.ini
         working-directory: gene2phenotype_project

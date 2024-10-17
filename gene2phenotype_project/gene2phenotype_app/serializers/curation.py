@@ -237,12 +237,13 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
     def get_entry_info_from_json_data(self, json_data):
         """
-            Extracts specific information from a given JSON data structure related to genotype, disease, and panel.
+            Extracts specific information from a given JSON data structure.
 
             This method parses the provided `json_data` dictionary to extract the following fields:
             - "genotype": Retrieved from the "allelic_requirement" key.
             - "disease": Retrieved from the nested "disease_name" key inside the "disease" dictionary.
             - "panel": Retrieved from the "panels" key.
+            - "confidence": Retrieved from the key "level" inside the "confidence" dictionary.
 
             If any of the keys are missing, the method returns `None` for the corresponding fields.
 
@@ -251,13 +252,16 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
             Returns:
                 dict: A dictionary containing the extracted fields with the following keys:
-                    - "genotype" (str or None): The value of the "allelic_requirement" field, or `None` if not present.
-                    - "disease" (str or None): The value of the "disease_name" field inside the "disease" dictionary, or `None` if not present.       
+                    - "genotype" (str): The allelic requirement (genotype) value, or empty string if not present.
+                    - "disease" (str): The disease name, or empty string if not present.
+                    - "panel" (list): The list of panels, or empty list if not present.
+                    - "confidence" (str): The confidence level, or empty string if not present.
         """
         return {
             "genotype": json_data.get("allelic_requirement"),
             "disease": json_data.get("disease", {}).get("disease_name"),
-            "panel": json_data.get("panels")
+            "panel": json_data.get("panels"),
+            "confidence": json_data.get("confidence", {}).get("level")
         }
 
     @transaction.atomic
