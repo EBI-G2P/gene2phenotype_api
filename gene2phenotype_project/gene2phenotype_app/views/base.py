@@ -1,11 +1,15 @@
 from rest_framework import generics, status
+from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from rest_framework.response import Response
 from django.db import transaction
 from django.urls import get_resolver
 from rest_framework.decorators import api_view
-from gene2phenotype_app.models import User
+
 import re
+
+from gene2phenotype_app.models import User
+
 
 
 class BaseView(generics.ListAPIView):
@@ -48,6 +52,12 @@ class BaseUpdate(generics.UpdateAPIView):
             raise Http404(f"{data}")
         else:
             raise Http404(f"Could not find '{data}' for ID '{stable_id}'")
+    
+    def handle_no_update(self, data, stable_id):
+        if data is None:
+            raise Http404(f"{data}")
+        else:
+            raise PermissionDenied(f"Cannot update '{data}' for ID '{stable_id}'")
 
 
 @api_view(['GET'])
