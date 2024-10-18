@@ -35,6 +35,11 @@ class SearchView(BaseView):
         search_query = self.request.query_params.get('query', None)
         search_panel = self.request.query_params.get('panel', None)
 
+        # Some disease names contain parenthesis
+        # In mysql, parenthesis is a special character that has to be search with "\\("
+        if search_query.find("(") or search_query.find(")"):
+            search_query = search_query.replace("(", "\\(").replace(")", "\\)")
+
         if not search_query:
             return LocusGenotypeDisease.objects.none()
 
