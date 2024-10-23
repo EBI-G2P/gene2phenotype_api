@@ -252,6 +252,8 @@ class LGDUpdateMechanism(BaseUpdate):
             lgd_obj = queryset.first()
             if lgd_obj.molecular_mechanism.mechanism.value != "undetermined":
                 self.handle_no_update('molecular mechanism', stable_id)
+            elif lgd_obj.molecular_mechanism.mechanism_support.value != "inferred":
+                self.handle_no_update('molecular mechanism', stable_id)
 
             return queryset
 
@@ -259,7 +261,7 @@ class LGDUpdateMechanism(BaseUpdate):
         """
             Partially updates the LGD record with a new molecular mechanism.
             It only allows to update mechanisms with value 'undetermined'.
-            Mandatory fields are "molecular_mechanism" and "mechanism_evidence".
+            Mandatory fields: "molecular_mechanism".
 
             Args:
                 request: new molecular mechanism data
@@ -290,9 +292,12 @@ class LGDUpdateMechanism(BaseUpdate):
 
         # Validate mechanism data
         molecular_mechanism = mechanism_data.get("molecular_mechanism", None)
-        mechanism_synopsis = mechanism_data.get("mechanism_synopsis", None)
-        mechanism_evidence = mechanism_data.get("mechanism_evidence", None)
+        mechanism_synopsis = mechanism_data.get("mechanism_synopsis", None) # optional
+        mechanism_evidence = mechanism_data.get("mechanism_evidence", None) # optional
 
+        # Check the request data format:
+        #   the keys "molecular_mechanism", "mechanism_synopsis" and "mechanism_evidence"
+        #   are mandatory but only "molecular_mechanism" has to be populated.
         if molecular_mechanism is None:
             return Response(
                 {"error": f"Molecular mechanism is missing"},
@@ -318,30 +323,12 @@ class LGDUpdateMechanism(BaseUpdate):
                 {"error": f"Empty molecular mechanism value"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         if molecular_mechanism_support is None:
             return Response(
                 {"error": f"Empty molecular mechanism support"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-        # Validate the evidence - check if mandatory fields are populated (pmid and evidence_types)
-        # Example: {'pmid': '25099252', 'description': 'text', 'evidence_types': 
-        #          [{'primary_type': 'Rescue', 'secondary_type': ['Human', 'Patient Cells']}]}
-        for evidence in mechanism_evidence:
-            pmid = evidence.get("pmid", None)
-            evidence_types = evidence.get("evidence_types", None)
-
-            if pmid is None or not pmid:
-                return Response(
-                    {"error": f"Publicatiom pmid is missing"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            if evidence_types is None or not evidence_types:
-                return Response(
-                    {"error": f"Evidence is missing"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
 
         # Get G2P entry to be updated
         lgd_obj = self.get_queryset().first()
