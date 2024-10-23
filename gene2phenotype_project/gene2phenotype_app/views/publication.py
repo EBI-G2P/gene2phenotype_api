@@ -146,16 +146,44 @@ class LGDEditPublications(APIView):
             The post method creates an association between the current LGD record and a list of publications.
             We want to whole process to be done in one db transaction.
 
+            This method allows to add extra data to the LGD record.
+            When a publication is linked to a LGD record, other types of data can be associated to the record
+            and the publication:
+                - phenotypes
+                - variant types
+                - variant descriptions
+
             Args:
                 (dict) request
-                
+
                 Example:
                 { "publications":[
-                    {
-                    "publication": { "pmid": 1234 },
-                    "comment": { "comment": "this is a comment", "is_public": 1 },
-                    "families": { "families": 2, "consanguinity": "unknown", "ancestries": "african", "affected_individuals": 1 }
-                    }
+                        {
+                            "publication": { "pmid": 1234 },
+                            "comment": { "comment": "this is a comment", "is_public": 1 },
+                            "families": { "families": 2, "consanguinity": "unknown", "ancestries": "african", "affected_individuals": 1 },
+                            "phenotypes": [{
+                                        "pmid": "41",
+                                        "summary": "",
+                                        "hpo_terms": [{ "term": "Orofacial dyskinesia",
+                                                        "accession": "HP:0002310",
+                                                        "description": "" }]
+                                    }],
+                            "variant_types": [{
+                                        "comment": "",
+                                        "de_novo": false,
+                                        "inherited": false,
+                                        "nmd_escape": false,
+                                        "primary_type": "protein_changing",
+                                        "secondary_type": "inframe_insertion",
+                                        "supporting_papers": ["41"],
+                                        "unknown_inheritance": true
+                                    }],
+                            "variant_descriptions": [{
+                                        "description": "HGVS:c.9Pro",
+                                        "publication": "41"
+                                    }]
+                        }
                     ]
                 }
         """
@@ -177,6 +205,17 @@ class LGDEditPublications(APIView):
 
                 if serializer_class.is_valid():
                     serializer_class.save()
+
+                    # Add extra data linked to the publication
+                    if "phenotypes" in publication:
+                        print("Add phenotypes!!")
+                    
+                    if "variant_types" in publication:
+                        print("Add variant_types!!")
+                    
+                    if "variant_descriptions" in publication:
+                        print("Add variant_descriptions!!")
+
                     response = Response({'message': 'Publication added to the G2P entry successfully.'}, status=status.HTTP_201_CREATED)
                 else:
                     response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
