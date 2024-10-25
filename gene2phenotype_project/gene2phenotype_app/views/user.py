@@ -83,19 +83,11 @@ class UserList(generics.ListAPIView):
 
 class CreateUserView(generics.CreateAPIView):
     """
-        view for creating a new user.
+        View for creating a new user.
 
         This view handles POST requests to create a new user using the `CreateUserSerializer`. 
         It is based on Django's `CreateAPIView` which provides the default implementation 
         for handling object creation.
-
-        Attributes:
-            - serializer_class: Specifies the serializer to be used, which is 
-            `CreateUserSerializer`. This serializer handles validation and user 
-            creation.
-            - permission_classes: Sets the permission policy for this view. In this case, 
-            `AllowAny` is used, meaning that any user (authenticated or not) can 
-            access this endpoint to create a new user.
 
         Usage:
             Send a POST request with the required user details (username, email, 
@@ -103,7 +95,7 @@ class CreateUserView(generics.CreateAPIView):
     """
 
     serializer_class = CreateUserSerializer
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class LoginView(KnoxLoginView):
