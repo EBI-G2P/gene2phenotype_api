@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.db import connection
 from datetime import datetime
+import itertools
 
 from ..models import (Panel, Attrib,
                      LGDPanel, LocusGenotypeDisease, LGDVariantGenccConsequence,
@@ -42,6 +43,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     last_updated = serializers.SerializerMethodField()
     date_created = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField(allow_null=True)
+    curators = serializers.SerializerMethodField(allow_null=True)
     is_reviewed = serializers.IntegerField(allow_null=True, required=False)
 
     def get_locus(self, id):
@@ -253,6 +255,49 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             date = history_records.first().history_date.date()
 
         return date
+
+    def get_curators(self, id):
+        """
+            List of curators who worked on the LGD record.
+            Dependency: this method depends on the history table.
+
+            Note: entries that were migrated from the old db have limited info details.
+        """
+        list_curators = set()
+        lgd_obj = self.instance
+        # Check LGD record history
+        history_records = lgd_obj.history.all().values('history_user__first_name', 'history_user__last_name')
+        # Check LGD cross cutting modifier history
+        history_records_ccm = LGDCrossCuttingModifier.history.filter(lgd=lgd_obj).values(
+                                    'history_user__first_name', 'history_user__last_name')
+        # Check LGD panel history
+        history_records_lgdpanel = LGDPanel.history.filter(lgd=lgd_obj).values(
+                                    'history_user__first_name', 'history_user__last_name')
+        # Check LGD phenotype history
+        history_records_lgdpheno = LGDPhenotype.history.filter(lgd=lgd_obj).values(
+                                    'history_user__first_name', 'history_user__last_name')
+        # Check LGD publication history
+        history_records_lgdpublication = LGDPublication.history.filter(lgd=lgd_obj).values(
+                                    'history_user__first_name', 'history_user__last_name')
+        # Check LGD variation GenCC consequence history
+        history_records_lgdvarcons = LGDVariantGenccConsequence.history.filter(lgd=lgd_obj).values(
+                                    'history_user__first_name', 'history_user__last_name')
+        # Check LGD variation type history
+        history_records_lgdvartype = LGDVariantType.history.filter(lgd=lgd_obj).values(
+                                    'history_user__first_name', 'history_user__last_name')
+        # Check LGD variation type description history
+        history_records_lgdvartype_desc = LGDVariantTypeDescription.history.filter(lgd=lgd_obj).values(
+                                    'history_user__first_name', 'history_user__last_name')
+
+        for record in itertools.chain(history_records, history_records_ccm, history_records_lgdpanel, 
+                                      history_records_lgdpheno, history_records_lgdpublication,
+                                      history_records_lgdvarcons, history_records_lgdvartype,
+                                      history_records_lgdvartype_desc):
+            first_name = record.get('history_user__first_name')
+            last_name = record.get('history_user__last_name')
+            list_curators.add(f"{first_name} {last_name}")
+
+        return list_curators
 
     def check_user_permission(self, id, user_panels):
         """
