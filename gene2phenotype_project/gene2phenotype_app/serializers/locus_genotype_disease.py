@@ -458,7 +458,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             It only allows to update mechanisms with value 'undetermined'
             and evidence 'inferred'.
 
-            Mandatory fields are "molecular_mechanism" and "mechanism_evidence".
+            Mandatory fields are molecular_mechanism name and support (inferred/evidence).
 
             Example:    "molecular_mechanism": {
                             "name": "gain of function",
@@ -531,10 +531,14 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         for evidence in mechanism_evidence:
             pmid = evidence.get("pmid")
 
+            # Check if the PMID exists in G2P
+            # When updating the mechanism the supporting pmid used as evidence
+            # have to already be linked to the LGD record
             try:
                 publication_obj = Publication.objects.get(pmid=pmid)
             except Publication.DoesNotExist:
-                raise serializers.ValidationError({"message": f"Invalid pmid '{pmid}'"})
+                # TODO: improve in future to insert new pmids + link them to the record
+                raise serializers.ValidationError({"message": f"pmid '{pmid}' not found in G2P"})
 
             if evidence.get("description") != "":
                 description = evidence.get("description")

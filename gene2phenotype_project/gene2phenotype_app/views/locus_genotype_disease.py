@@ -260,17 +260,15 @@ class LGDUpdateMechanism(BaseUpdate):
     def patch(self, request, stable_id):
         """
             Partially updates the LGD record with a new molecular mechanism.
-            It only allows to update mechanisms with value 'undetermined'.
+            It only allows to update mechanisms with value 'undetermined'
+            and support 'inferred'.
             Mandatory fields: "molecular_mechanism".
+
+            Supporting pmids have to already be linked to the LGD record.
 
             Args:
                 request: new molecular mechanism data
                 stable_id (str): The stable ID to update.
-
-            Raises:
-                HTTP_400_BAD_REQUEST: if the request data is not correct
-                HTTP_403_FORBIDDEN: if user has no permission to edit the G2P record
-                HTTP_500_INTERNAL_SERVER_ERROR: if there is a problem updating the mechanism
 
             Request example:
                     {
@@ -308,11 +306,6 @@ class LGDUpdateMechanism(BaseUpdate):
                 {"error": f"Molecular mechanism synopsis is missing"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        if mechanism_evidence is None or not mechanism_evidence:
-            return Response(
-                {"error": f"Molecular mechanism evidence is missing"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
 
         # Get molecular mechanism - check if mandatory fields are populated (value and support)
         molecular_mechanism_value = molecular_mechanism.get("name", None)
@@ -327,6 +320,12 @@ class LGDUpdateMechanism(BaseUpdate):
         if molecular_mechanism_support is None:
             return Response(
                 {"error": f"Empty molecular mechanism support"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if (mechanism_evidence is None or not mechanism_evidence) and molecular_mechanism_support == "evidence":
+            return Response(
+                {"error": f"Molecular mechanism evidence is missing"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -353,9 +352,9 @@ class LGDUpdateMechanism(BaseUpdate):
         # updated in a separate method - this implies extra validation
         try:
             serializer.update_mechanism(lgd_obj, mechanism_data)
-        except:
+        except Exception as e:
             return Response(
-                {"error": "Problem updating molecular mechanism"},
+                {"error": f"Problem updating molecular mechanism"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         else:
