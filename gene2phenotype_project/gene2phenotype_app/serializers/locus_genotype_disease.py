@@ -576,7 +576,36 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         # Get evidence - the mechanism evidence was validated in the view 'LGDUpdateMechanism'
         # Example: {'pmid': '25099252', 'description': 'text', 'evidence_types': 
         #          [{'primary_type': 'Rescue', 'secondary_type': ['Human', 'Patient Cells']}]}
-        for evidence in mechanism_evidence:
+        lgd_instance.update_mechanism_evidence(mechanism_obj, mechanism_evidence)
+
+
+        # Save old molecular mechanism to delete it later
+        old_mechanism_obj = lgd_instance.molecular_mechanism
+
+        # Update LGD record
+        lgd_instance.molecular_mechanism = mechanism_obj
+        lgd_instance.date_review = datetime.now()
+        lgd_instance.save()
+
+        # The old molecular mechanism can be deleted - the deletion is stored in the history table
+        # As this method only allows to update 'undetermined' mechanisms, there is no evidence to be deleted
+        old_mechanism_obj.delete()
+
+        return lgd_instance
+
+    def update_mechanism_evidence(self, mechanism_obj, validated_data):
+        """
+            Method to only update the evidence of the LGD molecular mechanism.
+
+            'validated_data' example:
+                "mechanism_evidence": [{
+                                        "pmid": "1234",
+                                        "description": "This is new evidence for the existing mechanism evidence.",
+                                        "evidence_types": [ { "primary_type": "Function",
+                                                              "secondary_type": [ "Biochemical" ]}
+                                        ]}]
+        """
+        for evidence in validated_data:
             pmid = evidence.get("pmid")
 
             # Check if the PMID exists in G2P
@@ -613,27 +642,24 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                         raise serializers.ValidationError({"message": f"Invalid mechanism evidence '{m_type}'"})
 
                     # Insert evidence
-                    mechanism_evidence_obj = MolecularMechanismEvidence.objects.create(
+                    try:
+                        mechanism_evidence_obj = MolecularMechanismEvidence.objects.get(
                         molecular_mechanism = mechanism_obj,
-                        description = description,
                         publication = publication_obj,
-                        evidence = cv_evidence_obj,
-                        is_deleted = 0
+                        evidence = cv_evidence_obj
                     )
-
-        # Save old molecular mechanism to delete it later
-        old_mechanism_obj = lgd_instance.molecular_mechanism
-
-        # Update LGD record
-        lgd_instance.molecular_mechanism = mechanism_obj
-        lgd_instance.date_review = datetime.now()
-        lgd_instance.save()
-
-        # The old molecular mechanism can be deleted - the deletion is stored in the history table
-        # As this method only allows to update 'undetermined' mechanisms, there is no evidence to be deleted
-        old_mechanism_obj.delete()
-
-        return lgd_instance
+                    except MolecularMechanismEvidence.DoesNotExist:
+                        mechanism_evidence_obj = MolecularMechanismEvidence.objects.create(
+                            molecular_mechanism = mechanism_obj,
+                            description = description,
+                            publication = publication_obj,
+                            evidence = cv_evidence_obj,
+                            is_deleted = 0
+                        )
+                    else:
+                        if(mechanism_evidence_obj.is_deleted == 1):
+                            mechanism_evidence_obj.is_deleted = 0
+                            mechanism_evidence_obj.save()
 
     class Meta:
         model = LocusGenotypeDisease

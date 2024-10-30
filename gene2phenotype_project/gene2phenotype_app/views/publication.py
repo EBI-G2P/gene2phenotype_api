@@ -7,7 +7,8 @@ from django.shortcuts import get_object_or_404
 
 from gene2phenotype_app.serializers import (PublicationSerializer, LGDPublicationSerializer,
                                             LGDPublicationListSerializer, LGDPhenotypeSerializer,
-                                            LGDVariantTypeSerializer, LGDVariantTypeDescriptionSerializer)
+                                            LGDVariantTypeSerializer, LGDVariantTypeDescriptionSerializer,
+                                            LocusGenotypeDiseaseSerializer)
 
 from gene2phenotype_app.models import (Publication, LocusGenotypeDisease, LGDPublication,
                                        LGDPhenotype, LGDPhenotypeSummary, LGDVariantType,
@@ -252,7 +253,9 @@ class LGDEditPublications(APIView):
                         LGDVariantTypeDescriptionSerializer(context={'lgd': lgd}).create(variant_type_desc)
 
                 if "mechanism_evidence" in publication:
-                    print("Add mechanism evidence!!")
+                    lgd_serializer = LocusGenotypeDiseaseSerializer()
+                    mechanism_obj = lgd.molecular_mechanism
+                    lgd_serializer.update_mechanism_evidence(mechanism_obj, publication["mechanism_evidence"])
 
                 response = Response({'message': 'Publication added to the G2P entry successfully.'}, status=status.HTTP_201_CREATED)
 
