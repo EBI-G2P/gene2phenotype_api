@@ -354,7 +354,7 @@ class LGDUpdateMechanism(BaseUpdate):
             serializer.update_mechanism(lgd_obj, mechanism_data)
         except Exception as e:
             return Response(
-                {"error": f"Problem updating molecular mechanism"},
+                {"error": f"Error while updating molecular mechanism"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         else:

@@ -456,7 +456,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         """
             Method to update the molecular mechanism of the LGD record.
             It only allows to update mechanisms with value 'undetermined'
-            and evidence 'inferred'.
+            and support value 'inferred'.
 
             Mandatory fields are molecular_mechanism name and support (inferred/evidence).
 
@@ -472,10 +472,10 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                             [{'primary_type': 'Rescue', 'secondary_type': ['Human', 'Patient Cells']}]}]
 
         """
-        molecular_mechanism_value = validated_data.get("molecular_mechanism")["name"]
-        molecular_mechanism_support = validated_data.get("molecular_mechanism")["support"]
-        mechanism_synopsis = validated_data.get("mechanism_synopsis", None) # synopsis is optional
-        mechanism_evidence = validated_data.get("mechanism_evidence", None) # evidence is optional
+        molecular_mechanism_value = validated_data.get("molecular_mechanism")["name"] # the mechanism value
+        molecular_mechanism_support = validated_data.get("molecular_mechanism")["support"] # the mechanism support (inferred/evidence)
+        mechanism_synopsis = validated_data.get("mechanism_synopsis", None) # mechanism synopsis is optional
+        mechanism_evidence = validated_data.get("mechanism_evidence", None) # molecular mechanism evidence is optional
 
         try:
             cv_mechanism_obj = CVMolecularMechanism.objects.get(
