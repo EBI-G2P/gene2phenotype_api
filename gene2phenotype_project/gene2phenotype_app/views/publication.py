@@ -6,7 +6,8 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 
 from gene2phenotype_app.serializers import (PublicationSerializer, LGDPublicationSerializer,
-                                            LGDPublicationListSerializer, LGDPhenotypeSerializer)
+                                            LGDPublicationListSerializer, LGDPhenotypeSerializer,
+                                            LGDVariantTypeSerializer, LGDVariantTypeDescriptionSerializer)
 
 from gene2phenotype_app.models import (Publication, LocusGenotypeDisease, LGDPublication,
                                        LGDPhenotype, LGDPhenotypeSummary, LGDVariantType,
@@ -212,7 +213,7 @@ class LGDEditPublications(APIView):
                 if "phenotypes" in publication:
                     # Expected structure:
                     #   { "phenotypes": [{ "accession": "HP:0003974", "publication": 1 }] }
-                    for pheno in publication.get("phenotypes"):
+                    for pheno in publication["phenotypes"]:
                         hpo_terms = pheno['hpo_terms']
                         for hpo in hpo_terms:
                             phenotype_data = {
@@ -231,16 +232,19 @@ class LGDEditPublications(APIView):
                                 else:
                                     response = Response({"errors": lgd_phenotype_serializer.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                             except:
+                                accession = phenotype_data["accession"]
                                 return Response(
-                                    {"errors": f"Could not insert phenotype '{phenotype_data["accession"]}' for ID '{stable_id}'"},
+                                    {"errors": f"Could not insert phenotype '{accession}' for ID '{stable_id}'"},
                                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                                 )
 
                 if "variant_types" in publication:
-                    print("Add variant_types!!")
-                
+                    for variant_type in publication["variant_types"]:
+                        LGDVariantTypeSerializer(context={'lgd': lgd, 'user': user}).create(variant_type)
+
                 if "variant_descriptions" in publication:
-                    print("Add variant_descriptions!!")
+                    for variant_type_desc in publication["variant_descriptions"]:
+                        LGDVariantTypeDescriptionSerializer(context={'lgd': lgd}).create(variant_type_desc)
 
                 response = Response({'message': 'Publication added to the G2P entry successfully.'}, status=status.HTTP_201_CREATED)
 
