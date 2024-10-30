@@ -460,6 +460,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             and support value 'inferred'.
 
             Mandatory fields are molecular_mechanism name and support (inferred/evidence).
+            If evidence is provided, the code expects the 'evidence_types' to be populated
+            otherwise the evidence data is not stored.
 
             Example:    "molecular_mechanism": {
                             "name": "gain of function",
@@ -497,7 +499,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         # The mechanism synopsis is optional
         cv_synopsis_obj = None
         cv_synopsis_support_obj = None
-        if mechanism_synopsis is not None and "name" in mechanism_synopsis and mechanism_synopsis["name"] != "":
+        if mechanism_synopsis is not None and mechanism_synopsis.get("name", "") != "":
             mechanism_synopsis_value = mechanism_synopsis.get("name")
             mechanism_synopsis_support = mechanism_synopsis.get("support")
 
@@ -549,7 +551,10 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             evidence_types = evidence.get("evidence_types")
             for evidence_type in evidence_types:
                 # primary_type is the evidence subtype ('rescue')
-                primary_type = evidence_type.get("primary_type").lower()
+                primary_type = evidence_type.get("primary_type", None)
+                if not primary_type:
+                    raise serializers.ValidationError({"message": f"Empty evidence subtype"})
+                primary_type = primary_type.lower()
                 # secondary_type is the evidence value ('human')
                 secondary_type = evidence_type.get("secondary_type")
                 for m_type in secondary_type:
