@@ -12,7 +12,8 @@ from gene2phenotype_app.serializers import (UserSerializer, LocusGenotypeDisease
                                             LGDCommentSerializer, LGDVariantConsequenceListSerializer,
                                             LGDVariantGenCCConsequenceSerializer, LGDCrossCuttingModifierListSerializer,
                                             LGDVariantTypeListSerializer, LGDVariantTypeSerializer,
-                                            LGDVariantTypeDescriptionListSerializer, LGDVariantTypeDescriptionSerializer)
+                                            LGDVariantTypeDescriptionListSerializer, LGDVariantTypeDescriptionSerializer,
+                                            MolecularMechanismSerializer)
 
 from gene2phenotype_app.models import (User, Attrib, LocusGenotypeDisease, OntologyTerm,
                                        G2PStableID, CVMolecularMechanism, LGDCrossCuttingModifier, 
@@ -147,7 +148,7 @@ class LocusGenotypeDiseaseDetail(generics.ListAPIView):
 
 
 ### Add or delete data ###
-class LGDUpdateConfidence(generics.UpdateAPIView):
+class LGDUpdateConfidence(BaseUpdate):
     http_method_names = ['put', 'options']
     serializer_class = LocusGenotypeDiseaseSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -217,6 +218,148 @@ class LGDUpdateConfidence(generics.UpdateAPIView):
 
         else:
             return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+class LGDUpdateMechanism(BaseUpdate):
+    http_method_names = ['patch', 'options']
+    serializer_class = MolecularMechanismSerializer # TO CHECK
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """
+            Retrieves a queryset of LocusGenotypeDisease objects associated with a stable ID
+            for the authenticated user.
+
+            Args:
+                stable_id (str): The stable ID from the URL kwargs.
+
+            Returns:
+                QuerySet: A queryset of LocusGenotypeDisease objects.
+
+            Raises:
+                Http404: If the stable ID does not exist.
+                PermissionDenied: If update is not allowed.
+        """
+        stable_id = self.kwargs['stable_id']
+
+        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
+        # Get the record
+        queryset = LocusGenotypeDisease.objects.filter(stable_id=g2p_stable_id, is_deleted=0)
+
+        if not queryset.exists():
+            self.handle_no_permission('Entry', stable_id)
+        else:
+            # Only 'undetermined' mechanisms can be updated
+            lgd_obj = queryset.first()
+            if not (lgd_obj.molecular_mechanism.mechanism.value == "undetermined" 
+                    and lgd_obj.molecular_mechanism.mechanism_support.value == "inferred"):
+                self.handle_no_update('molecular mechanism', stable_id)
+
+            return queryset
+
+    def patch(self, request, stable_id):
+        """
+            Partially updates the LGD record with a new molecular mechanism.
+            It only allows to update mechanisms with value 'undetermined'
+            and support 'inferred'.
+            Mandatory fields: "molecular_mechanism".
+
+            Supporting pmids have to already be linked to the LGD record.
+
+            Args:
+                request: new molecular mechanism data
+                stable_id (str): The stable ID to update.
+
+            Request example:
+                    {
+                        "molecular_mechanism": {
+                            "name": "gain of function",
+                            "support": "evidence"
+                        },
+                        "mechanism_synopsis": {
+                            "name": "",
+                            "support": ""
+                        },
+                        "mechanism_evidence": [{'pmid': '25099252', 'description': 'text', 'evidence_types': 
+                                            [{'primary_type': 'Rescue', 'secondary_type': ['Human', 'Patient Cells']}]}]
+                    }
+
+        """
+        user = request.user
+        mechanism_data = request.data
+
+        # Validate mechanism data
+        molecular_mechanism = mechanism_data.get("molecular_mechanism", None)
+        mechanism_synopsis = mechanism_data.get("mechanism_synopsis", None) # optional
+        mechanism_evidence = mechanism_data.get("mechanism_evidence", None) # optional
+
+        # Check the request data format:
+        #   the keys "molecular_mechanism", "mechanism_synopsis" and "mechanism_evidence"
+        #   are mandatory but only "molecular_mechanism" has to be populated.
+        if molecular_mechanism is None:
+            return Response(
+                {"error": f"Molecular mechanism is missing"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if mechanism_synopsis is None:
+            return Response(
+                {"error": f"Molecular mechanism synopsis is missing"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Get molecular mechanism - check if mandatory fields are populated (value and support)
+        molecular_mechanism_value = molecular_mechanism.get("name", None)
+        molecular_mechanism_support = molecular_mechanism.get("support", None)
+
+        if molecular_mechanism_value is None:
+            return Response(
+                {"error": f"Empty molecular mechanism value"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if molecular_mechanism_support is None:
+            return Response(
+                {"error": f"Empty molecular mechanism support"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if (mechanism_evidence is None or not mechanism_evidence) and molecular_mechanism_support == "evidence":
+            return Response(
+                {"error": f"Molecular mechanism evidence is missing"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Get G2P entry to be updated
+        lgd_obj = self.get_queryset().first()
+
+        serializer = LocusGenotypeDiseaseSerializer()
+
+        # Check if user has permission to edit this entry
+        user_obj = get_object_or_404(User, email=user, is_active=1)
+        serializer_user = UserSerializer(user_obj, context={"user" : user})
+        user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
+        has_common = serializer.check_user_permission(lgd_obj, user_panel_list)
+
+        if has_common is False:
+            return Response(
+                {"error": f"No permission to update record '{stable_id}'"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Separate method to update mechanism
+        # Updating the mechanism can be complex, specially if evidence data is provided
+        # To avoid problems with other LDG updates, the mechanism is going to be
+        # updated in a separate method - this implies extra validation
+        try:
+            serializer.update_mechanism(lgd_obj, mechanism_data)
+        except Exception as e:
+            return Response(
+                {"error": f"Error while updating molecular mechanism"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        else:
+            return Response(
+                {"message": f"Molecular mechanism updated successfully for '{stable_id}'"},
+                status=status.HTTP_200_OK)
 
 class LGDEditVariantConsequences(APIView):
     """

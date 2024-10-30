@@ -39,6 +39,8 @@ urlpatterns = [
 
     ### Endpoints to update/add/delete the G2P record (LGD) ###
     path('lgd/<str:stable_id>/update_confidence/', views.LGDUpdateConfidence.as_view(), name="lgd_update_confidence"),
+    # Update molecular mechanism - only allows to update if mechanism is 'undetermined' and support is 'inferred'
+    path('lgd/<str:stable_id>/update_mechanism/', views.LGDUpdateMechanism.as_view(), name="lgd_update_mechanism"),
     # Add or delete panel from LGD record. Actions: UPDATE (to delete one panel), POST (to add one panel)
     path('lgd/<str:stable_id>/panel/', views.LGDEditPanel.as_view(), name="lgd_panel"),
     # Add or delete publication(s) from LGD record. Actions: UPDATE (to delete one publication), POST (to add multiple publications)
