@@ -152,11 +152,12 @@ class LGDEditPublications(APIView):
                 - phenotypes
                 - variant types
                 - variant descriptions
+                - molecular mechanism evidence
 
             Args:
                 (dict) request data
 
-                Example:
+                Example for a record already linked to pmid '41':
                 { "publications":[
                         {
                             "publication": { "pmid": 1234 },
@@ -183,9 +184,13 @@ class LGDEditPublications(APIView):
                                         "description": "HGVS:c.9Pro",
                                         "publication": "41"
                                     }]
-                        }
-                    ]
-                }
+                            "mechanism_evidence": [{
+                                        "pmid": "1234",
+                                        "description": "This is new evidence for the existing mechanism evidence.",
+                                        "evidence_types": [ { "primary_type": "Function",
+                                                              "secondary_type": [ "Biochemical" ]}
+                                        ]}]
+                }]}
         """
         user = self.request.user
 
@@ -245,6 +250,9 @@ class LGDEditPublications(APIView):
                 if "variant_descriptions" in publication:
                     for variant_type_desc in publication["variant_descriptions"]:
                         LGDVariantTypeDescriptionSerializer(context={'lgd': lgd}).create(variant_type_desc)
+
+                if "mechanism_evidence" in publication:
+                    print("Add mechanism evidence!!")
 
                 response = Response({'message': 'Publication added to the G2P entry successfully.'}, status=status.HTTP_201_CREATED)
 
