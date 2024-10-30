@@ -131,7 +131,7 @@ class LGDPhenotypeSerializer(serializers.ModelSerializer):
 class LGDPhenotypeListSerializer(serializers.Serializer):
     """
         Serializer to accept a list of phenotypes.
-        Called by: LocusGenotypeDiseaseAddPhenotypes()
+        Called by: LocusGenotypeDiseaseAddPhenotypes() and view LGDEditPhenotypes()
     """
     phenotypes = LGDPhenotypeSerializer(many=True)
 

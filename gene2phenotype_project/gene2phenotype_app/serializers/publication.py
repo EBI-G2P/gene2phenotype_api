@@ -296,26 +296,23 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
         """
             Overwrite the method to validate the data.
             This validate() method is activated by the curation (draft entry) endpoints and
-            by the LGDPublicationListSerializer as a consequence this method is identical to
-            the validate method in LGDPublicationListSerializer.
+            by the LGDPublicationListSerializer.
+            This method is identical to the validate method in LGDPublicationListSerializer.
         """
         if hasattr(self, 'initial_data'):
             data = self.initial_data
             valid_headers = ["families", "consanguinity", "ancestries", "affected_individuals"]
             extra_headers = ["phenotypes", "variant_types", "variant_descriptions"]
 
-            publication = self.initial_data.get("publication")
-            # check if 'families' is defined
+            # check if 'families' is defined in the initial data
             # correct structure is: 
             # { "families": 200, "consanguinity": "unknown", "ancestries": "african", 
             #   "affected_individuals": 100 }
-            if "families" in publication:
-                families = publication.get("families", None)
+            if "families" in self.initial_data:
+                families = self.initial_data.get("families") # If 'families' is in initial data then it cannot be null
                 for header in families.keys():
                     if header not in valid_headers:
                         raise serializers.ValidationError(f"Got unknown field in families: {header}")
-
-        print("Validate LGDPublicationSerializer")
 
         return data
 
@@ -341,8 +338,6 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
         publication_data = self.initial_data.get('publication') # 'publication': {'pmid': 39385417}
         comment = self.initial_data.get('comment', None) # 'comment': {'comment': 'this is a comment', 'is_public': 1}
         families = self.initial_data.get("families", None) # "families": { "families": 200, "consanguinity": "unknown", "ancestries": "african", "affected_individuals": 2 }
-
-        print("->", self.initial_data)
 
         if comment:
             comment_text = comment.get("comment", None)
@@ -401,7 +396,7 @@ class LGDPublicationListSerializer(serializers.Serializer):
     """
         Serializer to accept a list of publications.
         This method only validates the publications, it does not update any data.
-        Called by: LocusGenotypeDiseaseAddPublication()
+        Called by: LocusGenotypeDiseaseAddPublication() and view LGDEditPublications()
     """
     publications = LGDPublicationSerializer(many=True)
 

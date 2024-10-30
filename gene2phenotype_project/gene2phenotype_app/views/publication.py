@@ -6,14 +6,13 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 
 from gene2phenotype_app.serializers import (PublicationSerializer, LGDPublicationSerializer,
-                                            LGDPublicationListSerializer)
+                                            LGDPublicationListSerializer, LGDPhenotypeSerializer)
 
 from gene2phenotype_app.models import (Publication, LocusGenotypeDisease, LGDPublication,
                                        LGDPhenotype, LGDPhenotypeSummary, LGDVariantType,
-                                       LGDVariantTypeDescription, MolecularMechanism,
-                                       MolecularMechanismEvidence)
+                                       LGDVariantTypeDescription, MolecularMechanismEvidence)
 
-from .base import BaseAdd, BaseUpdate
+from .base import BaseAdd
 
 from ..utils import get_publication, get_authors
 
@@ -154,7 +153,7 @@ class LGDEditPublications(APIView):
                 - variant descriptions
 
             Args:
-                (dict) request
+                (dict) request data
 
                 Example:
                 { "publications":[
@@ -203,22 +202,47 @@ class LGDEditPublications(APIView):
                     context={"lgd": lgd, "user": user}
                 )
 
+                # Insert new publication
                 if serializer_class.is_valid():
                     serializer_class.save()
-
-                    # Add extra data linked to the publication
-                    if "phenotypes" in publication:
-                        print("Add phenotypes!!")
-                    
-                    if "variant_types" in publication:
-                        print("Add variant_types!!")
-                    
-                    if "variant_descriptions" in publication:
-                        print("Add variant_descriptions!!")
-
-                    response = Response({'message': 'Publication added to the G2P entry successfully.'}, status=status.HTTP_201_CREATED)
                 else:
                     response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+                # Add extra data linked to the publication
+                if "phenotypes" in publication:
+                    # Expected structure:
+                    #   { "phenotypes": [{ "accession": "HP:0003974", "publication": 1 }] }
+                    for pheno in publication.get("phenotypes"):
+                        hpo_terms = pheno['hpo_terms']
+                        for hpo in hpo_terms:
+                            phenotype_data = {
+                                "accession": hpo["accession"],
+                                "publication": pheno["pmid"]
+                            }
+                            try:
+                                lgd_phenotype_serializer = LGDPhenotypeSerializer(
+                                    data = phenotype_data,
+                                    context = {'lgd': lgd}
+                                )
+                                # Validate the input data
+                                if lgd_phenotype_serializer.is_valid():
+                                    # save() is going to call create()
+                                    lgd_phenotype_serializer.save()
+                                else:
+                                    response = Response({"errors": lgd_phenotype_serializer.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                            except:
+                                return Response(
+                                    {"errors": f"Could not insert phenotype '{phenotype_data["accession"]}' for ID '{stable_id}'"},
+                                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                                )
+
+                if "variant_types" in publication:
+                    print("Add variant_types!!")
+                
+                if "variant_descriptions" in publication:
+                    print("Add variant_descriptions!!")
+
+                response = Response({'message': 'Publication added to the G2P entry successfully.'}, status=status.HTTP_201_CREATED)
 
         else:
             response = Response({"errors": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
