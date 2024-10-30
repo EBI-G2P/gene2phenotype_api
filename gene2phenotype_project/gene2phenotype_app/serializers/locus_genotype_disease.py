@@ -411,7 +411,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         confidence_support = validated_data.get("confidence_support", None)
         is_reviewed = validated_data.get("is_reviewed", None)
 
-        if validated_confidence is not None:
+        if(validated_confidence is not None and isinstance(validated_confidence, dict) 
+           and "value" in validated_confidence):
             confidence = validated_confidence["value"]
         else:
             raise serializers.ValidationError({"error": f"Empty confidence value"})
@@ -472,8 +473,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                             [{'primary_type': 'Rescue', 'secondary_type': ['Human', 'Patient Cells']}]}]
 
         """
-        molecular_mechanism_value = validated_data.get("molecular_mechanism")["name"] # the mechanism value
-        molecular_mechanism_support = validated_data.get("molecular_mechanism")["support"] # the mechanism support (inferred/evidence)
+        molecular_mechanism_value = validated_data["molecular_mechanism"]["name"] # the mechanism value
+        molecular_mechanism_support = validated_data["molecular_mechanism"]["support"] # the mechanism support (inferred/evidence)
         mechanism_synopsis = validated_data.get("mechanism_synopsis", None) # mechanism synopsis is optional
         mechanism_evidence = validated_data.get("mechanism_evidence", None) # molecular mechanism evidence is optional
 

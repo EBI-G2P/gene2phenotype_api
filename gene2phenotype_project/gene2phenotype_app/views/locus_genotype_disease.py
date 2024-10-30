@@ -250,9 +250,8 @@ class LGDUpdateMechanism(BaseUpdate):
         else:
             # Only 'undetermined' mechanisms can be updated
             lgd_obj = queryset.first()
-            if lgd_obj.molecular_mechanism.mechanism.value != "undetermined":
-                self.handle_no_update('molecular mechanism', stable_id)
-            elif lgd_obj.molecular_mechanism.mechanism_support.value != "inferred":
+            if not (lgd_obj.molecular_mechanism.mechanism.value == "undetermined" 
+                    and lgd_obj.molecular_mechanism.mechanism_support.value == "inferred"):
                 self.handle_no_update('molecular mechanism', stable_id)
 
             return queryset
