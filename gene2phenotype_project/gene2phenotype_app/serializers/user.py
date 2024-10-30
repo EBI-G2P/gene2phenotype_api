@@ -77,15 +77,14 @@ class UserSerializer(serializers.ModelSerializer):
 
     def check_panel_permission(self, panels):
         """
-            Check if user has permission to edit the panels.
+            Check if user has permission to edit the inputted panels.
 
             Args:
-                    self: user
-                    panels: a list of panels 
+                panels: a list of panels
 
             Returns:
-                        True if user has permission to edit all panels from the list
-                        False if user does not have permission to edit at least one panel
+                True if user has permission to edit all panels from the list
+                False if user does not have permission to edit at least one panel
         """
         user_login = self.context.get('user')
 
@@ -111,32 +110,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class CreateUserSerializer(serializers.ModelSerializer):
     """
-        Serializer for creating a new user.
-
-        This serializer is used to validate and create a new user object. It extends 
-        `ModelSerializer` to automatically handle the fields related to the `User` model.
-
-        Methods:
-            - create(validated_data): 
-                Overrides the default `create` method to create a user using 
-                `create_user` method, which ensures that the password is hashed 
-                before storing it in the database.
-
-        Fields:
-            - username: The username of the user.
-            - email: The email of the user. It has a `UniqueValidator` to ensure that 
-            the email is unique in the system.
-            - password: The password for the user. This field is write-only and 
-            has a minimum length of 5 characters to ensure password strength.
-            - first_name: The user's first name.
-            - last_name: The user's last name.
-
-        Meta Options:
-            - model: Specifies the `User` model to serialize.
-            - fields: Lists the fields included in the serialization.
-            - extra_kwargs: 
-                - password: Write-only field with a minimum length of 5 characters.
-                - email: Includes a `UniqueValidator` to enforce unique email addresses.
+        This serializer is used to validate and create a new user object.
 
         Usage:
             This serializer can be used to create a new user by passing validated 
@@ -145,12 +119,24 @@ class CreateUserSerializer(serializers.ModelSerializer):
     """
 
     def create(self, validated_data):
+        """
+            This method creates a user using the `create_user` method, which ensures that
+            the password is hashed before storing it in the database.
+
+            validated_data has the following fields:
+                - username: The username
+                - email: The email of the user (email is unique in the system).
+                - password: The password for the user. This field is write-only and 
+                has a minimum length of 5 characters to ensure password strength.
+                - first_name: The user's first name.
+                - last_name: The user's last name.
+        """
         return User.objects.create_user(**validated_data)
 
     class Meta:
         model = User
         fields = ['username', 'email', 'password', 'first_name', 'last_name']
-        extra_kwargs = {'password': {'write_only': True, 'min_length': 5},         'email': {
+        extra_kwargs = {'password': {'write_only': True, 'min_length': 5}, 'email': {
             'validators': [
                 UniqueValidator(
                     queryset=User.objects.all()
