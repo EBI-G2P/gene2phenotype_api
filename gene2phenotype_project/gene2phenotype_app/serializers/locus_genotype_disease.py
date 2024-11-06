@@ -599,7 +599,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 primary_type = evidence_type.get("primary_type", None)
                 if not primary_type:
                     raise serializers.ValidationError({"message": f"Empty evidence subtype"})
-                primary_type = primary_type.lower()
+                primary_type = primary_type.replace(" ", "_").lower()
                 # secondary_type is the evidence value ('human')
                 secondary_type = evidence_type.get("secondary_type")
                 for m_type in secondary_type:
