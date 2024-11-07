@@ -576,8 +576,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         # Get evidence - the mechanism evidence was validated in the view 'LGDUpdateMechanism'
         # Example: {'pmid': '25099252', 'description': 'text', 'evidence_types': 
         #          [{'primary_type': 'Rescue', 'secondary_type': ['Human', 'Patient Cells']}]}
-        lgd_instance.update_mechanism_evidence(mechanism_obj, mechanism_evidence)
-
+        lgd_instance.update_mechanism_evidence(lgd_instance, mechanism_evidence)
 
         # Save old molecular mechanism to delete it later
         old_mechanism_obj = lgd_instance.molecular_mechanism
@@ -593,7 +592,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         return lgd_instance
 
-    def update_mechanism_evidence(self, mechanism_obj, validated_data):
+    def update_mechanism_evidence(self, lgd_obj, validated_data):
         """
             Method to only update the evidence of the LGD molecular mechanism.
 
@@ -605,6 +604,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                                                               "secondary_type": [ "Biochemical" ]}
                                         ]}]
         """
+        mechanism_obj = lgd_obj.molecular_mechanism
         for evidence in validated_data:
             pmid = evidence.get("pmid")
 
@@ -660,6 +660,10 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                         if(mechanism_evidence_obj.is_deleted == 1):
                             mechanism_evidence_obj.is_deleted = 0
                             mechanism_evidence_obj.save()
+
+                    # Update LGD date_review
+                    lgd_obj.date_review = datetime.now()
+                    lgd_obj.save()
 
     class Meta:
         model = LocusGenotypeDisease

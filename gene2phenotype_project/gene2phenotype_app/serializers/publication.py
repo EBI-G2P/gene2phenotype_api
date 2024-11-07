@@ -374,6 +374,11 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
                 publication = publication_obj,
                 is_deleted = 0
             )
+            # There is a new publication linked to the LGD record, 
+            # the record has to reflect the date of this change
+            # update the date_review of the LGD record
+            lgd.date_review = datetime.now()
+            lgd.save()
 
         # If LGD-publication already exists then returns the existing object
         # New comments and/or family info are added to the existing object
@@ -381,10 +386,10 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
         if lgd_publication_obj.is_deleted != 0:
             lgd_publication_obj.is_deleted = 0
             lgd_publication_obj.save()
-
-        # When we add a publication to a LGD record, we should also link the new publication to
-        # other existing/new data (LGDPhenotype, LGDPhenotypeSummary, LGDVariantType, LGDVariantTypeDescription)
-        
+            # The lgd-publication is not deleted anymore which is equivallent to
+            # creating a new link, this means we have to update the record 'date_review'
+            lgd.date_review = datetime.now()
+            lgd.save()
 
         return lgd_publication_obj
 

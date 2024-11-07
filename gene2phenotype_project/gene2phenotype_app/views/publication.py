@@ -14,7 +14,7 @@ from gene2phenotype_app.models import (Publication, LocusGenotypeDisease, LGDPub
                                        LGDPhenotype, LGDPhenotypeSummary, LGDVariantType,
                                        LGDVariantTypeDescription, MolecularMechanismEvidence)
 
-from .base import BaseAdd
+from .base import BaseAdd, BaseUpdate
 
 from ..utils import get_publication, get_authors
 
@@ -108,7 +108,7 @@ class AddPublication(BaseAdd):
 
 ### LGD-publication ###
 # Add or delete data
-class LGDEditPublications(APIView):
+class LGDEditPublications(BaseUpdate):
     """
         Add or delete lgd-publication.
 
@@ -184,7 +184,15 @@ class LGDEditPublications(APIView):
                             "variant_descriptions": [{
                                         "description": "HGVS:c.9Pro",
                                         "publication": "41"
-                                    }]
+                                    }],
+                            "molecular_mechanism": {
+                                "name": "gain of function",
+                                "support": "evidence"
+                            },
+                            "mechanism_synopsis": {
+                                "name": "",
+                                "support": ""
+                            },
                             "mechanism_evidence": [{
                                         "pmid": "1234",
                                         "description": "This is new evidence for the existing mechanism evidence.",
@@ -252,10 +260,59 @@ class LGDEditPublications(APIView):
                     for variant_type_desc in publication["variant_descriptions"]:
                         LGDVariantTypeDescriptionSerializer(context={'lgd': lgd}).create(variant_type_desc)
 
-                if "mechanism_evidence" in publication:
+                # Only mechanism "undetermined" can be updated
+                # If mechanism has to be updated, call method update_mechanism() and send new mechanism value
+                # plus the synopsis and the new evidence (if applicable)
+                # update_mechanism() updates the 'date_review' of the LGD record
+                if "molecular_mechanism" in publication:
                     lgd_serializer = LocusGenotypeDiseaseSerializer()
                     mechanism_obj = lgd.molecular_mechanism
-                    lgd_serializer.update_mechanism_evidence(mechanism_obj, publication["mechanism_evidence"])
+
+                    if mechanism_obj.mechanism.value != "undetermined":
+                        self.handle_no_update('molecular mechanism', stable_id)
+                    
+                    # Build mechanism data
+                    mechanism_data = { 
+                        "molecular_mechanism":  publication["molecular_mechanism"]
+                    }
+                    # Attach the synopsis to be updated (if applicable)
+                    if "mechanism_synopsis" in publication:
+                        mechanism_data["mechanism_synopsis"] = publication["mechanism_synopsis"]
+                    # Attach the evidence to be updated (if applicable)
+                    if "mechanism_evidence" in publication:
+                        mechanism_data["mechanism_evidence"] = publication["mechanism_evidence"]
+
+                    try:
+                        lgd_serializer.update_mechanism(lgd, mechanism_data)
+                    except Exception as e:
+                        if hasattr(e, 'detail') and 'message' in e.detail:
+                            return Response(
+                                {"error": f"Error while updating molecular mechanism: {e.detail['message']}"},
+                                status=status.HTTP_400_BAD_REQUEST
+                            )
+                        else:
+                            return Response(
+                                {"error": f"Error while updating molecular mechanism"},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                            )
+
+                # If only the mechanism evidence is going to be updated, call method update_mechanism_evidence()
+                # update_mechanism_evidence() updates the 'date_review' of the LGD record
+                elif "mechanism_evidence" in publication:
+                    lgd_serializer = LocusGenotypeDiseaseSerializer()
+                    try:
+                        lgd_serializer.update_mechanism_evidence(lgd, publication["mechanism_evidence"])
+                    except Exception as e:
+                        if hasattr(e, 'detail') and 'message' in e.detail:
+                            return Response(
+                            {"error": f"Error while updating molecular mechanism evidence: {e.detail['message']}"},
+                            status=status.HTTP_400_BAD_REQUEST
+                            )
+                        else:
+                            return Response(
+                            {"error": f"Error while updating molecular mechanism evidence"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                        )
 
                 response = Response({'message': 'Publication added to the G2P entry successfully.'}, status=status.HTTP_201_CREATED)
 
