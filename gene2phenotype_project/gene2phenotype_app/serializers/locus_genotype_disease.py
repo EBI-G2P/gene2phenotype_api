@@ -811,9 +811,9 @@ class MolecularMechanismSerializer(serializers.ModelSerializer):
         data = {}
 
         for evidence in evidence_list:
-            evidence_value = evidence["evidence__value"]
+            evidence_value = evidence["evidence__value"].title()
             # The evidence subtype is always populated
-            evidence_type = evidence["evidence__subtype"].replace("_", " ")
+            evidence_type = evidence["evidence__subtype"].replace("_", " ").title()
             pmid = evidence["publication__pmid"]
 
             if pmid not in data:
