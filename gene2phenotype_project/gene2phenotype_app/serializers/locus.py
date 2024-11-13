@@ -174,30 +174,12 @@ class LocusGeneSerializer(LocusSerializer):
         """
             Retrieve the Badonyi scores for the current gene, organizing the results
             in a dictionary where each key is the score's attribute (description_attrib.value)
-            and the value is the score.
-
-            This method filters `GeneStats` objects associated with the current gene (via `self.id`),
-            then creates a dictionary where the key is the `description_attrib.value` and the value 
-            is the `score`.
+            and the value is the score rounded to three decimal places.
 
             Returns:
-            -------
-            dict
-                A dictionary where:
-                - Key: The value of `description_attrib` (score's attribute) from each `GeneStats` object.
-                - Value: The score associated with that attribute.
-
-            Example:
-            -------
-            {
-                "gain_of_function": 1.5,
-                "loss_of_function": 0.7,
-                ...
-            }
-
-            Notes:
-            -----
-            - Each unique attribute will have its own entry in the dictionary.
+                dictionary
+                    - Key: The value of `description_attrib` (score's attribute) from each `GeneStats` object.
+                    - Value: The score associated with that attribute.
         """
 
         result_data = {}
@@ -205,10 +187,10 @@ class LocusGeneSerializer(LocusSerializer):
 
         for badonyi_obj in badonyi_stats_objs:
             key = badonyi_obj.description_attrib.value
-            result_data[key] = badonyi_obj.score
+            result_data[key] = round(badonyi_obj.score, 3)
 
         return result_data
-    
+
 
     class Meta:
         model = Locus
