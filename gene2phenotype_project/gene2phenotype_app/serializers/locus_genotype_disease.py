@@ -271,25 +271,25 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         # Check LGD record history
         history_records = lgd_obj.history.all().values('history_user__first_name', 'history_user__last_name')
         # Check LGD cross cutting modifier history
-        history_records_ccm = LGDCrossCuttingModifier.history.filter(lgd=lgd_obj).values(
+        history_records_ccm = LGDCrossCuttingModifier.history.filter(id=lgd_obj.id).values(
                                     'history_user__first_name', 'history_user__last_name')
         # Check LGD panel history
-        history_records_lgdpanel = LGDPanel.history.filter(lgd=lgd_obj).values(
+        history_records_lgdpanel = LGDPanel.history.filter(id=lgd_obj.id).values(
                                     'history_user__first_name', 'history_user__last_name')
         # Check LGD phenotype history
-        history_records_lgdpheno = LGDPhenotype.history.filter(lgd=lgd_obj).values(
+        history_records_lgdpheno = LGDPhenotype.history.filter(id=lgd_obj.id).values(
                                     'history_user__first_name', 'history_user__last_name')
         # Check LGD publication history
-        history_records_lgdpublication = LGDPublication.history.filter(lgd=lgd_obj).values(
+        history_records_lgdpublication = LGDPublication.history.filter(id=lgd_obj.id).values(
                                     'history_user__first_name', 'history_user__last_name')
         # Check LGD variation GenCC consequence history
-        history_records_lgdvarcons = LGDVariantGenccConsequence.history.filter(lgd=lgd_obj).values(
+        history_records_lgdvarcons = LGDVariantGenccConsequence.history.filter(id=lgd_obj.id).values(
                                     'history_user__first_name', 'history_user__last_name')
         # Check LGD variation type history
-        history_records_lgdvartype = LGDVariantType.history.filter(lgd=lgd_obj).values(
+        history_records_lgdvartype = LGDVariantType.history.filter(id=lgd_obj.id).values(
                                     'history_user__first_name', 'history_user__last_name')
         # Check LGD variation type description history
-        history_records_lgdvartype_desc = LGDVariantTypeDescription.history.filter(lgd=lgd_obj).values(
+        history_records_lgdvartype_desc = LGDVariantTypeDescription.history.filter(id=lgd_obj.id).values(
                                     'history_user__first_name', 'history_user__last_name')
 
         for record in itertools.chain(history_records, history_records_ccm, history_records_lgdpanel, 
