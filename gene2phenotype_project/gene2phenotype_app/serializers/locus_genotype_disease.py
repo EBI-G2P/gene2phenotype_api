@@ -573,18 +573,20 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             is_deleted = 0
         )
 
-        # Get evidence - the mechanism evidence was validated in the view 'LGDUpdateMechanism'
-        # Example: {'pmid': '25099252', 'description': 'text', 'evidence_types': 
-        #          [{'primary_type': 'Rescue', 'secondary_type': ['Human', 'Patient Cells']}]}
-        lgd_instance.update_mechanism_evidence(lgd_instance, mechanism_evidence)
-
         # Save old molecular mechanism to delete it later
         old_mechanism_obj = lgd_instance.molecular_mechanism
 
         # Update LGD record
+        # The mechanism has to be updated in the locus_genotype_disease before the evidence is added
+        # Because the evidence is going to be linked to the new lgd.molecular_mechanism
         lgd_instance.molecular_mechanism = mechanism_obj
         lgd_instance.date_review = datetime.now()
         lgd_instance.save()
+
+        # Get evidence - the mechanism evidence was validated in the view 'LGDUpdateMechanism'
+        # Example: {'pmid': '25099252', 'description': 'text', 'evidence_types': 
+        #          [{'primary_type': 'Rescue', 'secondary_type': ['Human', 'Patient Cells']}]}
+        self.update_mechanism_evidence(lgd_instance, mechanism_evidence)
 
         # The old molecular mechanism can be deleted - the deletion is stored in the history table
         # As this method only allows to update 'undetermined' mechanisms, there is no evidence to be deleted
@@ -605,8 +607,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                                         ]}]
         """
         mechanism_obj = lgd_obj.molecular_mechanism
+
         for evidence in validated_data:
-            pmid = evidence.get("pmid")
+            pmid = evidence["pmid"]
 
             # Check if the PMID exists in G2P
             # When updating the mechanism the supporting pmid used as evidence
@@ -617,12 +620,12 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 # TODO: improve in future to insert new pmids + link them to the record
                 raise serializers.ValidationError({"message": f"pmid '{pmid}' not found in G2P"})
 
-            if evidence.get("description") != "":
-                description = evidence.get("description")
+            if evidence["description"] != "":
+                description = evidence["description"]
             else:
                 description = None
 
-            evidence_types = evidence.get("evidence_types")
+            evidence_types = evidence["evidence_types"]
             for evidence_type in evidence_types:
                 # primary_type is the evidence subtype ('rescue')
                 primary_type = evidence_type.get("primary_type", None)
@@ -630,7 +633,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError({"message": f"Empty evidence subtype"})
                 primary_type = primary_type.lower()
                 # secondary_type is the evidence value ('human')
-                secondary_type = evidence_type.get("secondary_type")
+                secondary_type = evidence_type["secondary_type"]
                 for m_type in secondary_type:
                     try:
                         cv_evidence_obj = CVMolecularMechanism.objects.get(

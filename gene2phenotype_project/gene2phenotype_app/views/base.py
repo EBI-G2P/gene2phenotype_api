@@ -59,6 +59,13 @@ class BaseUpdate(generics.UpdateAPIView):
         else:
             raise PermissionDenied(f"Cannot update '{data}' for ID '{stable_id}'")
 
+    def handle_update_exception(self, exception, context_message):
+        if hasattr(exception, 'detail') and 'message' in exception.detail:
+            error_message = exception.detail['message']
+            return Response({"error": f"{context_message}: {error_message}"}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            error_message = context_message
+            return Response({"error": f"{context_message}"}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
 def ListEndpoints(request):

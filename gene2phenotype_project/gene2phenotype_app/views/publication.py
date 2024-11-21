@@ -161,7 +161,7 @@ class LGDEditPublications(BaseUpdate):
                 Example for a record already linked to pmid '41':
                 { "publications":[
                         {
-                            "publication": { "pmid": 1234 },
+                            "publication": { "pmid": "1234" },
                             "comment": { "comment": "this is a comment", "is_public": 1 },
                             "families": { "families": 2, "consanguinity": "unknown", "ancestries": "african", "affected_individuals": 1 },
                             "phenotypes": [{
@@ -221,18 +221,18 @@ class LGDEditPublications(BaseUpdate):
                 if serializer_class.is_valid():
                     serializer_class.save()
                 else:
-                    response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    response = Response({"errors": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST)
 
                 # Add extra data linked to the publication
                 if "phenotypes" in publication:
                     # Expected structure:
                     #   { "phenotypes": [{ "accession": "HP:0003974", "publication": 1 }] }
-                    for pheno in publication["phenotypes"]:
-                        hpo_terms = pheno['hpo_terms']
+                    for phenotype in publication["phenotypes"]:
+                        hpo_terms = phenotype['hpo_terms']
                         for hpo in hpo_terms:
                             phenotype_data = {
                                 "accession": hpo["accession"],
-                                "publication": pheno["pmid"]
+                                "publication": phenotype["pmid"]
                             }
                             try:
                                 lgd_phenotype_serializer = LGDPhenotypeSerializer(
@@ -244,12 +244,12 @@ class LGDEditPublications(BaseUpdate):
                                     # save() is going to call create()
                                     lgd_phenotype_serializer.save()
                                 else:
-                                    response = Response({"errors": lgd_phenotype_serializer.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                                    response = Response({"errors": lgd_phenotype_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
                             except:
                                 accession = phenotype_data["accession"]
                                 return Response(
                                     {"errors": f"Could not insert phenotype '{accession}' for ID '{stable_id}'"},
-                                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                                    status=status.HTTP_400_BAD_REQUEST
                                 )
 
                 if "variant_types" in publication:
@@ -268,9 +268,13 @@ class LGDEditPublications(BaseUpdate):
                     lgd_serializer = LocusGenotypeDiseaseSerializer()
                     mechanism_obj = lgd.molecular_mechanism
 
-                    if mechanism_obj.mechanism.value != "undetermined":
+                    print("->", mechanism_obj.mechanism.value)
+                    print("->", mechanism_obj.mechanism_support.value)
+
+                    if(mechanism_obj.mechanism.value != "undetermined" or
+                       mechanism_obj.mechanism_support.value != "inferred"):
                         self.handle_no_update('molecular mechanism', stable_id)
-                    
+
                     # Build mechanism data
                     mechanism_data = { 
                         "molecular_mechanism":  publication["molecular_mechanism"]
@@ -285,39 +289,22 @@ class LGDEditPublications(BaseUpdate):
                     try:
                         lgd_serializer.update_mechanism(lgd, mechanism_data)
                     except Exception as e:
-                        if hasattr(e, 'detail') and 'message' in e.detail:
-                            return Response(
-                                {"error": f"Error while updating molecular mechanism: {e.detail['message']}"},
-                                status=status.HTTP_400_BAD_REQUEST
-                            )
-                        else:
-                            return Response(
-                                {"error": f"Error while updating molecular mechanism"},
-                                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                            )
+                        return self.handle_update_exception(e, "Error while updating molecular mechanism")
 
                 # If only the mechanism evidence is going to be updated, call method update_mechanism_evidence()
                 # update_mechanism_evidence() updates the 'date_review' of the LGD record
+                # TODO: but before adding evidence we have to check/update the mechanism support to "evidence"
                 elif "mechanism_evidence" in publication:
                     lgd_serializer = LocusGenotypeDiseaseSerializer()
                     try:
                         lgd_serializer.update_mechanism_evidence(lgd, publication["mechanism_evidence"])
                     except Exception as e:
-                        if hasattr(e, 'detail') and 'message' in e.detail:
-                            return Response(
-                            {"error": f"Error while updating molecular mechanism evidence: {e.detail['message']}"},
-                            status=status.HTTP_400_BAD_REQUEST
-                            )
-                        else:
-                            return Response(
-                            {"error": f"Error while updating molecular mechanism evidence"},
-                            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                        )
+                        return self.handle_update_exception(e, "Error while updating molecular mechanism evidence")
 
                 response = Response({'message': 'Publication added to the G2P entry successfully.'}, status=status.HTTP_201_CREATED)
 
         else:
-            response = Response({"errors": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            response = Response({"errors": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         return response
 

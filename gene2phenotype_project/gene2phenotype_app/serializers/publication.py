@@ -340,7 +340,7 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
         families = self.initial_data.get("families", None) # "families": { "families": 200, "consanguinity": "unknown", "ancestries": "african", "affected_individuals": 2 }
 
         if comment:
-            comment_text = comment.get("comment", None)
+            comment_text = comment["comment"]
 
             # Check if comment text is empty string
             if not comment_text or comment_text == "":
