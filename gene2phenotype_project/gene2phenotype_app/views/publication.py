@@ -268,9 +268,6 @@ class LGDEditPublications(BaseUpdate):
                     lgd_serializer = LocusGenotypeDiseaseSerializer()
                     mechanism_obj = lgd.molecular_mechanism
 
-                    print("->", mechanism_obj.mechanism.value)
-                    print("->", mechanism_obj.mechanism_support.value)
-
                     if(mechanism_obj.mechanism.value != "undetermined" or
                        mechanism_obj.mechanism_support.value != "inferred"):
                         self.handle_no_update('molecular mechanism', stable_id)
