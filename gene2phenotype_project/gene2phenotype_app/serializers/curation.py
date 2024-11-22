@@ -9,15 +9,15 @@ import json
 import pytz
 
 from ..models import (CurationData, Disease, User, LocusGenotypeDisease,
-                      Locus, Attrib, DiseaseOntologyTerm)
+                      Locus, Attrib, DiseaseOntologyTerm, CVMolecularMechanism)
 
 from .user import UserSerializer
 from .disease import CreateDiseaseSerializer, DiseaseOntologyTermSerializer
 from .locus_genotype_disease import (LocusGenotypeDiseaseSerializer,
                                      LGDCrossCuttingModifierSerializer,
-                                     MolecularMechanismSerializer,
                                      LGDVariantGenCCConsequenceSerializer,
-                                     LGDVariantTypeSerializer, LGDVariantTypeDescriptionSerializer)
+                                     LGDVariantTypeSerializer, LGDVariantTypeDescriptionSerializer,
+                                     MechanismSynopsisSerializer)
 from .stable_id import G2PStableIDSerializer
 from .phenotype import LGDPhenotypeSerializer
 from .publication import PublicationSerializer
@@ -142,7 +142,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 locus__name = json_data["locus"],
                 genotype__value = json_data["allelic_requirement"],
                 disease__name = json_data["disease"]["disease_name"],
-                molecular_mechanism__mechanism__value = json_data["molecular_mechanism"]["name"]
+                mechanism__value = json_data["molecular_mechanism"]["name"]
             )
 
             raise serializers.ValidationError({
@@ -452,17 +452,29 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 })
         ###############
 
-        ### Mechanism ###
-        # The curation form only supports one mechanism
-        # Curators cannot create a record with multiple mechanisms
-        # The evidence attaches the data to a publication - the new PMIDs
-        # have to already be stored in G2P
-        molecular_mechanism_obj = MolecularMechanismSerializer().create(
-            data.json_data["molecular_mechanism"],
-            data.json_data["mechanism_synopsis"],
-            data.json_data["mechanism_evidence"] # array of evidence values for each publication
-        )
-        #################################################################
+        # If the mechanism support is 'evidence' then the evidence has to be provided
+        # Check if data has been provided
+        mechanism_support = data.json_data["mechanism_support"]
+        if mechanism_support == "evidence" and not mechanism_evidence:
+            raise serializers.ValidationError({"message": f"Mechanism is missing the evidence"})
+
+        # Get mechanism value from controlled vocabulary table for molecular mechanism
+        try:
+            mechanism_obj = CVMolecularMechanism.objects.get(
+                value = mechanism_name,
+                type = "mechanism"
+            )
+        except CVMolecularMechanism.DoesNotExist:
+            raise serializers.ValidationError({"message": f"Invalid mechanism value '{mechanism_name}'"})
+
+        # Get mechanism support from controlled vocabulary table for molecular mechanism
+        try:
+            mechanism_support_obj = CVMolecularMechanism.objects.get(
+                value = mechanism_support,
+                type = "support"
+            )
+        except CVMolecularMechanism.DoesNotExist:
+            raise serializers.ValidationError({"message": f"Invalid mechanism support value '{mechanism_support}'"})
 
         ### Locus-Genotype-Disease ###
         lgd_data = {"locus": data.json_data["locus"],
@@ -472,11 +484,26 @@ class CurationDataSerializer(serializers.ModelSerializer):
                     "confidence": data.json_data["confidence"],
                     "phenotypes": data.json_data["phenotypes"],
                     "variant_types": data.json_data["variant_types"],
-                    "molecular_mechanism": molecular_mechanism_obj
+                    "mechanism": mechanism_obj,
+                    "mechanism_support": mechanism_support_obj,
+                    "mechanism_description": mechanism_description
                 }
 
         lgd_obj = LocusGenotypeDiseaseSerializer(context={'user':user_obj}).create(lgd_data, disease_obj, publications_list)
         ##############################
+
+        ### Mechanism synopsis + evidence ###
+        # A record can only have one molecular mechanism
+        # The mechanism evidence attaches the evidence data to a publication
+        # the PMIDs have to already be stored in G2P
+        mechanism_synopsis_obj = MechanismSynopsisSerializer().create(
+            data.json_data["mechanism_synopsis"]
+        )
+
+        # TODO: evidence
+        # data.json_data["mechanism_evidence"] # array of evidence values for each publication
+
+        #################################################################
 
         ### Insert data attached to the record Locus-Genotype-Disease ###
 

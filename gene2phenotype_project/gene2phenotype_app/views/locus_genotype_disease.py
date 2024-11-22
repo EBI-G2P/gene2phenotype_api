@@ -12,17 +12,16 @@ from gene2phenotype_app.serializers import (UserSerializer, LocusGenotypeDisease
                                             LGDCommentSerializer, LGDVariantConsequenceListSerializer,
                                             LGDVariantGenCCConsequenceSerializer, LGDCrossCuttingModifierListSerializer,
                                             LGDVariantTypeListSerializer, LGDVariantTypeSerializer,
-                                            LGDVariantTypeDescriptionListSerializer, LGDVariantTypeDescriptionSerializer,
-                                            MolecularMechanismSerializer)
+                                            LGDVariantTypeDescriptionListSerializer, LGDVariantTypeDescriptionSerializer)
 
 from gene2phenotype_app.models import (User, Attrib, LocusGenotypeDisease, OntologyTerm,
                                        G2PStableID, CVMolecularMechanism, LGDCrossCuttingModifier, 
                                        LGDVariantGenccConsequence, LGDVariantType, LGDVariantTypeComment,
                                        LGDVariantTypeDescription, LGDPanel, LGDPhenotype, LGDPhenotypeSummary,
-                                       MolecularMechanism, MolecularMechanismEvidence, LGDPublication,
+                                       MolecularMechanismEvidence, MolecularMechanismSynopsis, LGDPublication,
                                        LGDComment)
 
-from .base import BaseView, BaseAdd, BaseUpdate
+from .base import BaseUpdate
 
 
 class ListMolecularMechanisms(generics.ListAPIView):
@@ -31,8 +30,7 @@ class ListMolecularMechanisms(generics.ListAPIView):
         Only type 'evidence' has a defined subtype.
 
         Returns:
-            Returns:
-                (dict) response: list of molecular mechanisms by type and subtype.
+            (dict) response: list of molecular mechanisms by type and subtype.
     """
 
     queryset = CVMolecularMechanism.objects.all().values('type', 'subtype', 'value', 'description').order_by('type')
@@ -219,9 +217,10 @@ class LGDUpdateConfidence(BaseUpdate):
         else:
             return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+# TODO: review this method
 class LGDUpdateMechanism(BaseUpdate):
     http_method_names = ['patch', 'options']
-    serializer_class = MolecularMechanismSerializer # TO CHECK
+    serializer_class = LocusGenotypeDiseaseSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
@@ -250,8 +249,8 @@ class LGDUpdateMechanism(BaseUpdate):
         else:
             # Only 'undetermined' mechanisms can be updated
             lgd_obj = queryset.first()
-            if not (lgd_obj.molecular_mechanism.mechanism.value == "undetermined" 
-                    and lgd_obj.molecular_mechanism.mechanism_support.value == "inferred"):
+            if not (lgd_obj.mechanism.value == "undetermined" 
+                    and lgd_obj.mechanism_support.value == "inferred"):
                 self.handle_no_update('molecular mechanism', stable_id)
 
             return queryset
@@ -1107,13 +1106,9 @@ class LocusGenotypeDiseaseDelete(APIView):
         # Delete variant consequences
         LGDVariantGenccConsequence.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
 
-        # Delete molecular mechanism + evidence (if applicable)
-        lgd_mechanism_set = MolecularMechanism.objects.filter(id=lgd_obj.molecular_mechanism.id, is_deleted=0)
-
-        for lgd_mechanism_obj in lgd_mechanism_set:
-            MolecularMechanismEvidence.objects.filter(molecular_mechanism=lgd_mechanism_obj, is_deleted=0).update(is_deleted=1)
-            lgd_mechanism_obj.is_deleted = 1
-            lgd_mechanism_obj.save()
+        # Delete mechanism synopsis + evidence
+        MolecularMechanismSynopsis.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
+        MolecularMechanismEvidence.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
 
         # Delete publications
         LGDPublication.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
