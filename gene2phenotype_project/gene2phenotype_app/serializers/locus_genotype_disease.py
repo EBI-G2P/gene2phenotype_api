@@ -365,7 +365,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         genotype = data.get('allelic_requirement') # allelic requirement
         panels = data.get('panels') # Array of panel names
         confidence = data.get('confidence') # confidence level and justification
-        molecular_mechanism_obj = data.get('molecular_mechanism')
+        mechanism_obj = data.get('mechanism')
+        mechanism_support_obj = data.get('mechanism_support')
 
         if not panels or not publications_list:
             raise serializers.ValidationError({"message": f"Missing data to create the G2P record {stable_id_obj.stable_id}"})
@@ -413,7 +414,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 stable_id = stable_id_obj,
                 genotype = genotype_obj,
                 disease = disease_obj,
-                molecular_mechanism = molecular_mechanism_obj,
+                mechanism = mechanism_obj,
+                mechanism_support = mechanism_support_obj,
                 confidence = confidence_obj,
                 confidence_support = confidence_support,
                 is_reviewed = 1,

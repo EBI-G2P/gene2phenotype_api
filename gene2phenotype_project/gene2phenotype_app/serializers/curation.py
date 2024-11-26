@@ -216,15 +216,17 @@ class CurationDataSerializer(serializers.ModelSerializer):
         locus = input_dictionary["locus"]
         allelic_requirement = input_dictionary["allelic_requirement"]
         disease = input_dictionary["disease"]["disease_name"]
+        mechanism = input_dictionary["molecular_mechanism"]["name"]
 
-        if locus and allelic_requirement and disease:
-            locus_queryset = Locus.objects.filter(name=locus) # Get locus
-            genotype_queryset = Attrib.objects.filter(value=allelic_requirement) # Get genotype value from attrib table
-            disease_queryset = Disease.objects.filter(name=disease) # TODO: improve
-
+        if locus and allelic_requirement and disease and mechanism:
             # Get LGD: deleted entries are also returned
             # If LGD is deleted then we should warn the curator
-            lgd_obj = LocusGenotypeDisease.objects.filter(locus=locus_queryset.first(), genotype=genotype_queryset.first(), disease=disease_queryset.first())
+            lgd_obj = LocusGenotypeDisease.objects.filter(
+                locus__name=locus,
+                genotype__value=allelic_requirement,
+                disease__name=disease,
+                mechanism__value=mechanism
+            )
 
             if len(lgd_obj) > 0:
                 if lgd_obj.first().is_deleted == 0:
@@ -233,7 +235,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError({"message": f"This is an old G2P record '{lgd_obj.stable_id.stable_id}'"})
 
         else:
-            raise serializers.ValidationError({"message" : "To publish a curated entry, locus, allelic requirement and disease are neccessary"})
+            raise serializers.ValidationError({"message" : "To publish a curated record, locus, allelic requirement, disease and molecular mechanism are necessary"})
 
     def get_entry_info_from_json_data(self, json_data):
         """
@@ -265,7 +267,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         """
-            Create a new entry in the CurationData table.
+            Create a new CurationData object.
         
             Args:
                 (dict) validated_data: Validated data containing the JSON data to be stored.
