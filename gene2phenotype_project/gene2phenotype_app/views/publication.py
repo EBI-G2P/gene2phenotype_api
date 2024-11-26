@@ -12,7 +12,7 @@ from gene2phenotype_app.serializers import (PublicationSerializer, LGDPublicatio
 
 from gene2phenotype_app.models import (Publication, LocusGenotypeDisease, LGDPublication,
                                        LGDPhenotype, LGDPhenotypeSummary, LGDVariantType,
-                                       LGDVariantTypeDescription, MolecularMechanismEvidence)
+                                       LGDVariantTypeDescription, LGDMolecularMechanismEvidence)
 
 from .base import BaseAdd, BaseUpdate
 
@@ -409,13 +409,13 @@ class LGDEditPublications(BaseUpdate):
         # If the mechanism support is evidence then get the list of MolecularMechanismEvidence
         # Different types of evidence can be linked to the same publication
         if(lgd_mechanism_obj and lgd_mechanism_obj.mechanism_support.value == "evidence"):
-            MolecularMechanismEvidence.objects.filter(
+            LGDMolecularMechanismEvidence.objects.filter(
                 molecular_mechanism=lgd_mechanism_obj,
                 publication=lgd_publication_obj.publication,
                 is_deleted=0).update(is_deleted=1)
 
             # Check if MolecularMechanism has evidence linked to other publications
-            lgd_check_evidence_set = MolecularMechanismEvidence.objects.filter(
+            lgd_check_evidence_set = LGDMolecularMechanismEvidence.objects.filter(
                 molecular_mechanism=lgd_mechanism_obj,
                 is_deleted=0)
 

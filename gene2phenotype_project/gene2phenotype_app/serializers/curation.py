@@ -9,7 +9,8 @@ import json
 import pytz
 
 from ..models import (CurationData, Disease, User, LocusGenotypeDisease,
-                      Locus, Attrib, DiseaseOntologyTerm, CVMolecularMechanism)
+                      Locus, DiseaseOntologyTerm, CVMolecularMechanism,
+                      Publication)
 
 from .user import UserSerializer
 from .disease import CreateDiseaseSerializer, DiseaseOntologyTermSerializer
@@ -17,7 +18,7 @@ from .locus_genotype_disease import (LocusGenotypeDiseaseSerializer,
                                      LGDCrossCuttingModifierSerializer,
                                      LGDVariantGenCCConsequenceSerializer,
                                      LGDVariantTypeSerializer, LGDVariantTypeDescriptionSerializer,
-                                     MechanismSynopsisSerializer)
+                                     LGDMechanismSynopsisSerializer, LGDMechanismEvidenceSerializer)
 from .stable_id import G2PStableIDSerializer
 from .phenotype import LGDPhenotypeSerializer
 from .publication import PublicationSerializer
@@ -487,21 +488,64 @@ class CurationDataSerializer(serializers.ModelSerializer):
         lgd_obj = LocusGenotypeDiseaseSerializer(context={'user':user_obj}).create(lgd_data, disease_obj, publications_list)
         ##############################
 
+        ### Insert data attached to the record Locus-Genotype-Disease ###
+
         # ### Mechanism synopsis + evidence ###
         # # A record can only have one molecular mechanism
         # # The mechanism evidence attaches the evidence data to a publication
         # # the PMIDs have to already be stored in G2P
-        # mechanism_synopsis_obj = MechanismSynopsisSerializer().create(
-        #     data.json_data["mechanism_synopsis"]
-        # )
+        try:
+            lgd_mechanism_synopsis_serializer = LGDMechanismSynopsisSerializer(
+                data={
+                    "synopsis": data.json_data["mechanism_synopsis"]["name"],
+                    "synopsis_support": data.json_data["mechanism_synopsis"]["support"]
+                },
+                context={"lgd": lgd_obj}
+            )
 
-        # # TODO: evidence
-        # mechanism_evidence_obj = MechanismEvidenceSerializer().create(
-        #     data.json_data["mechanism_evidence"]
-        # )
+            # Validate the input data
+            if lgd_mechanism_synopsis_serializer.is_valid(raise_exception=True):
+                # save() is going to call create()
+                lgd_mechanism_synopsis_serializer.save()
+        except serializers.ValidationError as e:
+            raise serializers.ValidationError({
+                "error" : str(e)
+            })
+
+        for mechanism_evidence in data.json_data["mechanism_evidence"]:
+            pmid = mechanism_evidence["pmid"]
+
+            # Get the publication object
+            try:
+                publication_evidence_obj = Publication.objects.get(pmid=pmid)
+            except Publication.DoesNotExist:
+                raise serializers.ValidationError({
+                    "message" : f"Invalid publication '{pmid}'"
+                })
+
+            for evidence_type in mechanism_evidence["evidence_types"]:
+                try:
+                    lgd_mechanism_evidence_serializer = LGDMechanismEvidenceSerializer(
+                        data={
+                            "description": mechanism_evidence["description"],
+                            "evidence": evidence_type, # it does not have the same format as the evidence defined in the model
+                            "publication": pmid
+                        },
+                        context={
+                            "lgd": lgd_obj,
+                            "publication": publication_evidence_obj
+                        }
+                    )
+
+                    # Validate the input data
+                    if lgd_mechanism_evidence_serializer.is_valid(raise_exception=True):
+                        # save() is going to call create()
+                        lgd_mechanism_evidence_serializer.save()
+                except serializers.ValidationError as e:
+                    raise serializers.ValidationError({
+                        "error" : str(e)
+                    })
         # #################################################################
-
-        ### Insert data attached to the record Locus-Genotype-Disease ###
 
         ### Phenotypes ###
         # Phenotype format: {

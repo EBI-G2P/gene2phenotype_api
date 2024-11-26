@@ -18,7 +18,7 @@ from gene2phenotype_app.models import (User, Attrib, LocusGenotypeDisease, Ontol
                                        G2PStableID, CVMolecularMechanism, LGDCrossCuttingModifier, 
                                        LGDVariantGenccConsequence, LGDVariantType, LGDVariantTypeComment,
                                        LGDVariantTypeDescription, LGDPanel, LGDPhenotype, LGDPhenotypeSummary,
-                                       MolecularMechanismEvidence, MolecularMechanismSynopsis, LGDPublication,
+                                       LGDMolecularMechanismEvidence, LGDMolecularMechanismSynopsis, LGDPublication,
                                        LGDComment)
 
 from .base import BaseUpdate
@@ -1107,8 +1107,8 @@ class LocusGenotypeDiseaseDelete(APIView):
         LGDVariantGenccConsequence.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
 
         # Delete mechanism synopsis + evidence
-        MolecularMechanismSynopsis.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
-        MolecularMechanismEvidence.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
+        LGDMolecularMechanismSynopsis.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
+        LGDMolecularMechanismEvidence.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
 
         # Delete publications
         LGDPublication.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)

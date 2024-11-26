@@ -82,7 +82,7 @@ class LocusGenotypeDisease(models.Model):
             models.Index(fields=['is_reviewed'])
         ]
 
-class MolecularMechanismSynopsis(models.Model):
+class LGDMolecularMechanismSynopsis(models.Model):
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT, null=False)
     synopsis = models.ForeignKey("CVMolecularMechanism", related_name='synopsis', on_delete=models.PROTECT)
@@ -96,7 +96,7 @@ class MolecularMechanismSynopsis(models.Model):
             models.Index(fields=['lgd'])
         ]
 
-class MolecularMechanismEvidence(models.Model):
+class LGDMolecularMechanismEvidence(models.Model):
     id = models.AutoField(primary_key=True)
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     evidence = models.ForeignKey("CVMolecularMechanism", related_name="evidence", on_delete=models.PROTECT, default=None)

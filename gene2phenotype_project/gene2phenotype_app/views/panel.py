@@ -11,7 +11,7 @@ from datetime import datetime
 
 from gene2phenotype_app.models import (Panel, User, LocusGenotypeDisease,
                                        LGDVariantType, LGDVariantGenccConsequence,
-                                       MolecularMechanismEvidence, LGDPhenotype,
+                                       LGDMolecularMechanismEvidence, LGDPhenotype,
                                        LGDPublication, LGDCrossCuttingModifier,
                                        LGDPanel)
 
@@ -273,7 +273,7 @@ def PanelDownload(request, name):
 
     # Preload molecular mechanism synopsis and evidence
     mechanism_evidence_data = {} # key = lgd_id; value = evidence
-    queryset_lgd_mechanism_evidence = MolecularMechanismEvidence.objects.filter(
+    queryset_lgd_mechanism_evidence = LGDMolecularMechanismEvidence.objects.filter(
         is_deleted=0).select_related('lgd__id'
         ).values(
             'lgd__id',
