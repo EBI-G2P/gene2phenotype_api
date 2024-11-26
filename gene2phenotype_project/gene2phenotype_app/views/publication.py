@@ -171,35 +171,36 @@ class LGDEditPublications(BaseUpdate):
                                                         "accession": "HP:0002310",
                                                         "description": "" }]
                                     }],
-                            "variant_types": [{
-                                        "comment": "",
-                                        "de_novo": false,
-                                        "inherited": false,
-                                        "nmd_escape": false,
-                                        "primary_type": "protein_changing",
-                                        "secondary_type": "inframe_insertion",
-                                        "supporting_papers": ["41"],
-                                        "unknown_inheritance": true
-                                    }],
-                            "variant_descriptions": [{
-                                        "description": "HGVS:c.9Pro",
-                                        "publication": "41"
-                                    }],
-                            "molecular_mechanism": {
-                                "name": "gain of function",
-                                "support": "evidence"
-                            },
-                            "mechanism_synopsis": {
-                                "name": "",
-                                "support": ""
-                            },
-                            "mechanism_evidence": [{
-                                        "pmid": "1234",
-                                        "description": "This is new evidence for the existing mechanism evidence.",
-                                        "evidence_types": [ { "primary_type": "Function",
-                                                              "secondary_type": [ "Biochemical" ]}
-                                        ]}]
-                }]}
+                        }],
+                "variant_types": [{
+                            "comment": "",
+                            "de_novo": false,
+                            "inherited": false,
+                            "nmd_escape": false,
+                            "primary_type": "protein_changing",
+                            "secondary_type": "inframe_insertion",
+                            "supporting_papers": ["41"],
+                            "unknown_inheritance": true
+                        }],
+                "variant_descriptions": [{
+                            "description": "HGVS:c.9Pro",
+                            "publication": "41"
+                        }],
+                "molecular_mechanism": {
+                    "name": "gain of function",
+                    "support": "evidence"
+                },
+                "mechanism_synopsis": {
+                    "name": "",
+                    "support": ""
+                },
+                "mechanism_evidence": [{
+                            "pmid": "1234",
+                            "description": "This is new evidence for the existing mechanism evidence.",
+                            "evidence_types": [ { "primary_type": "Function",
+                                                    "secondary_type": [ "Biochemical" ]}
+                            ]}]
+            }
         """
         user = self.request.user
 
