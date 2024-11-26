@@ -64,7 +64,6 @@ class LocusGenotypeDisease(models.Model):
     disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
     mechanism = models.ForeignKey("CVMolecularMechanism", related_name='mechanism', on_delete=models.PROTECT, null=False)
     mechanism_support = models.ForeignKey("CVMolecularMechanism", related_name='mechanism_support', on_delete=models.PROTECT, null=False)
-    mechanism_description = models.TextField(null=True)
     confidence = models.ForeignKey("Attrib", related_name='confidence', on_delete=models.PROTECT) # confidence value
     confidence_support = models.TextField(null=True, default=None) # text summary to support the confidence value
     date_review = models.DateTimeField(null=True)
@@ -92,7 +91,7 @@ class MolecularMechanismSynopsis(models.Model):
     history = HistoricalRecords()
 
     class Meta:
-        db_table = "molecular_mechanism_synopsis"
+        db_table = "lgd_mechanism_synopsis"
         indexes = [
             models.Index(fields=['lgd'])
         ]
@@ -107,7 +106,7 @@ class MolecularMechanismEvidence(models.Model):
     history = HistoricalRecords()
 
     class Meta:
-        db_table = "molecular_mechanism_evidence"
+        db_table = "lgd_mechanism_evidence"
         unique_together = ["lgd", "evidence", "publication"]
 
 class LGDCrossCuttingModifier(models.Model):

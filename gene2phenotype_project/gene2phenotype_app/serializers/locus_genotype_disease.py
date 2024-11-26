@@ -80,10 +80,39 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
     def get_molecular_mechanism(self, id):
         """
-            Molecular mechanisms associated with the LGD record.
+            Molecular mechanism associated with the LGD record.
+            If available, also returns the evidence.
         """
-        mechanism = CVMolecularMechanism(id.mechanism.value).data
-        return mechanism
+        mechanism = id.mechanism.value
+        mechanism_support = id.mechanism_support.value
+        mechanism_synopsis = []
+        mechanism_evidence = {}
+
+        queryset_synopsis = MolecularMechanismSynopsis.objects.filter(lgd_id=id, is_deleted=0).prefetch_related()
+        queryset_evidence = MolecularMechanismEvidence.objects.filter(lgd_id=id, is_deleted=0).prefetch_related()
+
+        for synopsis_data in queryset_synopsis:
+            mechanism_synopsis.append({
+                "synopsis": synopsis_data.synopsis.value,
+                "support": synopsis_data.synopsis_support.value
+            })
+
+        # TODO: update
+        for evidence_data in queryset_evidence:
+            pmid = evidence_data.publication.pmid
+            if pmid not in evidence_data:
+                mechanism_evidence[pmid] = ""
+            else:
+                mechanism_evidence[pmid] = ""
+
+        mechanism_result = {
+            "mechanism": mechanism,
+            "mechanism_support": mechanism_support,
+            "synopsis": mechanism_synopsis,
+            "evidence": mechanism_evidence
+        }
+
+        return mechanism_result
 
     def get_cross_cutting_modifier(self, id):
         """

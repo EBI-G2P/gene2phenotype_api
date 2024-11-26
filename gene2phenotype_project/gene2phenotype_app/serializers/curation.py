@@ -245,8 +245,6 @@ class CurationDataSerializer(serializers.ModelSerializer):
             - "panel": Retrieved from the "panels" key.
             - "confidence": Retrieved from the key "level" inside the "confidence" dictionary.
 
-            If any of the keys are missing, the method returns `None` for the corresponding fields.
-
             Args:
                 json_data (dict): A dictionary containing the JSON data to extract information from.
 
@@ -452,13 +450,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 })
         ###############
 
-        # If the mechanism support is 'evidence' then the evidence has to be provided
-        # Check if data has been provided
-        mechanism_support = data.json_data["mechanism_support"]
-        if mechanism_support == "evidence" and not mechanism_evidence:
-            raise serializers.ValidationError({"message": f"Mechanism is missing the evidence"})
-
         # Get mechanism value from controlled vocabulary table for molecular mechanism
+        mechanism_name = data.json_data["molecular_mechanism"]["name"]
         try:
             mechanism_obj = CVMolecularMechanism.objects.get(
                 value = mechanism_name,
@@ -468,6 +461,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"message": f"Invalid mechanism value '{mechanism_name}'"})
 
         # Get mechanism support from controlled vocabulary table for molecular mechanism
+        mechanism_support = data.json_data["molecular_mechanism"]["support"]
         try:
             mechanism_support_obj = CVMolecularMechanism.objects.get(
                 value = mechanism_support,
@@ -485,25 +479,25 @@ class CurationDataSerializer(serializers.ModelSerializer):
                     "phenotypes": data.json_data["phenotypes"],
                     "variant_types": data.json_data["variant_types"],
                     "mechanism": mechanism_obj,
-                    "mechanism_support": mechanism_support_obj,
-                    "mechanism_description": mechanism_description
+                    "mechanism_support": mechanism_support_obj
                 }
 
         lgd_obj = LocusGenotypeDiseaseSerializer(context={'user':user_obj}).create(lgd_data, disease_obj, publications_list)
         ##############################
 
-        ### Mechanism synopsis + evidence ###
-        # A record can only have one molecular mechanism
-        # The mechanism evidence attaches the evidence data to a publication
-        # the PMIDs have to already be stored in G2P
-        mechanism_synopsis_obj = MechanismSynopsisSerializer().create(
-            data.json_data["mechanism_synopsis"]
-        )
+        # ### Mechanism synopsis + evidence ###
+        # # A record can only have one molecular mechanism
+        # # The mechanism evidence attaches the evidence data to a publication
+        # # the PMIDs have to already be stored in G2P
+        # mechanism_synopsis_obj = MechanismSynopsisSerializer().create(
+        #     data.json_data["mechanism_synopsis"]
+        # )
 
-        # TODO: evidence
-        # data.json_data["mechanism_evidence"] # array of evidence values for each publication
-
-        #################################################################
+        # # TODO: evidence
+        # mechanism_evidence_obj = MechanismEvidenceSerializer().create(
+        #     data.json_data["mechanism_evidence"]
+        # )
+        # #################################################################
 
         ### Insert data attached to the record Locus-Genotype-Disease ###
 

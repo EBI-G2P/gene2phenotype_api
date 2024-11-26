@@ -20,7 +20,7 @@ from .locus_genotype_disease import (LocusGenotypeDiseaseSerializer, LGDCommentS
                                      LGDCrossCuttingModifierListSerializer, LGDCrossCuttingModifierSerializer,
                                      LGDVariantTypeListSerializer, LGDVariantTypeSerializer,
                                      LGDVariantTypeDescriptionListSerializer, LGDVariantTypeDescriptionSerializer,
-                                     MolecularMechanismSerializer)
+                                     MechanismSynopsisSerializer)
 
 from .stable_id import G2PStableIDSerializer
 
