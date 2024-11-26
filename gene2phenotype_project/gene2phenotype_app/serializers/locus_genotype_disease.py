@@ -544,9 +544,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         # The mechanism synopsis is optional
         cv_synopsis_obj = None
         cv_synopsis_support_obj = None
-        if mechanism_synopsis is not None and mechanism_synopsis.get("name", "") != "":
-            mechanism_synopsis_value = mechanism_synopsis.get("name")
-            mechanism_synopsis_support = mechanism_synopsis.get("support")
+        if mechanism_synopsis and mechanism_synopsis["name"] != "":
+            mechanism_synopsis_value = mechanism_synopsis["name"]
+            mechanism_synopsis_support = mechanism_synopsis["support"]
 
             try:
                 cv_synopsis_obj = CVMolecularMechanism.objects.get(
