@@ -263,6 +263,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         for comment in lgd_comments:
             text = { 'text':comment.comment,
                      'date':comment.date }
+            # authenticated users can have access to the user name
+            if authenticated_user == 1:
+                text['user'] = f"{comment.user.first_name} {comment.user.last_name}"
             data.append(text)
 
         return data
@@ -297,25 +300,25 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         # Check LGD record history
         history_records = lgd_obj.history.all().values('history_user__first_name', 'history_user__last_name')
         # Check LGD cross cutting modifier history
-        history_records_ccm = LGDCrossCuttingModifier.history.filter(lgd=lgd_obj).values(
+        history_records_ccm = LGDCrossCuttingModifier.history.filter(id=lgd_obj.id).values(
                                     'history_user__first_name', 'history_user__last_name')
         # Check LGD panel history
-        history_records_lgdpanel = LGDPanel.history.filter(lgd=lgd_obj).values(
+        history_records_lgdpanel = LGDPanel.history.filter(id=lgd_obj.id).values(
                                     'history_user__first_name', 'history_user__last_name')
         # Check LGD phenotype history
-        history_records_lgdpheno = LGDPhenotype.history.filter(lgd=lgd_obj).values(
+        history_records_lgdpheno = LGDPhenotype.history.filter(id=lgd_obj.id).values(
                                     'history_user__first_name', 'history_user__last_name')
         # Check LGD publication history
-        history_records_lgdpublication = LGDPublication.history.filter(lgd=lgd_obj).values(
+        history_records_lgdpublication = LGDPublication.history.filter(id=lgd_obj.id).values(
                                     'history_user__first_name', 'history_user__last_name')
         # Check LGD variation GenCC consequence history
-        history_records_lgdvarcons = LGDVariantGenccConsequence.history.filter(lgd=lgd_obj).values(
+        history_records_lgdvarcons = LGDVariantGenccConsequence.history.filter(id=lgd_obj.id).values(
                                     'history_user__first_name', 'history_user__last_name')
         # Check LGD variation type history
-        history_records_lgdvartype = LGDVariantType.history.filter(lgd=lgd_obj).values(
+        history_records_lgdvartype = LGDVariantType.history.filter(id=lgd_obj.id).values(
                                     'history_user__first_name', 'history_user__last_name')
         # Check LGD variation type description history
-        history_records_lgdvartype_desc = LGDVariantTypeDescription.history.filter(lgd=lgd_obj).values(
+        history_records_lgdvartype_desc = LGDVariantTypeDescription.history.filter(id=lgd_obj.id).values(
                                     'history_user__first_name', 'history_user__last_name')
 
         for record in itertools.chain(history_records, history_records_ccm, history_records_lgdpanel, 
@@ -654,7 +657,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 primary_type = evidence_type.get("primary_type", None)
                 if not primary_type:
                     raise serializers.ValidationError({"message": f"Empty evidence subtype"})
-                primary_type = primary_type.lower()
+                primary_type = primary_type.replace(" ", "_").lower()
                 # secondary_type is the evidence value ('human')
                 secondary_type = evidence_type["secondary_type"]
                 for m_type in secondary_type:

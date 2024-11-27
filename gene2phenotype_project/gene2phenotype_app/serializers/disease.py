@@ -154,24 +154,18 @@ class DiseaseDetailSerializer(DiseaseSerializer):
             If the user is non-authenticated:
                 - only returns records linked to visible panels
         """
-        # TODO: improve query, this can be done in a single query
-        lgd_list = LocusGenotypeDisease.objects.filter(disease=id, is_deleted=0)
-
         if user.is_authenticated:
-            lgd_select = lgd_list.select_related('disease', 'genotype', 'confidence', 'mechanism'
+            lgd_select = LocusGenotypeDisease.objects.filter(disease=id, is_deleted=0).select_related('locus', 'genotype', 'confidence', 'mechanism'
                                                ).prefetch_related('lgd_panel', 'panel', 'lgd_variant_gencc_consequence', 'lgd_variant_type', 'g2pstable_id'
                                                                   ).order_by('-date_review')
 
         else:
-            filters = (
-                Q(lgdpanel__panel__is_visible=1)
-            )
+            lgd_select = LocusGenotypeDisease.objects.filter(disease=id, is_deleted=0, lgdpanel__panel__is_visible=1).select_related(
+                'locus', 'genotype', 'confidence', 'mechanism'
+                ).prefetch_related('lgd_panel', 'panel', 'lgd_variant_gencc_consequence', 'lgd_variant_type', 'g2pstable_id'
+                                    ).order_by('-date_review')
 
-            lgd_select = lgd_list.filter(filters).select_related('disease', 'genotype', 'confidence', 'mechanism'
-                                               ).prefetch_related('lgd_panel', 'panel', 'lgd_variant_gencc_consequence', 'lgd_variant_type', 'g2pstable_id'
-                                                                  ).order_by('-date_review')
-
-        lgd_objects_list = list(lgd_select.values('disease__name',
+        lgd_objects_list = list(lgd_select.values('locus__name',
                                                   'lgdpanel__panel__name',
                                                   'stable_id__stable_id', # to get the stable_id stableID
                                                   'genotype__value',
@@ -192,7 +186,7 @@ class DiseaseDetailSerializer(DiseaseSerializer):
                 if lgd_obj['lgdvarianttype__variant_type_ot__term'] is not None:
                     variant_types.append(lgd_obj['lgdvarianttype__variant_type_ot__term'])
 
-                aggregated_data[lgd_obj['stable_id__stable_id']] = { 'disease':lgd_obj['disease__name'],
+                aggregated_data[lgd_obj['stable_id__stable_id']] = { 'locus':lgd_obj['locus__name'],
                                                           'genotype':lgd_obj['genotype__value'],
                                                           'confidence':lgd_obj['confidence__value'],
                                                           'panels':panels,
