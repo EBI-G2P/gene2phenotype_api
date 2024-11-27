@@ -97,13 +97,20 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 "support": synopsis_data.synopsis_support.value
             })
 
-        # TODO: update
         for evidence_data in queryset_evidence:
             pmid = evidence_data.publication.pmid
+            evidence_type = evidence_data.evidence.subtype.replace("_", " ").title()
+            evidence_value = evidence_data.evidence.value.title()
+
             if pmid not in mechanism_evidence:
-                mechanism_evidence[pmid] = ""
+                mechanism_evidence[pmid] = { evidence_type : [evidence_value] }
+
             else:
-                mechanism_evidence[pmid] = ""
+                existing_evidence = mechanism_evidence[pmid]
+                if evidence_type in existing_evidence:
+                    mechanism_evidence[pmid][evidence_type].append(evidence_value)
+                else:
+                    mechanism_evidence[pmid][evidence_type] = [evidence_value]
 
         mechanism_result = {
             "mechanism": mechanism,
@@ -609,8 +616,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         # Update LGD record
         # The mechanism has to be updated in the locus_genotype_disease before the evidence is added
         # Because the evidence is going to be linked to the new lgd.molecular_mechanism
-        lgd_instance.mechanism = cv_mechanism_obj,
-        lgd_instance.mechanism_support = cv_support_obj,
+        lgd_instance.mechanism = cv_mechanism_obj
+        lgd_instance.mechanism_support = cv_support_obj
         lgd_instance.date_review = datetime.now()
         lgd_instance.save()
 
