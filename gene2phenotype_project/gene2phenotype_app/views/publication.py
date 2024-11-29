@@ -211,9 +211,9 @@ class LGDEditPublications(BaseUpdate):
 
         if serializer_list.is_valid():
             publications_data = serializer_list.validated_data.get('publications') # the pmids are mandatory
-            phenotypes_data = serializer_list.validated_data.get('phenotypes', None) # optional
-            variant_types_data = serializer_list.validated_data.get('variant_types', None) # optional
-            variant_descriptions_data = serializer_list.validated_data.get('variant_descriptions', None) # optional
+            phenotypes_data = serializer_list.validated_data.get('phenotypes', []) # optional
+            variant_types_data = serializer_list.validated_data.get('variant_types', []) # optional
+            variant_descriptions_data = serializer_list.validated_data.get('variant_descriptions', []) # optional
             mechanism_data = serializer_list.validated_data.get('molecular_mechanism', None) # optional
             mechanism_synopsis_data = serializer_list.validated_data.get('mechanism_synopsis', None) # optional
             mechanism_evidence_data = serializer_list.validated_data.get('mechanism_evidence', None) # optional
