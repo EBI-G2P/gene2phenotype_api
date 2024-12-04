@@ -218,11 +218,11 @@ class PublicationSerializer(serializers.ModelSerializer):
             families to the existing PMID.
             This method is called when publishing a record.
 
-            The extra fields 'comment' and 'families' are passed in the context.
+            The PMID is mandatory, while comment and families are optional.
 
             Args:
                 (dict) validated_data: valid PublicationSerializer fields 
-                                       accepted fields are: pmid, title, authors, year
+                                       accepted fields are: pmid, comment, families
             
             Returns:
                     Publication object
@@ -230,11 +230,11 @@ class PublicationSerializer(serializers.ModelSerializer):
             Raises:
                     Invalid PMID
         """
-        pmid = validated_data.get('pmid') # serializer fields
-        comment = validated_data.get('comment') # extra data - comment
-        number_of_families = validated_data.get('families') # extra data - families reported in publication
+        pmid = validated_data['pmid'] # serializer fields
+        comment = validated_data['comment'] # extra data - comment
+        number_of_families = validated_data['families'] # extra data - families reported in publication
 
-        user_obj = self.context.get('user')
+        user_obj = self.context['user']
 
         try:
             publication_obj = Publication.objects.get(pmid=pmid)
@@ -271,8 +271,9 @@ class PublicationSerializer(serializers.ModelSerializer):
                 context={'user': user_obj}
             ).create(comment, publication_obj)
 
-        # Add family info linked to publication
-        if number_of_families is not None:
+        # Add family info linked to publication - if there are no families reported, then we don't save the data
+        # Example: number_of_families = {'families': 20, 'consanguinity': 'unknown', 'ancestries': '', 'affected_individuals': None}
+        if number_of_families and number_of_families["families"]:
             PublicationFamiliesSerializer().create(number_of_families, publication_obj)
 
         return publication_obj
@@ -308,8 +309,8 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
             # correct structure is: 
             # { "families": 200, "consanguinity": "unknown", "ancestries": "african", 
             #   "affected_individuals": 100 }
-            if "families" in self.initial_data:
-                families = self.initial_data.get("families") # If 'families' is in initial data then it cannot be null
+            if "families" in self.initial_data and self.initial_data["families"] is not None:
+                families = self.initial_data["families"] # If 'families' is in initial data then it cannot be null
                 for header in families.keys():
                     if header not in valid_headers:
                         raise serializers.ValidationError(f"Got unknown field in families: {header}")
