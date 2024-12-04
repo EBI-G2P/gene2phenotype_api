@@ -272,14 +272,11 @@ class LGDEditPublications(BaseUpdate):
             # update_mechanism() updates the 'date_review' of the LGD record
             if mechanism_data:
                 lgd_serializer = LocusGenotypeDiseaseSerializer()
-                mechanism_obj = lgd.molecular_mechanism
 
                 # Build mechanism data
-                mechanism_data_input = {}
-
-                # Check if it's possible to update the mechanism value
-                if mechanism_obj.mechanism.value != "undetermined":
-                    mechanism_data_input["molecular_mechanism"] = mechanism_data
+                mechanism_data_input = {
+                    "molecular_mechanism": mechanism_data
+                }
 
                 # Attach the synopsis to be updated (if applicable)
                 if mechanism_synopsis_data:
