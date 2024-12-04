@@ -228,6 +228,10 @@ class LGDUpdateMechanism(BaseUpdate):
             Retrieves a queryset of LocusGenotypeDisease objects associated with a stable ID
             for the authenticated user.
 
+            Authenticated users can update the mechanism value and its support and evidence
+            only if mechanism is 'undetermined' and support 'inferred'.
+            But super users can update everything except the mechanism value (if != 'undetermined').
+
             Args:
                 stable_id (str): The stable ID from the URL kwargs.
 

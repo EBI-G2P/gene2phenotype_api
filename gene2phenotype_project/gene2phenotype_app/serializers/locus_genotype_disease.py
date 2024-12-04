@@ -711,7 +711,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LocusGenotypeDisease
-        exclude = ['id', 'is_deleted', 'date_review']
+        exclude = ['id', 'is_deleted', 'date_review', 'mechanism', 'mechanism_support']
 
 class LGDCommentSerializer(serializers.ModelSerializer):
     """
