@@ -550,10 +550,12 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     def update_mechanism(self, lgd_instance, validated_data):
         """
             Method to update the molecular mechanism of the LGD record.
-            It only allows to update mechanisms with value 'undetermined'
-            and support value 'inferred'.
+            It only allows to update the mechanism value if current value is 'undetermined'.
 
             Mandatory fields are molecular_mechanism name and support (inferred/evidence).
+            If you don't want to update the mechanism value then input an empty string: "name": ""
+            Same for the support: "support": ""
+
             If evidence is provided, the code expects the 'evidence_types' to be populated
             otherwise the evidence data is not stored.
 
@@ -574,28 +576,44 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         mechanism_synopsis = validated_data.get("mechanism_synopsis", None) # mechanism synopsis is optional
         mechanism_evidence = validated_data.get("mechanism_evidence", None) # molecular mechanism evidence is optional
 
-        try:
-            cv_mechanism_obj = CVMolecularMechanism.objects.get(
-                value = molecular_mechanism_value,
-                type = "mechanism"
-            )
-        except CVMolecularMechanism.DoesNotExist:
-            raise serializers.ValidationError({"message": f"Invalid mechanism value '{molecular_mechanism_value}'"})
+        cv_mechanism_obj = None
+        if molecular_mechanism_value and molecular_mechanism_value != "":
+            try:
+                cv_mechanism_obj = CVMolecularMechanism.objects.get(
+                    value = molecular_mechanism_value,
+                    type = "mechanism"
+                )
+            except CVMolecularMechanism.DoesNotExist:
+                raise serializers.ValidationError({"message": f"Invalid mechanism value '{molecular_mechanism_value}'"})
 
-        try:
-            cv_support_obj = CVMolecularMechanism.objects.get(
-                value = molecular_mechanism_support,
-                type = "support"
-            )
-        except CVMolecularMechanism.DoesNotExist:
-            raise serializers.ValidationError({"message": f"Invalid mechanism support '{molecular_mechanism_support}'"})
+        cv_support_obj = None
+        if molecular_mechanism_support and molecular_mechanism_support !="":
+            try:
+                cv_support_obj = CVMolecularMechanism.objects.get(
+                    value = molecular_mechanism_support,
+                    type = "support"
+                )
+            except CVMolecularMechanism.DoesNotExist:
+                raise serializers.ValidationError({"message": f"Invalid mechanism support '{molecular_mechanism_support}'"})
+
+        # Update LGD instance with new mechanism value only if mechanism value is "undetermined"
+        if cv_mechanism_obj and lgd_instance.mechanism.value != "undetermined":
+            lgd_instance.mechanism = cv_mechanism_obj
+
+        # Update the mechanism support
+        if cv_support_obj:
+            lgd_instance.mechanism_support = cv_support_obj
+
+        lgd_instance.date_review = datetime.now()
+        lgd_instance.save()
 
         # The mechanism synopsis is optional
-        cv_synopsis_obj = None
-        cv_synopsis_support_obj = None
         if mechanism_synopsis and mechanism_synopsis["name"] != "":
             mechanism_synopsis_value = mechanism_synopsis["name"]
             mechanism_synopsis_support = mechanism_synopsis["support"]
+
+            cv_synopsis_obj = None
+            cv_synopsis_support_obj = None
 
             try:
                 cv_synopsis_obj = CVMolecularMechanism.objects.get(
@@ -613,26 +631,33 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             except CVMolecularMechanism.DoesNotExist:
                 raise serializers.ValidationError({"message": f"Invalid mechanism synopsis support '{mechanism_synopsis_support}'"})
 
-            # Create mechanism synopsis
-            mechanism_syn_obj = LGDMolecularMechanismSynopsis.objects.create(
-                lgd = lgd_instance,
-                synopsis = cv_synopsis_obj,
-                synopsis_support = cv_synopsis_support_obj,
-                is_deleted = 0
-            )
-
-        # Update LGD record
-        # The mechanism has to be updated in the locus_genotype_disease before the evidence is added
-        # Because the evidence is going to be linked to the new lgd.molecular_mechanism
-        lgd_instance.mechanism = cv_mechanism_obj
-        lgd_instance.mechanism_support = cv_support_obj
-        lgd_instance.date_review = datetime.now()
-        lgd_instance.save()
+            # Check if synopsis already exists
+            try:
+                mechanism_syn_obj = LGDMolecularMechanismSynopsis.objects.get(
+                    lgd = lgd_instance,
+                    synopsis = cv_synopsis_obj
+                )
+            except LGDMolecularMechanismSynopsis.DoesNotExist:
+                # Create mechanism synopsis
+                mechanism_syn_obj = LGDMolecularMechanismSynopsis.objects.create(
+                    lgd = lgd_instance,
+                    synopsis = cv_synopsis_obj,
+                    synopsis_support = cv_synopsis_support_obj,
+                    is_deleted = 0
+                )
+            else:
+                if mechanism_syn_obj.is_deleted == 1:
+                    mechanism_syn_obj.is_deleted = 0
+                    mechanism_syn_obj.save()
+                if mechanism_syn_obj.synopsis_support.value != mechanism_synopsis_support:
+                    mechanism_syn_obj.synopsis_support = cv_synopsis_support_obj
+                    mechanism_syn_obj.save()
 
         # Get evidence - the mechanism evidence was validated in the view 'LGDUpdateMechanism'
         # Example: {'pmid': '25099252', 'description': 'text', 'evidence_types': 
         #          [{'primary_type': 'Rescue', 'secondary_type': ['Human', 'Patient Cells']}]}
-        self.update_mechanism_evidence(lgd_instance, mechanism_evidence)
+        if mechanism_evidence:
+            self.update_mechanism_evidence(lgd_instance, mechanism_evidence)
 
         return lgd_instance
 

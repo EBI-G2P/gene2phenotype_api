@@ -228,9 +228,9 @@ class LGDUpdateMechanism(BaseUpdate):
             Retrieves a queryset of LocusGenotypeDisease objects associated with a stable ID
             for the authenticated user.
 
-            Authenticated users can update the mechanism value and its support and evidence
-            only if mechanism is 'undetermined' and support 'inferred'.
-            But super users can update everything except the mechanism value (if != 'undetermined').
+            Authenticated users can update the mechanism value, support and evidence
+            only if mechanism is 'undetermined' or support is 'inferred'. The check is
+            done in LocusGenotypeDiseaseSerializer.
 
             Args:
                 stable_id (str): The stable ID from the URL kwargs.
@@ -250,20 +250,14 @@ class LGDUpdateMechanism(BaseUpdate):
 
         if not queryset.exists():
             self.handle_no_permission('Entry', stable_id)
-        else:
-            # Only 'undetermined' mechanisms can be updated
-            lgd_obj = queryset.first()
-            if not (lgd_obj.mechanism.value == "undetermined" 
-                    and lgd_obj.mechanism_support.value == "inferred"):
-                self.handle_no_update('molecular mechanism', stable_id)
 
-            return queryset
+        return queryset
 
     def patch(self, request, stable_id):
         """
             Partially updates the LGD record with a new molecular mechanism.
             It only allows to update mechanisms with value 'undetermined'
-            and support 'inferred'.
+            or support 'inferred'.
             Mandatory fields: "molecular_mechanism".
 
             Supporting pmids have to already be linked to the LGD record.
@@ -283,7 +277,7 @@ class LGDUpdateMechanism(BaseUpdate):
                             "support": ""
                         },
                         "mechanism_evidence": [{'pmid': '25099252', 'description': 'text', 'evidence_types': 
-                                            [{'primary_type': 'Rescue', 'secondary_type': ['Human', 'Patient Cells']}]}]
+                                            [{'primary_type': 'Rescue', 'secondary_type': ['Patient Cells']}]}]
                     }
 
         """
@@ -303,7 +297,8 @@ class LGDUpdateMechanism(BaseUpdate):
                 {"error": f"Molecular mechanism is missing"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        if mechanism_synopsis is None:
+
+        if mechanism_synopsis and ("name" not in mechanism_synopsis or "support" not in mechanism_synopsis):
             return Response(
                 {"error": f"Molecular mechanism synopsis is missing"},
                 status=status.HTTP_400_BAD_REQUEST
@@ -358,12 +353,12 @@ class LGDUpdateMechanism(BaseUpdate):
             if hasattr(e, 'detail') and 'message' in e.detail:
                 return Response(
                 {"error": f"Error while updating molecular mechanism: {e.detail['message']}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_400_BAD_REQUEST
             )
             else:
                 return Response(
-                    {"error": f"Error while updating molecular mechanism"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    {"error": f"Error while updating molecular mechanism {e}"},
+                    status=status.HTTP_400_BAD_REQUEST
                 )
         else:
             return Response(
