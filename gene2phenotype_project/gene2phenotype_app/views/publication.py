@@ -171,7 +171,7 @@ class LGDEditPublications(BaseUpdate):
                                     "summary": "",
                                     "hpo_terms": [{ "term": "Orofacial dyskinesia",
                                                     "accession": "HP:0002310",
-                                                     "description": "" }]
+                                                    "description": "" }]
                             }],
                 "variant_types": [{
                             "comment": "",
