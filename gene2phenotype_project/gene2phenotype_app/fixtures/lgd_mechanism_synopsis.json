@@ -1,0 +1,11 @@
+[
+    {
+        "model": "gene2phenotype_app.lgdmolecularmechanismsynopsis", "pk": 1,
+        "fields": {
+            "lgd": 1,
+            "synopsis": 12,
+            "synopsis_support": 16,
+            "is_deleted": 0
+        }
+    }
+]

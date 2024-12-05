@@ -1,6 +1,6 @@
 [
 	{"model": "gene2phenotype_app.disease", "pk": 1, "fields": {"name": "CONGENITAL DISORDERS OF GLYCOSYLATION"}},
-	{"model": "gene2phenotype_app.disease", "pk": 2, "fields": {"name": "JOUBERT SYNDROME TYPE 5"}},
+	{"model": "gene2phenotype_app.disease", "pk": 2, "fields": {"name": "CEP290-related JOUBERT SYNDROME TYPE 5"}},
 	{"model": "gene2phenotype_app.disease", "pk": 3, "fields": {"name": "MICROPHTHALMIA SYNDROMIC TYPE 9"}},
 	{"model": "gene2phenotype_app.disease", "pk": 4, "fields": {"name": "HYPOMYELINATION WITH ATROPHY OF THE BASAL GANGLIA AND CEREBELLUM"}},
 	{"model": "gene2phenotype_app.disease", "pk": 5, "fields": {"name": "Griscelli Type 2"}},

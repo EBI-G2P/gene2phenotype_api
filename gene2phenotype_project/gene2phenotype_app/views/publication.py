@@ -12,7 +12,7 @@ from gene2phenotype_app.serializers import (PublicationSerializer, LGDPublicatio
 
 from gene2phenotype_app.models import (Publication, LocusGenotypeDisease, LGDPublication,
                                        LGDPhenotype, LGDPhenotypeSummary, LGDVariantType,
-                                       LGDVariantTypeDescription, MolecularMechanismEvidence)
+                                       LGDVariantTypeDescription, LGDMolecularMechanismEvidence)
 
 from .base import BaseAdd, BaseUpdate
 
@@ -145,14 +145,15 @@ class LGDEditPublications(BaseUpdate):
     def post(self, request, stable_id):
         """
             The post method creates an association between the current LGD record and a list of publications.
-            We want to whole process to be done in one db transaction.
+            It also allows to add or updated data linked to the publication.
 
-            This method allows to add extra data to the LGD record.
             When a publication is linked to a LGD record, other types of data can be associated to the record
             and the publication:
                 - phenotypes
                 - variant types
                 - variant descriptions
+                - molecular mechanism value (if 'undetermined') + support
+                - molecular mechanism synopsis/categorisation
                 - molecular mechanism evidence
 
             Args:
@@ -266,23 +267,18 @@ class LGDEditPublications(BaseUpdate):
             for variant_type_desc in variant_descriptions_data:
                 LGDVariantTypeDescriptionSerializer(context={'lgd': lgd}).create(variant_type_desc)
 
-            # Only mechanism "undetermined" can be updated
+            # Only mechanism "undetermined" can be updated - the check is done in the LocusGenotypeDiseaseSerializer
             # If mechanism has to be updated, call method update_mechanism() and send new mechanism value
             # plus the synopsis and the new evidence (if applicable)
             # update_mechanism() updates the 'date_review' of the LGD record
             if mechanism_data:
                 lgd_serializer = LocusGenotypeDiseaseSerializer()
-                mechanism_obj = lgd.molecular_mechanism
-
-                # Check if it's possible to update the mechanism
-                if(mechanism_obj.mechanism.value != "undetermined" or
-                    mechanism_obj.mechanism_support.value != "inferred"):
-                    self.handle_no_update('molecular mechanism', stable_id)
 
                 # Build mechanism data
                 mechanism_data_input = { 
                     "molecular_mechanism": mechanism_data
                 }
+
                 # Attach the synopsis to be updated (if applicable)
                 if mechanism_synopsis_data:
                     mechanism_data_input["mechanism_synopsis"] = mechanism_synopsis_data
@@ -410,13 +406,13 @@ class LGDEditPublications(BaseUpdate):
         # If the mechanism support is evidence then get the list of MolecularMechanismEvidence
         # Different types of evidence can be linked to the same publication
         if(lgd_mechanism_obj and lgd_mechanism_obj.mechanism_support.value == "evidence"):
-            MolecularMechanismEvidence.objects.filter(
+            LGDMolecularMechanismEvidence.objects.filter(
                 molecular_mechanism=lgd_mechanism_obj,
                 publication=lgd_publication_obj.publication,
                 is_deleted=0).update(is_deleted=1)
 
             # Check if MolecularMechanism has evidence linked to other publications
-            lgd_check_evidence_set = MolecularMechanismEvidence.objects.filter(
+            lgd_check_evidence_set = LGDMolecularMechanismEvidence.objects.filter(
                 molecular_mechanism=lgd_mechanism_obj,
                 is_deleted=0)
 
