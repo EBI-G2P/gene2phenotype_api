@@ -18,7 +18,7 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
 
     def setUp(self):
         self.url_list_lgd = reverse("lgd", kwargs={"stable_id": "G2P00001"})
-    
+
     def test_lgd_detail(self):
         """
             Test the locus genotype disease display

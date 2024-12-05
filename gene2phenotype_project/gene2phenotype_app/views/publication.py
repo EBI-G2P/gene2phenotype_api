@@ -165,14 +165,14 @@ class LGDEditPublications(BaseUpdate):
                             "publication": { "pmid": "1234" },
                             "comment": { "comment": "this is a comment", "is_public": 1 },
                             "families": { "families": 2, "consanguinity": "unknown", "ancestries": "african", "affected_individuals": 1 },
-                            "phenotypes": [{
-                                        "pmid": "41",
-                                        "summary": "",
-                                        "hpo_terms": [{ "term": "Orofacial dyskinesia",
-                                                        "accession": "HP:0002310",
-                                                        "description": "" }]
-                                    }],
                         }],
+                "phenotypes": [{
+                                    "pmid": "41",
+                                    "summary": "",
+                                    "hpo_terms": [{ "term": "Orofacial dyskinesia",
+                                                    "accession": "HP:0002310",
+                                                     "description": "" }]
+                            }],
                 "variant_types": [{
                             "comment": "",
                             "de_novo": false,
