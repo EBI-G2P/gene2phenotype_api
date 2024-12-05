@@ -597,7 +597,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({"message": f"Invalid mechanism support '{molecular_mechanism_support}'"})
 
         # Update LGD instance with new mechanism value only if mechanism value is "undetermined"
-        if cv_mechanism_obj and lgd_instance.mechanism.value != "undetermined":
+        if cv_mechanism_obj and lgd_instance.mechanism.value == "undetermined":
             lgd_instance.mechanism = cv_mechanism_obj
 
         # Update the mechanism support
