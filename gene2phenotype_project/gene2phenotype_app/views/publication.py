@@ -275,7 +275,7 @@ class LGDEditPublications(BaseUpdate):
                 lgd_serializer = LocusGenotypeDiseaseSerializer()
 
                 # Build mechanism data
-                mechanism_data_input = {
+                mechanism_data_input = { 
                     "molecular_mechanism": mechanism_data
                 }
 
