@@ -28,8 +28,17 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         self.assertEqual(response.data["stable_id"], "G2P00001")
         self.assertEqual(response.data["genotype"], "biallelic_autosomal")
         self.assertEqual(response.data["confidence"], "definitive")
+        self.assertEqual(response.data["confidence_support"], None)
         self.assertEqual(response.data["variant_consequence"], [])
+        self.assertEqual(list(response.data["variant_type"]), []),
+        self.assertEqual(list(response.data["variant_description"]), []),
+        self.assertEqual(list(response.data["phenotypes"]), []),
+        self.assertEqual(list(response.data["phenotype_summary"]), []),
+        self.assertEqual(response.data["cross_cutting_modifier"], []),
+        self.assertEqual(response.data["comments"], [])
         self.assertEqual(response.data["last_updated"], "2017-04-24")
+        self.assertEqual(response.data["date_created"], None)
+        self.assertEqual(response.data["curators"], set())
 
         expected_data_publication = [
             {"publication": {
@@ -40,7 +49,7 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         self.assertEqual(response.data["publications"], expected_data_publication)
 
         expected_data_disease = {
-            "name": "JOUBERT SYNDROME TYPE 5",
+            "name": "CEP290-related JOUBERT SYNDROME TYPE 5",
             "ontology_terms": [{"accession": "610188", "term": "JOUBERT SYNDROME 5", "description": None, "source": "OMIM"}],
             "synonyms": []
         }
@@ -50,7 +59,7 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
             "mechanism": "loss of function",
             "mechanism_support": "evidence",
             "synopsis": [{"synopsis": "assembly-mediated GOF", "support": "inferred"}],
-            "evidence": {3897232: {"Function": ["Biochemical"]}} # TODO: check
+            "evidence": {3897232: {"Function": ["Biochemical"]}}
         }
         self.assertEqual(response.data["molecular_mechanism"], expected_data_mechanism)
 
