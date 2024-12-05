@@ -218,11 +218,11 @@ class PublicationSerializer(serializers.ModelSerializer):
             families to the existing PMID.
             This method is called when publishing a record.
 
-            The extra fields 'comment' and 'families' are passed in the context.
+            The PMID is mandatory, while comment and families are optional.
 
             Args:
                 (dict) validated_data: valid PublicationSerializer fields 
-                                       accepted fields are: pmid, title, authors, year
+                                       accepted fields are: pmid, comment, families
             
             Returns:
                     Publication object
@@ -230,11 +230,11 @@ class PublicationSerializer(serializers.ModelSerializer):
             Raises:
                     Invalid PMID
         """
-        pmid = validated_data.get('pmid') # serializer fields
-        comment = validated_data.get('comment') # extra data - comment
-        number_of_families = validated_data.get('families') # extra data - families reported in publication
+        pmid = validated_data['pmid'] # serializer fields
+        comment = validated_data['comment'] # extra data - comment
+        number_of_families = validated_data['families'] # extra data - families reported in publication
 
-        user_obj = self.context.get('user')
+        user_obj = self.context['user']
 
         try:
             publication_obj = Publication.objects.get(pmid=pmid)
@@ -271,8 +271,9 @@ class PublicationSerializer(serializers.ModelSerializer):
                 context={'user': user_obj}
             ).create(comment, publication_obj)
 
-        # Add family info linked to publication
-        if number_of_families is not None:
+        # Add family info linked to publication - if there are no families reported, then we don't save the data
+        # Example: number_of_families = {'families': 20, 'consanguinity': 'unknown', 'ancestries': '', 'affected_individuals': None}
+        if number_of_families and number_of_families["families"]:
             PublicationFamiliesSerializer().create(number_of_families, publication_obj)
 
         return publication_obj
@@ -296,20 +297,20 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
         """
             Overwrite the method to validate the data.
             This validate() method is activated by the curation (draft entry) endpoints and
-            by the LGDPublicationListSerializer as a consequence this method is identical to
-            the validate method in LGDPublicationListSerializer.
+            by the LGDPublicationListSerializer.
+            This method is identical to the validate method in LGDPublicationListSerializer.
         """
         if hasattr(self, 'initial_data'):
             data = self.initial_data
             valid_headers = ["families", "consanguinity", "ancestries", "affected_individuals"]
+            extra_headers = ["phenotypes", "variant_types", "variant_descriptions"]
 
-            publication = self.initial_data.get("publication")
-            # check if 'families' is defined
+            # check if 'families' is defined in the initial data
             # correct structure is: 
             # { "families": 200, "consanguinity": "unknown", "ancestries": "african", 
             #   "affected_individuals": 100 }
-            if "families" in publication and publication.get("families") is not None:
-                families = publication.get("families")
+            if "families" in self.initial_data and self.initial_data["families"] is not None:
+                families = self.initial_data["families"] # If 'families' is in initial data then it cannot be null
                 for header in families.keys():
                     if header not in valid_headers:
                         raise serializers.ValidationError(f"Got unknown field in families: {header}")
@@ -335,24 +336,19 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
         comment = None
         families = None
 
-        publication_data = validated_data.get('publication') # includes 'pmid', 'comment', 'families'
+        publication_data = self.initial_data.get('publication') # 'publication': {'pmid': 39385417}
+        comment = self.initial_data.get('comment', None) # 'comment': {'comment': 'this is a comment', 'is_public': 1}
+        families = self.initial_data.get("families", None) # "families": { "families": 200, "consanguinity": "unknown", "ancestries": "african", "affected_individuals": 2 }
 
-        if "comment" in publication_data:
-            comment = publication_data.get("comment")
+        if comment:
+            comment_text = comment["comment"]
 
-            # Check if comment text is invalid or missing
-            if not comment or "comment" not in comment or comment.get("comment") == "":
+            # Check if comment text is empty string
+            if not comment_text or comment_text == "":
                 comment = None
             # If 'is_public' is not defined set it to public (default)
-            elif "is_public" not in comment:
-                comment["is_public"] = 1
-
-        if "families" in publication_data:
-            families = publication_data.get('families') # extra data - families reported in publication
-
-            # Check if family data is invalid or missing
-            if not families:
-                families = None
+            else:
+                comment["is_public"] = comment.get("is_public", 1)
 
         # it is necessary to send the user
         # the publication comment is linked to the user
@@ -379,6 +375,11 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
                 publication = publication_obj,
                 is_deleted = 0
             )
+            # There is a new publication linked to the LGD record, 
+            # the record has to reflect the date of this change
+            # update the date_review of the LGD record
+            lgd.date_review = datetime.now()
+            lgd.save()
 
         # If LGD-publication already exists then returns the existing object
         # New comments and/or family info are added to the existing object
@@ -386,6 +387,10 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
         if lgd_publication_obj.is_deleted != 0:
             lgd_publication_obj.is_deleted = 0
             lgd_publication_obj.save()
+            # The lgd-publication is not deleted anymore which is equivallent to
+            # creating a new link, this means we have to update the record 'date_review'
+            lgd.date_review = datetime.now()
+            lgd.save()
 
         return lgd_publication_obj
 
@@ -396,7 +401,8 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
 class LGDPublicationListSerializer(serializers.Serializer):
     """
         Serializer to accept a list of publications.
-        Called by: LocusGenotypeDiseaseAddPublication()
+        This method only validates the publications, it does not update any data.
+        Called by: LocusGenotypeDiseaseAddPublication() and view LGDEditPublications()
     """
     publications = LGDPublicationSerializer(many=True)
 
@@ -411,7 +417,8 @@ class LGDPublicationListSerializer(serializers.Serializer):
         # by default these fields are not accepted as valid as they are not part of the LGDPublication
         if hasattr(self, 'initial_data'):
             data = self.initial_data
-            valid_headers = ["families", "consanguinity", "ancestries", "affected_individuals"]
+            families_valid_headers = ["families", "consanguinity", "ancestries", "affected_individuals"]
+            extra_headers = ["phenotypes", "variant_types", "variant_descriptions"]
 
             publications = self.initial_data.get("publications")
 
@@ -420,12 +427,11 @@ class LGDPublicationListSerializer(serializers.Serializer):
 
                 # check if 'families' is defined
                 # correct structure is: 
-                # { "families": 200, "consanguinity": "unknown", "ancestries": "african", 
-                #   "affected_individuals": 100 }
+                # "families": { "families": 2, "consanguinity": "unknown", "ancestries": "african", "affected_individuals": 1 }
                 if "families" in publication:
                     families = publication.get("families")
                     for header in families.keys():
-                        if header not in valid_headers:
+                        if header not in families_valid_headers:
                             raise serializers.ValidationError(f"Got unknown field in families: {header}")
 
                 # TODO check if 'comment' is defined

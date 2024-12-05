@@ -6,12 +6,13 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 
 from gene2phenotype_app.serializers import (PublicationSerializer, LGDPublicationSerializer,
-                                            LGDPublicationListSerializer)
+                                            LGDPublicationListSerializer, LGDPhenotypeSerializer,
+                                            LGDVariantTypeSerializer, LGDVariantTypeDescriptionSerializer,
+                                            LocusGenotypeDiseaseSerializer)
 
 from gene2phenotype_app.models import (Publication, LocusGenotypeDisease, LGDPublication,
                                        LGDPhenotype, LGDPhenotypeSummary, LGDVariantType,
-                                       LGDVariantTypeDescription, MolecularMechanism,
-                                       MolecularMechanismEvidence)
+                                       LGDVariantTypeDescription, MolecularMechanismEvidence)
 
 from .base import BaseAdd, BaseUpdate
 
@@ -107,7 +108,7 @@ class AddPublication(BaseAdd):
 
 ### LGD-publication ###
 # Add or delete data
-class LGDEditPublications(APIView):
+class LGDEditPublications(BaseUpdate):
     """
         Add or delete lgd-publication.
 
@@ -146,18 +147,60 @@ class LGDEditPublications(APIView):
             The post method creates an association between the current LGD record and a list of publications.
             We want to whole process to be done in one db transaction.
 
+            This method allows to add extra data to the LGD record.
+            When a publication is linked to a LGD record, other types of data can be associated to the record
+            and the publication:
+                - phenotypes
+                - variant types
+                - variant descriptions
+                - molecular mechanism evidence
+
             Args:
-                (dict) request
-                
-                Example:
+                (dict) request data
+
+                Example for a record already linked to pmid '41':
                 { "publications":[
-                    {
-                    "publication": { "pmid": 1234 },
-                    "comment": { "comment": "this is a comment", "is_public": 1 },
-                    "families": { "families": 2, "consanguinity": "unknown", "ancestries": "african", "affected_individuals": 1 }
-                    }
-                    ]
-                }
+                        {
+                            "publication": { "pmid": "1234" },
+                            "comment": { "comment": "this is a comment", "is_public": 1 },
+                            "families": { "families": 2, "consanguinity": "unknown", "ancestries": "african", "affected_individuals": 1 },
+                        }],
+                "phenotypes": [{
+                                    "pmid": "41",
+                                    "summary": "",
+                                    "hpo_terms": [{ "term": "Orofacial dyskinesia",
+                                                    "accession": "HP:0002310",
+                                                    "description": "" }]
+                            }],
+                "variant_types": [{
+                            "comment": "",
+                            "de_novo": false,
+                            "inherited": false,
+                            "nmd_escape": false,
+                            "primary_type": "protein_changing",
+                            "secondary_type": "inframe_insertion",
+                            "supporting_papers": ["41"],
+                            "unknown_inheritance": true
+                        }],
+                "variant_descriptions": [{
+                            "description": "HGVS:c.9Pro",
+                            "publication": "41"
+                        }],
+                "molecular_mechanism": {
+                    "name": "gain of function",
+                    "support": "evidence"
+                },
+                "mechanism_synopsis": {
+                    "name": "",
+                    "support": ""
+                },
+                "mechanism_evidence": [{
+                            "pmid": "1234",
+                            "description": "This is new evidence for the existing mechanism evidence.",
+                            "evidence_types": [ { "primary_type": "Function",
+                                                    "secondary_type": [ "Biochemical" ]}
+                            ]}]
+            }
         """
         user = self.request.user
 
@@ -167,7 +210,13 @@ class LGDEditPublications(APIView):
         serializer_list = LGDPublicationListSerializer(data=request.data)
 
         if serializer_list.is_valid():
-            publications_data = serializer_list.validated_data.get('publications')
+            publications_data = serializer_list.validated_data.get('publications') # the pmids are mandatory
+            phenotypes_data = serializer_list.validated_data.get('phenotypes', []) # optional
+            variant_types_data = serializer_list.validated_data.get('variant_types', []) # optional
+            variant_descriptions_data = serializer_list.validated_data.get('variant_descriptions', []) # optional
+            mechanism_data = serializer_list.validated_data.get('molecular_mechanism', None) # optional
+            mechanism_synopsis_data = serializer_list.validated_data.get('mechanism_synopsis', None) # optional
+            mechanism_evidence_data = serializer_list.validated_data.get('mechanism_evidence', None) # optional
 
             for publication in publications_data:
                 serializer_class = LGDPublicationSerializer(
@@ -175,14 +224,91 @@ class LGDEditPublications(APIView):
                     context={"lgd": lgd, "user": user}
                 )
 
+                # Insert new publication
                 if serializer_class.is_valid():
                     serializer_class.save()
-                    response = Response({'message': 'Publication added to the G2P entry successfully.'}, status=status.HTTP_201_CREATED)
                 else:
-                    response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    response = Response({"errors": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Add extra data linked to the publication - phenotypes
+            # Expected structure:
+            #   { "phenotypes": [{ "accession": "HP:0003974", "publication": 1 }] }
+            for phenotype in phenotypes_data:
+                hpo_terms = phenotype['hpo_terms']
+                for hpo in hpo_terms:
+                    phenotype_data = {
+                        "accession": hpo["accession"],
+                        "publication": phenotype["pmid"]
+                    }
+                    try:
+                        lgd_phenotype_serializer = LGDPhenotypeSerializer(
+                            data = phenotype_data,
+                            context = {'lgd': lgd}
+                        )
+                        # Validate the input data
+                        if lgd_phenotype_serializer.is_valid():
+                            # save() is going to call create()
+                            lgd_phenotype_serializer.save()
+                        else:
+                            response = Response({"errors": lgd_phenotype_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+                    except:
+                        accession = phenotype_data["accession"]
+                        return Response(
+                            {"errors": f"Could not insert phenotype '{accession}' for ID '{stable_id}'"},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
+            # Add extra data linked to the publication - variant types
+            for variant_type in variant_types_data:
+                LGDVariantTypeSerializer(context={'lgd': lgd, 'user': user}).create(variant_type)
+
+            # Add extra data linked to the publication - variant descriptions (HGVS)
+            for variant_type_desc in variant_descriptions_data:
+                LGDVariantTypeDescriptionSerializer(context={'lgd': lgd}).create(variant_type_desc)
+
+            # Only mechanism "undetermined" can be updated
+            # If mechanism has to be updated, call method update_mechanism() and send new mechanism value
+            # plus the synopsis and the new evidence (if applicable)
+            # update_mechanism() updates the 'date_review' of the LGD record
+            if mechanism_data:
+                lgd_serializer = LocusGenotypeDiseaseSerializer()
+                mechanism_obj = lgd.molecular_mechanism
+
+                # Check if it's possible to update the mechanism
+                if(mechanism_obj.mechanism.value != "undetermined" or
+                    mechanism_obj.mechanism_support.value != "inferred"):
+                    self.handle_no_update('molecular mechanism', stable_id)
+
+                # Build mechanism data
+                mechanism_data_input = { 
+                    "molecular_mechanism": mechanism_data
+                }
+                # Attach the synopsis to be updated (if applicable)
+                if mechanism_synopsis_data:
+                    mechanism_data_input["mechanism_synopsis"] = mechanism_synopsis_data
+                # Attach the evidence to be updated (if applicable)
+                if mechanism_evidence_data:
+                    mechanism_data_input["mechanism_evidence"] = mechanism_evidence_data
+
+                try:
+                    lgd_serializer.update_mechanism(lgd, mechanism_data_input)
+                except Exception as e:
+                    return self.handle_update_exception(e, "Error while updating molecular mechanism")
+
+            # If only the mechanism evidence is going to be updated, call method update_mechanism_evidence()
+            # update_mechanism_evidence() updates the 'date_review' of the LGD record
+            # TODO: but before adding evidence we have to check/update the mechanism support to "evidence"
+            elif mechanism_evidence_data:
+                lgd_serializer = LocusGenotypeDiseaseSerializer()
+                try:
+                    lgd_serializer.update_mechanism_evidence(lgd, mechanism_evidence_data)
+                except Exception as e:
+                    return self.handle_update_exception(e, "Error while updating molecular mechanism evidence")
+
+            response = Response({'message': 'Publication added to the G2P entry successfully.'}, status=status.HTTP_201_CREATED)
 
         else:
-            response = Response({"errors": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            response = Response({"errors": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         return response
 

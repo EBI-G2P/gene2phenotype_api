@@ -163,7 +163,15 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             accession = lgd_variant.variant_type_ot.accession
 
             if accession in data and lgd_variant.publication:
+                # Add pmid to list of publications
                 data[accession]["publications"].append(lgd_variant.publication.pmid)
+                # Check the variant inheritance - we group this data for each publication
+                if(lgd_variant.inherited is True):
+                    data[accession]["inherited"] = lgd_variant.inherited
+                if(lgd_variant.de_novo is True):
+                    data[accession]["de_novo"] = lgd_variant.de_novo
+                if(lgd_variant.unknown_inheritance is True):
+                    data[accession]["unknown_inheritance"] = lgd_variant.unknown_inheritance
             else:
                 publication_list = []
                 if lgd_variant.publication:
@@ -547,9 +555,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         # The mechanism synopsis is optional
         cv_synopsis_obj = None
         cv_synopsis_support_obj = None
-        if mechanism_synopsis is not None and mechanism_synopsis.get("name", "") != "":
-            mechanism_synopsis_value = mechanism_synopsis.get("name")
-            mechanism_synopsis_support = mechanism_synopsis.get("support")
+        if mechanism_synopsis and mechanism_synopsis["name"] != "":
+            mechanism_synopsis_value = mechanism_synopsis["name"]
+            mechanism_synopsis_support = mechanism_synopsis["support"]
 
             try:
                 cv_synopsis_obj = CVMolecularMechanism.objects.get(
@@ -576,11 +584,43 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             is_deleted = 0
         )
 
+        # Save old molecular mechanism to delete it later
+        old_mechanism_obj = lgd_instance.molecular_mechanism
+
+        # Update LGD record
+        # The mechanism has to be updated in the locus_genotype_disease before the evidence is added
+        # Because the evidence is going to be linked to the new lgd.molecular_mechanism
+        lgd_instance.molecular_mechanism = mechanism_obj
+        lgd_instance.date_review = datetime.now()
+        lgd_instance.save()
+
         # Get evidence - the mechanism evidence was validated in the view 'LGDUpdateMechanism'
         # Example: {'pmid': '25099252', 'description': 'text', 'evidence_types': 
         #          [{'primary_type': 'Rescue', 'secondary_type': ['Human', 'Patient Cells']}]}
-        for evidence in mechanism_evidence:
-            pmid = evidence.get("pmid")
+        self.update_mechanism_evidence(lgd_instance, mechanism_evidence)
+
+        # The old molecular mechanism can be deleted - the deletion is stored in the history table
+        # As this method only allows to update 'undetermined' mechanisms, there is no evidence to be deleted
+        old_mechanism_obj.delete()
+
+        return lgd_instance
+
+    def update_mechanism_evidence(self, lgd_obj, validated_data):
+        """
+            Method to only update the evidence of the LGD molecular mechanism.
+
+            'validated_data' example:
+                "mechanism_evidence": [{
+                                        "pmid": "1234",
+                                        "description": "This is new evidence for the existing mechanism evidence.",
+                                        "evidence_types": [ { "primary_type": "Function",
+                                                              "secondary_type": [ "Biochemical" ]}
+                                        ]}]
+        """
+        mechanism_obj = lgd_obj.molecular_mechanism
+
+        for evidence in validated_data:
+            pmid = evidence["pmid"]
 
             # Check if the PMID exists in G2P
             # When updating the mechanism the supporting pmid used as evidence
@@ -591,12 +631,12 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 # TODO: improve in future to insert new pmids + link them to the record
                 raise serializers.ValidationError({"message": f"pmid '{pmid}' not found in G2P"})
 
-            if evidence.get("description") != "":
-                description = evidence.get("description")
+            if evidence["description"] != "":
+                description = evidence["description"]
             else:
                 description = None
 
-            evidence_types = evidence.get("evidence_types")
+            evidence_types = evidence["evidence_types"]
             for evidence_type in evidence_types:
                 # primary_type is the evidence subtype ('rescue')
                 primary_type = evidence_type.get("primary_type", None)
@@ -604,7 +644,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError({"message": f"Empty evidence subtype"})
                 primary_type = primary_type.replace(" ", "_").lower()
                 # secondary_type is the evidence value ('human')
-                secondary_type = evidence_type.get("secondary_type")
+                secondary_type = evidence_type["secondary_type"]
                 for m_type in secondary_type:
                     try:
                         cv_evidence_obj = CVMolecularMechanism.objects.get(
@@ -616,27 +656,28 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                         raise serializers.ValidationError({"message": f"Invalid mechanism evidence '{m_type}'"})
 
                     # Insert evidence
-                    mechanism_evidence_obj = MolecularMechanismEvidence.objects.create(
+                    try:
+                        mechanism_evidence_obj = MolecularMechanismEvidence.objects.get(
                         molecular_mechanism = mechanism_obj,
-                        description = description,
                         publication = publication_obj,
-                        evidence = cv_evidence_obj,
-                        is_deleted = 0
+                        evidence = cv_evidence_obj
                     )
+                    except MolecularMechanismEvidence.DoesNotExist:
+                        mechanism_evidence_obj = MolecularMechanismEvidence.objects.create(
+                            molecular_mechanism = mechanism_obj,
+                            description = description,
+                            publication = publication_obj,
+                            evidence = cv_evidence_obj,
+                            is_deleted = 0
+                        )
+                    else:
+                        if(mechanism_evidence_obj.is_deleted == 1):
+                            mechanism_evidence_obj.is_deleted = 0
+                            mechanism_evidence_obj.save()
 
-        # Save old molecular mechanism to delete it later
-        old_mechanism_obj = lgd_instance.molecular_mechanism
-
-        # Update LGD record
-        lgd_instance.molecular_mechanism = mechanism_obj
-        lgd_instance.date_review = datetime.now()
-        lgd_instance.save()
-
-        # The old molecular mechanism can be deleted - the deletion is stored in the history table
-        # As this method only allows to update 'undetermined' mechanisms, there is no evidence to be deleted
-        old_mechanism_obj.delete()
-
-        return lgd_instance
+                    # Update LGD date_review
+                    lgd_obj.date_review = datetime.now()
+                    lgd_obj.save()
 
     class Meta:
         model = LocusGenotypeDisease
@@ -1083,15 +1124,13 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
         # Variants are supposed to be linked to publications
         # But if there is no publication then create the object without a pmid
         if not publications:
+            # Check if entry exists in the table
+            # An unique entry is defined by: lgd, variant_type and publication
             try:
                 lgd_variant_type_obj = LGDVariantType.objects.get(
                     lgd = lgd,
                     variant_type_ot = var_type_obj,
-                    inherited = inherited,
-                    de_novo = de_novo,
-                    unknown_inheritance = unknown_inheritance,
-                    publication = None,
-                    is_deleted = 0
+                    publication = None
                 )
             except LGDVariantType.DoesNotExist:
                 lgd_variant_type_obj = LGDVariantType.objects.create(
@@ -1102,6 +1141,19 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
                     unknown_inheritance = unknown_inheritance,
                     is_deleted = 0
                 )
+            else:
+                # the entry already exists, it probably needs to be updated
+                # if deleted, set to not deleted
+                if(lgd_variant_type_obj.is_deleted == 1):
+                    lgd_variant_type_obj.is_deleted = 0
+                # update inheritance data
+                if(lgd_variant_type_obj.inherited == 0 and inherited == True):
+                    lgd_variant_type_obj.inherited = 1
+                if(lgd_variant_type_obj.de_novo == 0 and de_novo == True):
+                    lgd_variant_type_obj.de_novo = 1
+                if(lgd_variant_type_obj.unknown_inheritance == 0 and unknown_inheritance == True):
+                    lgd_variant_type_obj.unknown_inheritance = 1
+                lgd_variant_type_obj.save()
 
             # The LGDPhenotypeSummary is created - next step is to create the LGDVariantTypeComment
             if(comment != ""):
@@ -1146,11 +1198,7 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
                         lgd_variant_type_obj = LGDVariantType.objects.get(
                             lgd = lgd,
                             variant_type_ot = var_type_obj,
-                            inherited = inherited,
-                            de_novo = de_novo,
-                            unknown_inheritance = unknown_inheritance,
-                            publication = publication_obj,
-                            is_deleted = 0
+                            publication = publication_obj
                         )
                     except LGDVariantType.DoesNotExist:
                         # Check if LGDVariantType object already exists in db without a publication
@@ -1158,9 +1206,6 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
                             lgd_variant_type_obj = LGDVariantType.objects.get(
                                 lgd = lgd,
                                 variant_type_ot = var_type_obj,
-                                inherited = inherited,
-                                de_novo = de_novo,
-                                unknown_inheritance = unknown_inheritance,
                                 publication = None, # no publication attached to entry
                                 is_deleted = 0
                             )
@@ -1180,7 +1225,26 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
                             # LGDVariantType already exists in the db without a publication
                             # Add publication to existing object
                             lgd_variant_type_obj.publication = publication_obj
+                            if(lgd_variant_type_obj.inherited == False and inherited == True):
+                                lgd_variant_type_obj.inherited = True
+                            if(lgd_variant_type_obj.de_novo == False and de_novo == True):
+                                lgd_variant_type_obj.de_novo = True
+                            if(lgd_variant_type_obj.unknown_inheritance == False and unknown_inheritance == True):
+                                lgd_variant_type_obj.unknown_inheritance = True
                             lgd_variant_type_obj.save()
+                    else:
+                        # the entry already exists, it probably needs to be updated
+                        # if deleted, set to not deleted
+                        if(lgd_variant_type_obj.is_deleted == 1):
+                            lgd_variant_type_obj.is_deleted = 0
+                        # update inheritance data
+                        if(lgd_variant_type_obj.inherited == False and inherited == True):
+                            lgd_variant_type_obj.inherited = True
+                        if(lgd_variant_type_obj.de_novo == False and de_novo == True):
+                            lgd_variant_type_obj.de_novo = True
+                        if(lgd_variant_type_obj.unknown_inheritance == False and unknown_inheritance == True):
+                            lgd_variant_type_obj.unknown_inheritance = True
+                        lgd_variant_type_obj.save()
 
                     # The LGDPhenotypeSummary is created - next step is to create the LGDVariantTypeComment
                     if(comment != ""):
