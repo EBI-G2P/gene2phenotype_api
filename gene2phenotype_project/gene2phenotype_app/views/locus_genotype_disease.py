@@ -258,7 +258,6 @@ class LGDUpdateMechanism(BaseUpdate):
             Partially updates the LGD record with a new molecular mechanism.
             It only allows to update mechanisms with value 'undetermined'
             or support 'inferred'.
-            Mandatory fields: "molecular_mechanism".
 
             Supporting pmids have to already be linked to the LGD record.
 
@@ -273,8 +272,8 @@ class LGDUpdateMechanism(BaseUpdate):
                             "support": "evidence"
                         },
                         "mechanism_synopsis": {
-                            "name": "",
-                            "support": ""
+                            "name": "destabilising LOF",
+                            "support": "evidence"
                         },
                         "mechanism_evidence": [{'pmid': '25099252', 'description': 'text', 'evidence_types': 
                                             [{'primary_type': 'Rescue', 'secondary_type': ['Patient Cells']}]}]
@@ -284,51 +283,8 @@ class LGDUpdateMechanism(BaseUpdate):
         user = request.user
         mechanism_data = request.data
 
-        # Validate mechanism data
-        molecular_mechanism = mechanism_data.get("molecular_mechanism", None)
-        mechanism_synopsis = mechanism_data.get("mechanism_synopsis", None) # optional
-        mechanism_evidence = mechanism_data.get("mechanism_evidence", None) # optional
-
-        # Check the request data format:
-        #   the keys "molecular_mechanism", "mechanism_synopsis" and "mechanism_evidence"
-        #   are mandatory but only "molecular_mechanism" has to be populated.
-        if molecular_mechanism is None:
-            return Response(
-                {"error": f"Molecular mechanism is missing"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if mechanism_synopsis and ("name" not in mechanism_synopsis or "support" not in mechanism_synopsis):
-            return Response(
-                {"error": f"Molecular mechanism synopsis is missing"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # Get molecular mechanism - check if mandatory fields are populated (value and support)
-        molecular_mechanism_value = molecular_mechanism.get("name", None)
-        molecular_mechanism_support = molecular_mechanism.get("support", None)
-
-        if molecular_mechanism_value is None:
-            return Response(
-                {"error": f"Empty molecular mechanism value"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if molecular_mechanism_support is None:
-            return Response(
-                {"error": f"Empty molecular mechanism support"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if (mechanism_evidence is None or not mechanism_evidence) and molecular_mechanism_support == "evidence":
-            return Response(
-                {"error": f"Molecular mechanism evidence is missing"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
         # Get G2P entry to be updated
         lgd_obj = self.get_queryset().first()
-
         serializer = LocusGenotypeDiseaseSerializer()
 
         # Check if user has permission to edit this entry
@@ -342,6 +298,26 @@ class LGDUpdateMechanism(BaseUpdate):
                 {"error": f"No permission to update record '{stable_id}'"},
                 status=status.HTTP_403_FORBIDDEN
             )
+
+        # Validate mechanism data
+        molecular_mechanism = mechanism_data.get("molecular_mechanism", None) # mechanism value can be updated if current value is "undetermined"
+        mechanism_synopsis = mechanism_data.get("mechanism_synopsis", None) # optional
+        mechanism_evidence = mechanism_data.get("mechanism_evidence", None) # optional
+
+        # Return error if no data is provided
+        if(molecular_mechanism is None and mechanism_synopsis is None and 
+           mechanism_evidence is None):
+            self.handle_missing_data("Mechanism data")
+
+        # Check if mechanism value can be updated
+        if(molecular_mechanism and lgd_obj.mechanism.value != "undetermined" and 
+           "name" in molecular_mechanism and molecular_mechanism["name"] != ""):
+            return self.handle_no_update("molecular mechanism", stable_id)
+
+        # If the mechanism support is "evidence" then the evidence has to be provided
+        if(mechanism_evidence is None and molecular_mechanism and "support" in molecular_mechanism and 
+           molecular_mechanism["support"] == "evidence"):
+            self.handle_missing_data("Mechanism evidence")
 
         # Separate method to update mechanism
         # Updating the mechanism can be complex, specially if evidence data is provided

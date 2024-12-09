@@ -276,12 +276,11 @@ class LGDEditPublications(BaseUpdate):
                 # Build mechanism data
                 mechanism_data_input = {}
 
-                # Attach the mechanism to be updated (if applicable)
                 # Check if mechanism value can be updated
                 if(mechanism_data and lgd.mechanism.value != "undetermined" and 
                    "name" in mechanism_data and mechanism_data["name"] != ""):
                     return self.handle_no_update("molecular mechanism", stable_id)
-                
+
                 # If the mechanism support = "evidence" then evidence data has to
                 # be provided
                 elif(mechanism_data and "support" in mechanism_data and 
