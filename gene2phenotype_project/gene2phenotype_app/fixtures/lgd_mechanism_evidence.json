@@ -1,0 +1,12 @@
+[
+    {
+        "model": "gene2phenotype_app.lgdmolecularmechanismevidence", "pk": 1,
+        "fields": {
+            "lgd": 1,
+            "evidence": 18,
+            "description": null,
+            "publication": 1,
+            "is_deleted": 0
+        }
+    }
+]

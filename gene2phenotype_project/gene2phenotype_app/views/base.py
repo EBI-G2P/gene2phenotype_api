@@ -66,6 +66,9 @@ class BaseUpdate(generics.UpdateAPIView):
         else:
             error_message = context_message
             return Response({"error": f"{context_message}"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def handle_missing_data(self, data_type):
+        raise Http404(f"{data_type} is missing")
 
 @api_view(['GET'])
 def ListEndpoints(request):

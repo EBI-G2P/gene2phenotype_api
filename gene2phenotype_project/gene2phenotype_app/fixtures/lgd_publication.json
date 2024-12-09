@@ -1,0 +1,10 @@
+[
+    {
+        "model": "gene2phenotype_app.lgdpublication", "pk": 1,
+        "fields": {
+            "lgd": 1,
+            "publication": 1,
+            "is_deleted": 0
+        }
+    }
+]

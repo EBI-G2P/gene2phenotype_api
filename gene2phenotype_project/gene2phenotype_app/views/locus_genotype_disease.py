@@ -12,17 +12,16 @@ from gene2phenotype_app.serializers import (UserSerializer, LocusGenotypeDisease
                                             LGDCommentSerializer, LGDVariantConsequenceListSerializer,
                                             LGDVariantGenCCConsequenceSerializer, LGDCrossCuttingModifierListSerializer,
                                             LGDVariantTypeListSerializer, LGDVariantTypeSerializer,
-                                            LGDVariantTypeDescriptionListSerializer, LGDVariantTypeDescriptionSerializer,
-                                            MolecularMechanismSerializer)
+                                            LGDVariantTypeDescriptionListSerializer, LGDVariantTypeDescriptionSerializer)
 
 from gene2phenotype_app.models import (User, Attrib, LocusGenotypeDisease, OntologyTerm,
                                        G2PStableID, CVMolecularMechanism, LGDCrossCuttingModifier, 
                                        LGDVariantGenccConsequence, LGDVariantType, LGDVariantTypeComment,
                                        LGDVariantTypeDescription, LGDPanel, LGDPhenotype, LGDPhenotypeSummary,
-                                       MolecularMechanism, MolecularMechanismEvidence, LGDPublication,
+                                       LGDMolecularMechanismEvidence, LGDMolecularMechanismSynopsis, LGDPublication,
                                        LGDComment)
 
-from .base import BaseView, BaseAdd, BaseUpdate
+from .base import BaseUpdate
 
 
 class ListMolecularMechanisms(generics.ListAPIView):
@@ -31,8 +30,7 @@ class ListMolecularMechanisms(generics.ListAPIView):
         Only type 'evidence' has a defined subtype.
 
         Returns:
-            Returns:
-                (dict) response: list of molecular mechanisms by type and subtype.
+            (dict) response: list of molecular mechanisms by type and subtype.
     """
 
     queryset = CVMolecularMechanism.objects.all().values('type', 'subtype', 'value', 'description').order_by('type')
@@ -219,15 +217,20 @@ class LGDUpdateConfidence(BaseUpdate):
         else:
             return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+# TODO: review this method
 class LGDUpdateMechanism(BaseUpdate):
     http_method_names = ['patch', 'options']
-    serializer_class = MolecularMechanismSerializer # TO CHECK
+    serializer_class = LocusGenotypeDiseaseSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         """
             Retrieves a queryset of LocusGenotypeDisease objects associated with a stable ID
             for the authenticated user.
+
+            Authenticated users can update the mechanism value, support and evidence
+            only if mechanism is 'undetermined' or support is 'inferred'. The check is
+            done in LocusGenotypeDiseaseSerializer.
 
             Args:
                 stable_id (str): The stable ID from the URL kwargs.
@@ -247,21 +250,14 @@ class LGDUpdateMechanism(BaseUpdate):
 
         if not queryset.exists():
             self.handle_no_permission('Entry', stable_id)
-        else:
-            # Only 'undetermined' mechanisms can be updated
-            lgd_obj = queryset.first()
-            if not (lgd_obj.molecular_mechanism.mechanism.value == "undetermined" 
-                    and lgd_obj.molecular_mechanism.mechanism_support.value == "inferred"):
-                self.handle_no_update('molecular mechanism', stable_id)
 
-            return queryset
+        return queryset
 
     def patch(self, request, stable_id):
         """
             Partially updates the LGD record with a new molecular mechanism.
             It only allows to update mechanisms with value 'undetermined'
-            and support 'inferred'.
-            Mandatory fields: "molecular_mechanism".
+            or support 'inferred'.
 
             Supporting pmids have to already be linked to the LGD record.
 
@@ -276,61 +272,19 @@ class LGDUpdateMechanism(BaseUpdate):
                             "support": "evidence"
                         },
                         "mechanism_synopsis": {
-                            "name": "",
-                            "support": ""
+                            "name": "destabilising LOF",
+                            "support": "evidence"
                         },
                         "mechanism_evidence": [{'pmid': '25099252', 'description': 'text', 'evidence_types': 
-                                            [{'primary_type': 'Rescue', 'secondary_type': ['Human', 'Patient Cells']}]}]
+                                            [{'primary_type': 'Rescue', 'secondary_type': ['Patient Cells']}]}]
                     }
 
         """
         user = request.user
         mechanism_data = request.data
 
-        # Validate mechanism data
-        molecular_mechanism = mechanism_data.get("molecular_mechanism", None)
-        mechanism_synopsis = mechanism_data.get("mechanism_synopsis", None) # optional
-        mechanism_evidence = mechanism_data.get("mechanism_evidence", None) # optional
-
-        # Check the request data format:
-        #   the keys "molecular_mechanism", "mechanism_synopsis" and "mechanism_evidence"
-        #   are mandatory but only "molecular_mechanism" has to be populated.
-        if molecular_mechanism is None:
-            return Response(
-                {"error": f"Molecular mechanism is missing"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        if mechanism_synopsis is None:
-            return Response(
-                {"error": f"Molecular mechanism synopsis is missing"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # Get molecular mechanism - check if mandatory fields are populated (value and support)
-        molecular_mechanism_value = molecular_mechanism.get("name", None)
-        molecular_mechanism_support = molecular_mechanism.get("support", None)
-
-        if molecular_mechanism_value is None:
-            return Response(
-                {"error": f"Empty molecular mechanism value"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if molecular_mechanism_support is None:
-            return Response(
-                {"error": f"Empty molecular mechanism support"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if (mechanism_evidence is None or not mechanism_evidence) and molecular_mechanism_support == "evidence":
-            return Response(
-                {"error": f"Molecular mechanism evidence is missing"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
         # Get G2P entry to be updated
         lgd_obj = self.get_queryset().first()
-
         serializer = LocusGenotypeDiseaseSerializer()
 
         # Check if user has permission to edit this entry
@@ -345,6 +299,26 @@ class LGDUpdateMechanism(BaseUpdate):
                 status=status.HTTP_403_FORBIDDEN
             )
 
+        # Validate mechanism data
+        molecular_mechanism = mechanism_data.get("molecular_mechanism", None) # mechanism value can be updated if current value is "undetermined"
+        mechanism_synopsis = mechanism_data.get("mechanism_synopsis", None) # optional
+        mechanism_evidence = mechanism_data.get("mechanism_evidence", None) # optional
+
+        # Return error if no data is provided
+        if(molecular_mechanism is None and mechanism_synopsis is None and 
+           mechanism_evidence is None):
+            self.handle_missing_data("Mechanism data")
+
+        # Check if mechanism value can be updated
+        if(molecular_mechanism and lgd_obj.mechanism.value != "undetermined" and 
+           "name" in molecular_mechanism and molecular_mechanism["name"] != ""):
+            return self.handle_no_update("molecular mechanism", stable_id)
+
+        # If the mechanism support is "evidence" then the evidence has to be provided
+        if(mechanism_evidence is None and molecular_mechanism and "support" in molecular_mechanism and 
+           molecular_mechanism["support"] == "evidence"):
+            self.handle_missing_data("Mechanism evidence")
+
         # Separate method to update mechanism
         # Updating the mechanism can be complex, specially if evidence data is provided
         # To avoid problems with other LDG updates, the mechanism is going to be
@@ -355,12 +329,12 @@ class LGDUpdateMechanism(BaseUpdate):
             if hasattr(e, 'detail') and 'message' in e.detail:
                 return Response(
                 {"error": f"Error while updating molecular mechanism: {e.detail['message']}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_400_BAD_REQUEST
             )
             else:
                 return Response(
-                    {"error": f"Error while updating molecular mechanism"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    {"error": f"Error while updating molecular mechanism {e}"},
+                    status=status.HTTP_400_BAD_REQUEST
                 )
         else:
             return Response(
@@ -1113,13 +1087,9 @@ class LocusGenotypeDiseaseDelete(APIView):
         # Delete variant consequences
         LGDVariantGenccConsequence.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
 
-        # Delete molecular mechanism + evidence (if applicable)
-        lgd_mechanism_set = MolecularMechanism.objects.filter(id=lgd_obj.molecular_mechanism.id, is_deleted=0)
-
-        for lgd_mechanism_obj in lgd_mechanism_set:
-            MolecularMechanismEvidence.objects.filter(molecular_mechanism=lgd_mechanism_obj, is_deleted=0).update(is_deleted=1)
-            lgd_mechanism_obj.is_deleted = 1
-            lgd_mechanism_obj.save()
+        # Delete mechanism synopsis + evidence
+        LGDMolecularMechanismSynopsis.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
+        LGDMolecularMechanismEvidence.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
 
         # Delete publications
         LGDPublication.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
