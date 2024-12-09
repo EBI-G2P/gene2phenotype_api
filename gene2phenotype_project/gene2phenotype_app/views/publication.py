@@ -270,14 +270,27 @@ class LGDEditPublications(BaseUpdate):
             # Only mechanism "undetermined" can be updated - the check is done in the LocusGenotypeDiseaseSerializer
             # If mechanism has to be updated, call method update_mechanism() and send new mechanism value
             # plus the synopsis and the new evidence (if applicable)
-            # update_mechanism() updates the 'date_review' of the LGD record
-            if mechanism_data:
+            if mechanism_data or mechanism_synopsis_data:
                 lgd_serializer = LocusGenotypeDiseaseSerializer()
 
                 # Build mechanism data
-                mechanism_data_input = { 
-                    "molecular_mechanism": mechanism_data
-                }
+                mechanism_data_input = {}
+
+                # Attach the mechanism to be updated (if applicable)
+                # Check if mechanism value can be updated
+                if(mechanism_data and lgd.mechanism.value != "undetermined" and 
+                   "name" in mechanism_data and mechanism_data["name"] != ""):
+                    return self.handle_no_update("molecular mechanism", stable_id)
+                
+                # If the mechanism support = "evidence" then evidence data has to
+                # be provided
+                elif(mechanism_data and "support" in mechanism_data and 
+                     mechanism_data["support"] == "evidence" and not mechanism_evidence_data):
+                    return self.handle_missing_data("Mechanism evidence")
+
+                # Attach the mechanism to be updated
+                elif mechanism_data:
+                    mechanism_data_input["molecular_mechanism"] = mechanism_data
 
                 # Attach the synopsis to be updated (if applicable)
                 if mechanism_synopsis_data:
@@ -287,6 +300,7 @@ class LGDEditPublications(BaseUpdate):
                     mechanism_data_input["mechanism_evidence"] = mechanism_evidence_data
 
                 try:
+                    # update_mechanism() updates the 'date_review' of the LGD record
                     lgd_serializer.update_mechanism(lgd, mechanism_data_input)
                 except Exception as e:
                     return self.handle_update_exception(e, "Error while updating molecular mechanism")

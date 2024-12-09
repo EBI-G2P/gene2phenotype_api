@@ -552,10 +552,6 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             Method to update the molecular mechanism of the LGD record.
             It only allows to update the mechanism value if current value is 'undetermined'.
 
-            Mandatory fields are molecular_mechanism name and support (inferred/evidence).
-            If you don't want to update the mechanism value then input an empty string: "name": ""
-            Same for the support: "support": ""
-
             If evidence is provided, the code expects the 'evidence_types' to be populated
             otherwise the evidence data is not stored.
 
@@ -571,13 +567,18 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                             [{'primary_type': 'Rescue', 'secondary_type': ['Human', 'Patient Cells']}]}]
 
         """
-        molecular_mechanism_value = validated_data["molecular_mechanism"]["name"] # the mechanism value
-        molecular_mechanism_support = validated_data["molecular_mechanism"]["support"] # the mechanism support (inferred/evidence)
+        molecular_mechanism = validated_data.get("molecular_mechanism", None) # only updates mechanism if current value is 'undetermined'
         mechanism_synopsis = validated_data.get("mechanism_synopsis", None) # mechanism synopsis is optional
         mechanism_evidence = validated_data.get("mechanism_evidence", None) # molecular mechanism evidence is optional
 
         cv_mechanism_obj = None
-        if molecular_mechanism_value and molecular_mechanism_value != "":
+        cv_support_obj = None
+
+        # Get the mechanism name
+        # "name" = "" means the mechanism value does not need to be updated
+        if molecular_mechanism and "name" in molecular_mechanism and molecular_mechanism["name"] != "":
+            molecular_mechanism_value = molecular_mechanism["name"] # the mechanism value
+            
             try:
                 cv_mechanism_obj = CVMolecularMechanism.objects.get(
                     value = molecular_mechanism_value,
@@ -586,8 +587,11 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             except CVMolecularMechanism.DoesNotExist:
                 raise serializers.ValidationError({"message": f"Invalid mechanism value '{molecular_mechanism_value}'"})
 
-        cv_support_obj = None
-        if molecular_mechanism_support and molecular_mechanism_support !="":
+        # Get the mechanism support
+        # "support" = "" means the mechanism support does not need to be updated
+        if molecular_mechanism and "support" in molecular_mechanism and molecular_mechanism["support"] != "":
+            molecular_mechanism_support = molecular_mechanism["support"] # the mechanism support (inferred/evidence)
+
             try:
                 cv_support_obj = CVMolecularMechanism.objects.get(
                     value = molecular_mechanism_support,
