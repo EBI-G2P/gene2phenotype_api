@@ -13,7 +13,9 @@ class UserSerializer(serializers.ModelSerializer):
     user_name = serializers.SerializerMethodField()
     email = serializers.CharField(read_only=True)
     panels = serializers.SerializerMethodField()
-    is_active = serializers.CharField(read_only=True)
+    is_active = serializers.BooleanField(read_only=True)
+    is_superuser = serializers.BooleanField(read_only=True)
+    is_staff = serializers.BooleanField(read_only=True)
 
     def get_user_name(self, id):
         """
@@ -104,18 +106,13 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['user_name', 'email', 'is_active', 'panels']
+        fields = ['user_name', 'email', 'is_active', 'panels', 'is_superuser', 'is_staff']
         extra_kwargs = {'password': {'write_only': True }}
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
     """
         This serializer is used to validate and create a new user object.
-
-        Usage:
-            This serializer can be used to create a new user by passing validated 
-            data (username, email, password, first_name, last_name) and calling 
-            the `create` method.
     """
 
     def create(self, validated_data):
@@ -124,18 +121,20 @@ class CreateUserSerializer(serializers.ModelSerializer):
             the password is hashed before storing it in the database.
 
             validated_data has the following fields:
-                - username: The username
-                - email: The email of the user (email is unique in the system).
+                - username: The username is unique in the system (mandatory)
+                - email: The email of the user which has to be unique in the system (mandatory)
                 - password: The password for the user. This field is write-only and 
-                has a minimum length of 5 characters to ensure password strength.
-                - first_name: The user's first name.
-                - last_name: The user's last name.
+                has a minimum length of 5 characters to ensure password strength (mandatory)
+                - first_name: The user's first name
+                - last_name: The user's last name
+                - is_superuser: set to True if the user is a super user (default: False)
+                - is_staff: set to True if the user is a staff member (default: False)
         """
         return User.objects.create_user(**validated_data)
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'first_name', 'last_name']
+        fields = ['username', 'email', 'password', 'first_name', 'last_name', 'is_superuser', 'is_staff']
         extra_kwargs = {'password': {'write_only': True, 'min_length': 5}, 'email': {
             'validators': [
                 UniqueValidator(
