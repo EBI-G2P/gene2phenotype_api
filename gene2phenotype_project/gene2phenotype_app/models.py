@@ -591,10 +591,9 @@ class User(AbstractUser):
     email = models.CharField(max_length=100, unique=True, null=False)
     is_deleted = models.BooleanField(default=False)
     date_joined = models.DateField(null=True)
-    is_superuser = models.SmallIntegerField(default=False)
+    is_superuser = models.BooleanField(default=False)
     first_name = models.CharField(max_length=100, null=True, default=None)
     last_name = models.CharField(max_length=100, null=True, default=None)
- 
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
