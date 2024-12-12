@@ -490,27 +490,29 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         ### Insert data attached to the record Locus-Genotype-Disease ###
 
-        # ### Mechanism synopsis + evidence ###
-        # # A record can only have one molecular mechanism
-        # # The mechanism evidence attaches the evidence data to a publication
-        # # the PMIDs have to already be stored in G2P
-        try:
-            lgd_mechanism_synopsis_serializer = LGDMechanismSynopsisSerializer(
-                data={
-                    "synopsis": data.json_data["mechanism_synopsis"]["name"],
-                    "synopsis_support": data.json_data["mechanism_synopsis"]["support"]
-                },
-                context={"lgd": lgd_obj}
-            )
+        ### Mechanism synopsis + evidence ###
+        # A record can only have one molecular mechanism
+        # The mechanism evidence attaches the evidence data to a publication
+        # the PMIDs should already be stored in G2P
+        if("name" in data.json_data["mechanism_synopsis"] and "support" in data.json_data["mechanism_synopsis"] and
+           data.json_data["mechanism_synopsis"]["name"] != "" and data.json_data["mechanism_synopsis"]["support"] != ""):
+            try:
+                lgd_mechanism_synopsis_serializer = LGDMechanismSynopsisSerializer(
+                    data={
+                        "synopsis": data.json_data["mechanism_synopsis"]["name"],
+                        "synopsis_support": data.json_data["mechanism_synopsis"]["support"]
+                    },
+                    context={"lgd": lgd_obj}
+                )
 
-            # Validate the input data
-            if lgd_mechanism_synopsis_serializer.is_valid(raise_exception=True):
-                # save() is going to call create()
-                lgd_mechanism_synopsis_serializer.save()
-        except serializers.ValidationError as e:
-            raise serializers.ValidationError({
-                "error" : str(e)
-            })
+                # Validate the input data
+                if lgd_mechanism_synopsis_serializer.is_valid(raise_exception=True):
+                    # save() is going to call create()
+                    lgd_mechanism_synopsis_serializer.save()
+            except serializers.ValidationError as e:
+                raise serializers.ValidationError({
+                    "error" : str(e)
+                })
 
         for mechanism_evidence in data.json_data["mechanism_evidence"]:
             pmid = mechanism_evidence["pmid"]
