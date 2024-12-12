@@ -13,9 +13,9 @@ class UserSerializer(serializers.ModelSerializer):
     user_name = serializers.SerializerMethodField()
     email = serializers.CharField(read_only=True)
     panels = serializers.SerializerMethodField()
-    is_active = serializers.BooleanField(read_only=True)
-    is_superuser = serializers.BooleanField(read_only=True)
-    is_staff = serializers.BooleanField(read_only=True)
+    is_active = serializers.BooleanField()
+    is_superuser = serializers.BooleanField()
+    is_staff = serializers.BooleanField()
 
     def get_user_name(self, id):
         """
