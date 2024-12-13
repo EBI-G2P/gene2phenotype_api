@@ -941,6 +941,9 @@ class LGDMechanismEvidenceSerializer(serializers.ModelSerializer):
         lgd_instance = self.context['lgd']
         publication_instance = self.context['publication']
 
+        if validate_data["description"] == "":
+            validate_data["description"] =  None
+
         evidence_data = validate_data["evidence"]
         primary_type = evidence_data["primary_type"].lower().replace(" ", "_")
         secondary_type = evidence_data["secondary_type"] # list of strings
