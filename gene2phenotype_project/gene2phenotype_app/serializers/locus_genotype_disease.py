@@ -930,7 +930,7 @@ class LGDMechanismEvidenceSerializer(serializers.ModelSerializer):
         Serializer for the LGDMolecularMechanismEvidence model.
         A molecular mechanism can have multiple synopsis.
     """
-    description = serializers.CharField()
+    description = serializers.CharField(allow_blank=True)
     evidence = EvidenceSerializer()
     publication = serializers.CharField(source="publication.pmid")
 
@@ -940,9 +940,6 @@ class LGDMechanismEvidenceSerializer(serializers.ModelSerializer):
         """
         lgd_instance = self.context['lgd']
         publication_instance = self.context['publication']
-
-        description = validate_data["description"]
-        publication = validate_data["publication"]["pmid"]
 
         evidence_data = validate_data["evidence"]
         primary_type = evidence_data["primary_type"].lower().replace(" ", "_")
