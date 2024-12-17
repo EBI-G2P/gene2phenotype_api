@@ -46,7 +46,7 @@ class PanelDetailsEndpointTests(TestCase):
                 "gene2phenotype_app/fixtures/sequence.json", "gene2phenotype_app/fixtures/disease.json",
                 "gene2phenotype_app/fixtures/ontology_term.json", "gene2phenotype_app/fixtures/source.json",
                 "gene2phenotype_app/fixtures/locus_genotype_disease.json", "gene2phenotype_app/fixtures/lgd_panel.json",
-                "gene2phenotype_app/fixtures/molecular_mechanism.json", "gene2phenotype_app/fixtures/cv_molecular_mechanism.json"]
+                "gene2phenotype_app/fixtures/cv_molecular_mechanism.json"]
 
     def setUp(self):
         self.url_panels = reverse('panel_details', kwargs={'name': 'DD'})
@@ -68,7 +68,7 @@ class PanelSummaryEndpointTests(TestCase):
                 "gene2phenotype_app/fixtures/sequence.json", "gene2phenotype_app/fixtures/disease.json",
                 "gene2phenotype_app/fixtures/ontology_term.json", "gene2phenotype_app/fixtures/source.json",
                 "gene2phenotype_app/fixtures/locus_genotype_disease.json", "gene2phenotype_app/fixtures/lgd_panel.json",
-                "gene2phenotype_app/fixtures/molecular_mechanism.json", "gene2phenotype_app/fixtures/cv_molecular_mechanism.json"]
+                "gene2phenotype_app/fixtures/cv_molecular_mechanism.json"]
 
     def setUp(self):
         self.url_panels = reverse('panel_summary', kwargs={'name': 'DD'})

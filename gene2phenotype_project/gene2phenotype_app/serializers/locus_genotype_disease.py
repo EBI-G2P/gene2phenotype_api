@@ -8,9 +8,9 @@ from ..models import (Panel, Attrib,
                      LGDCrossCuttingModifier, LGDPublication,
                      LGDPhenotype, LGDVariantType, Locus,
                      LGDComment, LGDVariantTypeComment, User,
-                     MolecularMechanism, MolecularMechanismEvidence,
+                     LGDMolecularMechanismEvidence, CVMolecularMechanism,
                      OntologyTerm, Publication, LGDPhenotypeSummary,
-                     LGDVariantTypeDescription, CVMolecularMechanism)
+                     LGDVariantTypeDescription, LGDMolecularMechanismSynopsis)
 
 
 from .publication import LGDPublicationSerializer
@@ -80,10 +80,46 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
     def get_molecular_mechanism(self, id):
         """
-            Molecular mechanisms associated with the LGD record.
+            Molecular mechanism associated with the LGD record.
+            If available, also returns the evidence.
         """
-        mechanism = MolecularMechanismSerializer(id.molecular_mechanism).data
-        return mechanism
+        mechanism = id.mechanism.value
+        mechanism_support = id.mechanism_support.value
+        mechanism_synopsis = []
+        mechanism_evidence = {}
+
+        queryset_synopsis = LGDMolecularMechanismSynopsis.objects.filter(lgd_id=id, is_deleted=0).prefetch_related()
+        queryset_evidence = LGDMolecularMechanismEvidence.objects.filter(lgd_id=id, is_deleted=0).prefetch_related()
+
+        for synopsis_data in queryset_synopsis:
+            mechanism_synopsis.append({
+                "synopsis": synopsis_data.synopsis.value,
+                "support": synopsis_data.synopsis_support.value
+            })
+
+        for evidence_data in queryset_evidence:
+            pmid = evidence_data.publication.pmid
+            evidence_type = evidence_data.evidence.subtype.replace("_", " ").title()
+            evidence_value = evidence_data.evidence.value.title()
+
+            if pmid not in mechanism_evidence:
+                mechanism_evidence[pmid] = { evidence_type : [evidence_value] }
+
+            else:
+                existing_evidence = mechanism_evidence[pmid]
+                if evidence_type in existing_evidence:
+                    mechanism_evidence[pmid][evidence_type].append(evidence_value)
+                else:
+                    mechanism_evidence[pmid][evidence_type] = [evidence_value]
+
+        mechanism_result = {
+            "mechanism": mechanism,
+            "mechanism_support": mechanism_support,
+            "synopsis": mechanism_synopsis,
+            "evidence": mechanism_evidence
+        }
+
+        return mechanism_result
 
     def get_cross_cutting_modifier(self, id):
         """
@@ -347,7 +383,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         genotype = data.get('allelic_requirement') # allelic requirement
         panels = data.get('panels') # Array of panel names
         confidence = data.get('confidence') # confidence level and justification
-        molecular_mechanism_obj = data.get('molecular_mechanism')
+        mechanism_obj = data.get('mechanism')
+        mechanism_support_obj = data.get('mechanism_support')
 
         if not panels or not publications_list:
             raise serializers.ValidationError({"message": f"Missing data to create the G2P record {stable_id_obj.stable_id}"})
@@ -395,7 +432,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 stable_id = stable_id_obj,
                 genotype = genotype_obj,
                 disease = disease_obj,
-                molecular_mechanism = molecular_mechanism_obj,
+                mechanism = mechanism_obj,
+                mechanism_support = mechanism_support_obj,
                 confidence = confidence_obj,
                 confidence_support = confidence_support,
                 is_reviewed = 1,
@@ -512,10 +550,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     def update_mechanism(self, lgd_instance, validated_data):
         """
             Method to update the molecular mechanism of the LGD record.
-            It only allows to update mechanisms with value 'undetermined'
-            and support value 'inferred'.
+            It only allows to update the mechanism value if current value is 'undetermined'.
 
-            Mandatory fields are molecular_mechanism name and support (inferred/evidence).
             If evidence is provided, the code expects the 'evidence_types' to be populated
             otherwise the evidence data is not stored.
 
@@ -531,33 +567,57 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                             [{'primary_type': 'Rescue', 'secondary_type': ['Human', 'Patient Cells']}]}]
 
         """
-        molecular_mechanism_value = validated_data["molecular_mechanism"]["name"] # the mechanism value
-        molecular_mechanism_support = validated_data["molecular_mechanism"]["support"] # the mechanism support (inferred/evidence)
+        molecular_mechanism = validated_data.get("molecular_mechanism", None) # only updates mechanism if current value is 'undetermined'
         mechanism_synopsis = validated_data.get("mechanism_synopsis", None) # mechanism synopsis is optional
         mechanism_evidence = validated_data.get("mechanism_evidence", None) # molecular mechanism evidence is optional
 
-        try:
-            cv_mechanism_obj = CVMolecularMechanism.objects.get(
-                value = molecular_mechanism_value,
-                type = "mechanism"
-            )
-        except CVMolecularMechanism.DoesNotExist:
-            raise serializers.ValidationError({"message": f"Invalid mechanism value '{molecular_mechanism_value}'"})
+        cv_mechanism_obj = None
+        cv_support_obj = None
 
-        try:
-            cv_support_obj = CVMolecularMechanism.objects.get(
-                value = molecular_mechanism_support,
-                type = "support"
-            )
-        except CVMolecularMechanism.DoesNotExist:
-            raise serializers.ValidationError({"message": f"Invalid mechanism support '{molecular_mechanism_support}'"})
+        # Get the mechanism name
+        # "name" = "" means the mechanism value does not need to be updated
+        if molecular_mechanism and "name" in molecular_mechanism and molecular_mechanism["name"] != "":
+            molecular_mechanism_value = molecular_mechanism["name"] # the mechanism value
+            
+            try:
+                cv_mechanism_obj = CVMolecularMechanism.objects.get(
+                    value = molecular_mechanism_value,
+                    type = "mechanism"
+                )
+            except CVMolecularMechanism.DoesNotExist:
+                raise serializers.ValidationError({"message": f"Invalid mechanism value '{molecular_mechanism_value}'"})
+
+        # Get the mechanism support
+        # "support" = "" means the mechanism support does not need to be updated
+        if molecular_mechanism and "support" in molecular_mechanism and molecular_mechanism["support"] != "":
+            molecular_mechanism_support = molecular_mechanism["support"] # the mechanism support (inferred/evidence)
+
+            try:
+                cv_support_obj = CVMolecularMechanism.objects.get(
+                    value = molecular_mechanism_support,
+                    type = "support"
+                )
+            except CVMolecularMechanism.DoesNotExist:
+                raise serializers.ValidationError({"message": f"Invalid mechanism support '{molecular_mechanism_support}'"})
+
+        # Update LGD instance with new mechanism value only if mechanism value is "undetermined"
+        if cv_mechanism_obj and lgd_instance.mechanism.value == "undetermined":
+            lgd_instance.mechanism = cv_mechanism_obj
+
+        # Update the mechanism support
+        if cv_support_obj:
+            lgd_instance.mechanism_support = cv_support_obj
+
+        lgd_instance.date_review = datetime.now()
+        lgd_instance.save()
 
         # The mechanism synopsis is optional
-        cv_synopsis_obj = None
-        cv_synopsis_support_obj = None
         if mechanism_synopsis and mechanism_synopsis["name"] != "":
             mechanism_synopsis_value = mechanism_synopsis["name"]
             mechanism_synopsis_support = mechanism_synopsis["support"]
+
+            cv_synopsis_obj = None
+            cv_synopsis_support_obj = None
 
             try:
                 cv_synopsis_obj = CVMolecularMechanism.objects.get(
@@ -575,33 +635,33 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             except CVMolecularMechanism.DoesNotExist:
                 raise serializers.ValidationError({"message": f"Invalid mechanism synopsis support '{mechanism_synopsis_support}'"})
 
-        # Insert mechanism
-        mechanism_obj = MolecularMechanism.objects.create(
-            mechanism = cv_mechanism_obj,
-            mechanism_support = cv_support_obj,
-            synopsis = cv_synopsis_obj,
-            synopsis_support = cv_synopsis_support_obj,
-            is_deleted = 0
-        )
-
-        # Save old molecular mechanism to delete it later
-        old_mechanism_obj = lgd_instance.molecular_mechanism
-
-        # Update LGD record
-        # The mechanism has to be updated in the locus_genotype_disease before the evidence is added
-        # Because the evidence is going to be linked to the new lgd.molecular_mechanism
-        lgd_instance.molecular_mechanism = mechanism_obj
-        lgd_instance.date_review = datetime.now()
-        lgd_instance.save()
+            # Check if synopsis already exists
+            try:
+                mechanism_syn_obj = LGDMolecularMechanismSynopsis.objects.get(
+                    lgd = lgd_instance,
+                    synopsis = cv_synopsis_obj
+                )
+            except LGDMolecularMechanismSynopsis.DoesNotExist:
+                # Create mechanism synopsis
+                mechanism_syn_obj = LGDMolecularMechanismSynopsis.objects.create(
+                    lgd = lgd_instance,
+                    synopsis = cv_synopsis_obj,
+                    synopsis_support = cv_synopsis_support_obj,
+                    is_deleted = 0
+                )
+            else:
+                if mechanism_syn_obj.is_deleted == 1:
+                    mechanism_syn_obj.is_deleted = 0
+                    mechanism_syn_obj.save()
+                if mechanism_syn_obj.synopsis_support.value != mechanism_synopsis_support:
+                    mechanism_syn_obj.synopsis_support = cv_synopsis_support_obj
+                    mechanism_syn_obj.save()
 
         # Get evidence - the mechanism evidence was validated in the view 'LGDUpdateMechanism'
         # Example: {'pmid': '25099252', 'description': 'text', 'evidence_types': 
         #          [{'primary_type': 'Rescue', 'secondary_type': ['Human', 'Patient Cells']}]}
-        self.update_mechanism_evidence(lgd_instance, mechanism_evidence)
-
-        # The old molecular mechanism can be deleted - the deletion is stored in the history table
-        # As this method only allows to update 'undetermined' mechanisms, there is no evidence to be deleted
-        old_mechanism_obj.delete()
+        if mechanism_evidence:
+            self.update_mechanism_evidence(lgd_instance, mechanism_evidence)
 
         return lgd_instance
 
@@ -617,7 +677,6 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                                                               "secondary_type": [ "Biochemical" ]}
                                         ]}]
         """
-        mechanism_obj = lgd_obj.molecular_mechanism
 
         for evidence in validated_data:
             pmid = evidence["pmid"]
@@ -657,14 +716,14 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
                     # Insert evidence
                     try:
-                        mechanism_evidence_obj = MolecularMechanismEvidence.objects.get(
-                        molecular_mechanism = mechanism_obj,
+                        mechanism_evidence_obj = LGDMolecularMechanismEvidence.objects.get(
+                        lgd = lgd_obj,
                         publication = publication_obj,
                         evidence = cv_evidence_obj
                     )
-                    except MolecularMechanismEvidence.DoesNotExist:
-                        mechanism_evidence_obj = MolecularMechanismEvidence.objects.create(
-                            molecular_mechanism = mechanism_obj,
+                    except LGDMolecularMechanismEvidence.DoesNotExist:
+                        mechanism_evidence_obj = LGDMolecularMechanismEvidence.objects.create(
+                            lgd = lgd_obj,
                             description = description,
                             publication = publication_obj,
                             evidence = cv_evidence_obj,
@@ -681,7 +740,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LocusGenotypeDisease
-        exclude = ['id', 'is_deleted', 'date_review']
+        exclude = ['id', 'is_deleted', 'date_review', 'mechanism', 'mechanism_support']
 
 class LGDCommentSerializer(serializers.ModelSerializer):
     """
@@ -810,175 +869,110 @@ class LGDVariantConsequenceListSerializer(serializers.Serializer):
     """
     variant_consequences = LGDVariantGenCCConsequenceSerializer(many=True)
 
-class MolecularMechanismSerializer(serializers.ModelSerializer):
+class LGDMechanismSynopsisSerializer(serializers.ModelSerializer):
     """
-        Serializer for the MolecularMechanism model.
-        A molecular mechanism can have a synopsis and/or evidence(s).
-        If the support is 'evidence' then the type of evidence has to
-        be provided.
-        By default, support is 'inferred'.
+        Serializer for the MolecularMechanismSynopsis model.
+        A molecular mechanism can have multiple synopsis.
     """
-    mechanism = serializers.CharField(source="mechanism.value") # Foreign Key to CVMolecularMechanism
-    support = serializers.CharField(source="mechanism_support.value") # default value = 'inferred'
-    description = serializers.CharField(source="mechanism_description", allow_null=True) # optional
-    synopsis = serializers.CharField(source="synopsis.value", allow_null=True) # optional
-    synopsis_support = serializers.CharField(source="synopsis_support.value", allow_null=True) # optional
-    evidence = serializers.SerializerMethodField() # only necessary if support = 'evidence'
+    synopsis = serializers.CharField(source="synopsis.value")
+    synopsis_support = serializers.CharField(source="synopsis_support.value")
 
-    def get_evidence(self, id):
+    def create(self, validate_data):
         """
-            Return the mechanism evidence associated with the MolecularMechanism by publication.
-            There are different types of evidence: function, models, rescue, etc.
-
-            Output example:
-                            "evidence": {
-                                "11235": {
-                                    "function": [
-                                        "biochemical",
-                                        "protein interaction"
-                                    ],
-                                    "functional_alteration": [
-                                        "patient cells"
-                                    ]
-                                }
-                            }
+            Create LGDMolecularMechanismSynopsis object
         """
-        evidence_list = MolecularMechanismEvidence.objects.filter(
-            molecular_mechanism=id,
-            is_deleted=0
-            ).select_related('evidence', 'publication').values(
-                'publication__pmid',
-                'evidence__value',
-                'evidence__subtype'
-            ).order_by('publication')
-
-        data = {}
-
-        for evidence in evidence_list:
-            evidence_value = evidence["evidence__value"].title()
-            # The evidence subtype is always populated
-            evidence_type = evidence["evidence__subtype"].replace("_", " ").title()
-            pmid = evidence["publication__pmid"]
-
-            if pmid not in data:
-                data[pmid] = {}
-                data[pmid][evidence_type] = [evidence_value]
-            elif evidence_type not in data[pmid]:
-                data[pmid][evidence_type] = [evidence_value]
-            else:
-                data[pmid][evidence_type].append(evidence_value)
-
-        return data
-
-    def create(self, mechanism, mechanism_synopsis, mechanism_evidence):
-        """
-            Create MolecularMechanism and MolecularMechanismEvidence (if support = 'evidence')
-        """
-        mechanism_name = mechanism["name"]
-        mechanism_support = mechanism["support"]
-        synopsis_name = mechanism_synopsis["name"] # optional
-        synopsis_support = mechanism_synopsis["support"] # optional
+        lgd_instance = self.context['lgd']
+        synopsis_name = validate_data["synopsis"]["value"]
+        synopsis_support = validate_data["synopsis_support"]["value"]
         synopsis_obj = None
         synopsis_support_obj = None
 
-        # If the mechanism support is 'evidence' then the evidence has to be provided
-        # Check if data has been provided
-        if mechanism_support == "evidence" and not mechanism_evidence:
-            raise serializers.ValidationError({"message": f"Mechanism is missing the evidence"})
-
-        # Get mechanism value from controlled vocabulary table for molecular mechanism
+        # Get mechanism synopsis value from controlled vocabulary table for molecular mechanism
         try:
-            mechanism_obj = CVMolecularMechanism.objects.get(
-                value = mechanism_name,
-                type = "mechanism"
+            synopsis_obj = CVMolecularMechanism.objects.get(
+                value = synopsis_name,
+                type = "mechanism_synopsis"
             )
         except CVMolecularMechanism.DoesNotExist:
-            raise serializers.ValidationError({"message": f"Invalid mechanism value '{mechanism_name}'"})
+            raise serializers.ValidationError({"message": f"Invalid mechanism synopsis value '{synopsis_name}'"})
 
-        # Get mechanism support from controlled vocabulary table for molecular mechanism
+        # Get mechanism synopsis support from controlled vocabulary table for molecular mechanism
         try:
-            mechanism_support_obj = CVMolecularMechanism.objects.get(
-                value = mechanism_support,
+            synopsis_support_obj = CVMolecularMechanism.objects.get(
+                value = synopsis_support,
                 type = "support"
             )
         except CVMolecularMechanism.DoesNotExist:
-            raise serializers.ValidationError({"message": f"Invalid mechanism support value '{mechanism_support}'"})
-
-        # Synopsis is optional
-        if synopsis_name:
-            # Get mechanism synopsis value from controlled vocabulary table for molecular mechanism
-            try:
-                synopsis_obj = CVMolecularMechanism.objects.get(
-                    value = synopsis_name,
-                    type = "mechanism_synopsis"
-                )
-            except CVMolecularMechanism.DoesNotExist:
-                raise serializers.ValidationError({"message": f"Invalid mechanism synopsis value '{synopsis_name}'"})
-
-            # Get mechanism synopsis support from controlled vocabulary table for molecular mechanism
-            try:
-                synopsis_support_obj = CVMolecularMechanism.objects.get(
-                    value = synopsis_support,
-                    type = "support"
-                )
-            except CVMolecularMechanism.DoesNotExist:
-                raise serializers.ValidationError({"message": f"Invalid mechanism synopsis support value '{synopsis_support}'"})
+            raise serializers.ValidationError({"message": f"Invalid mechanism synopsis support value '{synopsis_support}'"})
 
         # Create new molecular mechanism
-        lgd_mechanism = MolecularMechanism.objects.create(
-            mechanism = mechanism_obj,
-            mechanism_support = mechanism_support_obj,
+        mechanism_synopsis_obj = LGDMolecularMechanismSynopsis.objects.create(
+            lgd = lgd_instance,
             synopsis = synopsis_obj,
             synopsis_support = synopsis_support_obj,
             is_deleted = 0
         )
 
-        # Link molecular mechanism to the LGD
-
-
-        # Insert the mechanism evidence (if applicable)
-        if mechanism_support == "evidence":
-            # for each publication (pmid) there is one or more evidence values
-            for evidence in mechanism_evidence:
-                publication_obj = None
-
-                try:
-                    publication_obj = Publication.objects.get(pmid=evidence["pmid"])
-
-                except Publication.DoesNotExist:
-                    raise serializers.ValidationError({"message": f"Could not find publication for PMID '{evidence['pmid']}'"})
-
-                else:
-                    # Get the evidence values
-                    for evidence_type in evidence["evidence_types"]:
-                        # type can be: function, rescue, functional alteration or models
-                        subtype = evidence_type["primary_type"].replace(" ", "_")
-                        values = evidence_type["secondary_type"]
-
-                        # Values are stored in cv_molecular_mechanism table
-                        for v in values:
-                            try:
-                                evidence_value = CVMolecularMechanism.objects.get(
-                                    value = v.lower(),
-                                    type = "evidence",
-                                    subtype = subtype.lower()
-                                )
-                            except CVMolecularMechanism.DoesNotExist:
-                                raise serializers.ValidationError({"message": f"Invalid mechanism evidence value '{v.lower()}'"})
-
-                            else:
-                                lgd_mechanism_evidence = MolecularMechanismEvidence.objects.create(
-                                molecular_mechanism = lgd_mechanism,
-                                evidence = evidence_value,
-                                publication = publication_obj,
-                                is_deleted = 0
-                            )
-
-        return lgd_mechanism
+        return mechanism_synopsis_obj
 
     class Meta:
-        model = MolecularMechanism
-        fields = ['mechanism', 'support', 'description', 'synopsis', 'synopsis_support', 'evidence']
+        model = LGDMolecularMechanismSynopsis
+        fields = ['synopsis', 'synopsis_support']
+
+class EvidenceSerializer(serializers.Serializer):
+    primary_type = serializers.CharField()
+    secondary_type = serializers.ListField(
+        child=serializers.CharField(), allow_empty=True
+)
+
+class LGDMechanismEvidenceSerializer(serializers.ModelSerializer):
+    """
+        Serializer for the LGDMolecularMechanismEvidence model.
+        A molecular mechanism can have multiple synopsis.
+    """
+    description = serializers.CharField(allow_blank=True)
+    evidence = EvidenceSerializer()
+    publication = serializers.CharField(source="publication.pmid")
+
+    def create(self, validate_data):
+        """
+            Create LGDMolecularMechanismEvidence object
+        """
+        lgd_instance = self.context['lgd']
+        publication_instance = self.context['publication']
+
+        if validate_data["description"] == "":
+            validate_data["description"] =  None
+
+        evidence_data = validate_data["evidence"]
+        primary_type = evidence_data["primary_type"].lower().replace(" ", "_")
+        secondary_type = evidence_data["secondary_type"] # list of strings
+
+        for evidence_value in secondary_type:
+            # Get mechanism synopsis value from controlled vocabulary table for molecular mechanism
+            try:
+                evidence_obj = CVMolecularMechanism.objects.get(
+                    value = evidence_value.lower(),
+                    type = "evidence",
+                    subtype = primary_type
+                    
+                )
+            except CVMolecularMechanism.DoesNotExist:
+                raise serializers.ValidationError({"message": f"Invalid mechanism evidence value '{evidence_value}'"})
+
+            # Create new molecular mechanism
+            mechanism_evidence_obj = LGDMolecularMechanismEvidence.objects.create(
+                lgd = lgd_instance,
+                evidence = evidence_obj,
+                publication = publication_instance,
+                is_deleted = 0
+            )
+
+        return mechanism_evidence_obj
+
+    class Meta:
+        model = LGDMolecularMechanismEvidence
+        fields = ['description', 'evidence', 'publication']
 
 class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
     """

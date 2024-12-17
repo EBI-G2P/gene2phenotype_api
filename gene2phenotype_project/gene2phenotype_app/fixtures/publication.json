@@ -19,5 +19,5 @@
 	{
 		"model": "gene2phenotype_app.publication", "pk": 5,
 		"fields": {"pmid": 1882842, "title": "Molecular characterization of variant alpha-subunit of electron transfer flavoprotein in three patients with glutaric acidemia type II--and identification of glycine substitution for valine-157 in the sequence of the precursor, producing an unstable mature protein in a patient.", "authors": "Indo Y, Glassberg R, Yokota I, Tanaka K.", "source": "Am J Hum Genet. 49: 575-580, 1991.", "doi": null, "year": 1991}
-	},
+	}
 ]

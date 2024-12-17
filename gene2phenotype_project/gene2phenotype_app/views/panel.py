@@ -11,7 +11,7 @@ from datetime import datetime
 
 from gene2phenotype_app.models import (Panel, User, LocusGenotypeDisease,
                                        LGDVariantType, LGDVariantGenccConsequence,
-                                       MolecularMechanism, LGDPhenotype,
+                                       LGDMolecularMechanismEvidence, LGDPhenotype,
                                        LGDPublication, LGDCrossCuttingModifier,
                                        LGDPanel)
 
@@ -271,75 +271,21 @@ def PanelDownload(request, name):
         else:
             lgd_varianconsequence_data[data['lgd__id']].append(data['variant_consequence__term'])
 
-    # Preload molecular mechanism
-    lgd_mechanism_data = {} # key = mechanism id; {value = molecular mechanism value, support = mechanism support ('inferred' or 'evidence')}
-    queryset_lgd_mechanism = MolecularMechanism.objects.filter(
-        is_deleted=0).select_related('mechanism__value', 'mechanism_support__value'
-        ).prefetch_related('molecular_mechanism_evidence').values(
-            'id',
-            'mechanism__value',
-            'mechanism_support__value',
-            'molecularmechanismevidence__evidence__subtype',
-            'molecularmechanismevidence__evidence__value',
-            'molecularmechanismevidence__publication__pmid')
+    # Preload molecular mechanism synopsis and evidence
+    mechanism_evidence_data = {} # key = lgd_id; value = evidence
+    queryset_lgd_mechanism_evidence = LGDMolecularMechanismEvidence.objects.filter(
+        is_deleted=0).select_related('lgd__id'
+        ).values(
+            'lgd__id',
+            'evidence__subtype',
+            'evidence__value',
+            'publication__pmid')
 
-    evidence_data = {}
-
-    # First collect the evidence data for each mechanism_id
-    for data in queryset_lgd_mechanism:
-        if data['mechanism_support__value'] == "evidence":
-            mechanism_value = data['mechanism__value']
-            subtype = data['molecularmechanismevidence__evidence__subtype']
-            value = data['molecularmechanismevidence__evidence__value']
-            pmid = data['molecularmechanismevidence__publication__pmid']
-
-            if data['id'] not in evidence_data:
-                evidence_data[data['id']] = {
-                    mechanism_value: [{"subtype": subtype, "value": value, "pmid" :pmid}]
-                }
-            else:
-                # this should be the most common scenario
-                if mechanism_value in evidence_data[data['id']]:
-                    evidence_data[data['id']][mechanism_value].append({"subtype": subtype, "value": value, "pmid":pmid})
-                else:
-                    # if lgd_id has multiple mechanisms
-                    evidence_data[data['id']].update({
-                        mechanism_value: [{subtype: 1, value: 1, pmid :pmid}]
-                    })
+    print("\nMechanism evidence:", queryset_lgd_mechanism_evidence)
 
     # Prepare final dict of mechanisms + evidence (if applicable)
-    for data in queryset_lgd_mechanism:
-        if data['id'] not in lgd_mechanism_data:
-            # check if there is evidence
-            if data['id'] in evidence_data:
-                evidence = evidence_data[data['id']][data['mechanism__value']]
-                lgd_mechanism_data[data['id']] = [{
-                    "value": data['mechanism__value'],
-                    "support": data['mechanism_support__value'],
-                    "evidence": evidence
-                }]
-
-            else:
-                lgd_mechanism_data[data['id']] = [{
-                    "value": data['mechanism__value'],
-                    "support": data['mechanism_support__value']
-                }]
-
-        else:
-            # check if there is evidence
-            if data['id'] in evidence_data:
-                evidence = evidence_data[data['id']][data['mechanism__value']]
-                lgd_mechanism_data[data['id']].append({
-                    "value": data['mechanism__value'],
-                    "support": data['mechanism_support__value'],
-                    "evidence": evidence
-                })
-
-            else:
-                lgd_mechanism_data[data['id']].append({
-                    "value": data['mechanism__value'],
-                    "support": data['mechanism_support__value']
-                })
+    # for data in queryset_lgd_mechanism_evidence:
+    #     if data['lgd__id'] in evidence_data:
 
     # Preload phenotypes
     lgd_phenotype_data = {} # key = lgd_id; value = phenotype accession
@@ -403,8 +349,8 @@ def PanelDownload(request, name):
             is_deleted = 0,
             is_reviewed = 1,
             lgdpanel__panel = panel
-        ).distinct().select_related('stable_id', 'locus', 'disease', 'genotype', 'confidence', 'molecular_mechanism'
-                                    ).prefetch_related('disease', 'locus', 'molecular_mechanism')
+        ).distinct().select_related('stable_id', 'locus', 'disease', 'genotype', 'confidence', 'mechanism', 'mechanism_support'
+                                    ).prefetch_related('disease', 'locus')
 
         # Get extra info for the disease and the locus:
         #  disease - ids from external dbs (omim, mondo)
@@ -476,24 +422,15 @@ def PanelDownload(request, name):
             if lgd_id in lgd_varianconsequence_data:
                 variant_consequences = '; '.join(lgd_varianconsequence_data[lgd_id])
 
-            # Get preloaded molecular mechanism for this g2p entry
-            # For lgd_mechanism_data the key is the molecular_mechanism_id
-            mechanism_id = lgd.molecular_mechanism.id
-            if mechanism_id in lgd_mechanism_data:
-                final_mechanisms = set()
+            # Get preloaded molecular mechanism evidence for this g2p entry
+            molecular_mechanism = f"{lgd.mechanism.value} ({lgd.mechanism_support.value})"
+            if lgd_id in mechanism_evidence_data:
                 mechanism_evidence = set()
-                for mechanism_data in lgd_mechanism_data[mechanism_id]:
-                    m_value = mechanism_data["value"]
-                    m_support = mechanism_data["support"]
-                    final_mechanisms.add(f"{m_value} ({m_support})")
-
-                    if "evidence" in mechanism_data:
-                        for element in mechanism_data["evidence"]:
-                            m_subtype = element["subtype"]
-                            e_value = element["value"]
-                            e_pmid = element["pmid"]
-                            mechanism_evidence.add(f"{m_subtype}:{e_value}:{e_pmid}")
-                molecular_mechanism = "; ".join(final_mechanisms)
+                for evidence_data in mechanism_evidence_data[lgd_id]:
+                    m_subtype = evidence_data["subtype"]
+                    e_value = evidence_data["value"]
+                    e_pmid = evidence_data["pmid"]
+                    mechanism_evidence.add(f"{m_subtype}:{e_value}:{e_pmid}")
                 molecular_mechanism_evidence = "; ".join(mechanism_evidence)
 
             # Get preloaded phenotypes for this g2p entry

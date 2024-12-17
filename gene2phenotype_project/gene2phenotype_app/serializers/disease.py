@@ -155,13 +155,13 @@ class DiseaseDetailSerializer(DiseaseSerializer):
                 - only returns records linked to visible panels
         """
         if user.is_authenticated:
-            lgd_select = LocusGenotypeDisease.objects.filter(disease=id, is_deleted=0).select_related('locus', 'genotype', 'confidence', 'molecular_mechanism'
+            lgd_select = LocusGenotypeDisease.objects.filter(disease=id, is_deleted=0).select_related('locus', 'genotype', 'confidence', 'mechanism'
                                                ).prefetch_related('lgd_panel', 'panel', 'lgd_variant_gencc_consequence', 'lgd_variant_type', 'g2pstable_id'
                                                                   ).order_by('-date_review')
 
         else:
             lgd_select = LocusGenotypeDisease.objects.filter(disease=id, is_deleted=0, lgdpanel__panel__is_visible=1).select_related(
-                'locus', 'genotype', 'confidence', 'molecular_mechanism'
+                'locus', 'genotype', 'confidence', 'mechanism'
                 ).prefetch_related('lgd_panel', 'panel', 'lgd_variant_gencc_consequence', 'lgd_variant_type', 'g2pstable_id'
                                     ).order_by('-date_review')
 
@@ -172,22 +172,19 @@ class DiseaseDetailSerializer(DiseaseSerializer):
                                                   'confidence__value',
                                                   'lgdvariantgenccconsequence__variant_consequence__term',
                                                   'lgdvarianttype__variant_type_ot__term',
-                                                  'molecular_mechanism__mechanism__value'))
+                                                  'mechanism__value'))
 
         aggregated_data = {}
         for lgd_obj in lgd_objects_list:
             if lgd_obj['stable_id__stable_id'] not in aggregated_data.keys():
                 variant_consequences = []
                 variant_types = []
-                molecular_mechanism = []
                 panels = []
 
                 panels.append(lgd_obj['lgdpanel__panel__name'])
                 variant_consequences.append(lgd_obj['lgdvariantgenccconsequence__variant_consequence__term'])
                 if lgd_obj['lgdvarianttype__variant_type_ot__term'] is not None:
                     variant_types.append(lgd_obj['lgdvarianttype__variant_type_ot__term'])
-                if lgd_obj['molecular_mechanism__mechanism__value'] is not None:
-                    molecular_mechanism.append(lgd_obj['molecular_mechanism__mechanism__value'])
 
                 aggregated_data[lgd_obj['stable_id__stable_id']] = { 'locus':lgd_obj['locus__name'],
                                                           'genotype':lgd_obj['genotype__value'],
@@ -195,7 +192,7 @@ class DiseaseDetailSerializer(DiseaseSerializer):
                                                           'panels':panels,
                                                           'variant_consequence':variant_consequences,
                                                           'variant_type':variant_types,
-                                                          'molecular_mechanism':molecular_mechanism,
+                                                          'molecular_mechanism':lgd_obj['mechanism__value'],
                                                           'stable_id':lgd_obj['stable_id__stable_id'] }
 
             else:
@@ -205,8 +202,6 @@ class DiseaseDetailSerializer(DiseaseSerializer):
                     aggregated_data[lgd_obj['stable_id__stable_id']]['variant_consequence'].append(lgd_obj['lgdvariantgenccconsequence__variant_consequence__term'])
                 if lgd_obj['lgdvarianttype__variant_type_ot__term'] not in aggregated_data[lgd_obj['stable_id__stable_id']]['variant_type'] and lgd_obj['lgdvarianttype__variant_type_ot__term'] is not None:
                     aggregated_data[lgd_obj['stable_id__stable_id']]['variant_type'].append(lgd_obj['lgdvarianttype__variant_type_ot__term'])
-                if lgd_obj['molecular_mechanism__mechanism__value'] not in aggregated_data[lgd_obj['stable_id__stable_id']]['molecular_mechanism'] and lgd_obj['molecular_mechanism__mechanism__value'] is not None:
-                    aggregated_data[lgd_obj['stable_id__stable_id']]['molecular_mechanism'].append(lgd_obj['molecular_mechanism__mechanism__value'])
 
         return aggregated_data.values()
 

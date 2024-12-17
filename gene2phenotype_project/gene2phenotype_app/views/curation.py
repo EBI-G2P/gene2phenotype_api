@@ -47,6 +47,9 @@ class AddCurationData(BaseAdd):
         input_data = json.dumps(request.data)
         input_json_data = json.loads(input_data)
 
+        if "json_data" not in input_json_data:
+            return Response({"message": "Invalid data format: 'json_data' is missing"}, status=status.HTTP_400_BAD_REQUEST)
+
         # Validate the JSON data against the schema
         try:
             validate(instance=input_json_data["json_data"], schema=schema)
