@@ -4,6 +4,10 @@ from django.db.models import F
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from django.contrib.auth import login
 from knox.views import LoginView as KnoxLoginView
+from rest_framework import status
+from rest_framework_simplejwt.views import TokenObtainPairView
+from django.conf import settings
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from gene2phenotype_app.serializers import (UserSerializer, AuthSerializer,
                                             CreateUserSerializer)
@@ -133,13 +137,30 @@ class LoginView(KnoxLoginView):
 
     serializer_class = AuthSerializer
     permission_classes = (permissions.AllowAny,)
-
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         serializer = AuthTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
-        login(request, user)
-        return super(LoginView, self).post(request, format=None)
+       
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        # Create the response object
+        response = Response({
+            "access": access_token,
+            "refresh": str(refresh),
+        }, status=status.HTTP_200_OK)
+     
+        response.set_cookie(
+            key=settings.SIMPLE_JWT["AUTH_COOKIE"],
+            value=access_token,
+            domain=settings.SIMPLE_JWT["AUTH_COOKIE_DOMAIN"],
+            path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
+            expires=settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
+            secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
+            httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
+            samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
+        )
+        return response
 
 
 class ManageUserView(generics.RetrieveUpdateAPIView):

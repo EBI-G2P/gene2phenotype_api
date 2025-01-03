@@ -85,16 +85,33 @@ REST_FRAMEWORK = {
     ),
 }
 
-
-REST_KNOX = {
+SIMPLE_JWT = {
   'SECURE_HASH_ALGORITHM': 'hashlib.sha512',
   'AUTH_TOKEN_CHARACTER_LENGTH': 64,
-  'TOKEN_TTL': timedelta(hours=8), # time before it logs you out 
-  'USER_SERIALIZER': 'gene2phenotype_app.serializers.UserSerializer',
+  'TOKEN_USER_CLASS': 'gene2phenotype_app.serializers.UserSerializer',
   'TOKEN_LIMIT_PER_USER': None,
+  "USER_ID_FIELD": "id",
+  "USER_ID_CLAIM": "id",
   'AUTO_REFRESH': False,
   'EXPIRY_DATETIME_FORMAT': api_settings.DATETIME_FORMAT,
+  ##Custom
+  "AUTH_COOKIE": "access_token",
+  "AUTH_COOKIE_DOMAIN": None,
+  "AUTH_COOKIE_SECURE": False, # for production, we need to change this to true
+  "AUTH_COOKIE_HTTP_ONLY": True, #prevents client side js from accessing the cookie
+  "AUTH_COOKIE_PATH": "/cookies",
+  "AUTH_COOKIE_SAMESITE": "Lax",
+  "ACCESS_TOKEN_LIFETIME": timedelta(hours=8),
+  "REFRESH_TOKEN_LIFETIME": timedelta(days=1)
 }
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+]
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:5173',  # Add your frontend's URL here
+]
+CORS_ALLOWED_CREDENTIALS = "True"
+
 
 ROOT_URLCONF = 'gene2phenotype_project.urls'
 
