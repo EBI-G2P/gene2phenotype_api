@@ -102,7 +102,7 @@ class CreateUserView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
 
-class LoginView(KnoxLoginView):
+class LoginView(TokenObtainPairView):
     """
         API view for user login, extending KnoxLoginView.
 
@@ -160,6 +160,7 @@ class LoginView(KnoxLoginView):
             httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
             samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
         )
+
         return response
 
 

@@ -79,7 +79,7 @@ MIDDLEWARE = [
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 50,
-    'DEFAULT_AUTHENTICATION_CLASSES': ('knox.auth.TokenAuthentication',),
+    'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework_simplejwt.authentication.JWTAuthentication', 'gene2phenotype_app.authentication.CustomAuthentication'),
     'DEFAULT_PERMISSION_CLASSES': (
         "rest_framework.permissions.AllowAny",
     ),
@@ -99,16 +99,17 @@ SIMPLE_JWT = {
   "AUTH_COOKIE_DOMAIN": None,
   "AUTH_COOKIE_SECURE": False, # for production, we need to change this to true
   "AUTH_COOKIE_HTTP_ONLY": True, #prevents client side js from accessing the cookie
-  "AUTH_COOKIE_PATH": "/cookies",
+  "AUTH_COOKIE_PATH": "/",
   "AUTH_COOKIE_SAMESITE": "Lax",
   "ACCESS_TOKEN_LIFETIME": timedelta(hours=8),
   "REFRESH_TOKEN_LIFETIME": timedelta(days=1)
 }
+
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
+    "http://localhost:5173",  # Add your frontend's URL here, # local set up still being implemented, need to change for production
 ]
 CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:5173',  # Add your frontend's URL here
+    'http://localhost:5173',  # Add your frontend's URL here, # local set up still being implemented, need to change for production
 ]
 CORS_ALLOWED_CREDENTIALS = "True"
 
