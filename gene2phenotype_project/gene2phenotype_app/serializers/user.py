@@ -161,12 +161,27 @@ class LoginSerializer(serializers.ModelSerializer):
         Serializer class for user authentication.
 
         Fields:
-            - username: A CharField representing the user's username.
-            - password: A CharField representing the user's password. The 'input_type' 
-            is set to 'password' to mask the input during entry, and 'trim_whitespace'
-        is set to False to ensure the password is not altered.
+            - username (serializers.CharField): 
+        Represents the username field, allowing string input for user identification.
+
+            - password (serializers.CharField): 
+                Represents the password field, with additional configurations:
+                - `style={'input_type': 'password'}`: Ensures the input is treated as a password 
+                field (hidden text in forms).
+                - `trim_whitespace=False`: Prevents automatic whitespace trimming, ensuring the 
+                password is processed as entered.
+                - `write_only=True`: Ensures this field is used only for input and not included 
+                in serialized output.
+
+            - tokens (serializers.SerializerMethodField): 
+                A read-only field that provides token information for the user (e.g., `access` and 
+                `refresh` tokens). This field is dynamically generated using a custom method, 
+                which typically retrieves token data for authenticated users.
 
         Methods:
+             -get_tokens(obj):
+                This method retrieves the `refresh` and `access` tokens for the user based on their email.
+                
              - validate(attrs): 
                 This method is responsible for validating the provided username and 
                 password. It attempts to authenticate the user using the `authenticate` 
@@ -194,14 +209,55 @@ class LoginSerializer(serializers.ModelSerializer):
     tokens = serializers.SerializerMethodField()
     
     def get_tokens(self, obj):
+        """
+            Returns the authentication tokens for a given user.
+
+            This method retrieves the `refresh` and `access` tokens for the user based on their email.
+
+            Parameters:
+                - obj (dict): A dictionary containing user information, including the user's email.
+
+            Returns:
+                - dict: A dictionary containing the `refresh` and `access` tokens associated with the 
+                user, typically used for authentication purposes.
+
+            Raises:
+                - User.DoesNotExist: If no user with the provided email exists in the database.
+        """
+
         user = User.objects.get(email=obj['email'])
 
-        return {
-            'refresh': user.tokens()['refresh'],
-            'access': user.tokens()['access']
-        }
+        if user:
+            return {
+                'refresh': user.tokens()['refresh'],
+                'access': user.tokens()['access']
+            }
     
     def validate(self, attrs):
+        """
+            Validates the user credentials and checks account status.
+
+            This method authenticates the user by verifying the provided username and password. It also
+            checks whether the user's account is disabled. If successful, it returns the user's email, 
+            username, and authentication tokens.
+
+            Parameters:
+                - attrs (dict): A dictionary containing user input data, specifically 'username' and 
+                'password'.
+
+            Returns:
+                - dict: A dictionary containing the user's email, username, and tokens if authentication 
+                is successful.
+
+            Raises:
+                - AuthenticationFailed: If the authentication fails due to incorrect username or password, 
+                or if the user's account has been disabled.
+
+            Note:
+                The user must not be deleted (i.e., `user.is_deleted` must be `False`). If the account is 
+                deleted, an error message is raised with instructions to contact support.
+        """
+
         username = attrs.get('username')
         password = attrs.get('password')
         
@@ -230,14 +286,59 @@ class LoginSerializer(serializers.ModelSerializer):
     
 
 class LogoutSerializer(serializers.Serializer):
+    """
+        LogoutSerializer: Handles the serialization and validation of the refresh token for logout.
+
+        This serializer is used to validate and process the refresh token provided during a logout 
+        request. It ensures that the token is valid and then attempts to blacklist it, effectively 
+        revoking the token and preventing further use.
+
+        Attributes:
+            - refresh: A `CharField` that represents the refresh token to be validated and blacklisted.
+
+        Methods:
+            - validate(attrs): Validates the presence of the refresh token in the input data.
+            - save(**kwargs): Blacklists the refresh token to revoke access.
+    """
+
     refresh = serializers.CharField()
 
     def validate(self, attrs):
+        """
+            Validates the refresh token provided in the request.
+
+            This method ensures that the `refresh` field is present in the input data and assigns it to 
+            the `self.token` attribute for further processing.
+
+            Parameters:
+                - attrs (dict): The input data containing the refresh token.
+
+            Returns:
+                - dict: The validated input data.
+
+            Raises:
+                - serializers.ValidationError: If the `refresh` field is not provided or invalid.
+        """
+
         self.token = attrs['refresh']
 
         return attrs
     
     def save(self, **kwargs):
+        """
+            Blacklists the refresh token to revoke user access.
+
+            This method uses the Django REST Framework SimpleJWT `RefreshToken` class to blacklist the 
+            provided refresh token. Blacklisting the token ensures it can no longer be used to obtain 
+            new access tokens.
+
+            Parameters:
+                - **kwargs: Additional keyword arguments passed to the method (not used here).
+
+            Raises:
+                - serializers.ValidationError: If the token is invalid or blacklisting fails.
+        """
+
         token = RefreshToken(self.token)
         try:
            token.blacklist()

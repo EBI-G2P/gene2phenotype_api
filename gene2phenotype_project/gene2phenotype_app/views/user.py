@@ -104,40 +104,53 @@ class CreateUserView(generics.CreateAPIView):
 
 class LoginView(generics.GenericAPIView):
     """
-        API view for user login, extending KnoxLoginView.
+        LoginView: Handles user authentication and login.
 
-        This view handles user login requests and is integrated with the Django REST Knox 
-        token-based authentication system. It authenticates the user and generates a token 
-        upon successful login.
+        This view allows users to authenticate using their credentials (e.g., email/username and password).
+        Upon successful authentication, the view generates a JSON Web Token (JWT) for the user and 
+        sets it as a secure cookie in the HTTP response. 
 
         Attributes:
-            - serializer_class: Specifies the serializer used for authentication, which is 
-            `AuthSerializer`.
-            - permission_classes: Allows any user (authenticated or not) to access this 
-            endpoint, using `AllowAny` permission.
+            - serializer_class: Specifies the serializer used for validating user credentials, 
+            which is `LoginSerializer`.
+            - permission_classes: Allows any user (authenticated or not) to access this endpoint 
+            by using the `AllowAny` permission.
 
         Methods:
-            - post(request): 
-                Handles the POST request to log in a user. It validates the provided 
-                credentials using the `AuthTokenSerializer`. If valid, the user is logged 
-                in using Django's `login` function. After login, it delegates to the Knox 
-                `post` method to generate and return an authentication token.
-
-                Parameters:
-                    - request: The HTTP request containing user credentials (username 
-                    and password).
-
-                Returns:
-                    A response from the parent `KnoxLoginView`, which includes an 
-                    authentication token if the login is successful.
-
-        Raises:
-            - ValidationError: Raised if the provided credentials are invalid.
+            - post(request, *args, **kwargs): Handles the user login process, generates the 
+            access token, and sets it in a cookie.
     """
 
     serializer_class = LoginSerializer
     permission_classes = (permissions.AllowAny,)
     def post(self, request, *args, **kwargs):
+        """
+            Handles the POST request for user login.
+
+            This method authenticates a user based on the provided credentials, generates an access 
+            token, and sets it in a secure cookie for client-side use. It also returns the user 
+            details and token information in the response body.
+
+            Parameters:
+                - request: The HTTP request containing user credentials in the request body (e.g., 
+                `username` and `password`).
+
+            Process:
+                1. Validates the user credentials using the `LoginSerializer`.
+                2. Extracts the access token from the serialized data.
+                3. Creates an HTTP response with the serialized user data.
+                4. Sets the access token in a secure cookie with attributes configured in 
+                `settings.SIMPLE_JWT`.
+
+            Returns:
+                - Response: An HTTP response object with the user data and tokens in the body. 
+                The access token is also stored as a secure cookie.
+
+            Raises:
+                - ValidationError: Raised if the provided credentials are invalid.
+                - ValueError: Raised if the cookie cannot be set due to a response error.
+        """
+
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         access_token = serializer.data.get('tokens', {}).get('access', None) # to access the token which is in the serializer.data
@@ -161,10 +174,59 @@ class LoginView(generics.GenericAPIView):
         return response
     
 class LogOutView(generics.GenericAPIView):
+    """
+        API view for user logout.
+
+        This view allows authenticated users to log out by blacklisting their refresh tokens. 
+        It requires the user to provide a valid refresh token in the request. Once the token is 
+        blacklisted, it becomes invalid for further use, effectively logging the user out.
+
+        Attributes:
+            - serializer_class: Specifies the serializer used for this view, which is `LogoutSerializer`.
+            - permission_classes: Requires the user to be authenticated to access this endpoint.
+
+        Methods:
+            - post(request):
+                Handles the POST request to log out a user. Validates the refresh token using 
+                the `LogoutSerializer` and blacklists it to prevent further use.
+
+                Parameters:
+                    - request: The HTTP request containing the refresh token to be blacklisted.
+
+                Returns:
+                    A response with HTTP 204 NO CONTENT status if the logout is successful.
+
+        Raises:
+            - ValidationError: Raised if the refresh token is invalid or cannot be blacklisted.
+            - PermissionDenied: Raised if the user is not authenticated.
+    """
     serializer_class = LogoutSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request):
+        """
+            Handles the POST request for logging out a user.
+
+            This method validates the provided refresh token and blacklists it to prevent further 
+            use. It ensures that only authenticated users can access this endpoint.
+
+            Parameters:
+                - request: The HTTP request containing the refresh token in the request body.
+
+            Process:
+                - The method uses the associated serializer (`LogoutSerializer`) to validate the 
+                refresh token.
+                - Upon successful validation, the `save()` method of the serializer is called to 
+                blacklist the token.
+
+            Returns:
+                - A Response object with HTTP 204 NO CONTENT status to indicate a successful logout.
+
+            Raises:
+                - ValidationError: Raised if the refresh token is invalid or missing.
+                - AuthenticationFailed: Raised if the user is not authenticated.
+        """
+
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
