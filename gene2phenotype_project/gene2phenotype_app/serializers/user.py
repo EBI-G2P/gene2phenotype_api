@@ -2,6 +2,8 @@ from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from ..models import User, UserPanel
 from django.contrib.auth import authenticate
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework.validators import UniqueValidator
 
 
@@ -115,6 +117,16 @@ class CreateUserSerializer(serializers.ModelSerializer):
         This serializer is used to validate and create a new user object.
     """
 
+    def validate(self, attrs):
+        email = attrs.get('email')
+        if email is None: 
+            raise serializers.ValidationError({"message": "Email is needed to create a user"}, email)
+        username = attrs.get('username')
+        if username is None: 
+            raise serializers.ValidationError({"message": "Username is needed to create a user"}, username)
+        
+        return attrs
+
     def create(self, validated_data):
         """
             This method creates a user using the `create_user` method, which ensures that
@@ -135,7 +147,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['username', 'email', 'password', 'first_name', 'last_name', 'is_superuser', 'is_staff']
-        extra_kwargs = {'password': {'write_only': True, 'min_length': 5}, 'email': {
+        extra_kwargs = {'password': {'write_only': True, 'min_length': 6}, 'email': {
             'validators': [
                 UniqueValidator(
                     queryset=User.objects.all()
@@ -144,7 +156,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
         }}
 
 
-class AuthSerializer(serializers.Serializer):
+class LoginSerializer(serializers.ModelSerializer):
     """
         Serializer class for user authentication.
 
@@ -176,8 +188,19 @@ class AuthSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(
         style={'input_type': 'password'},
-        trim_whitespace=False
-    )    
+        trim_whitespace=False,
+        write_only=True
+    )
+    tokens = serializers.SerializerMethodField()
+    
+    def get_tokens(self, obj):
+        user = User.objects.get(email=obj['email'])
+
+        return {
+            'refresh': user.tokens()['refresh'],
+            'access': user.tokens()['access']
+        }
+    
     def validate(self, attrs):
         username = attrs.get('username')
         password = attrs.get('password')
@@ -189,8 +212,42 @@ class AuthSerializer(serializers.Serializer):
         )
         
         if not user:
-            msg = ('Username or password is incorrect')
-            raise serializers.ValidationError(msg, code='authentication')
+            raise AuthenticationFailed("Username or password is incorrect", code='authentication')
+
+        if user.is_deleted:
+            raise AuthenticationFailed('Account disbaled. Please contact Admin at g2p-help@ebi.ac.uk')
 
         attrs['user'] = user
-        return user
+        return {
+            'email': user.email,
+            'username': user.username,
+            'tokens': user.tokens
+        }
+    
+    class Meta:
+        model = User
+        fields = ['username','password','tokens']
+    
+
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+
+    def validate(self, attrs):
+        self.token = attrs['refresh']
+
+        return attrs
+    
+    def save(self, **kwargs):
+        try:
+            RefreshToken(self.token.blacklist())
+        except TokenError as e:
+            raise serializers.ValidationError({"message": str(e)})
+        
+    class Meta: 
+        model = User
+        fields = ['refresh']
+        
+
+    
+
+

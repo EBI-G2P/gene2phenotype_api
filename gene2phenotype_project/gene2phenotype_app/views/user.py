@@ -9,8 +9,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from gene2phenotype_app.serializers import (UserSerializer, AuthSerializer,
-                                            CreateUserSerializer)
+from gene2phenotype_app.serializers import (UserSerializer, LoginSerializer,
+                                            CreateUserSerializer, LogoutSerializer)
 from gene2phenotype_app.models import User, UserPanel
 from .base import BaseView
 
@@ -135,34 +135,30 @@ class LoginView(TokenObtainPairView):
             - ValidationError: Raised if the provided credentials are invalid.
     """
 
-    serializer_class = AuthSerializer
+    serializer_class = LoginSerializer
     permission_classes = (permissions.AllowAny,)
     def post(self, request, *args, **kwargs):
-        serializer = AuthTokenSerializer(data=request.data)
+        serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
+        access_token = serializer.data.get('tokens', {}).get('access', None) # to access the token which is in the serializer.data
+ 
        
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-        # Create the response object
-        response = Response({
-            "access": access_token,
-            "refresh": str(refresh),
-        }, status=status.HTTP_200_OK)
-     
-        response.set_cookie(
-            key=settings.SIMPLE_JWT["AUTH_COOKIE"],
-            value=access_token,
-            domain=settings.SIMPLE_JWT["AUTH_COOKIE_DOMAIN"],
-            path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
-            expires=settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
-            secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
-            httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
-            samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
-        )
+        response = Response(serializer.data, status=status.HTTP_200_OK)
+        if response and response.status_code == 200:   
+            response.set_cookie(
+                key=settings.SIMPLE_JWT["AUTH_COOKIE"],
+                value=access_token,
+                domain=settings.SIMPLE_JWT["AUTH_COOKIE_DOMAIN"],
+                path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
+                expires=settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
+                secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
+                httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
+                samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
+            )
+        else:
+            raise ValueError("Failed to set cookies")
 
         return response
-
 
 class ManageUserView(generics.RetrieveUpdateAPIView):
     """
