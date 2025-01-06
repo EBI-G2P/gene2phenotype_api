@@ -238,14 +238,19 @@
         "confidence": {
             "type": "object",
             "properties": {
-                "justification": {
-                    "type": "string"
-                },
                 "level": {
                     "type": "string"
                 }
             },
             "required": ["level"]
+        },
+        "public_comment": {
+            "description": "General comment linked to the record available to the public",
+            "type": "string"
+        },
+        "private_comment": {
+            "description": "General comment linked to the record only available to authenticated users",
+            "type": "string"
         }
     },
     "required": ["locus"]
