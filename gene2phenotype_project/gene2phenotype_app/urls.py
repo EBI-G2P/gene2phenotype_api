@@ -3,6 +3,9 @@ from rest_framework.urlpatterns import format_suffix_patterns
 from rest_framework.authtoken import views as authviews
 from gene2phenotype_app import views
 from knox import views as knox_views
+from rest_framework_simplejwt.views import (
+    TokenRefreshView,
+)
 
 def perform_create(self, serializer):
     serializer.save(owner=self.request.user)
@@ -75,9 +78,9 @@ urlpatterns = [
     #user management
     path("create/user/", views.CreateUserView.as_view(), name="create"),
     path('profile/', views.ManageUserView.as_view(), name='profile'),
-    path('login/', views.LoginView.as_view(), name='knox_login'),
-    path('logout/', knox_views.LogoutView.as_view(), name='knox_logout'),
-    path('logoutall/', knox_views.LogoutAllView.as_view(), name='knox_logoutall'),
+    path('login/', views.LoginView.as_view(), name='_login'),
+    path('logout/', views.LogOutView.as_view(), name='logout'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
 ]
 

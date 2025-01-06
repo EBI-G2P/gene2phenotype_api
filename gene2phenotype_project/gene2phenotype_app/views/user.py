@@ -102,7 +102,7 @@ class CreateUserView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
 
-class LoginView(TokenObtainPairView):
+class LoginView(generics.GenericAPIView):
     """
         API view for user login, extending KnoxLoginView.
 
@@ -144,7 +144,7 @@ class LoginView(TokenObtainPairView):
  
        
         response = Response(serializer.data, status=status.HTTP_200_OK)
-        if response and response.status_code == 200:   
+        if response.status_code == 200:   
             response.set_cookie(
                 key=settings.SIMPLE_JWT["AUTH_COOKIE"],
                 value=access_token,
@@ -159,6 +159,16 @@ class LoginView(TokenObtainPairView):
             raise ValueError("Failed to set cookies")
 
         return response
+    
+class LogOutView(generics.GenericAPIView):
+    serializer_class = LogoutSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class ManageUserView(generics.RetrieveUpdateAPIView):
     """

@@ -238,14 +238,12 @@ class LogoutSerializer(serializers.Serializer):
         return attrs
     
     def save(self, **kwargs):
+        token = RefreshToken(self.token)
         try:
-            RefreshToken(self.token.blacklist())
+           token.blacklist()
         except TokenError as e:
             raise serializers.ValidationError({"message": str(e)})
-        
-    class Meta: 
-        model = User
-        fields = ['refresh']
+
         
 
     

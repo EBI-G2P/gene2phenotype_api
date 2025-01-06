@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'simple_history',
     'knox',
+    'rest_framework_simplejwt.token_blacklist'
 ]
 
 MIDDLEWARE = [
@@ -101,8 +102,10 @@ SIMPLE_JWT = {
   "AUTH_COOKIE_HTTP_ONLY": True, #prevents client side js from accessing the cookie
   "AUTH_COOKIE_PATH": "/",
   "AUTH_COOKIE_SAMESITE": "Lax",
-  "ACCESS_TOKEN_LIFETIME": timedelta(hours=8),
-  "REFRESH_TOKEN_LIFETIME": timedelta(days=1)
+  "ACCESS_TOKEN_LIFETIME": timedelta(minutes=20),
+  "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+  "BLACKLIST_AFTER_ROTATION": True,
+  "ROTATE_REFRESH_TOKENS": True
 }
 
 CORS_ALLOWED_ORIGINS = [
