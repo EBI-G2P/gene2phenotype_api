@@ -109,7 +109,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         if "disease" not in json_data or json_data["disease"]["disease_name"] == "":
             missing_data.append("disease")
 
-        if "confidence" not in json_data or json_data["confidence"]["level"] == "":
+        if "confidence" not in json_data or json_data["confidence"] == "":
             missing_data.append("confidence")
 
         if "publications" not in json_data or len(json_data["publications"]) == 0:
@@ -247,7 +247,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             - "genotype": Retrieved from the "allelic_requirement" key.
             - "disease": Retrieved from the nested "disease_name" key inside the "disease" dictionary.
             - "panel": Retrieved from the "panels" key.
-            - "confidence": Retrieved from the key "level" inside the "confidence" dictionary.
+            - "confidence"
 
             Args:
                 json_data (dict): A dictionary containing the JSON data to extract information from.
@@ -263,7 +263,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             "genotype": json_data.get("allelic_requirement"),
             "disease": json_data.get("disease", {}).get("disease_name"),
             "panel": json_data.get("panels"),
-            "confidence": json_data.get("confidence", {}).get("level")
+            "confidence": json_data.get("confidence", None)
         }
 
     @transaction.atomic

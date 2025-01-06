@@ -413,11 +413,11 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             # Get confidence
             try:
                 confidence_obj = Attrib.objects.get(
-                    value = confidence["level"],
+                    value = confidence,
                     type__code = "confidence_category"
                 )
             except Attrib.DoesNotExist:
-                raise serializers.ValidationError({"message": f"Invalid confidence value {confidence['level']}"})
+                raise serializers.ValidationError({"message": f"Invalid confidence value {confidence}"})
 
             # Insert new G2P record (LGD)
             lgd_obj = LocusGenotypeDisease.objects.create(
@@ -486,12 +486,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         """
             Method to update the record confidence.
-
-            Mandatory fields to update confidence:
-                            - confidence value
         """
         # validated_data example:
-        # {'confidence': {'value': 'definitive'}}
+        # { "confidence": "definitive" }
         validated_confidence = validated_data.get("confidence", None)
         is_reviewed = validated_data.get("is_reviewed", None)
 
