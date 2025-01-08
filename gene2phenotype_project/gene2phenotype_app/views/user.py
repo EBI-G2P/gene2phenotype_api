@@ -2,17 +2,18 @@ from rest_framework.response import Response
 from rest_framework import generics, permissions
 from django.db.models import F
 from rest_framework.authtoken.serializers import AuthTokenSerializer
-from django.contrib.auth import login
-from knox.views import LoginView as KnoxLoginView
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer 
+from datetime import timedelta, datetime
 from rest_framework import status
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenRefreshView
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
-
+from datetime import timedelta
 from gene2phenotype_app.serializers import (UserSerializer, LoginSerializer,
                                             CreateUserSerializer, LogoutSerializer)
 from gene2phenotype_app.models import User, UserPanel
 from .base import BaseView
+
 
 
 class UserPanels(BaseView):
@@ -141,10 +142,12 @@ class LoginView(generics.GenericAPIView):
                 3. Creates an HTTP response with the serialized user data.
                 4. Sets the access token in a secure cookie with attributes configured in 
                 `settings.SIMPLE_JWT`.
+                5. Sets the refresh token in a secure cookie with attributes configured in `settings.SIMPLE_JWT`
 
             Returns:
                 - Response: An HTTP response object with the user data and tokens in the body. 
                 The access token is also stored as a secure cookie.
+                The refresh token is also stored as a secure cookie
 
             Raises:
                 - ValidationError: Raised if the provided credentials are invalid.
@@ -154,6 +157,8 @@ class LoginView(generics.GenericAPIView):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         access_token = serializer.data.get('tokens', {}).get('access', None) # to access the token which is in the serializer.data
+        refresh_token = serializer.data.get('tokens', {}).get('refresh', None)
+      
  
        
         response = Response(serializer.data, status=status.HTTP_200_OK)
@@ -164,6 +169,17 @@ class LoginView(generics.GenericAPIView):
                 domain=settings.SIMPLE_JWT["AUTH_COOKIE_DOMAIN"],
                 path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
                 expires=settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
+                secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
+                httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
+                samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
+            )
+
+            response.set_cookie(
+                key=settings.SIMPLE_JWT["REFRESH_COOKIE"],  # Refresh token cookie name
+                value=refresh_token,
+                domain=settings.SIMPLE_JWT["AUTH_COOKIE_DOMAIN"],
+                path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
+                expires=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
                 secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
                 httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
                 samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
@@ -262,3 +278,38 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         """Retrieve and return authenticated user"""
         return self.request.user
+
+
+class CustomTokenRefreshView(TokenRefreshView):
+    serializer_class = TokenRefreshSerializer
+    permission_classes = (permissions.AllowAny,)
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        refresh_token = serializer.validated_data.get("refresh")
+        try:
+            if getattr(settings, "SIMPLE_JWT", {}).get("ROTATE_REFRESH_TOKENS", True):
+                new_refresh_token = str(RefreshToken(refresh_token))
+            else: 
+                new_refresh_token = refresh_token
+        except Exception as e: 
+            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        response = Response(serializer.data, status=status.HTTP_200_OK)
+    
+        
+        if response.status_code == 200:
+            refresh_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_TOKEN_LIFETIME", timedelta(days=1))
+            expires = datetime.utcnow() + refresh_token_lifetime  # Calculate expiration time
+            response.set_cookie(
+                key=getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_COOKIE", "refresh_token"),
+                value=new_refresh_token,
+                domain=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE_DOMAIN", None),
+                path=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE_PATH", "/"),
+                expires=expires,
+                secure=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE_SECURE", False),
+                httponly=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE_HTTP_ONLY", True),
+                samesite=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE_SAMESITE", "Lax"),
+            )
+        
+        return response

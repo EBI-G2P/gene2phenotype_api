@@ -260,25 +260,26 @@ class LoginSerializer(serializers.ModelSerializer):
 
         username = attrs.get('username')
         password = attrs.get('password')
-        
-        user = authenticate(
-            request=self.context.get('request'),
-            username=username,
-            password=password
-        )
-        
-        if not user:
-            raise AuthenticationFailed("Username or password is incorrect", code='authentication')
 
-        if user.is_deleted:
-            raise AuthenticationFailed('Account disbaled. Please contact Admin at g2p-help@ebi.ac.uk')
+        if username and password:
+        
+            user = authenticate(
+                request=self.context.get('request'),
+                username=username,
+                password=password
+            )
+            if not user:
+                raise AuthenticationFailed("Username or password is incorrect")
 
-        attrs['user'] = user
-        return {
-            'email': user.email,
-            'username': user.username,
-            'tokens': user.tokens
-        }
+            if user.is_deleted:
+                raise AuthenticationFailed('Account disbaled. Please contact Admin at g2p-help@ebi.ac.uk')
+
+            attrs['user'] = user
+            return {
+                'email': user.email,
+                'username': user.username,
+                'tokens': user.tokens
+            }
     
     class Meta:
         model = User

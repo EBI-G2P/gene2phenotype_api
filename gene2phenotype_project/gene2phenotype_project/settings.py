@@ -97,6 +97,7 @@ SIMPLE_JWT = {
   'EXPIRY_DATETIME_FORMAT': api_settings.DATETIME_FORMAT,
   ##Custom
   "AUTH_COOKIE": "access_token",
+  "REFRESH_COOKIE": "refresh_token",
   "AUTH_COOKIE_DOMAIN": None,
   "AUTH_COOKIE_SECURE": False, # for production, we need to change this to true
   "AUTH_COOKIE_HTTP_ONLY": True, #prevents client side js from accessing the cookie

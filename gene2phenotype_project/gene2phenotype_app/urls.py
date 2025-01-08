@@ -80,7 +80,7 @@ urlpatterns = [
     path('profile/', views.ManageUserView.as_view(), name='profile'),
     path('login/', views.LoginView.as_view(), name='_login'),
     path('logout/', views.LogOutView.as_view(), name='logout'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('token/refresh/', views.CustomTokenRefreshView.as_view(), name='token_refresh'),
 
 ]
 
