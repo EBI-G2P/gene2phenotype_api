@@ -100,7 +100,7 @@ class CreateUserView(generics.CreateAPIView):
     """
 
     serializer_class = CreateUserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
 
 class LoginView(generics.GenericAPIView):
@@ -295,21 +295,29 @@ class CustomTokenRefreshView(TokenRefreshView):
     serializer_class = TokenRefreshSerializer
     permission_classes = (permissions.AllowAny,)
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
+        
+        #fetch refresh_token from the cookies 
+        refresh_token = request.COOKIES.get(getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_COOKIE", "refresh_token"))
+
+        if not refresh_token:
+            return Response({"error": "Refresh token missing"}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+        data = {'refresh' : refresh_token} # to make sure the data thats being sent is from the cookies
+        serializer = self.serializer_class(data=data) # instead of request data, give it the data 
         serializer.is_valid(raise_exception=True)
-        refresh_token = serializer.validated_data.get("refresh")
-        access_token = serializer.validated_data.get('access')
+        refresh_token = serializer.validated_data.get("refresh") # the validated results sent from the TokenRefreshSerializer
+        access_token = serializer.validated_data.get('access') # the validated results sent from the TokenRefreshSerializer
         try:
             if getattr(settings, "SIMPLE_JWT", {}).get("ROTATE_REFRESH_TOKENS", True):
-                new_refresh_token = str(RefreshToken(refresh_token))
-            else: 
+               new_refresh_token = str(RefreshToken(refresh_token))
+            else:
                 new_refresh_token = refresh_token
         except Exception as e:
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         response = Response(serializer.data, status=status.HTTP_200_OK)
     
-        
         if response.status_code == 200:
             refresh_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_TOKEN_LIFETIME", timedelta(days=1))
             access_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("ACCESS_TOKEN_LIFETIME", timedelta(minutes=10))
