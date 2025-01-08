@@ -298,12 +298,13 @@ class CustomTokenRefreshView(TokenRefreshView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         refresh_token = serializer.validated_data.get("refresh")
+        access_token = serializer.validated_data.get('access')
         try:
             if getattr(settings, "SIMPLE_JWT", {}).get("ROTATE_REFRESH_TOKENS", True):
                 new_refresh_token = str(RefreshToken(refresh_token))
             else: 
                 new_refresh_token = refresh_token
-        except Exception as e: 
+        except Exception as e:
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         response = Response(serializer.data, status=status.HTTP_200_OK)
@@ -311,13 +312,25 @@ class CustomTokenRefreshView(TokenRefreshView):
         
         if response.status_code == 200:
             refresh_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_TOKEN_LIFETIME", timedelta(days=1))
-            expires = datetime.utcnow() + refresh_token_lifetime  # Calculate expiration time
+            access_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("ACCESS_TOKEN_LIFETIME", timedelta(minutes=10))
+            refresh_expires = datetime.utcnow() + refresh_token_lifetime  # Calculate refresh expiration time
+            access_expires = datetime.utcnow() + access_token_lifetime # calculate access expiration time
+            response.set_cookie(
+                key=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE", "access_token"),
+                value=access_token,
+                domain=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE_DOMAIN", None),
+                path=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE_PATH", "/"),
+                expires=access_expires,
+                secure=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE_SECURE", False),
+                httponly=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE_HTTP_ONLY", True),
+                samesite=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE_SAMESITE", "Lax"),
+            )
             response.set_cookie(
                 key=getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_COOKIE", "refresh_token"),
                 value=new_refresh_token,
                 domain=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE_DOMAIN", None),
                 path=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE_PATH", "/"),
-                expires=expires,
+                expires=refresh_expires,
                 secure=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE_SECURE", False),
                 httponly=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE_HTTP_ONLY", True),
                 samesite=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE_SAMESITE", "Lax"),
