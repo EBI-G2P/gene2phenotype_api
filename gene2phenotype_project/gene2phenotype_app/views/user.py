@@ -246,7 +246,18 @@ class LogOutView(generics.GenericAPIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        # return Response(status=status.HTTP_204_NO_CONTENT)
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        if response:
+            response.delete_cookie(       
+                key=settings.SIMPLE_JWT["AUTH_COOKIE"],
+                path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
+            )
+            response.delete_cookie(        
+                key=settings.SIMPLE_JWT["REFRESH_COOKIE"],
+                path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
+                )
+        return response
 
 class ManageUserView(generics.RetrieveUpdateAPIView):
     """
