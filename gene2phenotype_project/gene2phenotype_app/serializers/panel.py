@@ -160,6 +160,10 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                 if lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'] is not None:
                     variant_types.append(lgd_obj['lgd__lgdvarianttype__variant_type_ot__term'])
 
+                date_review = None
+                if lgd_obj['lgd__date_review'] is not None:
+                    date_review = lgd_obj['lgd__date_review'].strftime("%Y-%m-%d")
+
                 aggregated_data[lgd_obj['lgd__stable_id__stable_id']] = {  'locus':lgd_obj['lgd__locus__name'],
                                                                 'disease':lgd_obj['lgd__disease__name'],
                                                                 'genotype':lgd_obj['lgd__genotype__value'],
@@ -167,7 +171,7 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                                                                 'variant_consequence':variant_consequences,
                                                                 'variant_type':variant_types,
                                                                 'molecular_mechanism':lgd_obj['lgd__mechanism__value'],
-                                                                'date_review':lgd_obj['lgd__date_review'],
+                                                                'last_updated':date_review,
                                                                 'stable_id':lgd_obj['lgd__stable_id__stable_id'] }
                 number_keys += 1
 

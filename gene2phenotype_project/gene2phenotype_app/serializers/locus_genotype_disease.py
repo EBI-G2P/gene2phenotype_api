@@ -275,11 +275,19 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         data = []
         for comment in lgd_comments:
-            text = { 'text':comment.comment,
-                     'date':comment.date }
+            # Format the date
+            date = None
+            if comment.date is not None:
+                date = comment.date.strftime("%Y-%m-%d")
+
+            text = { 'text': comment.comment,
+                     'date': date,
+                     'is_public': comment.is_public }
+
             # authenticated users can have access to the user name
             if authenticated_user == 1:
                 text['user'] = f"{comment.user.first_name} {comment.user.last_name}"
+
             data.append(text)
 
         return data
