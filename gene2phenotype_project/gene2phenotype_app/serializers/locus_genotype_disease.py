@@ -498,7 +498,6 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         # validated_data example:
         # { "confidence": "definitive" }
         validated_confidence = validated_data.get("confidence", None)
-        is_reviewed = validated_data.get("is_reviewed", None)
 
         if(validated_confidence is not None and isinstance(validated_confidence, dict) 
            and "value" in validated_confidence):
@@ -523,10 +522,6 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         # Update confidence
         instance.confidence = confidence_obj
-
-        # is_reviewed only accepts 1 or 0
-        if(is_reviewed is not None and (is_reviewed == 1 or is_reviewed == 0)):
-            instance.is_reviewed = is_reviewed
 
         # Update the 'date_review'
         instance.date_review = datetime.now()
