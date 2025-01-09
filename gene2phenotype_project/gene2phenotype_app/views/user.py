@@ -10,7 +10,7 @@ from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from datetime import timedelta
 from gene2phenotype_app.serializers import (UserSerializer, LoginSerializer,
-                                            CreateUserSerializer, LogoutSerializer, ChangePasswordSerializer, VerifyEmailSerializer)
+                                            CreateUserSerializer, LogoutSerializer, ChangePasswordSerializer, VerifyEmailSerializer, PasswordResetSerializer)
 from gene2phenotype_app.models import User, UserPanel
 from .base import BaseView
 
@@ -311,6 +311,17 @@ class VerifyEmailView(generics.GenericAPIView):
         result = serializer.get_user(user=request.data)
 
         return Response(result)
+    
+class ResetPasswordView(generics.GenericAPIView):
+    serializer_class = PasswordResetSerializer
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, uid, token):
+        serializer = self.serializer_class(data=request.data, context={'uid':uid, 'token':token})
+        serializer.is_valid(raise_exception=True)
+        result = serializer.reset(password=request.data,user=uid)
+        return Response(result)
+
         
 
 class CustomTokenRefreshView(TokenRefreshView):

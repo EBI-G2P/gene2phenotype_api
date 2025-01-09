@@ -203,10 +203,13 @@ class VerifyEmailSerializer(serializers.ModelSerializer):
         email = self.validated_data.get('email')
         user = User.objects.get(email=email, is_deleted=0)
 
-        if user: 
+        # Verify Email and Return Token and id that will be used to PasswordReset
+        if user:
+            reset_token = PasswordResetTokenGenerator().make_token(user)
             return {
                     'id' : user.id,
                     'email' : user.email,
+                    'token' : reset_token
                 }
     
     class Meta:
@@ -216,6 +219,35 @@ class VerifyEmailSerializer(serializers.ModelSerializer):
 class PasswordResetSerializer(serializers.ModelSerializer):
     password = serializers.CharField(max_length=20, min_length=6, style={'input_type': 'password'}, write_only=True)
     password2 = serializers.CharField(max_length=20, min_length=6, style={'input_type': 'password'}, write_only=True)
+
+    def validate(self, attrs):
+        password = attrs.get('password')
+        password2 = attrs.get('password2')
+
+        uid = self.context.get('uid')
+        token = self.context.get('token')
+
+        if password != password2:
+            raise serializers.ValidationError({'message': 'Passwords do not match'}, password)
+        
+        user = User.objects.get(id=uid)
+
+        if not PasswordResetTokenGenerator().check_token(user, token):
+            raise serializers.ValidationError('Token is not valid or expired')
+        
+        attrs['id'] = uid
+        
+        return attrs
+    
+    def reset(self, password, user):
+        password = self.validated_data.get('password')
+
+        user = User.objects.get(id=self.validated_data.get('id'))
+        user.set_password(password)
+        user.save()
+
+        return user.email
+
         
 
     class Meta:
