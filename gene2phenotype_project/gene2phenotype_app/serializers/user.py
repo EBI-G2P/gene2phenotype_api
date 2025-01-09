@@ -116,7 +116,8 @@ class CreateUserSerializer(serializers.ModelSerializer):
     """
         This serializer is used to validate and create a new user object.
     """
-
+    password2 = serializers.CharField(write_only=True, style={'input_type':'password'}, min_length=6)
+ 
     def validate(self, attrs):
         email = attrs.get('email')
         if email is None: 
@@ -124,6 +125,12 @@ class CreateUserSerializer(serializers.ModelSerializer):
         username = attrs.get('username')
         if username is None: 
             raise serializers.ValidationError({"message": "Username is needed to create a user"}, username)
+        password = attrs.get('password')
+        # pop password2 from the validated data that will be sent to models 
+        password2 = attrs.pop('password2', 'None')
+        if password != password2:
+            raise serializers.ValidationError({"message": "Passwords do not match"}, password)
+
         
         return attrs
 
@@ -142,18 +149,22 @@ class CreateUserSerializer(serializers.ModelSerializer):
                 - is_superuser: set to True if the user is a super user (default: False)
                 - is_staff: set to True if the user is a staff member (default: False)
         """
+
         return User.objects.create_user(**validated_data)
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'first_name', 'last_name', 'is_superuser', 'is_staff']
-        extra_kwargs = {'password': {'write_only': True, 'min_length': 6}, 'email': {
-            'validators': [
-                UniqueValidator(
-                    queryset=User.objects.all()
-                )
-            ]
-        }}
+        fields = ['username', 'email', 'first_name', 'last_name', 'password', 'password2', 'is_superuser', 'is_staff']
+        extra_kwargs = {'password': {'write_only': True, 'min_length': 6}, 
+                        'email': {
+                            'validators': [
+                                UniqueValidator(
+                                    queryset=User.objects.all(),
+                                    message="This email is already registered"
+                                )
+                            ]
+                        }
+                        }
 
 
 class LoginSerializer(serializers.ModelSerializer):
@@ -325,7 +336,7 @@ class LogoutSerializer(serializers.Serializer):
 
         return attrs
     
-    def save(self, **kwargs):
+    def save(self,**kwargs):
         """
             Blacklists the refresh token to revoke user access.
 

@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser,BaseUserManager
 from simple_history.models import HistoricalRecords
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -577,13 +577,41 @@ class Panel(models.Model):
     is_visible = models.SmallIntegerField(null=False)
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
     class Meta:
         db_table = "panel"
         indexes = [
             models.Index(fields=['name'])
         ]
+
+class UserManager(BaseUserManager):
+    def create_user(self, email, first_name, last_name, password=None):
+        if not email:
+            raise ValueError("User must have a valid email addresss")
+
+        user = self.model(
+            email=self.normalize_email(email),
+            first_name=first_name,
+            last_name=last_name
+        )
+
+        user.set_password(password)
+        user.save()
+        
+    def create_superuser(self, email, first_name, last_name, password=None):
+        if not email:
+            raise ValueError("User must have a valid email address")
+        
+        user = self.model(
+            email=self.normalize_email(email),
+            first_name=first_name,
+            last_name=last_name,
+            is_superuser=True,
+            is_staff=True
+        )
+        user.set_password(password)
+        user.save()
 
 class User(AbstractUser):
     id = models.AutoField(primary_key=True)
@@ -597,6 +625,8 @@ class User(AbstractUser):
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
+
+    objects = UserManager()
 
     def tokens(self):
         refresh = RefreshToken.for_user(self)
