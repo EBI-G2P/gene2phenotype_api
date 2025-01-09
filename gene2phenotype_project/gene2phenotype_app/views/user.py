@@ -10,7 +10,7 @@ from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from datetime import timedelta
 from gene2phenotype_app.serializers import (UserSerializer, LoginSerializer,
-                                            CreateUserSerializer, LogoutSerializer, ChangePasswordSerializer)
+                                            CreateUserSerializer, LogoutSerializer, ChangePasswordSerializer, VerifyEmailSerializer)
 from gene2phenotype_app.models import User, UserPanel
 from .base import BaseView
 
@@ -258,6 +258,7 @@ class LogOutView(generics.GenericAPIView):
                 path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
                 )
         return response
+    
 
 class ManageUserView(generics.RetrieveUpdateAPIView):
     """
@@ -300,6 +301,17 @@ class ChangePasswordView(generics.GenericAPIView):
         serializer.save(user=request.user)
         return Response({'message': "Password updated successfully"}, status=status.HTTP_201_CREATED)
     
+class VerifyEmailView(generics.GenericAPIView):
+    serializer_class = VerifyEmailSerializer
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        result = serializer.get_user(user=request.data)
+
+        return Response(result)
+        
 
 class CustomTokenRefreshView(TokenRefreshView):
     serializer_class = TokenRefreshSerializer

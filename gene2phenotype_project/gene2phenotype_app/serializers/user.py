@@ -2,6 +2,8 @@ from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from ..models import User, UserPanel
 from django.contrib.auth import authenticate
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeError
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework.validators import UniqueValidator
@@ -116,7 +118,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
     """
         This serializer is used to validate and create a new user object.
     """
-    password2 = serializers.CharField(write_only=True, style={'input_type':'password'}, min_length=6)
+    password2 = serializers.CharField(write_only=True, style={'input_type':'password'}, min_length=6, max_length=20)
  
     def validate(self, attrs):
         email = attrs.get('email')
@@ -155,7 +157,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['username', 'email', 'first_name', 'last_name', 'password', 'password2', 'is_superuser', 'is_staff']
-        extra_kwargs = {'password': {'write_only': True, 'min_length': 6}, 
+        extra_kwargs = {'password': {'write_only': True, 'min_length': 6, 'max_length': 20}, 
                         'email': {
                             'validators': [
                                 UniqueValidator(
@@ -193,6 +195,32 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         model = User
         fields = ['password', 'password2']
 
+
+class VerifyEmailSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(write_only=True)
+
+    def get_user(self, **validated_data):
+        email = self.validated_data.get('email')
+        user = User.objects.get(email=email, is_deleted=0)
+
+        if user: 
+            return {
+                    'id' : user.id,
+                    'email' : user.email,
+                }
+    
+    class Meta:
+        model = User
+        fields = ['email']
+
+class PasswordResetSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(max_length=20, min_length=6, style={'input_type': 'password'}, write_only=True)
+    password2 = serializers.CharField(max_length=20, min_length=6, style={'input_type': 'password'}, write_only=True)
+        
+
+    class Meta:
+        model = User
+        fields = ['password', 'password2']
 
 class LoginSerializer(serializers.ModelSerializer):
     """
