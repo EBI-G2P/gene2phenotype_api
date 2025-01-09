@@ -181,6 +181,9 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
     def save(self, user):
         password = self.validated_data.get('password')
 
+        if user.check_password(password):
+            raise serializers.ValidationError({"message": "The new password cannot be the same as the old password."}, password)
+
         user.set_password(password)
         user.save()
 
