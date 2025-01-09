@@ -165,6 +165,30 @@ class CreateUserSerializer(serializers.ModelSerializer):
                             ]
                         }
                         }
+        
+class ChangePasswordSerializer(serializers.ModelSerializer): 
+    password = serializers.CharField(max_length=20, min_length=6, style={'input_type': 'password'}, write_only=True)
+    password2 = serializers.CharField(max_length=20, min_length=6, style={'input_type': 'password'}, write_only=True)
+
+    def validate(self, attrs):
+        password = attrs.get('password')
+        password2 = attrs.pop('password', None)
+        if password != password2:
+            raise serializers.ValidationError({"message": "Passwords do not match"}, password)
+        
+        return attrs
+    
+    def save(self, user):
+        password = self.validated_data.get('password')
+
+        user.set_password(password)
+        user.save()
+
+        return user
+
+    class Meta:
+        model = User
+        fields = ['password', 'password2']
 
 
 class LoginSerializer(serializers.ModelSerializer):

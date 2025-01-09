@@ -10,7 +10,7 @@ from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from datetime import timedelta
 from gene2phenotype_app.serializers import (UserSerializer, LoginSerializer,
-                                            CreateUserSerializer, LogoutSerializer)
+                                            CreateUserSerializer, LogoutSerializer, ChangePasswordSerializer)
 from gene2phenotype_app.models import User, UserPanel
 from .base import BaseView
 
@@ -290,10 +290,21 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
         """Retrieve and return authenticated user"""
         return self.request.user
 
+class ChangePasswordView(generics.GenericAPIView):
+    serializer_class = ChangePasswordSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user)
+        return Response({'message': "Password updated successfully"}, status=status.HTTP_201_CREATED)
+    
 
 class CustomTokenRefreshView(TokenRefreshView):
     serializer_class = TokenRefreshSerializer
     permission_classes = (permissions.AllowAny,)
+
     def post(self, request, *args, **kwargs):
         
         #fetch refresh_token from the cookies 
@@ -301,10 +312,9 @@ class CustomTokenRefreshView(TokenRefreshView):
 
         if not refresh_token:
             return Response({"error": "Refresh token missing"}, status=status.HTTP_400_BAD_REQUEST)
-        
 
         data = {'refresh' : refresh_token} # to make sure the data thats being sent is from the cookies
-        serializer = self.serializer_class(data=data) # instead of request data, give it the data 
+        serializer = self.serializer_class(data=data) # instead of request data, give it the data created
         serializer.is_valid(raise_exception=True)
         refresh_token = serializer.validated_data.get("refresh") # the validated results sent from the TokenRefreshSerializer
         access_token = serializer.validated_data.get('access') # the validated results sent from the TokenRefreshSerializer
@@ -313,7 +323,7 @@ class CustomTokenRefreshView(TokenRefreshView):
                new_refresh_token = str(RefreshToken(refresh_token))
             else:
                 new_refresh_token = refresh_token
-        except Exception as e:
+        except Exception as e: 
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         response = Response(serializer.data, status=status.HTTP_200_OK)

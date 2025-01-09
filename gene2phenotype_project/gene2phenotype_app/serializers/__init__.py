@@ -1,6 +1,6 @@
 from .attrib import AttribSerializer, AttribTypeSerializer
 
-from .user import UserSerializer, LoginSerializer, CreateUserSerializer, LogoutSerializer
+from .user import UserSerializer, LoginSerializer, CreateUserSerializer, LogoutSerializer, ChangePasswordSerializer
 
 from .panel import PanelDetailSerializer, LGDPanelSerializer
 
