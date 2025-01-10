@@ -171,10 +171,15 @@ class CreateUserSerializer(serializers.ModelSerializer):
                         }
         
 class ChangePasswordSerializer(serializers.ModelSerializer): 
+    old_password = serializers.CharField(max_length=20, min_length=6, style={'input_type' : 'password'}, write_only=True)
     password = serializers.CharField(max_length=20, min_length=6, style={'input_type': 'password'}, write_only=True)
     password2 = serializers.CharField(max_length=20, min_length=6, style={'input_type': 'password'}, write_only=True)
 
     def validate(self, attrs):
+        user = self.context.get('user')
+        old_password = attrs.get('old_password')
+        if user.check_password(old_password) is False:
+            raise serializers.ValidationError({'message' : "Password incorrect, Input present password to change password"})
         password = attrs.get('password')
         password2 = attrs.pop('password', None)
         if password != password2:
@@ -195,7 +200,7 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['password', 'password2']
+        fields = ['old_password', 'password', 'password2']
 
 
 class VerifyEmailSerializer(serializers.ModelSerializer):

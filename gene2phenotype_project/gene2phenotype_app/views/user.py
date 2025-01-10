@@ -13,7 +13,7 @@ from gene2phenotype_app.serializers import (UserSerializer, LoginSerializer,
                                             CreateUserSerializer, LogoutSerializer, ChangePasswordSerializer, VerifyEmailSerializer, PasswordResetSerializer)
 from gene2phenotype_app.models import User, UserPanel
 from .base import BaseView
-from .. import utils 
+
 
 
 
@@ -297,7 +297,7 @@ class ChangePasswordView(generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.serializer_class(data=request.data, context={'user':request.user})
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user)
         return Response({'message': "Password updated successfully"}, status=status.HTTP_201_CREATED)
