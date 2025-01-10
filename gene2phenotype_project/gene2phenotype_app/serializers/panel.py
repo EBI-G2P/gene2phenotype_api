@@ -1,9 +1,9 @@
 from rest_framework import serializers
 from django.db.models import Q
-from datetime import datetime
 
 from ..models import Panel, User, UserPanel, LGDPanel, Attrib
 
+from ..utils import get_date_now
 
 class PanelDetailSerializer(serializers.ModelSerializer):
     """
@@ -244,7 +244,7 @@ class LGDPanelSerializer(serializers.ModelSerializer):
                 lgd_panel_obj.save()
         
         # Update the 'date_review' of the LocusGenotypeDisease obj
-        lgd.date_review = datetime.now()
+        lgd.date_review = get_date_now()
         lgd.save()
 
         return lgd_panel_obj

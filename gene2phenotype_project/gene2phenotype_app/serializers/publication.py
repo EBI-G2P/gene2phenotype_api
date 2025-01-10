@@ -1,10 +1,10 @@
 from rest_framework import serializers
-from datetime import datetime
 
 from ..models import (Publication, PublicationComment,
                       PublicationFamilies, Attrib, LGDPublication)
 from ..utils import (get_publication, get_authors)
 
+from ..utils import get_date_now
 
 class PublicationCommentSerializer(serializers.ModelSerializer):
     """
@@ -41,7 +41,7 @@ class PublicationCommentSerializer(serializers.ModelSerializer):
             publication_comment_obj = PublicationComment.objects.create(comment = comment_text,
                                                                         is_public = is_public,
                                                                         is_deleted = 0,
-                                                                        date = datetime.now(),
+                                                                        date = get_date_now(),
                                                                         publication = publication,
                                                                         user = user_obj)
 
@@ -378,7 +378,7 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
             # There is a new publication linked to the LGD record, 
             # the record has to reflect the date of this change
             # update the date_review of the LGD record
-            lgd.date_review = datetime.now()
+            lgd.date_review = get_date_now()
             lgd.save()
 
         # If LGD-publication already exists then returns the existing object
@@ -389,7 +389,7 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
             lgd_publication_obj.save()
             # The lgd-publication is not deleted anymore which is equivallent to
             # creating a new link, this means we have to update the record 'date_review'
-            lgd.date_review = datetime.now()
+            lgd.date_review = get_date_now()
             lgd.save()
 
         return lgd_publication_obj

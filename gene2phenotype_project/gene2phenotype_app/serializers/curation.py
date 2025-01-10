@@ -1,12 +1,8 @@
 from rest_framework import serializers
 from deepdiff import DeepDiff
-from django.utils import timezone
 from django.db import transaction
 from collections import OrderedDict
-from datetime import datetime
 import copy
-import json
-import pytz
 
 from ..models import (CurationData, Disease, User, LocusGenotypeDisease,
                       Locus, DiseaseOntologyTerm, CVMolecularMechanism,
@@ -23,6 +19,8 @@ from .locus_genotype_disease import (LocusGenotypeDiseaseSerializer,
 from .stable_id import G2PStableIDSerializer
 from .phenotype import LGDPhenotypeSerializer
 from .publication import PublicationSerializer
+
+from ..utils import get_date_now
 
 class CurationDataSerializer(serializers.ModelSerializer):
     """
@@ -280,7 +278,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         json_data = validated_data.get("json_data")
 
-        date_created = datetime.now()
+        date_created = get_date_now()
         date_reviewed = date_created
         session_name = json_data.get('session_name')
         stable_id = G2PStableIDSerializer.create_stable_id()
@@ -326,7 +324,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         """
 
         instance.json_data = validated_data.get('json_data')
-        instance.date_last_update = timezone.now().astimezone(pytz.timezone("Europe/London"))
+        instance.date_last_update = get_date_now()
         instance.save()
 
         return instance
