@@ -32,7 +32,6 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     molecular_mechanism = serializers.SerializerMethodField(allow_null=True)
     disease = serializers.SerializerMethodField() # part of the unique entry
     confidence = serializers.CharField(source="confidence.value")
-    confidence_support = serializers.CharField(allow_blank=True, required=False)
     publications = serializers.SerializerMethodField()
     panels = serializers.SerializerMethodField()
     cross_cutting_modifier = serializers.SerializerMethodField(allow_null=True)
@@ -276,11 +275,19 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         data = []
         for comment in lgd_comments:
-            text = { 'text':comment.comment,
-                     'date':comment.date }
+            # Format the date
+            date = None
+            if comment.date is not None:
+                date = comment.date.strftime("%Y-%m-%d")
+
+            text = { 'text': comment.comment,
+                     'date': date,
+                     'is_public': comment.is_public }
+
             # authenticated users can have access to the user name
             if authenticated_user == 1:
                 text['user'] = f"{comment.user.first_name} {comment.user.last_name}"
+
             data.append(text)
 
         return data
@@ -382,7 +389,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         stable_id_obj = data.get('stable_id') # stable id obj
         genotype = data.get('allelic_requirement') # allelic requirement
         panels = data.get('panels') # Array of panel names
-        confidence = data.get('confidence') # confidence level and justification
+        confidence = data.get('confidence') # confidence level
         mechanism_obj = data.get('mechanism')
         mechanism_support_obj = data.get('mechanism_support')
 
@@ -414,17 +421,11 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             # Get confidence
             try:
                 confidence_obj = Attrib.objects.get(
-                    value = confidence["level"],
+                    value = confidence,
                     type__code = "confidence_category"
                 )
             except Attrib.DoesNotExist:
-                raise serializers.ValidationError({"message": f"Invalid confidence value {confidence['level']}"})
-
-            # Text to justify the confidence value (optional) TODO: make it mandatory
-            if confidence["justification"] == "":
-                confidence_support = None
-            else:
-                confidence_support = confidence["justification"]
+                raise serializers.ValidationError({"message": f"Invalid confidence value {confidence}"})
 
             # Insert new G2P record (LGD)
             lgd_obj = LocusGenotypeDisease.objects.create(
@@ -435,7 +436,6 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 mechanism = mechanism_obj,
                 mechanism_support = mechanism_support_obj,
                 confidence = confidence_obj,
-                confidence_support = confidence_support,
                 is_reviewed = 1,
                 is_deleted = 0,
                 date_review = datetime.now()
@@ -494,16 +494,10 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         """
             Method to update the record confidence.
-
-            Mandatory fields to update confidence:
-                            - confidence value
-                            - confidence_support
         """
         # validated_data example:
-        # {'confidence': {'value': 'definitive'}, 'confidence_support': '', 'is_reviewed': None}
+        # { "confidence": "definitive" }
         validated_confidence = validated_data.get("confidence", None)
-        confidence_support = validated_data.get("confidence_support", None)
-        is_reviewed = validated_data.get("is_reviewed", None)
 
         if(validated_confidence is not None and isinstance(validated_confidence, dict) 
            and "value" in validated_confidence):
@@ -528,16 +522,6 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         # Update confidence
         instance.confidence = confidence_obj
-
-        # Support is mandatory
-        if(confidence_support == "" or confidence_support is None):
-            raise serializers.ValidationError({"error": f"Cannot update confidence value without supporting justification."})
-        # Update confidence support
-        instance.confidence_support = confidence_support
-
-        # is_reviewed only accepts 1 or 0
-        if(is_reviewed is not None and (is_reviewed == 1 or is_reviewed == 0)):
-            instance.is_reviewed = is_reviewed
 
         # Update the 'date_review'
         instance.date_review = datetime.now()
@@ -740,7 +724,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LocusGenotypeDisease
-        exclude = ['id', 'is_deleted', 'date_review', 'mechanism', 'mechanism_support']
+        exclude = ['id', 'is_deleted', 'date_review', 'mechanism', 'mechanism_support', 'confidence_support']
 
 class LGDCommentSerializer(serializers.ModelSerializer):
     """

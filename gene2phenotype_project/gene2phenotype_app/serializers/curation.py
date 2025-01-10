@@ -18,7 +18,8 @@ from .locus_genotype_disease import (LocusGenotypeDiseaseSerializer,
                                      LGDCrossCuttingModifierSerializer,
                                      LGDVariantGenCCConsequenceSerializer,
                                      LGDVariantTypeSerializer, LGDVariantTypeDescriptionSerializer,
-                                     LGDMechanismSynopsisSerializer, LGDMechanismEvidenceSerializer)
+                                     LGDMechanismSynopsisSerializer, LGDMechanismEvidenceSerializer,
+                                     LGDCommentSerializer)
 from .stable_id import G2PStableIDSerializer
 from .phenotype import LGDPhenotypeSerializer
 from .publication import PublicationSerializer
@@ -108,7 +109,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         if "disease" not in json_data or json_data["disease"]["disease_name"] == "":
             missing_data.append("disease")
 
-        if "confidence" not in json_data or json_data["confidence"]["level"] == "":
+        if "confidence" not in json_data or json_data["confidence"] == "":
             missing_data.append("confidence")
 
         if "publications" not in json_data or len(json_data["publications"]) == 0:
@@ -246,7 +247,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             - "genotype": Retrieved from the "allelic_requirement" key.
             - "disease": Retrieved from the nested "disease_name" key inside the "disease" dictionary.
             - "panel": Retrieved from the "panels" key.
-            - "confidence": Retrieved from the key "level" inside the "confidence" dictionary.
+            - "confidence"
 
             Args:
                 json_data (dict): A dictionary containing the JSON data to extract information from.
@@ -262,7 +263,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             "genotype": json_data.get("allelic_requirement"),
             "disease": json_data.get("disease", {}).get("disease_name"),
             "panel": json_data.get("panels"),
-            "confidence": json_data.get("confidence", {}).get("level")
+            "confidence": json_data.get("confidence", None)
         }
 
     @transaction.atomic
@@ -633,7 +634,20 @@ class CurationDataSerializer(serializers.ModelSerializer):
         for variant_type_desc in data.json_data["variant_descriptions"]:
             LGDVariantTypeDescriptionSerializer(context={'lgd': lgd_obj}).create(variant_type_desc)
 
-        # TODO: add comment
+        # Comments
+        if "public_comment" in data.json_data and data.json_data["public_comment"] != "":
+            comment_obj_public = {
+                "comment": data.json_data["public_comment"],
+                "is_public": 1
+            }
+            LGDCommentSerializer(context={'lgd': lgd_obj, 'user': user_obj}).create(comment_obj_public)
+
+        if "private_comment" in data.json_data and data.json_data["private_comment"] != "":
+            comment_obj_private = {
+                "comment": data.json_data["private_comment"],
+                "is_public": 0
+            }
+            LGDCommentSerializer(context={'lgd': lgd_obj, 'user': user_obj}).create(comment_obj_private)
 
         # Update stable_id status to live (is_live=1)
         G2PStableIDSerializer(context={'stable_id': data.stable_id.stable_id}).update_g2p_id_status(1)
