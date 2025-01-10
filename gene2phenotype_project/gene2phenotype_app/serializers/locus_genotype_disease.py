@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from django.db import connection
-from datetime import datetime
 import itertools
 
 from ..models import (Panel, Attrib,
@@ -18,6 +17,7 @@ from .locus import LocusSerializer
 from .disease import DiseaseSerializer
 from .panel import LGDPanelSerializer
 
+from ..utils import get_date_now
 
 class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     """
@@ -438,7 +438,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 confidence_support = confidence_support,
                 is_reviewed = 1,
                 is_deleted = 0,
-                date_review = datetime.now()
+                date_review = get_date_now()
             )
 
             # Insert panels
@@ -540,7 +540,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             instance.is_reviewed = is_reviewed
 
         # Update the 'date_review'
-        instance.date_review = datetime.now()
+        instance.date_review = get_date_now()
 
         # Save all updates
         instance.save()
@@ -608,7 +608,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         if cv_support_obj:
             lgd_instance.mechanism_support = cv_support_obj
 
-        lgd_instance.date_review = datetime.now()
+        lgd_instance.date_review = get_date_now()
         lgd_instance.save()
 
         # The mechanism synopsis is optional
@@ -735,7 +735,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                             mechanism_evidence_obj.save()
 
                     # Update LGD date_review
-                    lgd_obj.date_review = datetime.now()
+                    lgd_obj.date_review = get_date_now()
                     lgd_obj.save()
 
     class Meta:
@@ -770,7 +770,7 @@ class LGDCommentSerializer(serializers.ModelSerializer):
                     is_public = is_public,
                     is_deleted = 0,
                     user = user,
-                    date = datetime.now()
+                    date = get_date_now()
                 )
 
         return lgd_comment_obj
@@ -1165,7 +1165,7 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
                         is_public = 1, # TODO: update
                         is_deleted = 0,
                         user = user_obj,
-                        date = datetime.now()
+                        date = get_date_now()
                     ) 
                 else:
                     if(lgd_comment_obj.is_deleted == 1):
@@ -1256,7 +1256,7 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
                                 is_public = 1, # TODO: update
                                 is_deleted = 0,
                                 user = user_obj,
-                                date = datetime.now()
+                                date = get_date_now()
                             ) 
                         else:
                             if(lgd_comment_obj.is_deleted == 1):
