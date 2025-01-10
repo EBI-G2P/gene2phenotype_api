@@ -16,6 +16,10 @@ from configparser import ConfigParser
 from datetime import timedelta
 from rest_framework.settings import api_settings
 
+config_path = os.environ.get('PROJECT_CONFIG_PATH')
+config = ConfigParser()
+config.read(config_path)
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -63,7 +67,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'simple_history',
     'knox',
-    'rest_framework_simplejwt.token_blacklist'
+    'rest_framework_simplejwt.token_blacklist',
+    'sendgrid',
 ]
 
 MIDDLEWARE = [
@@ -118,6 +123,16 @@ CSRF_TRUSTED_ORIGINS = [
 CORS_ALLOWED_CREDENTIALS = "True"
 
 
+SENDGRID_API_KEY = config.get('email', 'API_KEY')
+DEFAULT_FROM_EMAIL = ''
+
+EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'
+EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'apikey'
+EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
+
 ROOT_URLCONF = 'gene2phenotype_project.urls'
 
 TEMPLATES = [
@@ -152,10 +167,6 @@ if 'test' in sys.argv or 'test_coverage' in sys.argv:
 }
 
 else:
-    config_path = os.environ.get('PROJECT_CONFIG_PATH')
-    config = ConfigParser()
-    config.read(config_path)
-
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',

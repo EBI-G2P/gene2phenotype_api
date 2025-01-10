@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from ..utils import CustomMail
 from ..models import User, UserPanel
 from django.contrib.auth import authenticate
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -199,13 +201,17 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
 class VerifyEmailSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True)
 
-    def get_user(self, **validated_data):
+    def get_user_and_send_email(self, **validated_data):
         email = self.validated_data.get('email')
         user = User.objects.get(email=email, is_deleted=0)
 
         # Verify Email and Return Token and id that will be used to PasswordReset
         if user:
             reset_token = PasswordResetTokenGenerator().make_token(user)
+            uid =  urlsafe_base64_encode(force_bytes(user.id))
+            html_content = f"http://127.0.0.1:8000/gene2phenotype/api/reset_password/{uid}/{reset_token}"
+            CustomMail.send_email(to_email=user.email, subject='Reset password', html_content=html_content)
+
             return {
                     'id' : user.id,
                     'email' : user.email,
@@ -230,13 +236,14 @@ class PasswordResetSerializer(serializers.ModelSerializer):
         if password != password2:
             raise serializers.ValidationError({'message': 'Passwords do not match'}, password)
         
+        #uid = smart_str(urlsafe_base64_decode(uid)) this is to decode the url because of what will be sent 
         user = User.objects.get(id=uid)
 
         if not PasswordResetTokenGenerator().check_token(user, token):
             raise serializers.ValidationError('Token is not valid or expired')
         
         attrs['id'] = uid
-        
+
         return attrs
     
     def reset(self, password, user):

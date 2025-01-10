@@ -13,6 +13,7 @@ from gene2phenotype_app.serializers import (UserSerializer, LoginSerializer,
                                             CreateUserSerializer, LogoutSerializer, ChangePasswordSerializer, VerifyEmailSerializer, PasswordResetSerializer)
 from gene2phenotype_app.models import User, UserPanel
 from .base import BaseView
+from .. import utils 
 
 
 
@@ -308,7 +309,7 @@ class VerifyEmailView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        result = serializer.get_user(user=request.data)
+        result = serializer.get_user_and_send_email(user=request.data)
 
         return Response(result)
     
