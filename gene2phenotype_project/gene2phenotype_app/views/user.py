@@ -243,8 +243,15 @@ class LogOutView(generics.GenericAPIView):
                 - ValidationError: Raised if the refresh token is invalid or missing.
                 - AuthenticationFailed: Raised if the user is not authenticated.
         """
+        refresh_token = request.COOKIES.get(getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_COOKIE", "refresh_token"))
 
-        serializer = self.serializer_class(data=request.data)
+        if not refresh_token:
+            return Response({"error": "Refresh token missing"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        data = {
+            'refresh': refresh_token
+        }
+        serializer = self.serializer_class(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         # return Response(status=status.HTTP_204_NO_CONTENT)
