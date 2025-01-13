@@ -124,7 +124,8 @@ CORS_ALLOWED_CREDENTIALS = "True"
 
 
 SENDGRID_API_KEY = config.get('email', 'API_KEY')
-DEFAULT_FROM_EMAIL = ''
+EMAIL_FROM = config.get('email', 'from')
+DEFAULT_FROM_EMAIL = EMAIL_FROM
 
 EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'
 EMAIL_HOST = 'smtp.sendgrid.net'
