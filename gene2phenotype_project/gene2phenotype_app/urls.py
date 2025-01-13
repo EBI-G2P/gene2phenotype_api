@@ -1,11 +1,6 @@
 from django.urls import path, include
 from rest_framework.urlpatterns import format_suffix_patterns
-from rest_framework.authtoken import views as authviews
 from gene2phenotype_app import views
-from knox import views as knox_views
-from rest_framework_simplejwt.views import (
-    TokenRefreshView,
-)
 
 def perform_create(self, serializer):
     serializer.save(owner=self.request.user)

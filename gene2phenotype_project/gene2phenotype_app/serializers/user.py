@@ -214,8 +214,8 @@ class VerifyEmailSerializer(serializers.ModelSerializer):
         if user:
             reset_token = PasswordResetTokenGenerator().make_token(user)
             uid =  urlsafe_base64_encode(force_bytes(user.id))
-            html_content = f"http://127.0.0.1:8000/gene2phenotype/api/reset_password/{uid}/{reset_token}"
-            CustomMail.send_email(to_email=user.email, subject='Reset password', html_content=html_content)
+            reset_link = f"http://127.0.0.1:8000/gene2phenotype/api/reset_password/{uid}/{reset_token}"
+            CustomMail.send_reset_email(user=user.first_name, subject='Reset password', reset_link=reset_link, to_email=user.email)
 
             return {
                     'id' : user.id,
