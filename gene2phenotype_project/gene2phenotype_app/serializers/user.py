@@ -184,7 +184,7 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         if user.check_password(old_password) is False:
             raise serializers.ValidationError({'message' : "Password incorrect, Input present password to change password"})
         password = attrs.get('password')
-        password2 = attrs.pop('password', None)
+        password2 = attrs.pop('password2', None)
         if password != password2:
             raise serializers.ValidationError({"message": "Passwords do not match"}, password)
         
@@ -199,7 +199,7 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
         CustomMail.send_change_password_email(user=user.first_name, user_email=user.email, subject='Password change confirmation', to_email=user.email)
-        return user
+        return user.email
 
     class Meta:
         model = User
@@ -256,8 +256,6 @@ class PasswordResetSerializer(serializers.ModelSerializer):
     
     def reset(self, password, user):
         password = self.validated_data.get('password')
-
-    
         user = User.objects.get(id=self.validated_data.get('id'))
         user.set_password(password)
         user.save()

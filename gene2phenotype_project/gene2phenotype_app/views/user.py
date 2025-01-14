@@ -306,8 +306,8 @@ class ChangePasswordView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data, context={'user':request.user})
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
-        return Response({'message': "Password updated successfully"}, status=status.HTTP_201_CREATED)
+        result = serializer.save(user=request.user)
+        return Response(result,  status=status.HTTP_201_CREATED)
     
 class VerifyEmailView(generics.GenericAPIView):
     serializer_class = VerifyEmailSerializer
