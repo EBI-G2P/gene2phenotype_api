@@ -244,14 +244,12 @@ class PasswordResetSerializer(serializers.ModelSerializer):
         if password != password2:
             raise serializers.ValidationError({'message': 'Passwords do not match'}, password)
         
-        #uid = smart_str(urlsafe_base64_decode(uid)) this is to decode the url because of what will be sent 
+        uid =  smart_str(urlsafe_base64_decode(uid))
         user = User.objects.get(id=uid)
 
         if not PasswordResetTokenGenerator().check_token(user, token):
             raise serializers.ValidationError('Token is not valid or expired')
-        
-
-        uid =  smart_str(urlsafe_base64_decode(uid))
+   
         attrs['id'] = uid
 
         return attrs
@@ -259,6 +257,7 @@ class PasswordResetSerializer(serializers.ModelSerializer):
     def reset(self, password, user):
         password = self.validated_data.get('password')
 
+    
         user = User.objects.get(id=self.validated_data.get('id'))
         user.set_password(password)
         user.save()
