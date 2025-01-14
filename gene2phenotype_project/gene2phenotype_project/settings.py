@@ -113,6 +113,8 @@ SIMPLE_JWT = {
   "ACCESS_TOKEN_LIFETIME": timedelta(minutes=10),
   "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
   "BLACKLIST_AFTER_ROTATION": True,
+  'TOKEN_BACKEND': 'rest_framework_simplejwt.token_blacklist.backends.BlacklistBackend',
+  'BLACKLIST_TOKEN_CHECKS': [ 'rest_framework_simplejwt.token_blacklist.check_blacklisted_token', ],
   "ROTATE_REFRESH_TOKENS": True
 }
 
