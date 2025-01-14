@@ -154,7 +154,10 @@ class CreateUserSerializer(serializers.ModelSerializer):
                 - is_staff: set to True if the user is a staff member (default: False)
         """
 
-        return User.objects.create_user(**validated_data)
+        user = User.objects.create_user(**validated_data)
+        if user: 
+            CustomMail.send_create_email(data=user, subject="Account Created!", to_email=user.email)
+            return user 
 
     class Meta:
         model = User
@@ -195,7 +198,7 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
 
         user.set_password(password)
         user.save()
-
+        CustomMail.send_change_password_email(user=user.first_name, user_email=user.email, subject='Password change confirmation', to_email=user.email)
         return user
 
     class Meta:
@@ -215,7 +218,7 @@ class VerifyEmailSerializer(serializers.ModelSerializer):
             reset_token = PasswordResetTokenGenerator().make_token(user)
             uid =  urlsafe_base64_encode(force_bytes(user.id))
             reset_link = f"http://127.0.0.1:8000/gene2phenotype/api/reset_password/{uid}/{reset_token}"
-            CustomMail.send_reset_email(user=user.first_name, subject='Reset password', reset_link=reset_link, to_email=user.email)
+            CustomMail.send_reset_email(user=user.first_name, subject='Reset password request', reset_link=reset_link, to_email=user.email)
 
             return {
                     'id' : user.id,
@@ -247,6 +250,8 @@ class PasswordResetSerializer(serializers.ModelSerializer):
         if not PasswordResetTokenGenerator().check_token(user, token):
             raise serializers.ValidationError('Token is not valid or expired')
         
+
+        uid =  smart_str(urlsafe_base64_decode(uid))
         attrs['id'] = uid
 
         return attrs
