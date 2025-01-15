@@ -1,6 +1,6 @@
+from email.message import EmailMessage
+from smtplib import SMTP
 from django.conf import settings
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
 from django.template.loader import render_to_string
 
 class CustomMail():
@@ -11,16 +11,14 @@ class CustomMail():
             'user': user,
             'link': reset_link
         })
-        message = Mail(
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to_emails=to_email,
-            subject=subject,
-            html_content=email_body
-        )
+        message = EmailMessage()
+        message['From'] = settings.DEFAULT_FROM_EMAIL
+        message['To'] = to_email
+        message['Subject'] = subject
+        message.set_content(email_body, 'html')
         try:
-            sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
-            response = sg.send(message)
-            return response.status_code
+            with SMTP(host=settings.EMAIL_HOST, port=settings.EMAIL_PORT) as server:
+                server.send_message(message)
         except Exception as e:
             return str(e)
         
@@ -34,16 +32,15 @@ class CustomMail():
             'last_name': data.last_name,
             'username': data.username
         })
-        message = Mail(
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to_emails=to_email,
-            subject=subject,
-            html_content=email_body
-            )
-        try: 
-            sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
-            response = sg.send(message)
-            return response.status_code
+        message = EmailMessage()
+        message['From'] = settings.DEFAULT_FROM_EMAIL
+        message['To'] = to_email
+        message['Subject'] = subject
+        message.set_content(email_body, 'html')
+  
+        try:
+            with SMTP(host=settings.EMAIL_HOST, port=settings.EMAIL_PORT) as server:
+                server.send_message(message)
         except Exception as e:
             return str(e)
         
@@ -53,15 +50,13 @@ class CustomMail():
             'user': user,
             'email': user_email
         })
-        message = Mail(
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to_emails=to_email,
-            subject=subject,
-            html_content=email_body
-            )
+        message = EmailMessage()
+        message['From'] = settings.DEFAULT_FROM_EMAIL
+        message['To'] = to_email
+        message['Subject'] = subject
+        message.set_content(email_body, 'html')
         try:
-            sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
-            response = sg.send(message)
-            return response.status_code
+            with SMTP(host=settings.EMAIL_HOST, port=settings.EMAIL_PORT) as server:
+                server.send_message(message)
         except Exception as e:
             return str(e)

@@ -67,9 +67,7 @@ INSTALLED_APPS = [
     'gene2phenotype_app',
     'rest_framework',
     'simple_history',
-    'knox',
     'rest_framework_simplejwt.token_blacklist',
-    'sendgrid',
     'mail_templated'
 ]
 
@@ -126,17 +124,15 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 CORS_ALLOWED_CREDENTIALS = "True"
 
+DEFAULT_FROM_EMAIL = config.get('email', 'from')
+MAIL_HOST = config.get('email', 'host')
+MAIL_PORT = config.get('email', 'port')
 
-SENDGRID_API_KEY = config.get('email', 'API_KEY')
-EMAIL_FROM = config.get('email', 'from')
-DEFAULT_FROM_EMAIL = EMAIL_FROM
-
-EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'
-EMAIL_HOST = 'smtp.sendgrid.net'
-EMAIL_PORT = 587
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST = MAIL_HOST
+EMAIL_PORT = MAIL_PORT
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'apikey'
-EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
+EMAIL_HOST_USER = DEFAULT_FROM_EMAIL
 
 ROOT_URLCONF = 'gene2phenotype_project.urls'
 
