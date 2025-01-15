@@ -365,7 +365,7 @@ class CustomTokenRefreshView(TokenRefreshView):
     
         if response.status_code == 200:
             refresh_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_TOKEN_LIFETIME", timedelta(days=1))
-            access_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("ACCESS_TOKEN_LIFETIME", timedelta(minutes=10))
+            access_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("ACCESS_TOKEN_LIFETIME", timedelta(hours=1))
             refresh_expires = datetime.utcnow() + refresh_token_lifetime  # Calculate refresh expiration time
             access_expires = datetime.utcnow() + access_token_lifetime # calculate access expiration time
             response.set_cookie(
