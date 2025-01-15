@@ -96,7 +96,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 - panel(s)
                 - confidence
                 - publication(s)
-            
+                - variant_consequences
+
             Args:
                 (CurationData obj) data: data to be validated
         """
@@ -121,6 +122,9 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         if "molecular_mechanism" not in json_data or json_data["molecular_mechanism"]["name"] == "":
             missing_data.append("molecular_mechanism")
+
+        if "variant_consequences" not in json_data or not json_data["variant_consequences"]:
+            missing_data.append("variant_consequences")
 
         if missing_data:
             missing_data_str = ', '.join(missing_data)
