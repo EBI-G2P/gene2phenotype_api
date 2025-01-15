@@ -287,16 +287,21 @@ class CurationDataSerializer(serializers.ModelSerializer):
         if session_name is None or session_name == "":
             session_name = stable_id.stable_id
 
-        try:
-            CurationData.objects.get(session_name=session_name)
+        # Check for duplicate session_name
+        if CurationData.objects.filter(session_name=session_name).exists():
             raise serializers.ValidationError({
-                "message" : f"Curation data with the '{session_name}' already exists. Please change the session name and try again"
+                "message": f"Curation data with the session name '{session_name}' already exists. Please change the session name and try again."
             })
 
-        except:
-            user_email = self.context.get('user') # TODO: this needs to be looked at
+        user_email = self.context.get('user')
+        try:
             user_obj = User.objects.get(email=user_email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError({
+                "message": f"User '{user_email}' does not exist."
+            })
 
+        try:
             new_curation_data = CurationData.objects.create(
                 session_name=session_name,
                 json_data=json_data,
@@ -306,6 +311,10 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 date_last_update=date_reviewed,
                 user=user_obj
             )
+        except Exception as e:
+            raise serializers.ValidationError({
+                "message": f"Failed to create curation data '{session_name}': {str(e)}"
+            })
 
         return new_curation_data
 

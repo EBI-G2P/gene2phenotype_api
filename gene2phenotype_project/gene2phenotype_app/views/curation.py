@@ -271,7 +271,7 @@ class PublishRecord(APIView):
             except LocusGenotypeDisease.DoesNotExist:
                 Response({
                     "message": f"Failed to publish record ID '{stable_id}'"
-                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    }, status=status.HTTP_400_BAD_REQUEST)
 
         except CurationData.DoesNotExist:
             return Response({

@@ -432,12 +432,12 @@ class LGDEditVariantConsequences(APIView):
                     )
                 else:
                     response = Response(
-                        {"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                        {"errors": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST
                     )
 
         else:
             response = Response(
-                {"errors": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"errors": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
         return response
@@ -584,12 +584,12 @@ class LGDEditCCM(APIView):
                     )
                 else:
                     response = Response(
-                        {"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                        {"errors": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST
                     )
 
         else:
             response = Response(
-                {"errors": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"errors": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
         return response
@@ -732,12 +732,12 @@ class LGDEditVariantTypes(APIView):
                     )
                 else:
                     response = Response(
-                        {"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                        {"errors": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST
                     )
 
         else:
             response = Response(
-                {"errors": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"errors": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
         return response
@@ -889,12 +889,12 @@ class LGDEditVariantTypeDescriptions(APIView):
                     )
                 else:
                     response = Response(
-                        {"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                        {"errors": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST
                     )
 
         else:
             response = Response(
-                {"errors": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"errors": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
         return response
@@ -931,7 +931,7 @@ class LGDEditVariantTypeDescriptions(APIView):
         except:
             return Response(
                 {"errors": f"Could not delete variant type description '{var_desc}' for ID '{stable_id}'"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(
                 {"message": f"Variant type description '{var_desc}' successfully deleted for ID '{stable_id}'"},
@@ -984,7 +984,7 @@ class LGDEditComment(APIView):
             serializer_class.save()
             response = Response({"message": "Comment added to the G2P entry successfully."}, status=status.HTTP_201_CREATED)
         else:
-            response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            response = Response({"errors": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         return response
 
@@ -1013,7 +1013,7 @@ class LGDEditComment(APIView):
         except:
             return Response(
                 {"message": f"Cannot delete comment for ID '{stable_id}'"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(
                     {"message": f"Comment successfully deleted for ID '{stable_id}'"},
