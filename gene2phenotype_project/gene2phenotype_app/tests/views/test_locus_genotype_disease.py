@@ -28,7 +28,6 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         self.assertEqual(response.data["stable_id"], "G2P00001")
         self.assertEqual(response.data["genotype"], "biallelic_autosomal")
         self.assertEqual(response.data["confidence"], "definitive")
-        self.assertEqual(response.data["confidence_support"], None)
         self.assertEqual(response.data["variant_consequence"], [])
         self.assertEqual(list(response.data["variant_type"]), []),
         self.assertEqual(list(response.data["variant_description"]), []),

@@ -146,12 +146,15 @@ class LGDEditPanel(APIView):
         """
             The post method links the current LGD record to the panel.
             We want to whole process to be done in one db transaction.
+
+            Input example:
+                        { "name": "DD" }
         """
         user = self.request.user
 
         panel_name_input = request.data.get("name", None)
 
-        if panel_name_input is None:
+        if panel_name_input is None or panel_name_input == "":
             return Response({"message": f"Please enter a panel name"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Check if panel name is valid
@@ -173,7 +176,7 @@ class LGDEditPanel(APIView):
             serializer_class.save()
             response = Response({"message": "Panel added to the G2P entry successfully."}, status=status.HTTP_201_CREATED)
         else:
-            response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            response = Response({"errors": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         return response
 
@@ -199,7 +202,7 @@ class LGDEditPanel(APIView):
         except:
             return Response(
                 {"errors": f"Could not delete panel '{panel}' for ID '{stable_id}'"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(
                 {"message": f"Panel '{panel}' successfully deleted for ID '{stable_id}'"},

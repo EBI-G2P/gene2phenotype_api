@@ -1,12 +1,8 @@
 from rest_framework import serializers
 from deepdiff import DeepDiff
-from django.utils import timezone
 from django.db import transaction
 from collections import OrderedDict
-from datetime import datetime
 import copy
-import json
-import pytz
 
 from ..models import (CurationData, Disease, User, LocusGenotypeDisease,
                       Locus, DiseaseOntologyTerm, CVMolecularMechanism,
@@ -18,10 +14,13 @@ from .locus_genotype_disease import (LocusGenotypeDiseaseSerializer,
                                      LGDCrossCuttingModifierSerializer,
                                      LGDVariantGenCCConsequenceSerializer,
                                      LGDVariantTypeSerializer, LGDVariantTypeDescriptionSerializer,
-                                     LGDMechanismSynopsisSerializer, LGDMechanismEvidenceSerializer)
+                                     LGDMechanismSynopsisSerializer, LGDMechanismEvidenceSerializer,
+                                     LGDCommentSerializer)
 from .stable_id import G2PStableIDSerializer
 from .phenotype import LGDPhenotypeSerializer
 from .publication import PublicationSerializer
+
+from ..utils import get_date_now
 
 class CurationDataSerializer(serializers.ModelSerializer):
     """
@@ -97,7 +96,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 - panel(s)
                 - confidence
                 - publication(s)
-            
+                - variant_consequences
+
             Args:
                 (CurationData obj) data: data to be validated
         """
@@ -108,7 +108,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         if "disease" not in json_data or json_data["disease"]["disease_name"] == "":
             missing_data.append("disease")
 
-        if "confidence" not in json_data or json_data["confidence"]["level"] == "":
+        if "confidence" not in json_data or json_data["confidence"] == "":
             missing_data.append("confidence")
 
         if "publications" not in json_data or len(json_data["publications"]) == 0:
@@ -122,6 +122,9 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         if "molecular_mechanism" not in json_data or json_data["molecular_mechanism"]["name"] == "":
             missing_data.append("molecular_mechanism")
+
+        if "variant_consequences" not in json_data or not json_data["variant_consequences"]:
+            missing_data.append("variant_consequences")
 
         if missing_data:
             missing_data_str = ', '.join(missing_data)
@@ -246,7 +249,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             - "genotype": Retrieved from the "allelic_requirement" key.
             - "disease": Retrieved from the nested "disease_name" key inside the "disease" dictionary.
             - "panel": Retrieved from the "panels" key.
-            - "confidence": Retrieved from the key "level" inside the "confidence" dictionary.
+            - "confidence"
 
             Args:
                 json_data (dict): A dictionary containing the JSON data to extract information from.
@@ -262,7 +265,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             "genotype": json_data.get("allelic_requirement"),
             "disease": json_data.get("disease", {}).get("disease_name"),
             "panel": json_data.get("panels"),
-            "confidence": json_data.get("confidence", {}).get("level")
+            "confidence": json_data.get("confidence", None)
         }
 
     @transaction.atomic
@@ -279,7 +282,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         json_data = validated_data.get("json_data")
 
-        date_created = datetime.now()
+        date_created = get_date_now()
         date_reviewed = date_created
         session_name = json_data.get('session_name')
         stable_id = G2PStableIDSerializer.create_stable_id()
@@ -288,16 +291,21 @@ class CurationDataSerializer(serializers.ModelSerializer):
         if session_name is None or session_name == "":
             session_name = stable_id.stable_id
 
-        try:
-            CurationData.objects.get(session_name=session_name)
+        # Check for duplicate session_name
+        if CurationData.objects.filter(session_name=session_name).exists():
             raise serializers.ValidationError({
-                "message" : f"Curation data with the '{session_name}' already exists. Please change the session name and try again"
+                "message": f"Curation data with the session name '{session_name}' already exists. Please change the session name and try again."
             })
 
-        except:
-            user_email = self.context.get('user') # TODO: this needs to be looked at
+        user_email = self.context.get('user')
+        try:
             user_obj = User.objects.get(email=user_email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError({
+                "message": f"User '{user_email}' does not exist."
+            })
 
+        try:
             new_curation_data = CurationData.objects.create(
                 session_name=session_name,
                 json_data=json_data,
@@ -307,6 +315,10 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 date_last_update=date_reviewed,
                 user=user_obj
             )
+        except Exception as e:
+            raise serializers.ValidationError({
+                "message": f"Failed to create curation data '{session_name}': {str(e)}"
+            })
 
         return new_curation_data
 
@@ -325,7 +337,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         """
 
         instance.json_data = validated_data.get('json_data')
-        instance.date_last_update = timezone.now().astimezone(pytz.timezone("Europe/London"))
+        instance.date_last_update = get_date_now()
         instance.save()
 
         return instance
@@ -633,7 +645,20 @@ class CurationDataSerializer(serializers.ModelSerializer):
         for variant_type_desc in data.json_data["variant_descriptions"]:
             LGDVariantTypeDescriptionSerializer(context={'lgd': lgd_obj}).create(variant_type_desc)
 
-        # TODO: add comment
+        # Comments
+        if "public_comment" in data.json_data and data.json_data["public_comment"] != "":
+            comment_obj_public = {
+                "comment": data.json_data["public_comment"],
+                "is_public": 1
+            }
+            LGDCommentSerializer(context={'lgd': lgd_obj, 'user': user_obj}).create(comment_obj_public)
+
+        if "private_comment" in data.json_data and data.json_data["private_comment"] != "":
+            comment_obj_private = {
+                "comment": data.json_data["private_comment"],
+                "is_public": 0
+            }
+            LGDCommentSerializer(context={'lgd': lgd_obj, 'user': user_obj}).create(comment_obj_private)
 
         # Update stable_id status to live (is_live=1)
         G2PStableIDSerializer(context={'stable_id': data.stable_id.stable_id}).update_g2p_id_status(1)

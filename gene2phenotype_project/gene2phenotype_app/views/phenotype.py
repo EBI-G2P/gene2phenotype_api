@@ -155,10 +155,10 @@ class LGDEditPhenotypes(APIView):
                     serializer_class.save()
                     response = Response({"message": "Phenotype added to the G2P entry successfully."}, status=status.HTTP_201_CREATED)
                 else:
-                    response = Response({"errors": serializer_class.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    response = Response({"errors": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         else:
-            response = Response({"errors": serializer_list.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            response = Response({"errors": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         return response
 
@@ -185,7 +185,7 @@ class LGDEditPhenotypes(APIView):
         except:
             return Response(
                 {"errors": f"Could not delete phenotype '{accession}' for ID '{stable_id}'"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(
                 {"message": f"Phenotype '{accession}' successfully deleted for ID '{stable_id}'"},
@@ -237,7 +237,7 @@ class LGDEditPhenotypeSummary(APIView):
             serializer.save()
             response = Response({"message": "Phenotype added to the G2P entry successfully."}, status=status.HTTP_201_CREATED)
         else:
-            response = Response({"errors": serializer.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            response = Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         return response
 
@@ -259,7 +259,7 @@ class LGDEditPhenotypeSummary(APIView):
         except:
             return Response(
                 {"errors": f"Could not delete phenotype summary for ID '{stable_id}'"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(
                 {"message": f"Phenotype summary successfully deleted for ID '{stable_id}'"},

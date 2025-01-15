@@ -360,7 +360,7 @@ class LGDEditPublications(BaseUpdate):
         except:
             return Response(
                 {"errors": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                status=status.HTTP_400_BAD_REQUEST)
 
         # Delete publication from other tables
         # lgd_phenotype - different phenotypes can be linked to the same publication
@@ -372,7 +372,7 @@ class LGDEditPublications(BaseUpdate):
         except:
             return Response(
                 {"errors": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_400_BAD_REQUEST
             )
 
         # lgd_phenotype_summary - the phenotype summary is directly associated with the LGD record
@@ -386,7 +386,7 @@ class LGDEditPublications(BaseUpdate):
         except:
             return Response(
                 {"errors": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_400_BAD_REQUEST
             )
 
         # lgd_variant_type - different variant types can be linked to the same publication
@@ -398,7 +398,7 @@ class LGDEditPublications(BaseUpdate):
         except:
             return Response(
                 {"errors": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_400_BAD_REQUEST
             )
 
         # lgd_variant_type_description - different descriptions can be linked to the same publication
@@ -410,7 +410,7 @@ class LGDEditPublications(BaseUpdate):
         except:
             return Response(
                 {"errors": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_400_BAD_REQUEST
             )
 
         # molecular_mechanism_evidence - only the molecular mechanism evidence is linked to a publication
