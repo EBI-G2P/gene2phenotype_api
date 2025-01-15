@@ -13,6 +13,8 @@ from gene2phenotype_app.serializers import (UserSerializer, LoginSerializer,
                                             CreateUserSerializer, LogoutSerializer, ChangePasswordSerializer, VerifyEmailSerializer, PasswordResetSerializer)
 from gene2phenotype_app.models import User, UserPanel
 from .base import BaseView
+from gene2phenotype_app.authentication import CustomAuthentication
+from rest_framework.exceptions import AuthenticationFailed
 
 
 
@@ -349,6 +351,8 @@ class CustomTokenRefreshView(TokenRefreshView):
         serializer.is_valid(raise_exception=True)
         refresh_token = serializer.validated_data.get("refresh") # the validated results sent from the TokenRefreshSerializer
         access_token = serializer.validated_data.get('access') # the validated results sent from the TokenRefreshSerializer
+        if CustomAuthentication.is_token_blacklisted(refresh_token):
+            raise AuthenticationFailed("Token has been blacklisted")
         try:
             if getattr(settings, "SIMPLE_JWT", {}).get("ROTATE_REFRESH_TOKENS", True):
                new_refresh_token = str(RefreshToken(refresh_token))

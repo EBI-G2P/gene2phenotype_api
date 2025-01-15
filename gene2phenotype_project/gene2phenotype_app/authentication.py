@@ -1,7 +1,5 @@
-from rest_framework.authentication import CSRFCheck
 from rest_framework.exceptions import AuthenticationFailed
 from django.conf import settings
-from rest_framework import HTTP_HEADER_ENCODING, authentication
 from django.middleware.csrf import CsrfViewMiddleware
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
@@ -35,7 +33,8 @@ class CustomAuthentication(JWTAuthentication):
         return self.get_user(validated_token), validated_token
     
     
-    def is_token_blacklisted(self, token_string):
+    @staticmethod
+    def is_token_blacklisted(token_string):
         try:
             token = RefreshToken(token_string)
             if BlacklistedToken.objects.filter(token__jti=token['jti']).exists():
