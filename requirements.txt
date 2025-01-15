@@ -3,7 +3,7 @@ attrs==23.2.0
 certifi==2024.07.04
 charset-normalizer==3.3.2
 deepdiff==7.0.1
-Django==5.1.4
+Django==5.1.5
 django-mail-templated==2.6.5
 django-simple-history==3.5.0
 django-templated-mail==1.1.1

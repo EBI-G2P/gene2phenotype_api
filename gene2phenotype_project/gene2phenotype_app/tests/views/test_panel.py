@@ -1,7 +1,6 @@
 from django.test import TestCase
 from django.conf import settings
 from django.urls import reverse
-from knox.models import AuthToken
 from gene2phenotype_app.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 

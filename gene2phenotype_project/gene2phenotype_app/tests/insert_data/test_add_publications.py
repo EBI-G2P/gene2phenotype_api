@@ -2,7 +2,6 @@ from django.test import TestCase
 from django.urls import reverse
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
-from knox.models import AuthToken
 from gene2phenotype_app.models import User, LGDPublication
 
 class LGDEditPublicationsEndpoint(TestCase):
