@@ -20,7 +20,7 @@ jobs:
         options: >-
           --health-cmd="mysqladmin ping -h localhost" --health-interval=10s
           --health-timeout=5s --health-retries=3
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -31,13 +31,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          
+
       - name: Create project config file
         run: |
           echo "# config.ini" > /home/runner/work/config.ini
@@ -47,7 +47,11 @@ jobs:
           echo "password=root" >> /home/runner/work/config.ini
           echo "host=127.0.0.1" >> /home/runner/work/config.ini
           echo "port=3306" >> /home/runner/work/config.ini
-        
+          echo "[email]" >> /home/runner/work/config.ini
+          echo "from=test_g2p_help@ebi.ac.uk" >>  /home/runner/work/config.ini
+          echo "host=smtp.ebi.ac.uk" >> /home/runner/work/config.ini
+          echo "port=465" >> /home/runner/work/config.ini
+
       - name: Run Tests
         run: |
           export SECRET_KEY=$(openssl rand -base64 12)
