@@ -295,7 +295,7 @@ class VerifyEmailView(generics.GenericAPIView):
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         result = serializer.get_user_and_send_email(user=request.data)
 
