@@ -174,11 +174,43 @@ class CreateUserSerializer(serializers.ModelSerializer):
                         }
         
 class ChangePasswordSerializer(serializers.ModelSerializer): 
+    """
+        Serializer class for Change Password
+
+        Args:
+            serializers (_type_): 
+                Fields:
+                    old_password : current password 
+                    password : new password
+                    password2 : confirm new password
+
+        Raises:
+            serializers.ValidationError: Raises if old password is not correct
+            serializers.ValidationError: Raises if new password and confirm new password do not match 
+            serializers.ValidationError: Raises if new and old password are the same 
+
+        Returns:
+            _type_: user email
+    """ 
+
     old_password = serializers.CharField(max_length=20, min_length=6, style={'input_type' : 'password'}, write_only=True)
     password = serializers.CharField(max_length=20, min_length=6, style={'input_type': 'password'}, write_only=True)
     password2 = serializers.CharField(max_length=20, min_length=6, style={'input_type': 'password'}, write_only=True)
 
     def validate(self, attrs):
+        """
+            Validation method for Change password method
+
+            Args:
+                attrs (_type_): Dictionary
+
+            Raises:
+                serializers.ValidationError: Raises if old password is not correct
+                serializers.ValidationError: Raises if new password and confirm new password do not match 
+
+            Returns:
+                _type_: Validated dictionary attrs 
+        """        
         user = self.context.get('user')
         old_password = attrs.get('old_password')
         if user.check_password(old_password) is False:
@@ -190,7 +222,19 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         
         return attrs
     
-    def save(self, user):
+    def change_password(self, user):
+        """
+            Save method for changing password 
+
+            Args:
+                user (_type_): user object
+
+            Raises:
+                serializers.ValidationError: Raises if new and old password are the same 
+
+            Returns:
+                _type_: user email
+        """        
         password = self.validated_data.get('password')
 
         if user.check_password(password):
@@ -207,9 +251,26 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
 
 
 class VerifyEmailSerializer(serializers.ModelSerializer):
+    """
+        Serializer class for Verify Email
+
+        Args:
+            serializers (_type_): 
+                Fields: 
+                    Email 
+
+        Returns:
+            _type_: user information
+    """    
     email = serializers.EmailField(write_only=True)
 
     def get_user_and_send_email(self, **validated_data):
+        """
+            Get user and sends email to the user containing password reset link
+
+            Returns:
+                _type_: User information 
+        """        
         email = self.validated_data.get('email')
         user = User.objects.get(email=email, is_deleted=0)
 
@@ -233,12 +294,41 @@ class VerifyEmailSerializer(serializers.ModelSerializer):
         fields = ['email']
 
 class PasswordResetSerializer(serializers.ModelSerializer):
+    """
+        Serializer class for password reset
+
+        Args:
+            serializers (_type_): 
+                Fields:
+                    Password - New password
+                    Password2 - confirm password 
+
+        Raises:
+            serializers.ValidationError: If password and confirm password do not match 
+            serializers.ValidationError: If user not associated with the Token 
+
+        Returns:
+            _type_: a user with a new reset password 
+    """    
     password = serializers.CharField(max_length=20, min_length=6, style={'input_type': 'password'}, write_only=True)
     password2 = serializers.CharField(max_length=20, min_length=6, style={'input_type': 'password'}, write_only=True)
 
     def validate(self, attrs):
+        """
+            Validation step for the Password reset
+
+            Args:
+                attrs (_type_): Dictionary, used in validating the data passed in request
+
+            Raises:
+                serializers.ValidationError: If password and confirm password do not match 
+                serializers.ValidationError: If user not associated with the Token 
+
+            Returns:
+                _type_: validated dictionary attrs
+        """        
         password = attrs.get('password')
-        password2 = attrs.get('password2')
+        password2 = attrs.pop('password2', None)
 
         uid = self.context.get('uid')
         token = self.context.get('token')
@@ -257,6 +347,19 @@ class PasswordResetSerializer(serializers.ModelSerializer):
         return attrs
     
     def reset(self, password, user):
+        """
+            Reset method for the Serializer class 
+
+            Args:
+                password (_type_): Validated password
+                user (_type_): Validated user id 
+            
+            Method:
+                Sets a new password and saves the user updated information 
+
+            Returns:
+                _type_: user email
+        """        
         password = self.validated_data.get('password')
         user = User.objects.get(id=self.validated_data.get('id'))
         user.set_password(password)

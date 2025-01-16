@@ -1,5 +1,6 @@
 from rest_framework.response import Response
 from rest_framework import generics, permissions
+from rest_framework.exceptions import ParseError
 from django.db.models import F
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer 
 from datetime import timedelta, datetime
@@ -281,20 +282,45 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
 class ChangePasswordView(generics.GenericAPIView):
+    """
+        Change password view  - Authenticated View 
+    """    
     serializer_class = ChangePasswordSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
+        """
+            Post method for ChangePasswordView
+
+            Args:
+                request (_type_): DjangoHttp Request object
+
+            Returns:
+                _type_: user information
+        """        
         serializer = self.serializer_class(data=request.data, context={'user':request.user})
         serializer.is_valid(raise_exception=True)
-        result = serializer.save(user=request.user)
+        result = serializer.change_password(user=request.user)
         return Response(result,  status=status.HTTP_201_CREATED)
     
 class VerifyEmailView(generics.GenericAPIView):
+    """
+        View for Verification of Email for Password Reset
+    """    
+
     serializer_class = VerifyEmailSerializer
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request, *args, **kwargs):
+        """
+        Post method for Verify Email View - Unauthenticated view 
+
+        Args:
+            request (_type_): Django HttpRequest Object
+
+        Returns:
+            _type_: Response (user information)
+        """        
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         result = serializer.get_user_and_send_email(user=request.data)
@@ -302,24 +328,54 @@ class VerifyEmailView(generics.GenericAPIView):
         return Response(result)
     
 class ResetPasswordView(generics.GenericAPIView):
+    """
+        View for Password Reset - UnAuthenticated View 
+    """    
     serializer_class = PasswordResetSerializer
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request, uid, token):
+        """
+            Post method for Password reset
+
+            Args:
+                request (_type_): Django HttpRequest Object
+                uid (_type_): encrypted user id 
+                token (_type_): tine restricted configured password reset token 
+
+            Returns:
+                _type_: response - user.email
+        """        
         serializer = self.serializer_class(data=request.data, context={'uid':uid, 'token':token})
         serializer.is_valid(raise_exception=True)
         result = serializer.reset(password=request.data,user=uid)
         return Response(result)
 
 class CustomTokenRefreshView(TokenRefreshView):
+    """
+        Custom view for TokenRefresh, inheriting from BaseClass TokenRefreshView
+        Unauthenticated View 
+    """    
     serializer_class = TokenRefreshSerializer
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request, *args, **kwargs):
+        """
+            Handles the Post nethod to refresh token and generate a new access and refresh token
+
+            Args:
+                request (_type_): instance of Django's HttpRequest object
+
+            Raises:
+                AuthenticationFailed: If the refresh token has been blacklisted (logged out)
+                ParseError : If the request is bad for other reasons 
+
+            Returns:
+                _type_: response
+        """        
         
         #fetch refresh_token from the cookies 
-        refresh_token = request.COOKIES.get(getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_COOKIE", "refresh_token")) 
-
+        refresh_token = request.COOKIES.get(getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_COOKIE", "refresh_token"))
 
         if CustomAuthentication.is_token_blacklisted(refresh_token):
             raise AuthenticationFailed("Token has been blacklisted")
@@ -335,7 +391,7 @@ class CustomTokenRefreshView(TokenRefreshView):
                new_refresh_token = str(RefreshToken(refresh_token))
             else:
                 new_refresh_token = refresh_token
-        except Exception as e: 
+        except ParseError as e: 
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         response = Response(serializer.data, status=status.HTTP_200_OK)
