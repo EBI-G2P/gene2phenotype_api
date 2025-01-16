@@ -311,8 +311,6 @@ class ResetPasswordView(generics.GenericAPIView):
         result = serializer.reset(password=request.data,user=uid)
         return Response(result)
 
-        
-
 class CustomTokenRefreshView(TokenRefreshView):
     serializer_class = TokenRefreshSerializer
     permission_classes = (permissions.AllowAny,)
@@ -320,18 +318,19 @@ class CustomTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
         
         #fetch refresh_token from the cookies 
-        refresh_token = request.COOKIES.get(getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_COOKIE", "refresh_token"))
+        refresh_token = request.COOKIES.get(getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_COOKIE", "refresh_token")) 
 
         if not refresh_token:
-            return Response({"error": "Refresh token missing"}, status=status.HTTP_400_BAD_REQUEST)
-
+            refresh_token = request.data
+            if CustomAuthentication.is_token_blacklisted(refresh_token):
+                raise AuthenticationFailed("Token has been blacklisted")
+      
         data = {'refresh' : refresh_token} # to make sure the data thats being sent is from the cookies
         serializer = self.serializer_class(data=data) # instead of request data, give it the data created
         serializer.is_valid(raise_exception=True)
         refresh_token = serializer.validated_data.get("refresh") # the validated results sent from the TokenRefreshSerializer
         access_token = serializer.validated_data.get('access') # the validated results sent from the TokenRefreshSerializer
-        if CustomAuthentication.is_token_blacklisted(refresh_token):
-            raise AuthenticationFailed("Token has been blacklisted")
+  
         try:
             if getattr(settings, "SIMPLE_JWT", {}).get("ROTATE_REFRESH_TOKENS", True):
                new_refresh_token = str(RefreshToken(refresh_token))
