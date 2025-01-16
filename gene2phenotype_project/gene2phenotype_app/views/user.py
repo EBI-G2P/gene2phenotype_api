@@ -320,10 +320,9 @@ class CustomTokenRefreshView(TokenRefreshView):
         #fetch refresh_token from the cookies 
         refresh_token = request.COOKIES.get(getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_COOKIE", "refresh_token")) 
 
-        if not refresh_token:
-            refresh_token = request.data
-            if CustomAuthentication.is_token_blacklisted(refresh_token):
-                raise AuthenticationFailed("Token has been blacklisted")
+
+        if CustomAuthentication.is_token_blacklisted(refresh_token):
+            raise AuthenticationFailed("Token has been blacklisted")
       
         data = {'refresh' : refresh_token} # to make sure the data thats being sent is from the cookies
         serializer = self.serializer_class(data=data) # instead of request data, give it the data created
