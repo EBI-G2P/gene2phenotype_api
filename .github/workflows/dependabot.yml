@@ -1,0 +1,9 @@
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    target-branch: "main" # The branch Dependabot will create PRs against
+    open-pull-requests-limit: 5 # Limit the number of open PRs
+
