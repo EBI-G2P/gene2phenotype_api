@@ -182,7 +182,7 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         user = self.context.get('user')
         old_password = attrs.get('old_password')
         if user.check_password(old_password) is False:
-            raise serializers.ValidationError({'message' : "Password incorrect, Input present password to change password"})
+            raise serializers.ValidationError({'message' : "The password you entered is incorrect. Please provide the correct current password to update your password"})
         password = attrs.get('password')
         password2 = attrs.pop('password2', None)
         if password != password2:
@@ -194,7 +194,7 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         password = self.validated_data.get('password')
 
         if user.check_password(password):
-            raise serializers.ValidationError({"message": "The new password cannot be the same as the old password."}, password)
+            raise serializers.ValidationError({"message": "The new password cannot be the same as the present password."}, password)
 
         user.set_password(password)
         user.save()
@@ -384,7 +384,7 @@ class LoginSerializer(serializers.ModelSerializer):
                 raise AuthenticationFailed("Username or password is incorrect")
 
             if user.is_deleted:
-                raise AuthenticationFailed('Account disbaled. Please contact Admin at g2p-help@ebi.ac.uk')
+                raise AuthenticationFailed('Account disabled. Please contact Admin at g2p-help@ebi.ac.uk')
 
             attrs['user'] = user
             return {
