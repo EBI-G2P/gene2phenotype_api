@@ -1,7 +1,6 @@
 from rest_framework.response import Response
 from rest_framework import generics, permissions
 from django.db.models import F
-from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer 
 from datetime import timedelta, datetime
 from rest_framework import status
@@ -15,8 +14,6 @@ from gene2phenotype_app.models import User, UserPanel
 from .base import BaseView
 from gene2phenotype_app.authentication import CustomAuthentication
 from rest_framework.exceptions import AuthenticationFailed
-
-
 
 
 class UserPanels(BaseView):
@@ -134,19 +131,9 @@ class LoginView(generics.GenericAPIView):
             This method authenticates a user based on the provided credentials, generates an access 
             token, and sets it in a secure cookie for client-side use. It also returns the user 
             details and token information in the response body.
-
             Parameters:
                 - request: The HTTP request containing user credentials in the request body (e.g., 
                 `username` and `password`).
-
-            Process:
-                1. Validates the user credentials using the `LoginSerializer`.
-                2. Extracts the access token from the serialized data.
-                3. Creates an HTTP response with the serialized user data.
-                4. Sets the access token in a secure cookie with attributes configured in 
-                `settings.SIMPLE_JWT`.
-                5. Sets the refresh token in a secure cookie with attributes configured in `settings.SIMPLE_JWT`
-
             Returns:
                 - Response: An HTTP response object with the user data and tokens in the body. 
                 The access token is also stored as a secure cookie.
@@ -228,16 +215,8 @@ class LogOutView(generics.GenericAPIView):
 
             This method validates the provided refresh token and blacklists it to prevent further 
             use. It ensures that only authenticated users can access this endpoint.
-
             Parameters:
                 - request: The HTTP request containing the refresh token in the request body.
-
-            Process:
-                - The method uses the associated serializer (`LogoutSerializer`) to validate the 
-                refresh token.
-                - Upon successful validation, the `save()` method of the serializer is called to 
-                blacklist the token.
-
             Returns:
                 - A Response object with HTTP 204 NO CONTENT status to indicate a successful logout.
 
