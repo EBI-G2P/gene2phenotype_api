@@ -120,6 +120,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
     """
         This serializer is used to validate and create a new user object.
     """
+    password = serializers.CharField(write_only=True, style={'input_type':'password'}, min_length=6, max_length=20)
     password2 = serializers.CharField(write_only=True, style={'input_type':'password'}, min_length=6, max_length=20)
  
     def validate(self, attrs):
@@ -139,7 +140,6 @@ class CreateUserSerializer(serializers.ModelSerializer):
             Returns:
                 _type_: A validated dictionary that will be used in the create
         """        
-
         email = attrs.get('email')
         if email is None:
             raise serializers.ValidationError({"message": "Email is needed to create a user"}, email)
@@ -151,7 +151,13 @@ class CreateUserSerializer(serializers.ModelSerializer):
         password2 = attrs.pop('password2', 'None')
         if password != password2:
             raise serializers.ValidationError({"message": "Passwords do not match"}, password)
-
+        first_name = attrs.get('first_name')
+        if first_name is None:
+            raise serializers.ValidationError({'message': "First name is needed to create a user"}, first_name)
+        last_name = attrs.get('last_name')
+        if last_name is None:
+            raise serializers.ValidationError({'message': "Last name is needed to create a user"}, last_name)
+        
         if User.objects.filter(username=username).exists():
             raise serializers.ValidationError({'message': "Username already exists"}, username)
         if User.objects.filter(email=email).exists():
@@ -176,7 +182,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
         """
 
         user = User.objects.create_user(**validated_data)
-        if user: 
+        if user:
             CustomMail.send_create_email(data=user, subject="Account Created!", to_email=user.email)
             return user 
 
