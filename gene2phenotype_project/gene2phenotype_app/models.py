@@ -680,12 +680,14 @@ class GenCCSubmission(models.Model):
             - old_g2p_id: internal G2P ID in the old system (only relevant for submissions with the old data)
             - g2p_stable_id: new G2P stable ID
             - date_of_submission: date when record was submitted to GenCC
+            - type_of_submission: 'create' if we submitted a new G2P record to GenCC or 'update' if we updated an existing G2P record in GenCC
     """
     id = models.AutoField(primary_key=True)
     submission_id = models.CharField(max_length=64)
     old_g2p_id = models.IntegerField(null=True, default=False)
     g2p_stable_id = models.ForeignKey("G2PStableID", on_delete=models.PROTECT, db_column="g2p_stable_id")
     date_of_submission = models.DateField(null=False)
+    type_of_submission = models.CharField(max_length=50, default="create")
 
     class Meta:
         db_table = "gencc_submission"
