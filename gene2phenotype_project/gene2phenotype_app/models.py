@@ -587,8 +587,6 @@ class Panel(models.Model):
 
 class UserManager(BaseUserManager):
     def create_user(self, email, username, first_name, last_name, password=None):
-        if not email and not username:
-            raise ValueError("User must have a valid email addresss and a valid username")
 
         user = self.model(
             email=self.normalize_email(email),
@@ -600,10 +598,7 @@ class UserManager(BaseUserManager):
         user.set_password(password)
         user.save()
         
-    def create_superuser(self, email, username, first_name, last_name, password=None):
-        if not email and not username:
-            raise ValueError("User must have a valid email addresss and a valid username")
-        
+    def create_superuser(self, email, username, first_name, last_name, password=None):    
         user = self.model(
             email=self.normalize_email(email),
             username=username,

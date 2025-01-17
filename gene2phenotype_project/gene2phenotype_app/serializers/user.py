@@ -135,6 +135,10 @@ class CreateUserSerializer(serializers.ModelSerializer):
         if password != password2:
             raise serializers.ValidationError({"message": "Passwords do not match"}, password)
 
+        if User.objects.filter(username=username).exists():
+            raise serializers.ValidationError({'message': "Username already exists"}, username)
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError({'message': "An account with this email already exists"}, email)
         
         return attrs
 
