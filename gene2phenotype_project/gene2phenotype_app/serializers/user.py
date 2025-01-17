@@ -123,8 +123,25 @@ class CreateUserSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(write_only=True, style={'input_type':'password'}, min_length=6, max_length=20)
  
     def validate(self, attrs):
+        """
+            Validate the dictionary being passed to the CreateUserSerializer
+
+            Args:
+                attrs (_type_): Dictionary 
+
+            Raises:
+                serializers.ValidationError: If Email is not being passed
+                serializers.ValidationError: If username is not being passed
+                serializers.ValidationError: checks if password and confirm password are the same 
+                serializers.ValidationError: If username already exists
+                serializers.ValidationError: If Account with that same email already exists
+
+            Returns:
+                _type_: A validated dictionary that will be used in the create
+        """        
+
         email = attrs.get('email')
-        if email is None: 
+        if email is None:
             raise serializers.ValidationError({"message": "Email is needed to create a user"}, email)
         username = attrs.get('username')
         if username is None: 
