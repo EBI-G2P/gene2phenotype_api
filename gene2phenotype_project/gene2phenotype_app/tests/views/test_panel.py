@@ -1,7 +1,8 @@
 from django.test import TestCase
+from django.conf import settings
 from django.urls import reverse
-from knox.models import AuthToken
 from gene2phenotype_app.models import User
+from rest_framework_simplejwt.tokens import RefreshToken
 
 class PanelListEndpointTests(TestCase):
     """
@@ -28,9 +29,11 @@ class PanelListEndpointTests(TestCase):
         """
         user = User.objects.get(email="user5@test.ac.uk")
         # Create token for the user
-        token_id = AuthToken.objects.create(user)[1]
-        # Authenticate using the token
-        self.client.defaults['HTTP_AUTHORIZATION'] = 'Token ' + token_id
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT['AUTH_COOKIE']] = access_token
 
         response = self.client.get(self.url_panels)
         self.assertEqual(response.status_code, 200)
