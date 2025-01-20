@@ -155,7 +155,7 @@ class LoginView(generics.GenericAPIView):
             access_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("ACCESS_TOKEN_LIFETIME", timedelta(hours=1))
             refresh_expires = datetime.utcnow() + refresh_token_lifetime  # Calculate refresh expiration time
             access_expires = datetime.utcnow() + access_token_lifetime # calculate access expiration time
-            login_data['refresh_token_time'] = refresh_expires.isoformat()
+            login_data['refresh_token_time'] = refresh_expires.isoformat() # to add the refresh token time to the response
             response.set_cookie(
                 key=settings.SIMPLE_JWT["AUTH_COOKIE"],
                 value=access_token,
@@ -395,7 +395,7 @@ class CustomTokenRefreshView(TokenRefreshView):
         except ParseError as e: 
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
-        response = Response(serializer.data, status=status.HTTP_200_OK)
+        response = Response({'message': "Token refreshed"}, status=status.HTTP_200_OK)
     
         if response.status_code == 200:
             refresh_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_TOKEN_LIFETIME", timedelta(days=1))
