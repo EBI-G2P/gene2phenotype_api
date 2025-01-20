@@ -179,7 +179,7 @@ class LoginView(generics.GenericAPIView):
             )
         else:
             raise ValueError("Failed to set cookies")
-        del(login_data['tokens'])
+        del(login_data['tokens']) # to delete tokens from the response after setting cookies
         return response
     
 class LogOutView(generics.GenericAPIView):
