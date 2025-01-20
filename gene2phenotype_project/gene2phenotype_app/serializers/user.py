@@ -474,7 +474,7 @@ class LoginSerializer(serializers.ModelSerializer):
         """
 
         user = User.objects.get(email=obj['username'])
-
+        print(user.tokens())
         if user:
             return {
                 'refresh': user.tokens()['refresh'],
@@ -527,7 +527,7 @@ class LoginSerializer(serializers.ModelSerializer):
             login_data = {
                 
                 'email': user.email,
-                'username': user.username,
+                'user_name': user.first_name + " " + user.last_name,
                 'panels': panels,
                 'tokens': user.tokens()
             }
