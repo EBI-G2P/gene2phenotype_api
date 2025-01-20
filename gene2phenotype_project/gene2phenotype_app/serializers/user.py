@@ -1,14 +1,15 @@
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
-from ..utils import CustomMail
-from ..models import User, UserPanel
 from django.contrib.auth import authenticate
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeError
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework.validators import UniqueValidator
+
+from ..utils import CustomMail
+from ..models import User, UserPanel
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -182,8 +183,11 @@ class CreateUserSerializer(serializers.ModelSerializer):
         """
 
         user = User.objects.create_user(**validated_data)
+        url_link = self.context.get('request')
+        base_url = url_link.build_absolute_uri()
+        verify_email_link = f"{base_url}/verify/email"
         if user:
-            CustomMail.send_create_email(data=user, subject="Account Created!", to_email=user.email)
+            CustomMail.send_create_email(data=user, verify_link=verify_email_link, subject="Account Created!", to_email=user.email)
             return user 
 
     class Meta:
@@ -246,7 +250,7 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         password2 = attrs.pop('password2', None)
         if password != password2:
             raise serializers.ValidationError({"message": "Passwords do not match"}, password)
-        
+
         return attrs
     
     def change_password(self, user):
@@ -469,7 +473,7 @@ class LoginSerializer(serializers.ModelSerializer):
                 - User.DoesNotExist: If no user with the provided email exists in the database.
         """
 
-        user = User.objects.get(email=obj['email'])
+        user = User.objects.get(email=obj['username'])
 
         if user:
             return {
@@ -477,7 +481,7 @@ class LoginSerializer(serializers.ModelSerializer):
                 'access': user.tokens()['access']
             }
     
-    def validate(self, attrs):
+    def login(self, validated_data):
         """
             Validates the user credentials and checks account status.
 
@@ -502,14 +506,13 @@ class LoginSerializer(serializers.ModelSerializer):
                 deleted, an error message is raised with instructions to contact support.
         """
 
-        username = attrs.get('username')
-        password = attrs.get('password')
-
+        username = validated_data.get('username')
+        password = validated_data.get('password')
         if username and password:
         
             user = authenticate(
                 request=self.context.get('request'),
-                username=username,
+                email=username,
                 password=password
             )
             if not user:
@@ -517,13 +520,18 @@ class LoginSerializer(serializers.ModelSerializer):
 
             if user.is_deleted:
                 raise AuthenticationFailed('Account disabled. Please contact Admin at g2p-help@ebi.ac.uk')
+            
+            user_serializer = UserSerializer(User)
+            panels = user_serializer.get_panels(id=user.id)
 
-            attrs['user'] = user
-            return {
+            login_data = {
+                
                 'email': user.email,
                 'username': user.username,
-                'tokens': user.tokens
+                'panels': panels,
+                'tokens': user.tokens()
             }
+            return login_data
     
     class Meta:
         model = User

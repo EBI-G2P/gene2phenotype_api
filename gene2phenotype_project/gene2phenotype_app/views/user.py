@@ -144,15 +144,12 @@ class LoginView(generics.GenericAPIView):
                 - ValidationError: Raised if the provided credentials are invalid.
                 - ValueError: Raised if the cookie cannot be set due to a response error.
         """
-
-        serializer = LoginSerializer(data=request.data)
+        serializer = LoginSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
-        access_token = serializer.data.get('tokens', {}).get('access', None) # to access the token which is in the serializer.data
-        refresh_token = serializer.data.get('tokens', {}).get('refresh', None)
-      
- 
-       
-        response = Response(serializer.data, status=status.HTTP_200_OK)
+        login_data = serializer.login(serializer.validated_data)
+        access_token = login_data.get('tokens', {}).get('access', None) # to access the token which is in the serializer.data
+        refresh_token = login_data.get('tokens', {}).get('refresh', None)
+        response = Response(login_data, status=status.HTTP_200_OK)
         if response.status_code == 200:
             refresh_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_TOKEN_LIFETIME", timedelta(days=1))
             access_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("ACCESS_TOKEN_LIFETIME", timedelta(hours=1))
