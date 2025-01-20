@@ -155,6 +155,7 @@ class LoginView(generics.GenericAPIView):
             access_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("ACCESS_TOKEN_LIFETIME", timedelta(hours=1))
             refresh_expires = datetime.utcnow() + refresh_token_lifetime  # Calculate refresh expiration time
             access_expires = datetime.utcnow() + access_token_lifetime # calculate access expiration time
+            login_data['refresh_token_time'] = refresh_expires.isoformat()
             response.set_cookie(
                 key=settings.SIMPLE_JWT["AUTH_COOKIE"],
                 value=access_token,
@@ -178,7 +179,6 @@ class LoginView(generics.GenericAPIView):
             )
         else:
             raise ValueError("Failed to set cookies")
-
         return response
     
 class LogOutView(generics.GenericAPIView):
