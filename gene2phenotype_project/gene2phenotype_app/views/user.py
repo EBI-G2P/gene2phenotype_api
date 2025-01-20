@@ -383,7 +383,7 @@ class CustomTokenRefreshView(TokenRefreshView):
             raise AuthenticationFailed("Token has been blacklisted")
       
         data = {'refresh' : refresh_token} # to make sure the data thats being sent is from the cookies
-        serializer = self.serializer_class(data=data) # instead of request data, give it the data created
+        serializer = TokenRefreshSerializer(data=data) # instead of request data, give it the data created
         serializer.is_valid(raise_exception=True)
         refresh_token = serializer.validated_data.get("refresh") # the validated results sent from the TokenRefreshSerializer
         access_token = serializer.validated_data.get('access') # the validated results sent from the TokenRefreshSerializer
@@ -396,13 +396,15 @@ class CustomTokenRefreshView(TokenRefreshView):
         except ParseError as e: 
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
-        response = Response({'message': "Token refreshed"}, status=status.HTTP_200_OK)
+        response_data = serializer.data
+        response = Response(response_data, status=status.HTTP_200_OK)
     
         if response.status_code == 200:
             refresh_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_TOKEN_LIFETIME", timedelta(days=1))
             access_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("ACCESS_TOKEN_LIFETIME", timedelta(hours=1))
             refresh_expires = datetime.utcnow() + refresh_token_lifetime  # Calculate refresh expiration time
             access_expires = datetime.utcnow() + access_token_lifetime # calculate access expiration time
+            response_data['refresh_token_time'] = refresh_expires
             response.set_cookie(
                 key=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE", "access_token"),
                 value=access_token,
