@@ -260,6 +260,10 @@ class LogOutView(generics.GenericAPIView):
                 key=settings.SIMPLE_JWT["REFRESH_COOKIE"],
                 path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
                 )
+            response.delete_cookie(
+                key="refresh_token_lifetime",
+                path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
+            )
         return response
     
 

@@ -24,13 +24,13 @@ class CustomMail():
         
 
     @staticmethod
-    def send_create_email(data, subject, to_email):
+    def send_create_email(data, verify_link, subject, to_email):
         email_body = render_to_string('gene2phenotype_app/create_user_email.tpl', {
-            'user': data.first_name,
             'email': data.email,
             'first_name': data.first_name, 
             'last_name': data.last_name,
-            'username': data.username
+            'username': data.username,
+            'email_verification_link': verify_link
         })
         message = EmailMessage()
         message['From'] = settings.DEFAULT_FROM_EMAIL

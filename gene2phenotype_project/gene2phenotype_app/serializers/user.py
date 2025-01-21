@@ -24,18 +24,17 @@ class UserSerializer(serializers.ModelSerializer):
     is_superuser = serializers.BooleanField()
     is_staff = serializers.BooleanField()
 
-    def get_user_name(self, id):
+    def get_user_name(self, obj):
         """
             Gets the user name.
             If the first and last name are not available then
             splits the username.
         """
-
-        user = User.objects.filter(email=id)
-        if user.first().first_name is not None and user.first().last_name is not None:
-            name = f"{user.first().first_name} {user.first().last_name}"
+        user = User.objects.filter(email=obj).first()
+        if user.first_name is not None and user.last_name is not None:
+            name = f"{user.first_name} {user.last_name}"
         else:
-            user_name = user.first().username.split('_')
+            user_name = user.username.split('_')
             name = ' '.join(user_name).title()
 
         return name
@@ -183,9 +182,11 @@ class CreateUserSerializer(serializers.ModelSerializer):
         """
 
         user = User.objects.create_user(**validated_data)
-        url_link = self.context.get('request')
-        base_url = url_link.build_absolute_uri()
-        verify_email_link = f"{base_url}/verify/email"
+        request = self.context.get('request')
+        #base_url = url_link.build_absolute_uri()
+        http_response = request.scheme
+        host = request.get_host()
+        verify_email_link = f"{http_response}://{host}/verify/email"
         if user:
             CustomMail.send_create_email(data=user, verify_link=verify_email_link, subject="Account Created!", to_email=user.email)
             return user 
@@ -310,8 +311,9 @@ class VerifyEmailSerializer(serializers.ModelSerializer):
             reset_token = PasswordResetTokenGenerator().make_token(user)
             uid =  urlsafe_base64_encode(force_bytes(user.id))
             request = self.context.get('request')
-            base_url = request.build_absolute_uri()
-            reset_link = f"{base_url}/{uid}/{reset_token}"
+            http_response = request.scheme
+            host = request.get_host()
+            reset_link = f"{http_response}://{host}/gene2phenotype/reset-password/{uid}/{reset_token}"
             CustomMail.send_reset_email(user=user.first_name, subject='Reset password request', reset_link=reset_link, to_email=user.email)
 
             return {
@@ -474,7 +476,6 @@ class LoginSerializer(serializers.ModelSerializer):
         """
 
         user = User.objects.get(email=obj['username'])
-        print(user.tokens())
         if user:
             return {
                 'refresh': user.tokens()['refresh'],

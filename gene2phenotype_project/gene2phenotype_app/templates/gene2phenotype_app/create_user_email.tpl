@@ -1,7 +1,7 @@
 {% extends "mail_templated/base.tpl" %} {% load static %}
 
 {% block subject %}
-Account Created: Welcome to G2P, {{ user }}
+Account Created: Welcome to G2P, {{ first_name }} {{ last_name }},
 {% endblock %}
 
 {% block html %}
@@ -13,6 +13,7 @@ Account Created: Welcome to G2P, {{ user }}
 </ul>
 
 <p>If you did not create a user or you are receiving this message in error, please contact the G2P team at <a href="mailto:g2p-help@ebi.ac.uk">g2p-help@ebi.ac.uk</a></p>
+<p>To reset the password used in the creation of your account, please follow this link {{ email_verification_link }}</p>
 
 <p>Thank you for using G2P</p>
 <footer>
