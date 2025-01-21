@@ -278,10 +278,16 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
 
     serializer_class = UserSerializer
     permission_classes = (permissions.IsAuthenticated,)
+    
 
-    def get_object(self):
+    def get(self, request):
         """Retrieve and return authenticated user"""
-        return self.request.user
+        serializer = UserSerializer(request.user)
+        refresh_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_TOKEN_LIFETIME", timedelta(days=1))
+        refresh_token_time = datetime.utcnow() + refresh_token_lifetime
+        result = serializer.data
+        result['refresh_token_time']  = refresh_token_time
+        return Response(result, status=status.HTTP_200_OK)
 
 class ChangePasswordView(generics.GenericAPIView):
     """
