@@ -155,6 +155,7 @@ class LoginView(generics.GenericAPIView):
             access_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("ACCESS_TOKEN_LIFETIME", timedelta(hours=1))
             refresh_expires = datetime.utcnow() + refresh_token_lifetime  # Calculate refresh expiration time
             access_expires = datetime.utcnow() + access_token_lifetime # calculate access expiration time
+            refresh_expires_iso = refresh_expires.isoformat()
             login_data['refresh_token_time'] = refresh_expires.isoformat() # to add the refresh token time to the response
             response.set_cookie(
                 key=settings.SIMPLE_JWT["AUTH_COOKIE"],
@@ -170,6 +171,16 @@ class LoginView(generics.GenericAPIView):
             response.set_cookie(
                 key=settings.SIMPLE_JWT["REFRESH_COOKIE"],  # Refresh token cookie name
                 value=refresh_token,
+                domain=settings.SIMPLE_JWT["AUTH_COOKIE_DOMAIN"],
+                path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
+                expires=refresh_expires,
+                secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
+                httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
+                samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
+            )
+            response.set_cookie(
+                key="refresh_token_lifetime",
+                value=refresh_expires_iso,
                 domain=settings.SIMPLE_JWT["AUTH_COOKIE_DOMAIN"],
                 path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
                 expires=refresh_expires,
@@ -283,9 +294,9 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
     def get(self, request):
         """Retrieve and return authenticated user"""
         serializer = UserSerializer(request.user)
-        refresh_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_TOKEN_LIFETIME", timedelta(days=1))
         result = serializer.data
-        result['refresh_token_time']  = refresh_token_lifetime
+        refresh_token_value = request.COOKIES.get('refresh_token_lifetime')
+        result['refresh_token_lifetime'] = refresh_token_value
         return Response(result, status=status.HTTP_200_OK)
 
 class ChangePasswordView(generics.GenericAPIView):
@@ -410,6 +421,7 @@ class CustomTokenRefreshView(TokenRefreshView):
             refresh_expires = datetime.utcnow() + refresh_token_lifetime  # Calculate refresh expiration time
             access_expires = datetime.utcnow() + access_token_lifetime # calculate access expiration time
             response_data['refresh_token_time'] = refresh_expires
+            refresh_expires_iso = refresh_expires.isoformat()
             response.set_cookie(
                 key=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE", "access_token"),
                 value=access_token,
@@ -429,6 +441,16 @@ class CustomTokenRefreshView(TokenRefreshView):
                 secure=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE_SECURE", False),
                 httponly=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE_HTTP_ONLY", True),
                 samesite=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE_SAMESITE", "Lax"),
+            )
+            response.set_cookie(
+                key="refresh_token_lifetime",
+                value=refresh_expires_iso,
+                domain=settings.SIMPLE_JWT["AUTH_COOKIE_DOMAIN"],
+                path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
+                expires=refresh_expires,
+                secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
+                httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
+                samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
             )
         
         return response
