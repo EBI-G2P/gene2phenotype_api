@@ -373,7 +373,7 @@ def PanelDownload(request, name):
         "allelic requirement",
         "cross cutting modifier",
         "confidence",
-        "variant consequence",
+        "inferred variant consequence",
         "variant types",
         "molecular mechanism",
         "molecular mechanism categorisation",
@@ -477,13 +477,18 @@ def PanelDownload(request, name):
             molecular_mechanism = lgd.mechanism.value
             molecular_mechanism_categorisation = lgd.mechanism_support.value
             if lgd_id in mechanism_evidence_data:
-                mechanism_evidence = set()
+                mechanism_evidence_by_pmid = {}
                 for evidence_data in mechanism_evidence_data[lgd_id]:
-                    m_subtype = evidence_data["subtype"]
-                    e_value = evidence_data["value"]
-                    e_pmid = evidence_data["pmid"]
-                    mechanism_evidence.add(f"{m_subtype}:{e_value}:{e_pmid}")
-                molecular_mechanism_evidence = "; ".join(mechanism_evidence)
+                    if evidence_data["pmid"] not in mechanism_evidence_by_pmid:
+                        mechanism_evidence_by_pmid[evidence_data["pmid"]] = {}
+                        mechanism_evidence_by_pmid[evidence_data["pmid"]][evidence_data["subtype"]] = [evidence_data["value"]]
+                    elif evidence_data["subtype"] not in mechanism_evidence_by_pmid[evidence_data["pmid"]]:
+                        mechanism_evidence_by_pmid[evidence_data["pmid"]][evidence_data["subtype"]] = [evidence_data["value"]]
+                    else:
+                        mechanism_evidence_by_pmid[evidence_data["pmid"]][evidence_data["subtype"]].append(evidence_data["value"])
+
+                # repr() returns a printable representation of an object 
+                molecular_mechanism_evidence = repr(mechanism_evidence_by_pmid)
 
             # Get preloaded phenotypes for this g2p entry
             if lgd_id in lgd_phenotype_data:
