@@ -7,6 +7,7 @@ from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeErr
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework.validators import UniqueValidator
+from django.contrib.auth.models import update_last_login
 
 from ..utils import CustomMail
 from ..models import User, UserPanel
@@ -109,7 +110,7 @@ class UserSerializer(serializers.ModelSerializer):
                     return False
 
         return True
-
+    
     class Meta:
         model = User
         fields = ['user_name', 'email', 'is_active', 'panels', 'is_superuser', 'is_staff']
@@ -524,6 +525,7 @@ class LoginSerializer(serializers.ModelSerializer):
             
             user_serializer = UserSerializer(User)
             panels = user_serializer.get_panels(id=user.id)
+            update_last_login(None, user) # to update the last login column in the User table on login
 
             login_data = {
                 
