@@ -10,7 +10,7 @@ from rest_framework.validators import UniqueValidator
 from django.contrib.auth.models import update_last_login
 
 from ..utils import CustomMail
-from ..models import User, UserPanel
+from ..models import User, UserPanel, Panel
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -123,7 +123,9 @@ class CreateUserSerializer(serializers.ModelSerializer):
     """
     password = serializers.CharField(write_only=True, style={'input_type':'password'}, min_length=6, max_length=20)
     password2 = serializers.CharField(write_only=True, style={'input_type':'password'}, min_length=6, max_length=20)
- 
+    panels = serializers.PrimaryKeyRelatedField(queryset=Panel.objects.all(), many=True, write_only=True) # adding write only because it is not a readable field
+
+
     def validate(self, attrs):
         """
             Validate the dictionary being passed to the CreateUserSerializer
@@ -182,19 +184,24 @@ class CreateUserSerializer(serializers.ModelSerializer):
                 - is_staff: set to True if the user is a staff member (default: False)
         """
 
+      
+        panels = validated_data.pop('panels', []) # popping panels because i do not need it for creation
         user = User.objects.create_user(**validated_data)
-        request = self.context.get('request')
-        #base_url = url_link.build_absolute_uri()
-        http_response = request.scheme
-        host = request.get_host()
-        verify_email_link = f"{http_response}://{host}/verify/email"
+        for panel in panels:
+            UserPanel.objects.create(user=user, panel=panel, is_deleted=False)
         if user:
+            request = self.context.get('request')
+            #base_url = url_link.build_absolute_uri()
+            http_response = request.scheme
+            host = request.get_host()
+            verify_email_link = f"{http_response}://{host}/verify/email"
             CustomMail.send_create_email(data=user, verify_link=verify_email_link, subject="Account Created!", to_email=user.email)
-            return user 
+        
+        return user 
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'first_name', 'last_name', 'password', 'password2', 'is_superuser', 'is_staff']
+        fields = ['username', 'email', 'first_name', 'last_name', 'password', 'password2', 'is_superuser', 'is_staff', 'panels']
         extra_kwargs = {'password': {'write_only': True, 'min_length': 6, 'max_length': 20}, 
                         'email': {
                             'validators': [
