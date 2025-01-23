@@ -300,7 +300,7 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
         serializer = UserSerializer(request.user)
         result = serializer.data
         refresh_token_value = request.COOKIES.get('refresh_token_lifetime')
-        result['refresh_token_lifetime'] = refresh_token_value
+        result['refresh_token_time'] = refresh_token_value
         return Response(result, status=status.HTTP_200_OK)
 
 class ChangePasswordView(generics.GenericAPIView):
