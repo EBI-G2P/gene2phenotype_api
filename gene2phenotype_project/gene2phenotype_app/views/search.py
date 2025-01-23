@@ -43,6 +43,9 @@ class SearchView(BaseView):
         if not search_query:
             return LocusGenotypeDisease.objects.none()
 
+        # Remove leading whitespaces, newline and tab characters from the beginning and end of the query text
+        search_query = search_query.lstrip().rstrip()
+
         base_locus = Q(locus__name=search_query, is_deleted=0)
         base_locus_2 = Q(locus__locusidentifier__isnull=False, locus__locusidentifier__identifier=search_query, is_deleted=0)
         base_locus_3 = Q(locus__locusattrib__isnull=False, locus__locusattrib__value=search_query, locus__locusattrib__is_deleted=0)
