@@ -1,4 +1,4 @@
-from rest_framework import generics, permissions, status
+from rest_framework import generics, status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import Http404, HttpResponse
@@ -17,7 +17,7 @@ from gene2phenotype_app.models import (Panel, User, LocusGenotypeDisease,
 
 from gene2phenotype_app.serializers import PanelDetailSerializer, LGDPanelSerializer, UserSerializer
 
-from .base import BaseView
+from .base import BaseView, IsSuperUser, CustomPermissionAPIView
 
 
 class PanelList(generics.ListAPIView):
@@ -133,13 +133,18 @@ class PanelRecordsSummary(BaseView):
             self.handle_no_permission('Panel', name)
 
 ### Edit data ###
-class LGDEditPanel(APIView):
+class LGDEditPanel(CustomPermissionAPIView):
     """
         Method to add or delete LGD-panel association.
     """
     http_method_names = ['post', 'update', 'options']
     serializer_class = LGDPanelSerializer
-    permission_classes = [permissions.IsAuthenticated]
+
+    # Define specific permissions
+    method_permissions = {
+        "post": [permissions.IsAuthenticated],
+        "update": [permissions.IsAuthenticated, IsSuperUser],
+    }
 
     @transaction.atomic
     def post(self, request, stable_id):

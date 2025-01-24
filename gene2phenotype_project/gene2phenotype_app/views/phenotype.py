@@ -13,7 +13,7 @@ from gene2phenotype_app.serializers import (PhenotypeOntologyTermSerializer, LGD
 from gene2phenotype_app.models import (OntologyTerm, LGDPhenotype, LocusGenotypeDisease,
                                        LGDPhenotypeSummary)
 
-from .base import BaseAdd, BaseUpdate
+from .base import BaseAdd, CustomPermissionAPIView, IsSuperUser
 
 from ..utils import validate_phenotype
 
@@ -79,7 +79,7 @@ def PhenotypeDetail(request, hpo_list):
 
 ### LGD-phenotype ###
 # Add or delete data
-class LGDEditPhenotypes(APIView):
+class LGDEditPhenotypes(CustomPermissionAPIView):
     """
         Add or delete lgd-phenotype.
 
@@ -92,7 +92,12 @@ class LGDEditPhenotypes(APIView):
             it sets the flag 'is_deleted' to 1.
     """
     http_method_names = ['post', 'update', 'options']
-    permission_classes = [permissions.IsAuthenticated]
+
+    # Define specific permissions
+    method_permissions = {
+        "post": [permissions.IsAuthenticated],
+        "update": [permissions.IsAuthenticated, IsSuperUser],
+    }
 
     def get_serializer_class(self, action):
         """
@@ -191,7 +196,7 @@ class LGDEditPhenotypes(APIView):
                 {"message": f"Phenotype '{accession}' successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK)
 
-class LGDEditPhenotypeSummary(APIView):
+class LGDEditPhenotypeSummary(CustomPermissionAPIView):
     """
         Add or delete a LGD-phenotype summary
 
@@ -205,7 +210,12 @@ class LGDEditPhenotypeSummary(APIView):
     """
     http_method_names = ['post', 'update', 'options']
     serializer_class = LGDPhenotypeSummarySerializer
-    permission_classes = [permissions.IsAuthenticated]
+
+    # Define specific permissions
+    method_permissions = {
+        "post": [permissions.IsAuthenticated],
+        "update": [permissions.IsAuthenticated, IsSuperUser],
+    }
 
     @transaction.atomic
     def post(self, request, stable_id):
