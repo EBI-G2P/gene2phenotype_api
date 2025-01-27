@@ -116,12 +116,10 @@ SIMPLE_JWT = {
   "ROTATE_REFRESH_TOKENS": True
 }
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # Add your frontend's URL here, # local set up still being implemented, need to change for production
+CORS_ALLOWED_ORIGINS = [  # Add your frontend's URL here, # local set up still being implemented, need to change for production
 ]
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:5173',  # Add your frontend's URL here, # local set up still being implemented, need to change for production
-]
+CSRF_TRUSTED_ORIGINS = [  # Add your frontend's URL here, # local set up still being implemented, need to change for production
+    ]
 CORS_ALLOWED_CREDENTIALS = "True"
 
 DEFAULT_FROM_EMAIL = config.get('email', 'from')
