@@ -710,8 +710,10 @@ class LGDOrgan(models.Model):
         db_table = "lgd_organ"
 
 class LGDMutationConsequenceFlag(models.Model):
+    """
+        As some mutation consequences flags are not migrated, we keep the legacy data in this table.
+    """
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
-    mutation_consequence = models.ForeignKey("Attrib", related_name='mutation_consequence', on_delete=models.PROTECT)
     mutation_consequence_flag = models.ForeignKey("Attrib", related_name='mutation_consequence_flag', on_delete=models.PROTECT)
 
     class Meta:
