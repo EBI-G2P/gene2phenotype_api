@@ -13,7 +13,7 @@ from gene2phenotype_app.models import (Panel, User, LocusGenotypeDisease,
                                        LGDVariantType, LGDVariantGenccConsequence,
                                        LGDMolecularMechanismEvidence, LGDPhenotype,
                                        LGDPublication, LGDCrossCuttingModifier,
-                                       LGDPanel)
+                                       LGDPanel, LGDComment)
 
 from gene2phenotype_app.serializers import PanelDetailSerializer, LGDPanelSerializer, UserSerializer
 
@@ -266,8 +266,8 @@ def PanelDownload(request, name):
     # Preload variant GenCC consequence
     lgd_varianconsequence_data = {} # key = lgd_id; value = variant consequence term
     queryset_lgd_var_cons = LGDVariantGenccConsequence.objects.filter(
-        is_deleted=0).select_related('lgd__id','variant_consequence__term').values('lgd__id', 'variant_consequence__term')
-    
+        is_deleted=0).select_related('lgd__id','variant_consequence__term','support__value').values('lgd__id', 'variant_consequence__term','support__value')
+
     for data in queryset_lgd_var_cons:
         if data['lgd__id'] not in lgd_varianconsequence_data:
             lgd_varianconsequence_data[data['lgd__id']] = [data['variant_consequence__term']]
@@ -284,11 +284,19 @@ def PanelDownload(request, name):
             'evidence__value',
             'publication__pmid')
 
-    print("\nMechanism evidence:", queryset_lgd_mechanism_evidence)
-
-    # Prepare final dict of mechanisms + evidence (if applicable)
-    # for data in queryset_lgd_mechanism_evidence:
-    #     if data['lgd__id'] in evidence_data:
+    for queryset_data in queryset_lgd_mechanism_evidence:
+        if queryset_data["lgd__id"] not in mechanism_evidence_data:
+            mechanism_evidence_data[queryset_data["lgd__id"]] = [{
+                "subtype": queryset_data["evidence__subtype"],
+                "value": queryset_data["evidence__value"],
+                "pmid": queryset_data["publication__pmid"]
+            }]
+        else:
+            mechanism_evidence_data[queryset_data["lgd__id"]].append({
+                "subtype": queryset_data["evidence__subtype"],
+                "value": queryset_data["evidence__value"],
+                "pmid": queryset_data["publication__pmid"]
+            })
 
     # Preload phenotypes
     lgd_phenotype_data = {} # key = lgd_id; value = phenotype accession
@@ -323,24 +331,57 @@ def PanelDownload(request, name):
         else:
             lgd_ccm_data[data['lgd__id']].append(data['ccm__value'])
 
+    # Preload panels
+    lgd_panel_data = {}
+    # Return all visible panels
+    queryset_lgd_panel = LGDPanel.objects.filter(
+        is_deleted=0,
+        panel__is_visible=1
+    ).select_related('lgd__id', 'panel__name').values('lgd__id', 'panel__name')
+
+    for data in queryset_lgd_panel:
+        if data['lgd__id'] not in lgd_panel_data:
+            lgd_panel_data[data['lgd__id']] = [data['panel__name']]
+        else:
+            lgd_panel_data[data['lgd__id']].append(data['panel__name'])
+
+    # Preload comments
+    lgd_comments = {}
+    # Only download public comments
+    queryset_lgd_comment = LGDComment.objects.filter(
+        is_deleted=0,
+        is_public=1
+    ).select_related('lgd__id').values('lgd__id', 'comment')
+
+    for data in queryset_lgd_comment:
+        if data['lgd__id'] not in lgd_comments:
+            lgd_comments[data['lgd__id']] = [data['comment']]
+        else:
+            lgd_comments[data['lgd__id']].append(data['comment'])
+
     writer = csv.writer(response)
     # Write file header
     writer.writerow([
         "g2p id",
         "gene symbol",
-        "gene ids",
-        "gene previous symbols",
+        "gene mim",
+        "hgnc id",
+        "previous gene symbols",
         "disease name",
-        "disease ids",
+        "disease mim",
+        "disease MONDO",
         "allelic requirement",
+        "cross cutting modifier",
         "confidence",
-        "variant consequence",
-        "variant type",
+        "inferred variant consequence",
+        "variant types",
         "molecular mechanism",
+        "molecular mechanism categorisation",
         "molecular mechanism evidence",
         "phenotypes",
         "publications",
-        "cross cutting modifier",
+        "panel",
+        "comments",
         "date of last review"
     ])
 
@@ -399,21 +440,28 @@ def PanelDownload(request, name):
             variant_types = ""
             variant_consequences = ""
             molecular_mechanism = ""
+            molecular_mechanism_categorisation = ""
             molecular_mechanism_evidence = ""
             phenotypes = ""
             publications = ""
             ccm = ""
+            panels = ""
+            comments = ""
 
             # extra data for disease and locus
-            disease_ids = ""
-            locus_ids = ""
+            disease_mim = ""
+            disease_mondo = ""
+            gene_mim = ""
+            hgnc_id = ""
             locus_previous = ""
 
             if lgd_id in extra_data_dict:
                 if 'disease_ids' in extra_data_dict[lgd_id]:
-                    disease_ids = '; '.join(extra_data_dict[lgd_id]['disease_ids'])
+                    # Separate disease MIM from MONDO ID
+                    disease_mim, disease_mondo = extract_disease_id(extra_data_dict[lgd_id]['disease_ids'])
                 if 'locus_ids' in extra_data_dict[lgd_id]:
-                    locus_ids = '; '.join(extra_data_dict[lgd_id]['locus_ids'])
+                    # Separate MIM from HGNC ID
+                    gene_mim, hgnc_id = extract_locus_id(extra_data_dict[lgd_id]['locus_ids'])
                 if 'locus_previous_symbols' in extra_data_dict[lgd_id]:
                     locus_previous = '; '.join(extra_data_dict[lgd_id]['locus_previous_symbols'])
 
@@ -421,20 +469,38 @@ def PanelDownload(request, name):
             if lgd_id in lgd_variantype_data:
                 variant_types = '; '.join(lgd_variantype_data[lgd_id])
 
-            # Get preloaded variant consequenes for this g2p entry
+            # Get preloaded variant consequences for this g2p entry
             if lgd_id in lgd_varianconsequence_data:
                 variant_consequences = '; '.join(lgd_varianconsequence_data[lgd_id])
 
             # Get preloaded molecular mechanism evidence for this g2p entry
-            molecular_mechanism = f"{lgd.mechanism.value} ({lgd.mechanism_support.value})"
+            molecular_mechanism = lgd.mechanism.value
+            molecular_mechanism_categorisation = lgd.mechanism_support.value
             if lgd_id in mechanism_evidence_data:
-                mechanism_evidence = set()
+                mechanism_evidence_by_pmid = {}
                 for evidence_data in mechanism_evidence_data[lgd_id]:
-                    m_subtype = evidence_data["subtype"]
-                    e_value = evidence_data["value"]
-                    e_pmid = evidence_data["pmid"]
-                    mechanism_evidence.add(f"{m_subtype}:{e_value}:{e_pmid}")
-                molecular_mechanism_evidence = "; ".join(mechanism_evidence)
+                    if evidence_data["pmid"] not in mechanism_evidence_by_pmid:
+                        mechanism_evidence_by_pmid[evidence_data["pmid"]] = {}
+                        mechanism_evidence_by_pmid[evidence_data["pmid"]][evidence_data["subtype"]] = [evidence_data["value"]]
+                    elif evidence_data["subtype"] not in mechanism_evidence_by_pmid[evidence_data["pmid"]]:
+                        mechanism_evidence_by_pmid[evidence_data["pmid"]][evidence_data["subtype"]] = [evidence_data["value"]]
+                    else:
+                        mechanism_evidence_by_pmid[evidence_data["pmid"]][evidence_data["subtype"]].append(evidence_data["value"])
+
+                # repr() returns a printable representation of an object 
+                # molecular_mechanism_evidence = repr(mechanism_evidence_by_pmid)
+
+                mm_list = []
+                for mechanism_publication in mechanism_evidence_by_pmid:
+                    synopsis_list = []
+                    for synopsis_type in mechanism_evidence_by_pmid[mechanism_publication]:
+                        mechanism_terms_list = ", ".join(mechanism_evidence_by_pmid[mechanism_publication][synopsis_type])
+                        mechanism_list_by_synopsis = f"{synopsis_type}: {mechanism_terms_list}"
+                        synopsis_list.append(mechanism_list_by_synopsis)
+
+                    synopsis_list_final = "; ".join(synopsis_list)
+                    mm_list.append(f"{mechanism_publication} -> {synopsis_list_final}")
+                molecular_mechanism_evidence = " & ".join(mm_list)
 
             # Get preloaded phenotypes for this g2p entry
             if lgd_id in lgd_phenotype_data:
@@ -448,23 +514,34 @@ def PanelDownload(request, name):
             if lgd_id in lgd_ccm_data:
                 ccm = '; '.join(lgd_ccm_data[lgd_id])
 
+            if lgd_id in lgd_panel_data:
+                panels = '; '.join(lgd_panel_data[lgd_id])
+
+            if lgd_id in lgd_comments:
+                comments = "; ".join(lgd_comments[lgd_id])
+
             # Write data to output file
             writer.writerow([
                 lgd.stable_id.stable_id,
                 lgd.locus.name,
-                locus_ids,
+                gene_mim,
+                hgnc_id,
                 locus_previous,
                 lgd.disease.name,
-                disease_ids,
+                disease_mim,
+                disease_mondo,
                 lgd.genotype.value,
+                ccm,
                 lgd.confidence.value,
                 variant_consequences,
                 variant_types,
                 molecular_mechanism,
+                molecular_mechanism_categorisation,
                 molecular_mechanism_evidence,
                 phenotypes,
                 publications,
-                ccm,
+                panels,
+                comments,
                 lgd.date_review
             ])
     else:
@@ -473,3 +550,32 @@ def PanelDownload(request, name):
         raise Http404(f"No matching panel found for: {name}")
 
     return response
+
+def extract_locus_id(locus_ids):
+    """
+        Method to extract the gene MIM ID and the
+        HGNC ID from a list of locus IDs.
+        Called by: PanelDownload()
+    """
+    gene_mim = ""
+    hgnc_id = ""
+
+    for gene in locus_ids:
+        if gene.startswith("HGNC"):
+            gene_mim = gene
+        elif gene.isdigit():
+            hgnc_id = gene
+    
+    return gene_mim, hgnc_id
+
+def extract_disease_id(disease_ids):
+    disease_mim = ""
+    disease_mondo = ""
+
+    for disease in disease_ids:
+        if disease.startswith("MONDO"):
+            disease_mondo = disease
+        else:
+            disease_mim = disease
+
+    return disease_mim, disease_mondo
