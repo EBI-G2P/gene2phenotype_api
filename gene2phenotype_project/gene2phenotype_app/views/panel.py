@@ -488,7 +488,19 @@ def PanelDownload(request, name):
                         mechanism_evidence_by_pmid[evidence_data["pmid"]][evidence_data["subtype"]].append(evidence_data["value"])
 
                 # repr() returns a printable representation of an object 
-                molecular_mechanism_evidence = repr(mechanism_evidence_by_pmid)
+                # molecular_mechanism_evidence = repr(mechanism_evidence_by_pmid)
+
+                mm_list = []
+                for mechanism_publication in mechanism_evidence_by_pmid:
+                    synopsis_list = []
+                    for synopsis_type in mechanism_evidence_by_pmid[mechanism_publication]:
+                        mechanism_terms_list = ", ".join(mechanism_evidence_by_pmid[mechanism_publication][synopsis_type])
+                        mechanism_list_by_synopsis = f"{synopsis_type}: {mechanism_terms_list}"
+                        synopsis_list.append(mechanism_list_by_synopsis)
+
+                    synopsis_list_final = "; ".join(synopsis_list)
+                    mm_list.append(f"{mechanism_publication} -> {synopsis_list_final}")
+                molecular_mechanism_evidence = " & ".join(mm_list)
 
             # Get preloaded phenotypes for this g2p entry
             if lgd_id in lgd_phenotype_data:
