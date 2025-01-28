@@ -14,7 +14,7 @@ from gene2phenotype_app.models import (Publication, LocusGenotypeDisease, LGDPub
                                        LGDPhenotype, LGDPhenotypeSummary, LGDVariantType,
                                        LGDVariantTypeDescription, LGDMolecularMechanismEvidence)
 
-from .base import BaseAdd, BaseUpdate
+from .base import BaseAdd, BaseUpdate, IsSuperUser
 
 from ..utils import get_publication, get_authors
 
@@ -124,7 +124,16 @@ class LGDEditPublications(BaseUpdate):
             it sets the flag 'is_deleted' to 1.
     """
     http_method_names = ['post', 'update', 'options']
-    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        """
+            Instantiates and returns the list of permissions for this view.
+            post(): updates data - available to all authenticated users
+            update(): deletes data - only available to authenticated super users
+        """
+        if self.request.method.lower() == "update":
+            return [permissions.IsAuthenticated(), IsSuperUser()]
+        return [permissions.IsAuthenticated()]
 
     def get_serializer_class(self, action):
         """
