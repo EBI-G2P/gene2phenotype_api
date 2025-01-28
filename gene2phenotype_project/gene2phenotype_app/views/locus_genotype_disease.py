@@ -21,7 +21,7 @@ from gene2phenotype_app.models import (User, Attrib, LocusGenotypeDisease, Ontol
                                        LGDMolecularMechanismEvidence, LGDMolecularMechanismSynopsis, LGDPublication,
                                        LGDComment)
 
-from .base import BaseUpdate
+from .base import BaseUpdate, CustomPermissionAPIView, IsSuperUser
 
 
 class ListMolecularMechanisms(generics.ListAPIView):
@@ -217,7 +217,6 @@ class LGDUpdateConfidence(BaseUpdate):
         else:
             return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-# TODO: review this method
 class LGDUpdateMechanism(BaseUpdate):
     http_method_names = ['patch', 'options']
     serializer_class = LocusGenotypeDiseaseSerializer
@@ -341,7 +340,7 @@ class LGDUpdateMechanism(BaseUpdate):
                 {"message": f"Molecular mechanism updated successfully for '{stable_id}'"},
                 status=status.HTTP_200_OK)
 
-class LGDEditVariantConsequences(APIView):
+class LGDEditVariantConsequences(CustomPermissionAPIView):
     """
         Add or delete lgd-variant consequence(s).
 
@@ -354,7 +353,12 @@ class LGDEditVariantConsequences(APIView):
             it sets the flag 'is_deleted' to 1.
     """
     http_method_names = ['post', 'update', 'options']
-    permission_classes = [permissions.IsAuthenticated]
+
+    # Define specific permissions
+    method_permissions = {
+        "post": [permissions.IsAuthenticated],
+        "update": [permissions.IsAuthenticated, IsSuperUser],
+    }
 
     def get_serializer_class(self, action):
         """
@@ -499,7 +503,7 @@ class LGDEditVariantConsequences(APIView):
                 {"message": f"Variant consequence '{consequence}' successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK)
 
-class LGDEditCCM(APIView):
+class LGDEditCCM(CustomPermissionAPIView):
     """
         Add or delete LGD-cross cutting modifier(s).
 
@@ -512,7 +516,12 @@ class LGDEditCCM(APIView):
             it sets the flag 'is_deleted' to 1.
     """
     http_method_names = ['post', 'update', 'options']
-    permission_classes = [permissions.IsAuthenticated]
+
+    # Define specific permissions
+    method_permissions = {
+        "post": [permissions.IsAuthenticated],
+        "update": [permissions.IsAuthenticated, IsSuperUser],
+    }
 
     def get_serializer_class(self, action):
         """
@@ -637,7 +646,7 @@ class LGDEditCCM(APIView):
                 {"message": f"Cross cutting modifier '{ccm}' successfully deleted for ID '{stable_id}'"},
                  status=status.HTTP_200_OK)
 
-class LGDEditVariantTypes(APIView):
+class LGDEditVariantTypes(CustomPermissionAPIView):
     """
         Add or delete LGD-variant type(s).
 
@@ -650,7 +659,12 @@ class LGDEditVariantTypes(APIView):
             it sets the flag 'is_deleted' to 1.
     """
     http_method_names = ['post', 'update', 'options']
-    permission_classes = [permissions.IsAuthenticated]
+
+    # Define specific permissions
+    method_permissions = {
+        "post": [permissions.IsAuthenticated],
+        "update": [permissions.IsAuthenticated, IsSuperUser],
+    }
 
     def get_serializer_class(self, action):
         """
@@ -799,7 +813,7 @@ class LGDEditVariantTypes(APIView):
                 {"message": f"Variant type '{variant_type}' successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK)
 
-class LGDEditVariantTypeDescriptions(APIView):
+class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
     """
         Add or delete LGD-variant type(s)
 
@@ -812,7 +826,12 @@ class LGDEditVariantTypeDescriptions(APIView):
             it sets the flag 'is_deleted' to 1.
     """
     http_method_names = ['post', 'update', 'options']
-    permission_classes = [permissions.IsAuthenticated]
+
+    # Define specific permissions
+    method_permissions = {
+        "post": [permissions.IsAuthenticated],
+        "update": [permissions.IsAuthenticated, IsSuperUser],
+    }
 
     def get_serializer_class(self, action):
         """
@@ -937,7 +956,7 @@ class LGDEditVariantTypeDescriptions(APIView):
                 {"message": f"Variant type description '{var_desc}' successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK)
 
-class LGDEditComment(APIView):
+class LGDEditComment(CustomPermissionAPIView):
     """
         Add or delete a comment to a G2P record (LGD).
 
@@ -949,7 +968,12 @@ class LGDEditComment(APIView):
     """
     http_method_names = ['post', 'update', 'options']
     serializer_class = LGDCommentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+
+    # Define specific permissions
+    method_permissions = {
+        "post": [permissions.IsAuthenticated],
+        "update": [permissions.IsAuthenticated, IsSuperUser]
+    }
 
     @transaction.atomic
     def post(self, request, stable_id):
@@ -1025,7 +1049,7 @@ class LocusGenotypeDiseaseDelete(APIView):
     """
     http_method_names = ['update', 'options']
     serializer_class = LocusGenotypeDiseaseSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsSuperUser]
 
     @transaction.atomic
     def update(self, request, stable_id):

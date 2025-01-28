@@ -1,15 +1,16 @@
-from rest_framework import generics, status
+from rest_framework import generics, status, permissions
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from rest_framework.response import Response
 from django.db import transaction
 from django.urls import get_resolver
 from rest_framework.decorators import api_view
+from rest_framework.permissions import BasePermission
+from rest_framework.views import APIView
 
 import re
 
 from gene2phenotype_app.models import User
-
 
 
 class BaseView(generics.ListAPIView):
@@ -27,7 +28,6 @@ class BaseView(generics.ListAPIView):
             return Response({"message": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         return super().handle_exception(exc)
-
 
 class BaseAdd(generics.CreateAPIView):
     """
@@ -69,6 +69,36 @@ class BaseUpdate(generics.UpdateAPIView):
     
     def handle_missing_data(self, data_type):
         raise Http404(f"{data_type} is missing")
+
+class CustomPermissionAPIView(APIView):
+    """
+        Base API view with reusable get_permissions logic.
+        This view is used by endpoints that can update or delete data.
+        Usually the method post() updates data while update() deletes data.
+    """
+
+    method_permissions = {
+        "update": [permissions.IsAuthenticated], # this will be defined further in the specific view
+        "post": [permissions.IsAuthenticated],
+    }
+
+    def get_permissions(self):
+        """
+            Instantiates and returns the list of permissions for this view.
+            post(): updates data - available to all authenticated users
+            update(): deletes data - only available to authenticated super users
+        """
+        if self.request.method.lower() == "update":
+            return [permissions.IsAuthenticated(), IsSuperUser()]
+        return [permissions.IsAuthenticated()]
+
+class IsSuperUser(BasePermission):
+    """
+        Allows access only to superusers.
+    """
+    def has_permission(self, request, view):
+        return request.user and request.user.is_superuser
+
 
 @api_view(['GET'])
 def ListEndpoints(request):
