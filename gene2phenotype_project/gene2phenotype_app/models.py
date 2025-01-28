@@ -1,6 +1,7 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser,BaseUserManager
 from simple_history.models import HistoricalRecords
+from rest_framework_simplejwt.tokens import RefreshToken
 
 class G2PStableID(models.Model):
     """
@@ -576,13 +577,29 @@ class Panel(models.Model):
     is_visible = models.SmallIntegerField(null=False)
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
     class Meta:
         db_table = "panel"
         indexes = [
             models.Index(fields=['name'])
         ]
+
+class UserManager(BaseUserManager):
+    def create_user(self, email, username, first_name, last_name, password=None, is_superuser=False, is_staff=False):
+
+        user = self.model(
+            email=self.normalize_email(email),
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+            is_superuser=is_superuser,
+            is_staff=is_staff
+        )
+
+        user.set_password(password)
+        user.save()
+        return user
 
 class User(AbstractUser):
     id = models.AutoField(primary_key=True)
@@ -596,6 +613,15 @@ class User(AbstractUser):
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
+
+    objects = UserManager()
+
+    def tokens(self):
+        refresh = RefreshToken.for_user(self)
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token)
+        }
 
     class Meta:
         db_table = "user"

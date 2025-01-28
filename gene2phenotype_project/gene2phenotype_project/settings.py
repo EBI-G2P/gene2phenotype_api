@@ -16,8 +16,13 @@ from configparser import ConfigParser
 from datetime import timedelta
 from rest_framework.settings import api_settings
 
+config_path = os.environ.get('PROJECT_CONFIG_PATH')
+config = ConfigParser()
+config.read(config_path)
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
 
 
 # Quick-start development settings - unsuitable for production
@@ -62,7 +67,8 @@ INSTALLED_APPS = [
     'gene2phenotype_app',
     'rest_framework',
     'simple_history',
-    'knox',
+    'rest_framework_simplejwt.token_blacklist',
+    'mail_templated'
 ]
 
 MIDDLEWARE = [
@@ -79,22 +85,52 @@ MIDDLEWARE = [
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 50,
-    'DEFAULT_AUTHENTICATION_CLASSES': ('knox.auth.TokenAuthentication',),
+    'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework_simplejwt.authentication.JWTAuthentication', 'gene2phenotype_app.authentication.CustomAuthentication'),
     'DEFAULT_PERMISSION_CLASSES': (
         "rest_framework.permissions.AllowAny",
     ),
 }
 
-
-REST_KNOX = {
+SIMPLE_JWT = {
   'SECURE_HASH_ALGORITHM': 'hashlib.sha512',
   'AUTH_TOKEN_CHARACTER_LENGTH': 64,
-  'TOKEN_TTL': timedelta(hours=8), # time before it logs you out 
-  'USER_SERIALIZER': 'gene2phenotype_app.serializers.UserSerializer',
+  'TOKEN_USER_CLASS': 'gene2phenotype_app.serializers.UserSerializer',
   'TOKEN_LIMIT_PER_USER': None,
+  "USER_ID_FIELD": "id",
+  "USER_ID_CLAIM": "id",
   'AUTO_REFRESH': False,
   'EXPIRY_DATETIME_FORMAT': api_settings.DATETIME_FORMAT,
+  ##Custom
+  "AUTH_COOKIE": "access_token",
+  "REFRESH_COOKIE": "refresh_token",
+  "AUTH_COOKIE_DOMAIN": None,
+  "AUTH_COOKIE_SECURE": False, # for production, we need to change this to true
+  "AUTH_COOKIE_HTTP_ONLY": True, #prevents client side js from accessing the cookie
+  "AUTH_COOKIE_PATH": "/",
+  "AUTH_COOKIE_SAMESITE": "Lax",
+  "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+  "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+  "BLACKLIST_AFTER_ROTATION": True,
+  'TOKEN_BACKEND': 'rest_framework_simplejwt.token_blacklist.backends.BlacklistBackend',
+  'BLACKLIST_TOKEN_CHECKS': [ 'rest_framework_simplejwt.token_blacklist.check_blacklisted_token', ],
+  "ROTATE_REFRESH_TOKENS": True
 }
+
+CORS_ALLOWED_ORIGINS = [  # Add your frontend's URL here, # local set up still being implemented, need to change for production
+]
+CSRF_TRUSTED_ORIGINS = [  # Add your frontend's URL here, # local set up still being implemented, need to change for production
+    ]
+CORS_ALLOWED_CREDENTIALS = "True"
+
+DEFAULT_FROM_EMAIL = config.get('email', 'from')
+MAIL_HOST = config.get('email', 'host')
+MAIL_PORT = config.get('email', 'port')
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST = MAIL_HOST
+EMAIL_PORT = MAIL_PORT
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = DEFAULT_FROM_EMAIL
 
 ROOT_URLCONF = 'gene2phenotype_project.urls'
 
@@ -130,10 +166,6 @@ if 'test' in sys.argv or 'test_coverage' in sys.argv:
 }
 
 else:
-    config_path = os.environ.get('PROJECT_CONFIG_PATH')
-    config = ConfigParser()
-    config.read(config_path)
-
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
@@ -182,7 +214,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = 'static/'
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
