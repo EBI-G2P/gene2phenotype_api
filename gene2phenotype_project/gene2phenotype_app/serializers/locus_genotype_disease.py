@@ -163,7 +163,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     def get_phenotype_summary(self, id):
         """
             A summary about the phenotypes associated with the LGD record.
-            The response includes the list of publications associated with the summary.
+            The response includes the publication associated with the summary.
         """
         # The LGD record is supposed to have one summary
         # but one summary can be linked to several publications
@@ -172,16 +172,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         for summary_obj in queryset:
             summary_text = summary_obj.summary
-            publication = summary_obj.publication
 
-            if summary_text in data and publication:
-                data[summary_text]["publications"].append(publication.pmid)
-            else:
-                publication_list = []
-                if publication:
-                    publication_list = [publication.pmid]
-
-                data[summary_text] = { "summary": summary_text, "publications": publication_list }
+            data[summary_text] = { "summary": summary_text, "publication": summary_obj.publication.pmid }
 
         return data.values()
 
