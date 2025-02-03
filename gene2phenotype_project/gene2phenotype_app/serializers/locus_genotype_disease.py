@@ -196,7 +196,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             Prefetch(
                 'lgdvarianttypecomment_set',
                 queryset=LGDVariantTypeComment.objects.filter(is_deleted=0), # skip deleted comments
-                to_attr="current_comments" # preteched comments are saved under 'current_comments'
+                to_attr="current_comments" # prefetched comments are saved under 'current_comments'
             )
         )
         data = {}
