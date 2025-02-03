@@ -17,7 +17,7 @@ from .locus_genotype_disease import (LocusGenotypeDiseaseSerializer,
                                      LGDMechanismSynopsisSerializer, LGDMechanismEvidenceSerializer,
                                      LGDCommentSerializer)
 from .stable_id import G2PStableIDSerializer
-from .phenotype import LGDPhenotypeSerializer
+from .phenotype import LGDPhenotypeSerializer, LGDPhenotypeSummarySerializer
 from .publication import PublicationSerializer
 
 from ..utils import get_date_now
@@ -576,9 +576,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
         #         ]
         # }
         for phenotype_pmid in data.json_data["phenotypes"]:
-            # TODO add summary
             # TODO improve this method to send a list of phenotypes to LGDPhenotypeSerializer
-            hpo_terms = phenotype_pmid['hpo_terms']
+            hpo_terms = phenotype_pmid["hpo_terms"]
             for hpo in hpo_terms:
                 phenotype_data = {
                     "accession": hpo["accession"],
@@ -593,6 +592,25 @@ class CurationDataSerializer(serializers.ModelSerializer):
                     if lgd_phenotype_serializer.is_valid(raise_exception=True):
                         # save() is going to call create()
                         lgd_phenotype_serializer.save()
+                except serializers.ValidationError as e:
+                    raise serializers.ValidationError({
+                        "error" : str(e)
+                    })
+
+            # Add the summary: linked to the lgd_id and publication_id
+            if "summary" in phenotype_pmid and phenotype_pmid["summary"] != "":
+                try:
+                    lgd_phenotype_summary_serializer = LGDPhenotypeSummarySerializer(
+                        data = {
+                            "summary": phenotype_pmid["summary"],
+                            "publication": [phenotype_pmid["pmid"]] # The serializer accepts a list
+                        },
+                        context = {'lgd': lgd_obj}
+                    )
+                    # Validate the input data
+                    if lgd_phenotype_summary_serializer.is_valid(raise_exception=True):
+                        # save() is going to call create()
+                        lgd_phenotype_summary_serializer.save()
                 except serializers.ValidationError as e:
                     raise serializers.ValidationError({
                         "error" : str(e)
