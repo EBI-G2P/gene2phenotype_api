@@ -206,7 +206,7 @@ class LGDVariantTypeComment(models.Model):
         Curators can add comments to the variant types, they can be public or private.
     """
     id = models.AutoField(primary_key=True)
-    lgd_variant_type = models.ForeignKey("LGDVariantType", related_name="comments", on_delete=models.PROTECT)
+    lgd_variant_type = models.ForeignKey("LGDVariantType", on_delete=models.PROTECT)
     comment = models.TextField(null=False)
     is_public = models.SmallIntegerField(null=False, default=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)

@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.db import connection
+from django.db.models import Prefetch
 import itertools
 
 from ..models import (Panel, Attrib,
@@ -191,15 +192,37 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             The variant type can be linked to several publications therefore response 
             includes the list of publications associated with the variant type.
         """
-        queryset = LGDVariantType.objects.filter(lgd_id=id, is_deleted=0).prefetch_related()
+        queryset = LGDVariantType.objects.filter(lgd_id=id, is_deleted=0).prefetch_related(
+            Prefetch(
+                'lgdvarianttypecomment_set',
+                queryset=LGDVariantTypeComment.objects.filter(is_deleted=0), # skip deleted comments
+                to_attr="current_comments" # preteched comments are saved under 'current_comments'
+            )
+        )
         data = {}
 
         for lgd_variant in queryset:
+            # Prepare the list of comments
+            list_of_comments = []
+            comments = lgd_variant.current_comments # Get the prefetched comments
+            for comment_obj in comments:
+                # Format date
+                date = None
+                if comment_obj.date is not None:
+                    date = comment_obj.date.strftime("%Y-%m-%d")
+                list_of_comments.append(
+                    {
+                        "text": comment_obj.comment,
+                        "date": date
+                    }
+                )
+
             accession = lgd_variant.variant_type_ot.accession
 
             if accession in data and lgd_variant.publication:
                 # Add pmid to list of publications
                 data[accession]["publications"].append(lgd_variant.publication.pmid)
+                data[accession]["comments"] = list_of_comments
                 # Check the variant inheritance - we group this data for each publication
                 if(lgd_variant.inherited is True):
                     data[accession]["inherited"] = lgd_variant.inherited
@@ -218,7 +241,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     "inherited": lgd_variant.inherited,
                     "de_novo": lgd_variant.de_novo,
                     "unknown_inheritance": lgd_variant.unknown_inheritance,
-                    "publications": publication_list
+                    "publications": publication_list,
+                    "comments": list_of_comments
                 }
 
         return data.values()
