@@ -106,11 +106,8 @@ class PanelDetailSerializer(serializers.ModelSerializer):
             If the user is non-authenticated:
                 - only returns records linked to visible panels
         """
-        # TODO: improve query, this can be done in a single query
-        lgd_panels = LGDPanel.objects.filter(panel=panel.id, is_deleted=0)
-
         if user.is_authenticated:
-            lgd_panels_selected = lgd_panels.select_related('lgd',
+            lgd_panels_selected = LGDPanel.objects.select_related('lgd',
                                                         'lgd__locus',
                                                         'lgd__disease',
                                                         'lgd__genotype',
@@ -119,23 +116,23 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                                                     ).prefetch_related(
                                                         'lgd__lgd_variant_gencc_consequence',
                                                         'lgd__lgd_variant_type'
-                                                    ).order_by('-lgd__date_review').filter(lgd__is_deleted=0)
+                                                    ).order_by('-lgd__date_review').filter(panel=panel.id,
+                                                                                           is_deleted=0,
+                                                                                           lgd__is_deleted=0)
         else:
-            filters = (
-                Q(lgd__is_deleted=0) &
-                Q(panel__is_visible=1)
-            )
-
-            lgd_panels_selected = lgd_panels.filter(filters).select_related('lgd',
-                                                        'lgd__locus',
-                                                        'lgd__disease',
-                                                        'lgd__genotype',
-                                                        'lgd__confidence',
-                                                        'lgd__mechanism'
-                                                    ).prefetch_related(
-                                                        'lgd__lgd_variant_gencc_consequence',
-                                                        'lgd__lgd_variant_type'
-                                                    ).order_by('-lgd__date_review')
+            lgd_panels_selected = LGDPanel.objects.filter(panel=panel.id,
+                                                          is_deleted=0,
+                                                          lgd__is_deleted=0,
+                                                          panel__is_visible=1).select_related('lgd',
+                                                            'lgd__locus',
+                                                            'lgd__disease',
+                                                            'lgd__genotype',
+                                                            'lgd__confidence',
+                                                            'lgd__mechanism'
+                                                        ).prefetch_related(
+                                                            'lgd__lgd_variant_gencc_consequence',
+                                                            'lgd__lgd_variant_type'
+                                                        ).order_by('-lgd__date_review')
 
         lgd_objects_list = list(lgd_panels_selected.values('lgd__locus__name',
                                                            'lgd__disease__name',
