@@ -1046,6 +1046,8 @@ class LGDEditComment(CustomPermissionAPIView):
                 else:
                     response = Response({"errors": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+            response = Response({"message": f"Comments added to the G2P entry successfully."}, status=status.HTTP_201_CREATED)
+
         else:
             response = Response({"errors": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST)
 
