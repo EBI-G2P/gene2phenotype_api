@@ -139,6 +139,16 @@ class CurationDataSerializer(serializers.ModelSerializer):
         except Locus.DoesNotExist:
             raise serializers.ValidationError({"message" : f"Invalid locus {json_data['locus']}"})
 
+        # Check if allelic requirement is valid
+        locus_chr = locus_obj.sequence.name
+        if (("autosomal" in json_data["allelic_requirement"] and not locus_chr.isdigit()) or
+            (json_data["allelic_requirement"] == "mitochondrial" and locus_chr != "MT") or
+            ("_PAR" in json_data["allelic_requirement"] and (locus_chr != "X" and locus_chr != "Y")) or
+            ("_X" in json_data["allelic_requirement"] and locus_chr != "X")):
+            raise serializers.ValidationError({
+                "message": f"Invalid genotype. Please check G2P ID '{lgd_obj.stable_id.stable_id}'"
+            })
+
         # Check if G2P record (LGD) is already published
         # TODO update this check
         try:
