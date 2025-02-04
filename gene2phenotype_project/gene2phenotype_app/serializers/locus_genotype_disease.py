@@ -779,6 +779,13 @@ class LGDCommentSerializer(serializers.ModelSerializer):
         model = LGDComment
         exclude = ['id', 'is_deleted', 'lgd', 'date', 'user']
 
+class LGDCommentListSerializer(serializers.Serializer):
+    """
+        Serializer to accept a list of comments.
+        Called by: view LGDEditComment()
+    """
+    comments = LGDCommentSerializer(many=True)
+
 class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
     """
         Serializer for the LGDVariantGenccConsequence model.
