@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404
 from gene2phenotype_app.serializers import (PublicationSerializer, LGDPublicationSerializer,
                                             LGDPublicationListSerializer, LGDPhenotypeSerializer,
                                             LGDVariantTypeSerializer, LGDVariantTypeDescriptionSerializer,
-                                            LocusGenotypeDiseaseSerializer)
+                                            LocusGenotypeDiseaseSerializer, LGDPhenotypeSummarySerializer)
 
 from gene2phenotype_app.models import (Publication, LocusGenotypeDisease, LGDPublication,
                                        LGDPhenotype, LGDPhenotypeSummary, LGDVariantType,
@@ -265,6 +265,26 @@ class LGDEditPublications(BaseUpdate):
                         accession = phenotype_data["accession"]
                         return Response(
                             {"errors": f"Could not insert phenotype '{accession}' for ID '{stable_id}'"},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
+                # Insert the phenotype summary
+                if "summary" in phenotype and phenotype["summary"] != "":
+                    try:
+                        lgd_phenotype_summary_serializer = LGDPhenotypeSummarySerializer(
+                            data = {
+                                "summary": phenotype["summary"],
+                                "publication": [phenotype["pmid"]] # The serializer accepts a list
+                            },
+                            context = {'lgd': lgd}
+                        )
+                        # Validate the input data
+                        if lgd_phenotype_summary_serializer.is_valid(raise_exception=True):
+                            # save() is going to call create()
+                            lgd_phenotype_summary_serializer.save()
+                    except:
+                        return Response(
+                            {"errors": f"Could not insert phenotype summary for PMID '{phenotype['pmid']}'"},
                             status=status.HTTP_400_BAD_REQUEST
                         )
 
