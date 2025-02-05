@@ -146,7 +146,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             ("_PAR" in json_data["allelic_requirement"] and (locus_chr != "X" and locus_chr != "Y")) or
             ("_X" in json_data["allelic_requirement"] and locus_chr != "X")):
             raise serializers.ValidationError({
-                "message": f"Invalid genotype '{json_data["allelic_requirement"]}' for locus '{locus_obj.name}'"
+                "message": f"Invalid genotype '{json_data['allelic_requirement']}' for locus '{locus_obj.name}'"
             })
 
         # Check if G2P record (LGD) is already published
