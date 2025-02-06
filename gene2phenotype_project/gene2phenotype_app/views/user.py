@@ -422,7 +422,7 @@ class CustomTokenRefreshView(TokenRefreshView):
         if response.status_code == 200:
             refresh_token_lifetime = request.COOKIES.get('refresh_token_lifetime') # we are getting the refresh timeline from the cookie 
             access_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("ACCESS_TOKEN_LIFETIME", timedelta(hours=1))
-            refresh_expires = refresh_token_lifetime  # Calculate refresh expiration time
+            refresh_expires = datetime.fromisoformat(refresh_token_lifetime)  # Calculate refresh expiration time
             access_expires = datetime.utcnow() + access_token_lifetime # calculate access expiration time
             response_data['refresh_token_time'] = refresh_expires
             refresh_expires_iso = refresh_expires.isoformat()
