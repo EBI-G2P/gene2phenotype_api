@@ -123,7 +123,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
     """
     password = serializers.CharField(write_only=True, style={'input_type':'password'}, min_length=6, max_length=20)
     password2 = serializers.CharField(write_only=True, style={'input_type':'password'}, min_length=6, max_length=20)
-    panels = serializers.ListField(child=serializers.CharField(), write_only=True), # write only because it is not a readable field 
+    panels = serializers.ListField(child=serializers.CharField(), write_only=True) # write only because it is not a readable field
     user_panels = serializers.SerializerMethodField()
 
 
@@ -210,7 +210,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
             http_response = request.scheme
             host = request.get_host()
             verify_email_link = f"{http_response}://{host}/verify/email"
-            CustomMail.send_create_email(data=user, verify_link=verify_email_link, subject="Account Created!", to_email=user.email)
+            CustomMail.send_create_email(data=user, verify_link=verify_email_link, panel=panels, subject="Account Created!", to_email=user.email)
         
         
         return user
