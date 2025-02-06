@@ -10,7 +10,7 @@ from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from datetime import timedelta
 from gene2phenotype_app.serializers import (UserSerializer, LoginSerializer,
-                                            CreateUserSerializer, LogoutSerializer, ChangePasswordSerializer, VerifyEmailSerializer, PasswordResetSerializer)
+                                            CreateUserSerializer, AddUserToPanelSerializer, LogoutSerializer, ChangePasswordSerializer, VerifyEmailSerializer, PasswordResetSerializer)
 from gene2phenotype_app.models import User, UserPanel
 from .base import BaseView
 from gene2phenotype_app.authentication import CustomAuthentication
@@ -97,11 +97,17 @@ class CreateUserView(generics.CreateAPIView):
 
         Usage:
             Send a POST request with the required user details (username, email, 
-            password, first_name, last_name) to this API to create a new user account.
+            password, first_name, last_name, panels) to this API to create a new user account.
     """
 
     serializer_class = CreateUserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAdminUser]
+
+class AddUserToPanelView(generics.CreateAPIView):
+    serializer_class = AddUserToPanelSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+
 
 
 class LoginView(generics.GenericAPIView):

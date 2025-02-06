@@ -229,6 +229,46 @@ class CreateUserSerializer(serializers.ModelSerializer):
                         }
                         }
         
+class AddUserToPanelSerializer(serializers.ModelSerializer):
+    user = serializers.CharField(write_only=True)
+    panel = serializers.ListField(child=serializers.CharField(), write_only=True)
+
+    def validate(self, attrs):
+        user = attrs.get('user', '')
+        if user is None:
+            raise serializers.ValidationError({'message': 'user email is required to add user to panel'})
+        if user:
+            if not User.objects.filter(email=user).exists():
+                raise serializers.ValidationError({'message': "User does not exist, please create a user and add user to panel"})
+        
+        panels = attrs.get('panel', [])
+        if panels is None:
+            raise serializers.ValidationError({'message': "Panel is required to add user to panel"})
+        if panels:
+            for panel in panels:
+                if not Panel.objects.filter(name=panel).exists():
+                    raise serializers.ValidationError({'message': "Panel does not exists, please create a panel and add user to panel"})
+        
+        return attrs
+    
+
+    def create(self, validated_data):
+        user_email = validated_data.get('user')
+        panels = validated_data.get('panel')
+
+        user_obj = User.objects.get(email=user_email)
+        for panel in panels:
+            panel_obj = Panel.objects.get(name=panel)
+
+            user_panel = UserPanel.objects.create(user=user_obj, panel=panel_obj, is_deleted=0)
+
+        return user_panel
+
+
+    class Meta:
+        model = UserPanel
+        fields = ['user', 'panel']
+        
 class ChangePasswordSerializer(serializers.ModelSerializer): 
     """
         Serializer class for Change Password
