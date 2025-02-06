@@ -123,9 +123,17 @@ class CreateUserSerializer(serializers.ModelSerializer):
     """
     password = serializers.CharField(write_only=True, style={'input_type':'password'}, min_length=6, max_length=20)
     password2 = serializers.CharField(write_only=True, style={'input_type':'password'}, min_length=6, max_length=20)
-    panels = serializers.PrimaryKeyRelatedField(queryset=Panel.objects.all(), many=True, write_only=True) # adding write only because it is not a readable field
+    panels = serializers.ListField(child=serializers.CharField(), write_only=True), # write only because it is not a readable field 
+    user_panels = serializers.SerializerMethodField()
 
 
+    def get_user_panels(self, obj):
+        """
+        Fetches associated panels for the user.
+        """
+        return list(UserPanel.objects.filter(user=obj, is_deleted=False).values_list('panel__name', flat=True))
+
+        
     def validate(self, attrs):
         """
             Validate the dictionary being passed to the CreateUserSerializer
@@ -145,26 +153,31 @@ class CreateUserSerializer(serializers.ModelSerializer):
         """        
         email = attrs.get('email')
         if email is None:
-            raise serializers.ValidationError({"message": "Email is needed to create a user"}, email)
+            raise serializers.ValidationError({"message": "Email is needed to create a user"})
         username = attrs.get('username')
-        if username is None: 
-            raise serializers.ValidationError({"message": "Username is needed to create a user"}, username)
+        if username is None:
+            raise serializers.ValidationError({"message": "Username is needed to create a user"})
         password = attrs.get('password')
         # pop password2 from the validated data that will be sent to models 
         password2 = attrs.pop('password2', 'None')
         if password != password2:
-            raise serializers.ValidationError({"message": "Passwords do not match"}, password)
+            raise serializers.ValidationError({"message": "Passwords do not match"})
         first_name = attrs.get('first_name')
         if first_name is None:
-            raise serializers.ValidationError({'message': "First name is needed to create a user"}, first_name)
+            raise serializers.ValidationError({'message': "First name is needed to create a user"})
         last_name = attrs.get('last_name')
         if last_name is None:
-            raise serializers.ValidationError({'message': "Last name is needed to create a user"}, last_name)
+            raise serializers.ValidationError({'message': "Last name is needed to create a user"})
         
         if User.objects.filter(username=username).exists():
-            raise serializers.ValidationError({'message': "Username already exists"}, username)
+            raise serializers.ValidationError({'message': "Username already exists"})
         if User.objects.filter(email=email).exists():
-            raise serializers.ValidationError({'message': "An account with this email already exists"}, email)
+            raise serializers.ValidationError({'message': "An account with this email already exists"})
+        
+        panels = attrs.get('panels', [])
+        for panel in panels:
+            if not Panel.objects.filter(name=panel).exists():
+                raise serializers.ValidationError({'message': f"{panel} does not exist"}, panel)
         
         return attrs
 
@@ -187,9 +200,11 @@ class CreateUserSerializer(serializers.ModelSerializer):
       
         panels = validated_data.pop('panels', []) # popping panels because i do not need it for creation
         user = User.objects.create_user(**validated_data)
-        for panel in panels:
-            UserPanel.objects.create(user=user, panel=panel, is_deleted=False)
         if user:
+            for panel in panels:
+                panel = Panel.objects.get(name=panel)
+                UserPanel.objects.create(user=user, panel=panel, is_deleted=False)
+
             request = self.context.get('request')
             #base_url = url_link.build_absolute_uri()
             http_response = request.scheme
@@ -197,11 +212,12 @@ class CreateUserSerializer(serializers.ModelSerializer):
             verify_email_link = f"{http_response}://{host}/verify/email"
             CustomMail.send_create_email(data=user, verify_link=verify_email_link, subject="Account Created!", to_email=user.email)
         
-        return user 
+        
+        return user
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'first_name', 'last_name', 'password', 'password2', 'is_superuser', 'is_staff', 'panels']
+        fields = ['username', 'email', 'first_name', 'last_name', 'password', 'password2', 'is_superuser', 'is_staff', 'panels', 'user_panels']
         extra_kwargs = {'password': {'write_only': True, 'min_length': 6, 'max_length': 20}, 
                         'email': {
                             'validators': [
