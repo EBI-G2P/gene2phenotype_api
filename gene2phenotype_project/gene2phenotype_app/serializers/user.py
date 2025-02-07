@@ -123,7 +123,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
     """
     password = serializers.CharField(write_only=True, style={'input_type':'password'}, min_length=6, max_length=20)
     password2 = serializers.CharField(write_only=True, style={'input_type':'password'}, min_length=6, max_length=20)
-    panels = serializers.ListField(child=serializers.CharField(), write_only=True) # write only because it is not a readable field
+    panels = serializers.ListField(child=serializers.CharField(), allow_empty=False, write_only=True) # write only because it is not a readable field
     user_panels = serializers.SerializerMethodField()
 
 
@@ -174,7 +174,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError({'message': "An account with this email already exists"})
         
-        panels = attrs.get('panels', [])
+        panels = attrs.get('panels')
         for panel in panels:
             if not Panel.objects.filter(name=panel).exists():
                 raise serializers.ValidationError({'message': f"{panel} does not exist"}, panel)
@@ -231,7 +231,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
         
 class AddUserToPanelSerializer(serializers.ModelSerializer):
     user = serializers.CharField(write_only=True)
-    panel = serializers.ListField(child=serializers.CharField(), write_only=True)
+    panel = serializers.ListField(child=serializers.CharField(), allow_empty=False, write_only=True)
 
     def validate(self, attrs):
         user = attrs.get('user', '')
@@ -242,8 +242,6 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({'message': "User does not exist, please create a user and add user to panel"})
         
         panels = attrs.get('panel', [])
-        if panels is None:
-            raise serializers.ValidationError({'message': "Panel is required to add user to panel"})
         if panels:
             for panel in panels:
                 if not Panel.objects.filter(name=panel).exists():
