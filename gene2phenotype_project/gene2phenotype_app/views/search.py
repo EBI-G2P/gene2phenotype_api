@@ -61,29 +61,42 @@ class SearchView(BaseView):
         # Generic search
         if not search_type:
             if search_panel:
+                # First search by gene
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_locus & Q(lgdpanel__panel__name=search_panel) |
                     base_locus_2 & Q(lgdpanel__panel__name=search_panel) |
-                    base_locus_3 & Q(lgdpanel__panel__name=search_panel) |
-                    base_disease & Q(lgdpanel__panel__name=search_panel) |
-                    base_disease_2 & Q(lgdpanel__panel__name=search_panel) |
-                    base_disease_3 & Q(lgdpanel__panel__name=search_panel) |
-                    base_phenotype & Q(lgdpanel__panel__name=search_panel) |
-                    base_phenotype_2 & Q(lgdpanel__panel__name=search_panel) |
-                    base_g2p_id & Q(lgdpanel__panel__name=search_panel)
+                    base_locus_3 & Q(lgdpanel__panel__name=search_panel)
                 ).order_by('locus__name', 'disease__name').distinct()
+
+                # If the search by gene didn't return results, try the other types
+                if not queryset.exists():
+                    queryset = LocusGenotypeDisease.objects.filter(
+                        base_disease & Q(lgdpanel__panel__name=search_panel) |
+                        base_disease_2 & Q(lgdpanel__panel__name=search_panel) |
+                        base_disease_3 & Q(lgdpanel__panel__name=search_panel) |
+                        base_phenotype & Q(lgdpanel__panel__name=search_panel) |
+                        base_phenotype_2 & Q(lgdpanel__panel__name=search_panel) |
+                        base_g2p_id & Q(lgdpanel__panel__name=search_panel)
+                    ).order_by('locus__name', 'disease__name').distinct()
             else:
+                # Searching all panels
+                # First search by gene
                 queryset = LocusGenotypeDisease.objects.filter(
                     base_locus |
                     base_locus_2 |
-                    base_locus_3 |
-                    base_disease |
-                    base_disease_2 |
-                    base_disease_3 |
-                    base_phenotype |
-                    base_phenotype_2 |
-                    base_g2p_id
+                    base_locus_3
                 ).order_by('locus__name', 'disease__name').distinct()
+
+                # If the search by gene didn't return results, try the other types
+                if not queryset.exists():
+                    queryset = LocusGenotypeDisease.objects.filter(
+                        base_disease |
+                        base_disease_2 |
+                        base_disease_3 |
+                        base_phenotype |
+                        base_phenotype_2 |
+                        base_g2p_id
+                    ).order_by('locus__name', 'disease__name').distinct()
 
             if not queryset.exists():
                 self.handle_no_permission('results', search_query)
