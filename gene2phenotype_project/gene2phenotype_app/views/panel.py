@@ -567,9 +567,9 @@ def extract_locus_id(locus_ids):
 
     for gene in locus_ids:
         if gene.startswith("HGNC"):
-            gene_mim = gene
-        elif gene.isdigit():
             hgnc_id = gene
+        elif gene.isdigit():
+            gene_mim = gene
     
     return gene_mim, hgnc_id
 
