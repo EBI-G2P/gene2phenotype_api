@@ -191,7 +191,10 @@ class UpdateDisease(BaseAdd):
             disease.save()
             updated_diseases.append({"id": disease_id, "name": new_name})
 
-        response_data = {"updated": updated_diseases}
+        response_data = {}
+        if updated_diseases:
+            response_data["updated"] = updated_diseases
+
         if errors:
             response_data["errors"] = errors
 
@@ -237,9 +240,11 @@ class LGDUpdateDisease(BaseAdd):
                     lgd_obj.save()
                     updated_records.append({"g2p_id": lgd_obj.stable_id.stable_id, "lgd_id": lgd_obj.id})
 
-        response_data = {
-            "Updated records": updated_records,
-            "Errors": errors
-        }
+        response_data = {}
+        if updated_records:
+            response_data["Updated records"] = updated_records
 
-        return Response(response_data, status=status.HTTP_200_OK)
+        if errors:
+            response_data["Errors"] = errors
+
+        return Response(response_data, status=status.HTTP_200_OK if updated_records else status.HTTP_400_BAD_REQUEST)
