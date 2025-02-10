@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from django.db import connection
+from django.db import connection, IntegrityError
 from django.db.models import Prefetch
 import itertools
 
@@ -764,20 +764,30 @@ class LGDCommentSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"message": f"Comment is already associated with {lgd.stable_id.stable_id}"})
 
         else:
-            lgd_comment_obj = LGDComment.objects.create(
-                    lgd = lgd,
-                    comment = comment,
-                    is_public = is_public,
-                    is_deleted = 0,
-                    user = user,
-                    date = get_date_now()
-                )
+            try:
+                lgd_comment_obj = LGDComment.objects.create(
+                        lgd = lgd,
+                        comment = comment,
+                        is_public = is_public,
+                        is_deleted = 0,
+                        user = user,
+                        date = get_date_now()
+                    )
+            except IntegrityError as e:
+                raise IntegrityError(f"{e}")
 
         return lgd_comment_obj
 
     class Meta:
         model = LGDComment
         exclude = ['id', 'is_deleted', 'lgd', 'date', 'user']
+
+class LGDCommentListSerializer(serializers.Serializer):
+    """
+        Serializer to accept a list of comments.
+        Called by: view LGDEditComment()
+    """
+    comments = LGDCommentSerializer(many=True)
 
 class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
     """

@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from django.http import Http404
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from django.db import transaction
+from django.db import transaction, IntegrityError
 
 
 from gene2phenotype_app.serializers import (UserSerializer, LocusGenotypeDiseaseSerializer,
@@ -12,7 +12,8 @@ from gene2phenotype_app.serializers import (UserSerializer, LocusGenotypeDisease
                                             LGDCommentSerializer, LGDVariantConsequenceListSerializer,
                                             LGDVariantGenCCConsequenceSerializer, LGDCrossCuttingModifierListSerializer,
                                             LGDVariantTypeListSerializer, LGDVariantTypeSerializer,
-                                            LGDVariantTypeDescriptionListSerializer, LGDVariantTypeDescriptionSerializer)
+                                            LGDVariantTypeDescriptionListSerializer, LGDVariantTypeDescriptionSerializer,
+                                            LGDCommentListSerializer)
 
 from gene2phenotype_app.models import (User, Attrib, LocusGenotypeDisease, OntologyTerm,
                                        G2PStableID, CVMolecularMechanism, LGDCrossCuttingModifier, 
@@ -959,15 +960,8 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
 class LGDEditComment(CustomPermissionAPIView):
     """
         Add or delete a comment to a G2P record (LGD).
-
-        Example:
-                {
-                    "comment": "This is a comment",
-                    "is_public": 1
-                }
     """
     http_method_names = ['post', 'update', 'options']
-    serializer_class = LGDCommentSerializer
 
     # Define specific permissions
     method_permissions = {
@@ -975,12 +969,41 @@ class LGDEditComment(CustomPermissionAPIView):
         "update": [permissions.IsAuthenticated, IsSuperUser]
     }
 
+    def get_serializer_class(self, action):
+        """
+            Returns the appropriate serializer class based on the action.
+            To add data use LGDCommentListSerializer: it accepts a list of comments.
+            To delete data use LGDCommentSerializer: it accepts one comment.
+        """
+        action = action.lower()
+
+        if action == "post":
+            return LGDCommentListSerializer
+        elif action == "update":
+            return LGDCommentSerializer
+        else:
+            return None
+
     @transaction.atomic
     def post(self, request, stable_id):
         """
-            The post method adds a comment.
-            It links the current LGD record to the new comment.
+            The post method adds a list of comments.
+            It links the current LGD record to the new comment(s).
             We want to whole process to be done in one db transaction.
+
+            Example:
+                {
+                    "comments": [
+                        {
+                            "comment": "This is a comment",
+                            "is_public": 1
+                        },
+                        {
+                            "comment": "This is another comment",
+                            "is_public": 0
+                        }
+                    ]
+                }
         """
         user = self.request.user
 
@@ -998,17 +1021,42 @@ class LGDEditComment(CustomPermissionAPIView):
         if not user_serializer.check_panel_permission(lgd_panels):
             return Response({"message": f"No permission to edit {stable_id}"}, status=status.HTTP_403_FORBIDDEN)
 
-        comment = request.data.get("comment", None)
-        is_public = request.data.get("is_public", None)
+        # LGDCommentListSerializer accepts a list of comments
+        serializer_list = LGDCommentListSerializer(data=request.data)
 
-        serializer_class = LGDCommentSerializer(data={"comment": comment, "is_public": is_public},
-                                                context={"lgd": lgd, "user": user})
+        if serializer_list.is_valid():
+            lgd_comments_data = serializer_list.validated_data.get("comments")
 
-        if serializer_class.is_valid():
-            serializer_class.save()
-            response = Response({"message": "Comment added to the G2P entry successfully."}, status=status.HTTP_201_CREATED)
+            if(not lgd_comments_data):
+                response = Response(
+                    {"message": "Empty comment. Please provide valid data."},
+                     status=status.HTTP_400_BAD_REQUEST
+                )
+
+            errors = []
+            # Add each comment from the input list
+            for comment in lgd_comments_data:
+                serializer_class = LGDCommentSerializer(
+                    data=comment,
+                    context={"lgd": lgd, "user": user_obj}
+                )
+
+                if serializer_class.is_valid():
+                    try:
+                        serializer_class.save()
+                    except IntegrityError as e:
+                        return Response({"message": f"A database integrity error occurred: {str(e)}"},
+                            status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    errors.append(serializer_class.errors)
+
+            if errors:
+                return Response({"message": errors}, status=status.HTTP_400_BAD_REQUEST)
+
+            response = Response({"message": f"Comments added to the G2P entry successfully."}, status=status.HTTP_201_CREATED)
+
         else:
-            response = Response({"errors": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST)
+            response = Response({"errors": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         return response
 
