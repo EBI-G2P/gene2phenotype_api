@@ -177,7 +177,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
         panels = attrs.get('panels')
         for panel in panels:
             if not Panel.objects.filter(name=panel).exists():
-                raise serializers.ValidationError({'message': f"{panel} does not exist"}, panel)
+                raise serializers.ValidationError({'message': f"{panel} does not exist"})
         
         return attrs
 
@@ -245,7 +245,7 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
         if panels:
             for panel in panels:
                 if not Panel.objects.filter(name=panel).exists():
-                    raise serializers.ValidationError({'message': "Panel does not exists, please create a panel and add user to panel"})
+                    raise serializers.ValidationError({'message': "Panel does not exists, Please check panel"})
         
         return attrs
     
@@ -258,7 +258,9 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
         for panel in panels:
             panel_obj = Panel.objects.get(name=panel)
 
-            user_panel = UserPanel.objects.create(user=user_obj, panel=panel_obj, is_deleted=0)
+            if not UserPanel.objects.get(user=user_obj, panel=panel_obj, is_deleted=0):
+                user_panel = UserPanel.objects.create(user=user_obj, panel=panel_obj, is_deleted=0)
+            raise serializers.ValidationError({'message': f"User {user_email} already exists in this {panel}"})
 
         return user_panel
 
