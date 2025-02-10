@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from django.http import Http404
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from django.db import transaction
+from django.db import transaction, IntegrityError
 
 
 from gene2phenotype_app.serializers import (UserSerializer, LocusGenotypeDiseaseSerializer,
@@ -1033,6 +1033,7 @@ class LGDEditComment(CustomPermissionAPIView):
                      status=status.HTTP_400_BAD_REQUEST
                 )
 
+            errors = []
             # Add each comment from the input list
             for comment in lgd_comments_data:
                 serializer_class = LGDCommentSerializer(
@@ -1041,9 +1042,16 @@ class LGDEditComment(CustomPermissionAPIView):
                 )
 
                 if serializer_class.is_valid():
-                    serializer_class.save()
+                    try:
+                        serializer_class.save()
+                    except IntegrityError as e:
+                        return Response({"message": f"A database integrity error occurred: {str(e)}"},
+                            status=status.HTTP_400_BAD_REQUEST)
                 else:
-                    response = Response({"errors": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST)
+                    errors.append(serializer_class.errors)
+
+            if errors:
+                return Response({"message": errors}, status=status.HTTP_400_BAD_REQUEST)
 
             response = Response({"message": f"Comments added to the G2P entry successfully."}, status=status.HTTP_201_CREATED)
 
