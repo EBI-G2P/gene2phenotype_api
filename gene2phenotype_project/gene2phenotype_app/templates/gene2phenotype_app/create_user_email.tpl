@@ -10,6 +10,7 @@ Account Created: Welcome to G2P, {{ first_name }} {{ last_name }},
   <li><strong>First name:</strong> {{ first_name }}</li>
   <li><strong>Last name:</strong> {{ last_name }}</li>
   <li><strong>Username:</strong> {{ username }}</li>
+  <li><strong>Panel(s):</strong> {{ panels }}</li>
 </ul>
 
 <p>If you did not create a user or you are receiving this message in error, please contact the G2P team at <a href="mailto:g2p-help@ebi.ac.uk">g2p-help@ebi.ac.uk</a></p>
