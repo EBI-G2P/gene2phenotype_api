@@ -148,12 +148,12 @@ class DiseaseSummary(DiseaseDetail):
 """
 class AddDisease(BaseAdd):
     serializer_class = CreateDiseaseSerializer
-    permission_classes = [permissions.IsAuthenticated, IsSuperUser]
+    permission_classes = [IsSuperUser]
 
 ### Update data
 class UpdateDisease(BaseAdd):
     http_method_names = ['post', 'options']
-    permission_classes = [permissions.IsAuthenticated, IsSuperUser]
+    permission_classes = [IsSuperUser]
 
     def post(self, request):
         diseases = request.data  # list of diseases {'id': ..., 'name': ...}
@@ -202,7 +202,7 @@ class UpdateDisease(BaseAdd):
 
 class LGDUpdateDisease(BaseAdd):
     http_method_names = ['post', 'options']
-    permission_classes = [permissions.IsAuthenticated, IsSuperUser]
+    permission_classes = [IsSuperUser]
 
     def post(self, request):
         data_to_update = request.data
