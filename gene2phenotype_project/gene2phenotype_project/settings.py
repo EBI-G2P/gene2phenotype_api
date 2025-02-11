@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
-import os, sys
+import os, sys, json
 from configparser import ConfigParser
 from datetime import timedelta
 from rest_framework.settings import api_settings
@@ -23,8 +23,6 @@ config.read(config_path)
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
@@ -32,9 +30,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ["SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config.get('settings', 'DEBUG')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = json.loads(config.get('settings', 'ALLOWED_HOSTS'))
 
 # Application definition
 
@@ -104,7 +102,7 @@ SIMPLE_JWT = {
   "AUTH_COOKIE": "access_token",
   "REFRESH_COOKIE": "refresh_token",
   "AUTH_COOKIE_DOMAIN": None,
-  "AUTH_COOKIE_SECURE": False, # for production, we need to change this to true
+  "AUTH_COOKIE_SECURE": config.get('settings', 'AUTH_COOKIE_SECURE'),
   "AUTH_COOKIE_HTTP_ONLY": True, #prevents client side js from accessing the cookie
   "AUTH_COOKIE_PATH": "/",
   "AUTH_COOKIE_SAMESITE": "Lax",
@@ -116,10 +114,8 @@ SIMPLE_JWT = {
   "ROTATE_REFRESH_TOKENS": True
 }
 
-CORS_ALLOWED_ORIGINS = [  # Add your frontend's URL here, # local set up still being implemented, need to change for production
-]
-CSRF_TRUSTED_ORIGINS = [  # Add your frontend's URL here, # local set up still being implemented, need to change for production
-    ]
+CORS_ALLOWED_ORIGINS = json.loads(config.get('settings', 'CORS_ALLOWED_ORIGINS'))
+CSRF_TRUSTED_ORIGINS = json.loads(config.get('settings', 'CSRF_TRUSTED_ORIGINS'))
 CORS_ALLOWED_CREDENTIALS = "True"
 
 DEFAULT_FROM_EMAIL = config.get('email', 'from')
@@ -213,7 +209,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_ROOT = config.get('settings', 'STATIC_ROOT')
+STATIC_URL = config.get('settings', 'STATIC_URL')
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
