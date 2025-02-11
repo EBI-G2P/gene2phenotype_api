@@ -30,5 +30,8 @@
 	{
 		"model": "gene2phenotype_app.source", "pk": 8,
 		"fields": {"name": "UniProt", "description": "Gene function imported from UniProt", "version": null, "url": "https://www.uniprot.org"}
+	},
+	{
+        "model": "gene2phenotype_app.source", "pk": 9, "fields": {"name": "Marsh Mechanism probabilities", "description": "Marsh Mechanism probabilities", "version": null, "url": "https://europepmc.org/article/MED/39172982"}
 	}
 ]
