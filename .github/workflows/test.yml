@@ -51,6 +51,14 @@ jobs:
           echo "from=test_g2p_help@ebi.ac.uk" >>  /home/runner/work/config.ini
           echo "host=smtp.ebi.ac.uk" >> /home/runner/work/config.ini
           echo "port=465" >> /home/runner/work/config.ini
+          echo "[settings]" >> /home/runner/work/config.ini
+          echo "DEBUG = True" >> /home/runner/work/config.ini
+          echo "ALLOWED_HOSTS = []" >> /home/runner/work/config.ini
+          echo "echo "CSRF_TRUSTED_ORIGINS = []" >> /home/runner/work/config.ini
+          CORS_ALLOWED_ORIGINS = []" >> /home/runner/work/config.ini
+          echo "AUTH_COOKIE_SECURE = False" >> /home/runner/work/config.ini
+          echo "STATIC_ROOT =" >> /home/runner/work/config.ini
+          echo "STATIC_URL = static/" >> /home/runner/work/config.ini
 
       - name: Run Tests
         run: |
