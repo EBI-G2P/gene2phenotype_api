@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser,BaseUserManager
 from simple_history.models import HistoricalRecords
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.utils import timezone
+from .utils import get_date_now
 
 class G2PStableID(models.Model):
     """
@@ -596,7 +596,7 @@ class UserManager(BaseUserManager):
             last_name=last_name,
             is_superuser=is_superuser,
             is_staff=is_staff,
-            date_joined=timezone.now(),
+            date_joined=get_date_now(),
         )
 
         user.set_password(password)
