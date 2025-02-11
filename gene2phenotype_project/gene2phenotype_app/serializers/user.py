@@ -263,7 +263,8 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
 
             if not UserPanel.objects.filter(user=user_obj, panel=panel_obj, is_deleted=0).exists():
                 user_panel = UserPanel.objects.create(user=user_obj, panel=panel_obj, is_deleted=0)
-            raise serializers.ValidationError({'message': f"User {user_email} already exists in this {panel}"})
+            else:
+                raise serializers.ValidationError({'message': f"User {user_email} already exists in this {panel}"})
 
         return user_panel
 
