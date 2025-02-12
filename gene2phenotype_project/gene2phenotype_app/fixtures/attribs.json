@@ -57,6 +57,9 @@
 	{"model": "gene2phenotype_app.attrib", "pk": 56, "fields": {"type": 14, "value": "unknown"}},
 	{"model": "gene2phenotype_app.attrib", "pk": 57, "fields": {"type": 14, "value": "de_novo"}},
 	{"model": "gene2phenotype_app.attrib", "pk": 58, "fields": {"type": 14, "value": "inherited"}},
+	{"model": "gene2phenotype_app.attrib", "pk": 59, "fields": {"type": 15, "value": "gain_of_function_mp", "description": null, "is_deleted": 0}},
+	{"model": "gene2phenotype_app.attrib", "pk": 60, "fields": {"type": 15, "value": "loss_of_function_mp", "description": null, "is_deleted": 0}},
+	{"model": "gene2phenotype_app.attrib", "pk": 61, "fields": {"type": 15, "value": "dominant_negative_mp", "description": null, "is_deleted": 0}},
 
 	{"model": "gene2phenotype_app.attribtype", "pk": 1, "fields": {"code": "confidence_category", "name": "Confidence category", "description": "Confidence category terms"}},
 	{"model": "gene2phenotype_app.attribtype", "pk": 2, "fields": {"code": "cross_cutting_modifier", "name": "Cross cutting modifier", "description": "Cross cutting modifier"}},
@@ -71,5 +74,6 @@
 	{"model": "gene2phenotype_app.attribtype", "pk": 11, "fields": {"code": "disease_synonym", "name": "disease_synonym", "description": "Disease synonym"}},
 	{"model": "gene2phenotype_app.attribtype", "pk": 12, "fields": {"code": "ontology_term_group", "name": "ontology_term_group", "description": "Type of the ontology term. It can be phenotype, disease, variant consequence, etc."}},
 	{"model": "gene2phenotype_app.attribtype", "pk": 13, "fields": {"code": "consanguinity", "name": "consanguinity", "description": "Consanguinity associated with families described in publications"}},
-	{"model": "gene2phenotype_app.attribtype", "pk": 14, "fields": {"code": "inheritance_type", "name": "inheritance_type", "description": "Type of inheritance for variant types"}}
+	{"model": "gene2phenotype_app.attribtype", "pk": 14, "fields": {"code": "inheritance_type", "name": "inheritance_type", "description": "Type of inheritance for variant types"}},
+	{"model": "gene2phenotype_app.attribtype", "pk": 15, "fields": {"code": "mechanism_probabilities", "name": "mechanism_probabilities", "description": "Predictions for the human UniProt reference proteome whether human protein coding genes are likely to be associated with DN, GOF, or LOF molecular disease mechanisms.", "is_deleted": 0}}
 ]

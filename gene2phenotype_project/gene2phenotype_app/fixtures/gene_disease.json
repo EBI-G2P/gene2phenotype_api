@@ -1,0 +1,6 @@
+[
+    {"model": "gene2phenotype_app.genedisease", "pk": 1, "fields": {"gene": 1, "disease": "JOUBERT SYNDROME 5", "identifier": "610188", "source": 4}},
+	{"model": "gene2phenotype_app.genedisease", "pk": 2, "fields": {"gene": 1, "disease": "SENIOR-LOKEN SYNDROME 6", "identifier": "610189", "source": 4}},
+    {"model": "gene2phenotype_app.genedisease", "pk": 3, "fields": {"gene": 1, "disease": "Joubert syndrome 5", "identifier": "MONDO:0012432", "source": 3}},
+	{"model": "gene2phenotype_app.genedisease", "pk": 4, "fields": {"gene": 1, "disease": "Senior-Loken syndrome 6", "identifier": "MONDO:0012433", "source": 3}}
+]
