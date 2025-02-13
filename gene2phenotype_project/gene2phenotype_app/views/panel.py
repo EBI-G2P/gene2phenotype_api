@@ -15,10 +15,16 @@ from gene2phenotype_app.models import (Panel, User, LocusGenotypeDisease,
                                        LGDPublication, LGDCrossCuttingModifier,
                                        LGDPanel, LGDComment)
 
-from gene2phenotype_app.serializers import PanelDetailSerializer, LGDPanelSerializer, UserSerializer
+from gene2phenotype_app.serializers import PanelCreateSerializer, PanelDetailSerializer, LGDPanelSerializer, UserSerializer
 
 from .base import BaseView, IsSuperUser, CustomPermissionAPIView
 
+class PanelCreateView(generics.CreateAPIView):
+    """ 
+        Panel Creation View 
+    """    
+    serializer_class = PanelCreateSerializer
+    permission_classes = [permissions.IsAdminUser]
 
 class PanelList(generics.ListAPIView):
     """
@@ -143,7 +149,7 @@ class LGDEditPanel(CustomPermissionAPIView):
     # Define specific permissions
     method_permissions = {
         "post": [permissions.IsAuthenticated],
-        "update": [permissions.IsAuthenticated, IsSuperUser],
+        "update": [IsSuperUser],
     }
 
     @transaction.atomic

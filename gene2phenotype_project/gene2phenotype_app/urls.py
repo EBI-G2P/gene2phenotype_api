@@ -81,5 +81,8 @@ urlpatterns = [
     path('logout/', views.LogOutView.as_view(), name='logout'),
     path('token/refresh/', views.CustomTokenRefreshView.as_view(), name='token_refresh'),
 
+    #panels management 
+    path("create/panel/", views.PanelCreateView.as_view(), name="panel_create")
+
 ]
 urlpatterns = format_suffix_patterns(urlpatterns)

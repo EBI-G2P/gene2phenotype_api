@@ -6,16 +6,55 @@ from ..models import Panel, User, UserPanel, LGDPanel, Attrib
 from ..utils import get_date_now
 
 
-class CreatePanelSerializer(serializers.ModelSerializer):
+class PanelCreateSerializer(serializers.ModelSerializer):
+    """
+        Panel Creation Serializer
+
+        Args:
+            serializers (_type_): 
+                name - A required char field
+                description - An optional char field
+
+
+        Raises:
+            serializers.ValidationError: Raises a validation error when the panel exists
+
+        Returns:
+            _type_: A created panel
+    """    
     name = serializers.CharField(required=True)
     description = serializers.CharField()
 
     def validate(self, attrs):
+        """
+            Validate the request data 
+
+            Args:
+                attrs (_type_): A dictionary like object containing the request data
+
+            Raises:
+                serializers.ValidationError: Raises a validation error when the panel exists
+
+            Returns:
+                _type_: A validated request object
+        """        
         name = attrs.get('name')
         if Panel.objects.filter(name=name).exists():
             raise serializers.ValidationError({'message': 'Can not create an existing panel'})
+
+        return attrs
     
     def create(self, validated_data):
+        """
+            Creation of the panel if panel does not exists
+            Updating the panel if is_visible = 0
+
+            Args:
+                validated_data (_type_): validated request object
+
+            Returns:
+                _type_: Created panel
+        """        
         name = validated_data.get('name')
         description = validated_data.get('description', '')
 
@@ -27,6 +66,15 @@ class CreatePanelSerializer(serializers.ModelSerializer):
         return panel
 
     def update(self, name):
+        """
+            Updating the panel if the panel is_visible = 0 
+
+            Args:
+                name (_type_): name of the panel 
+
+            Returns:
+                _type_: Updated panel
+        """        
         panel = Panel.objects.get(name=name)
         panel.is_visible = 1
         panel.save()
