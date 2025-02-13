@@ -23,7 +23,7 @@ class PanelCreateSerializer(serializers.ModelSerializer):
             _type_: A created panel
     """    
     name = serializers.CharField(required=True)
-    description = serializers.CharField()
+    description = serializers.CharField(required=False)
 
     def validate(self, attrs):
         """
