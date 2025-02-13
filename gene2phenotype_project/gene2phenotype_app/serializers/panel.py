@@ -5,6 +5,38 @@ from ..models import Panel, User, UserPanel, LGDPanel, Attrib
 
 from ..utils import get_date_now
 
+
+class CreatePanelSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(required=True)
+    description = serializers.CharField()
+
+    def validate(self, attrs):
+        name = attrs.get('name')
+        if Panel.objects.filter(name=name).exists():
+            raise serializers.ValidationError({'message': 'Can not create an existing panel'})
+    
+    def create(self, validated_data):
+        name = validated_data.get('name')
+        description = validated_data.get('description', '')
+
+        if Panel.objects.filter(name=name, is_visible=0).exists():
+            self.update(name)
+
+        panel = Panel.objects.create(name=name, description=description, is_visible=1)
+
+        return panel
+
+    def update(self, name):
+        panel = Panel.objects.get(name=name)
+        panel.is_visible = 1
+        panel.save()
+
+        return panel
+
+    class Meta:
+        model = Panel
+        fields = ['name', 'description']
+
 class PanelDetailSerializer(serializers.ModelSerializer):
     """
         Serializer for the Panel model.

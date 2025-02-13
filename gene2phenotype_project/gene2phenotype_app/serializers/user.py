@@ -230,10 +230,40 @@ class CreateUserSerializer(serializers.ModelSerializer):
                         }
         
 class AddUserToPanelSerializer(serializers.ModelSerializer):
+    """
+        Adds User to a Panel serializer 
+        Args:
+            serializers (_type_): 
+                user : Serializers CharField
+                panel : Serializers ListField that only accepts CharField and can not be empty
+
+        Raises:
+            serializers.ValidationError: If UserEmail is not sent in the request
+            serializers.ValidationError: If User does not exists
+            serializers.ValidationError: If Panel does not exists
+            serializers.ValidationError: If UserPanel already exists
+
+        Returns:
+            _type_: Created UserPanel or Updated UserPanel
+    """    
     user = serializers.CharField(write_only=True)
     panel = serializers.ListField(child=serializers.CharField(), allow_empty=False, write_only=True)
 
     def validate(self, attrs):
+        """
+            Validation step for the AddUserPanelSerializer
+
+            Args:
+                attrs (_type_): The request data that will be validated
+
+            Raises:
+                serializers.ValidationError: If UserEmail is not sent in the request
+                serializers.ValidationError: If User does not exists
+                serializers.ValidationError: If Panel does not exists
+
+            Returns:
+                _type_: Validated data
+        """        
         user = attrs.get('user', '')
         if user is None:
             raise serializers.ValidationError({'message': 'user email is required to add user to panel'})
@@ -251,6 +281,19 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
     
 
     def create(self, validated_data):
+        """
+            Creates the User panel, taking the User and a list of panels from validated data 
+            Also calls the update function if UserPanel already exists
+
+            Args:
+                validated_data (_type_): A dictionary object containing a list of panels and user_email
+
+            Raises:
+                serializers.ValidationError: If UserPanel already exists and it is not deleted 
+
+            Returns:
+                _type_: Created UserPanel
+        """        
         user_email = validated_data.get('user')
         panels = validated_data.get('panel')
 
@@ -259,7 +302,7 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
             panel_obj = Panel.objects.get(name=panel)
 
             if UserPanel.objects.filter(user=user_obj, panel=panel_obj, is_deleted=1).exists():
-                raise serializers.ValidationError({'message': f"User {user_email} used to exists in this {panel}, Update instead"})
+                self.update(user_obj, panel_obj)
 
             if not UserPanel.objects.filter(user=user_obj, panel=panel_obj, is_deleted=0).exists():
                 user_panel = UserPanel.objects.create(user=user_obj, panel=panel_obj, is_deleted=0)
@@ -268,6 +311,24 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
 
         return user_panel
 
+    def update(self, user, panel):
+        """
+            Updates the UserPanel, if UserPanel exists
+            Changes from is_deleted = 1 to is_deleted = 0
+
+            Args:
+                user (_type_): user object 
+                panel (_type_): Panel object
+
+        Returns:
+            _type_: The updated user panel
+        """        
+        user_panel = UserPanel.objects.get(user=user, panel=panel, is_deleted=1)
+        user_panel.is_deleted = 0
+        user_panel.save()
+        
+        return user_panel
+                
 
     class Meta:
         model = UserPanel
