@@ -574,7 +574,7 @@ class Source(models.Model):
 class Panel(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100, unique=True, null=False)
-    description = models.CharField(max_length=255, null=False)
+    description = models.CharField(max_length=255, null=True)
     is_visible = models.SmallIntegerField(null=False)
 
     def __str__(self):
