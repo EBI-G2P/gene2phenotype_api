@@ -71,8 +71,8 @@ urlpatterns = [
     path('curation/publish/<str:stable_id>/', views.PublishRecord.as_view(), name="publish_record"),
 
     #user management
-    path("create/user/", views.CreateUserView.as_view(), name="create"),
-    path('add_user/panel/', views.AddUserToPanelView.as_view(), name="add_user"),
+    path("create/user/", views.CreateUserView.as_view(), name="create_user"),
+    path('add_user/panel/', views.AddUserToPanelView.as_view(), name="add_user_panel"),
     path('profile/', views.ManageUserView.as_view(), name='profile'),
     path('change_password/', views.ChangePasswordView.as_view(), name='change_password'),
     path('reset_password/<uid>/<token>/', views.ResetPasswordView.as_view(), name='reset_password'),

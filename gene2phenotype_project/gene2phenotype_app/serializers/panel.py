@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.db.models import Q
+from django.core.exceptions import ObjectDoesNotExist
 
 from ..models import Panel, User, UserPanel, LGDPanel, Attrib
 
@@ -11,9 +12,9 @@ class PanelCreateSerializer(serializers.ModelSerializer):
         Panel Creation Serializer
 
         Args:
-            serializers (_type_): 
-                name - A required char field
-                description - An optional char field
+            name: short name of the panel (mandatory)
+            description: complete name of the panel (mandatory)
+            is_visible: panel visible to authenticated or non authenticated users
 
 
         Raises:
@@ -23,7 +24,8 @@ class PanelCreateSerializer(serializers.ModelSerializer):
             _type_: A created panel
     """    
     name = serializers.CharField(required=True)
-    description = serializers.CharField(required=False)
+    description = serializers.CharField(required=True)
+    is_visible = serializers.BooleanField(required=True)
 
     def validate(self, attrs):
         """
@@ -39,14 +41,14 @@ class PanelCreateSerializer(serializers.ModelSerializer):
                 _type_: A validated request object
         """        
         name = attrs.get('name')
-        if Panel.objects.filter(name=name).exists():
+        if Panel.objects.filter(name=name, is_visible=1).exists():
             raise serializers.ValidationError({'message': 'Can not create an existing panel'})
 
         return attrs
     
     def create(self, validated_data):
         """
-            Creation of the panel if panel does not exists
+            Creation of the panel if panel does not exist
             Updating the panel if is_visible = 0
 
             Args:
@@ -56,16 +58,20 @@ class PanelCreateSerializer(serializers.ModelSerializer):
                 _type_: Created panel
         """        
         name = validated_data.get('name')
-        description = validated_data.get('description', '')
+        description = validated_data.get('description')
+        is_visible = validated_data.get('is_visible')
 
-        if Panel.objects.filter(name=name, is_visible=0).exists():
-            self.update(name)
+        if Panel.objects.filter(name=name, is_visible=0).exists() and is_visible is True:
+            self.update(name, is_visible, description)
+        
+        if Panel.objects.filter(name=name, is_visible=0).exists() and is_visible is False:
+            raise serializers.ValidationError({"message" : f"{name} exist. It is only visible to authenticated users"})
 
-        panel = Panel.objects.create(name=name, description=description, is_visible=1)
+        panel = Panel.objects.create(name=name, description=description, is_visible=is_visible)
 
         return panel
 
-    def update(self, name):
+    def update(self, name, is_visible, description):
         """
             Updating the panel if the panel is_visible = 0 
 
@@ -74,16 +80,20 @@ class PanelCreateSerializer(serializers.ModelSerializer):
 
             Returns:
                 _type_: Updated panel
-        """        
-        panel = Panel.objects.get(name=name)
-        panel.is_visible = 1
-        panel.save()
+        """   
+        try:     
+            panel = Panel.objects.get(name=name, is_visible=0)
+            panel.is_visible = is_visible
+            panel.description = description
+            panel.save()
+        except ObjectDoesNotExist:
+            raise serializers.ValidationError({"message": f"{panel} does not exist"})
 
         return panel
 
     class Meta:
         model = Panel
-        fields = ['name', 'description']
+        fields = ['name', 'description', 'is_visible']
 
 class PanelDetailSerializer(serializers.ModelSerializer):
     """

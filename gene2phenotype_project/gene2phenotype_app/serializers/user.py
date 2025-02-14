@@ -8,6 +8,8 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.models import update_last_login
+from django.core.exceptions import ObjectDoesNotExist
+
 
 from ..utils import CustomMail
 from ..models import User, UserPanel, Panel
@@ -296,19 +298,19 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
         """        
         user_email = validated_data.get('user')
         panels = validated_data.get('panel')
-
         user_obj = User.objects.get(email=user_email)
         for panel in panels:
             panel_obj = Panel.objects.get(name=panel)
 
             if UserPanel.objects.filter(user=user_obj, panel=panel_obj, is_deleted=1).exists():
                 self.update(user_obj, panel_obj)
-
+                continue
+            
             if not UserPanel.objects.filter(user=user_obj, panel=panel_obj, is_deleted=0).exists():
                 user_panel = UserPanel.objects.create(user=user_obj, panel=panel_obj, is_deleted=0)
             else:
                 raise serializers.ValidationError({'message': f"User {user_email} already exists in this {panel}"})
-
+        
         return user_panel
 
     def update(self, user, panel):
@@ -322,14 +324,23 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
 
         Returns:
             _type_: The updated user panel
-        """        
-        user_panel = UserPanel.objects.get(user=user, panel=panel, is_deleted=1)
-        user_panel.is_deleted = 0
-        user_panel.save()
+        """       
+        try: 
+            user_panel = UserPanel.objects.get(user=user, panel=panel, is_deleted=1)
+            user_panel.is_deleted = 0
+            user_panel.save()
+            
         
-        return user_panel
-                
+            user_info =  {
+                "message" : f"{user} has been updated in this {panel}"
+                }
+            
+        except ObjectDoesNotExist:
+            return {
+                "message": f"{user} does not exist in this panel "
+            }
 
+        return user_info
     class Meta:
         model = UserPanel
         fields = ['user', 'panel']
