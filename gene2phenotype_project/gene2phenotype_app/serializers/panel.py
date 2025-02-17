@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.db.models import Q
+from django.db import IntegrityError
 from django.core.exceptions import ObjectDoesNotExist
 
 from ..models import Panel, User, UserPanel, LGDPanel, Attrib
@@ -56,20 +57,25 @@ class PanelCreateSerializer(serializers.ModelSerializer):
 
             Returns:
                 _type_: Created panel
-        """        
+        """      
         name = validated_data.get('name')
         description = validated_data.get('description')
-        is_visible = validated_data.get('is_visible')
+        is_visible = validated_data.get("is_visible")
+        try:
+            panel = Panel.objects.get(name=name)
 
-        if Panel.objects.filter(name=name, is_visible=0).exists() and is_visible is True:
-            return self.update(name, is_visible, description)
-        
-        if Panel.objects.filter(name=name, is_visible=0).exists() and is_visible is False:
-            raise serializers.ValidationError({"message" : f"{name} exist. It is only visible to authenticated users"})
-
-        panel = Panel.objects.create(name=name, description=description, is_visible=is_visible)
-
-        return panel
+            if panel:
+                if not panel.is_visible and is_visible:
+                   return self.update(name, is_visible, description)
+                
+                if not panel.is_visible and not is_visible:
+                    raise serializers.ValidationError({"message" : f"{name} exist. It is only visible to authenticated users"})
+                
+            
+            panel = Panel.objects.create(name=name, description=description, is_visible=is_visible)
+            return panel 
+        except IntegrityError as e:
+            raise serializers.ValidationError({"message": f"Database error: {str(e)}"})     
 
     def update(self, name, is_visible, description):
         """
