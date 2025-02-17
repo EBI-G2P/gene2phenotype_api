@@ -81,5 +81,8 @@ urlpatterns = [
     path('logout/', views.LogOutView.as_view(), name='logout'),
     path('token/refresh/', views.CustomTokenRefreshView.as_view(), name='token_refresh'),
 
+    #meta information
+    path("ref_info/", views.MetaView.as_view(), name="get_reference_data")
+
 ]
 urlpatterns = format_suffix_patterns(urlpatterns)
