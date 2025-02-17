@@ -47,9 +47,11 @@ class PanelList(generics.ListAPIView):
             panel_info = {}
             if panel.is_visible == 1 or (user.is_authenticated and panel.is_visible == 0):
                 stats = serializer.calculate_stats(panel)
+                last_updated = serializer.get_last_updated(panel)
                 panel_info['name'] = panel.name
                 panel_info['description'] = panel.description
                 panel_info['stats'] = stats
+                panel_info['last_updated'] = last_updated
                 panel_list.append(panel_info)
 
         sorted_panels = sorted(panel_list, key=lambda panel_info: panel_info['description'])
