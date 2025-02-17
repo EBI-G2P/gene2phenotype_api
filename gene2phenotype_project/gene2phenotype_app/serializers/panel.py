@@ -70,12 +70,13 @@ class PanelCreateSerializer(serializers.ModelSerializer):
                 
                 if not panel.is_visible and not is_visible:
                     raise serializers.ValidationError({"message" : f"{name} exist. It is only visible to authenticated users"})
-                
-            
-            panel = Panel.objects.create(name=name, description=description, is_visible=is_visible)
-            return panel 
-        except IntegrityError as e:
-            raise serializers.ValidationError({"message": f"Database error: {str(e)}"})     
+        
+        except Panel.DoesNotExist:
+            try:
+                panel = Panel.objects.create(name=name, description=description, is_visible=is_visible)
+                return panel 
+            except IntegrityError as e:
+                raise serializers.ValidationError({"message": f"Database error: {str(e)}"})     
 
     def update(self, name, is_visible, description):
         """
