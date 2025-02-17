@@ -26,3 +26,5 @@ from .locus_genotype_disease import (LocusGenotypeDiseaseSerializer, LGDCommentS
 from .stable_id import G2PStableIDSerializer
 
 from .curation import CurationDataSerializer
+
+from .meta import MetaSerializer

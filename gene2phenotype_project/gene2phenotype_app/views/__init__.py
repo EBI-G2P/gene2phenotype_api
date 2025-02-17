@@ -19,6 +19,8 @@ from .user import (UserList, CreateUserView, AddUserToPanelView, LoginView, Mana
 
 from .publication import PublicationDetail, AddPublication, LGDEditPublications
 
+from .meta import MetaView
+
 from .locus_genotype_disease import (ListMolecularMechanisms, VariantTypesList,
                                      LocusGenotypeDiseaseDetail, LGDEditCCM,
                                      LGDEditComment, LGDEditVariantConsequences,
