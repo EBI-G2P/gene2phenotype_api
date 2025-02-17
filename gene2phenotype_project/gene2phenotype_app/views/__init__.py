@@ -5,7 +5,8 @@ from .panel import (PanelList, PanelDetail, PanelRecordsSummary,
 
 from .locus import LocusGene, LocusGeneSummary, GeneFunction
 
-from .disease import GeneDiseaseView, DiseaseDetail, DiseaseSummary, AddDisease
+from .disease import (GeneDiseaseView, DiseaseDetail, DiseaseSummary, AddDisease,
+                      ExternalDisease)
 
 from .curation import (AddCurationData, ListCurationEntries, CurationDataDetail,
                        UpdateCurationData, PublishRecord, DeleteCurationData)

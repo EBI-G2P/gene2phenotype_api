@@ -30,6 +30,9 @@ urlpatterns = [
     path('lgd/<str:stable_id>/', views.LocusGenotypeDiseaseDetail.as_view(), name="lgd"),
     path('search/', views.SearchView.as_view(), name="search"),
 
+    # Endpoint to fetch disease from external sources (OMIM/Mondo)
+    path('external_disease/<str:ext_id>/', views.ExternalDisease.as_view(), name="external_disease"),
+
     ### Endpoints to add data ###
     path('add/disease/', views.AddDisease.as_view(), name="add_disease"),
     path('add/phenotype/', views.AddPhenotype.as_view(), name="add_phenotype"),
