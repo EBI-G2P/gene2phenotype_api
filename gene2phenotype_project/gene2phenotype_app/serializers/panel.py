@@ -62,7 +62,7 @@ class PanelCreateSerializer(serializers.ModelSerializer):
         is_visible = validated_data.get('is_visible')
 
         if Panel.objects.filter(name=name, is_visible=0).exists() and is_visible is True:
-            self.update(name, is_visible, description)
+            return self.update(name, is_visible, description)
         
         if Panel.objects.filter(name=name, is_visible=0).exists() and is_visible is False:
             raise serializers.ValidationError({"message" : f"{name} exist. It is only visible to authenticated users"})
