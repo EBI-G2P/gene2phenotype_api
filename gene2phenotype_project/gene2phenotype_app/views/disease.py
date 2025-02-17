@@ -138,6 +138,36 @@ class DiseaseSummary(DiseaseDetail):
 
         return Response(response_data)
 
+class ExternalDisease(BaseView):
+    """
+        Returns the disease for an external disease ID.
+        External sources can be OMIM or Mondo.
+
+        Args:
+            (str) external disease id: the disease ID of the external source (OMIM/Mondo)
+
+        Returns:
+            Response object is a dict with the following structure
+                    (string) disease: the disease name as represented in the source
+                    (string) identifier: disease ID
+                    (string) source: source name
+    """
+    serializer_class = GeneDiseaseSerializer
+
+    def get_queryset(self):
+        disease_id = self.kwargs['ext_id']
+
+        gene_disease = GeneDisease.objects.filter(identifier=disease_id)
+
+        if not gene_disease.exists():
+            self.handle_no_permission('disease', disease_id)
+
+        return gene_disease
+
+    def list(self, request, *args, **kwargs):
+        gene_disease_obj = self.get_queryset().first()
+        serializer = GeneDiseaseSerializer(gene_disease_obj)
+        return Response(serializer.data)
 
 ### Add data
 """
