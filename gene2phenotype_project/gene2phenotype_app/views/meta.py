@@ -27,9 +27,9 @@ class MetaView(APIView):
             latest_date=Max("date_update")
         )
 
-        # then we use a list comprehension to check using the column key
+        # then we use a list comprehension to check using the new column latest date 
         queryset = Meta.objects.filter(
-            key__in=[record["key"] for record in latest_records]
+            key__in=[record["latest_date"] for record in latest_records]
         )
 
         return queryset
