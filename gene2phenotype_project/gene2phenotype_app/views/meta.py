@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.db.models import Max, OuterRef, Subquery
+from django.db.models import Max
 
 from gene2phenotype_app.models import Meta
 
@@ -28,9 +28,8 @@ class MetaView(APIView):
         )
 
         # then we use a list comprehension to check using the new column latest date 
-        queryset = Meta.objects.filter(
-            key__in=[record["latest_date"] for record in latest_records]
-        )
+        queryset = Meta.objects.filter(date_update__in=[record["latest_date"] for record in latest_records])
+
 
         return queryset
 
