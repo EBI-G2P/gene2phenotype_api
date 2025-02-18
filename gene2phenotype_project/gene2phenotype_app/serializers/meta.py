@@ -5,7 +5,6 @@ from ..models import Meta
 class MetaSerializer(serializers.ModelSerializer):
     key = serializers.CharField()
     version = serializers.CharField() 
-    date_update = serializers.DateTimeField()
     source = serializers.SerializerMethodField()
 
     def get_source(self, obj):
@@ -14,4 +13,4 @@ class MetaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Meta
-        fields = ["key", "source", "version", "date_update"]
+        fields = ["key", "source", "version"]

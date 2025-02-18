@@ -20,6 +20,4 @@ class MetaView(APIView):
     def get(self, request):
         queryset = self.get_queryset()
         serializer = MetaSerializer(queryset, many=True)
-        # dictionary comprehension
-        cleaned_data = [{key: value for key, value in record.items() if key != "date_update"} for record in serializer.data]
-        return Response(cleaned_data)
+        return Response(serializer.data)
