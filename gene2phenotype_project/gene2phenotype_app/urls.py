@@ -59,6 +59,11 @@ urlpatterns = [
     path('lgd/<str:stable_id>/comment/', views.LGDEditComment.as_view(), name="lgd_comment"),
     # Delete LGD record. Action: UPDATE
     path('lgd/<str:stable_id>/delete/', views.LocusGenotypeDiseaseDelete.as_view(), name="lgd_delete"),
+    # Update disease IDs for LGD records. Action: POST
+    path('lgd_disease_updates/', views.LGDUpdateDisease.as_view(), name="lgd_disease_updates"),
+
+    ### Endpoints to update other data ###
+    path('update/diseases/', views.UpdateDisease.as_view(), name="update_diseases"),
 
     ### Curation endpoints ###
     path('add/curation/', views.AddCurationData.as_view(), name="add_curation_data"),

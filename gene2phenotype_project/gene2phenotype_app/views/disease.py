@@ -1,6 +1,7 @@
-from rest_framework import permissions
+from rest_framework import permissions, status
 from rest_framework.response import Response
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 
 from gene2phenotype_app.serializers import (GeneDiseaseSerializer,
                                             DiseaseDetailSerializer,
@@ -8,10 +9,10 @@ from gene2phenotype_app.serializers import (GeneDiseaseSerializer,
 
 from gene2phenotype_app.models import (AttribType, Locus, OntologyTerm,
                                        DiseaseOntologyTerm, Disease,
-                                       LocusAttrib, GeneDisease)
+                                       LocusAttrib, GeneDisease, LocusGenotypeDisease)
 
 from ..utils import clean_omim_disease
-from .base import BaseView, BaseAdd
+from .base import BaseView, BaseAdd, IsSuperUser
 
 class GeneDiseaseView(BaseView):
     """
@@ -147,4 +148,103 @@ class DiseaseSummary(DiseaseDetail):
 """
 class AddDisease(BaseAdd):
     serializer_class = CreateDiseaseSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsSuperUser]
+
+### Update data
+class UpdateDisease(BaseAdd):
+    http_method_names = ['post', 'options']
+    permission_classes = [IsSuperUser]
+
+    def post(self, request):
+        diseases = request.data  # list of diseases {'id': ..., 'name': ...}
+
+        if not isinstance(diseases, list):
+            return Response({"error": "Request should be a list"}, status=status.HTTP_400_BAD_REQUEST)
+
+        updated_diseases = []
+        errors = []
+
+        for disease_data in diseases:
+            disease_id = disease_data.get("id")
+            new_name = disease_data.get("name")
+
+            if not disease_id or not new_name:
+                errors.append({"error": "Both 'id' and 'name' are required."})
+                continue
+
+            # Fetch disease or return 404 if not found
+            disease = get_object_or_404(Disease, id=disease_id)
+
+            # Ensure the new name is unique
+            check_disease = Disease.objects.filter(name=new_name).exclude(id=disease_id)
+            if check_disease:
+                # If new disease name already exists then flag error
+                errors.append({
+                    "id": disease_id,
+                    "name": new_name,
+                    "existing_id": check_disease[0].id,
+                    "error": f"A disease with the name '{new_name}' already exists."
+                })
+            else:
+                # Else update disease name and save
+                disease.name = new_name
+                disease.save()
+                updated_diseases.append({"id": disease_id, "name": new_name})
+
+        response_data = {}
+        if updated_diseases:
+            response_data["updated"] = updated_diseases
+
+        if errors:
+            response_data["errors"] = errors
+
+        return Response(response_data, status=status.HTTP_200_OK if updated_diseases else status.HTTP_400_BAD_REQUEST)
+
+class LGDUpdateDisease(BaseAdd):
+    http_method_names = ['post', 'options']
+    permission_classes = [IsSuperUser]
+
+    def post(self, request):
+        data_to_update = request.data
+
+        if not isinstance(data_to_update, list):
+            return Response({"error": "Request should be a list"}, status=status.HTTP_400_BAD_REQUEST)
+
+        updated_records = []
+        errors = []
+
+        for disease_to_update in data_to_update:
+            current_disease_id = disease_to_update.get("disease_id")
+            new_disease_id = disease_to_update.get("new_disease_id")
+
+            if not current_disease_id or not new_disease_id:
+                errors.append({"error": "Both 'disease_id' and 'new_disease_id' are required."})
+                continue
+
+            # Get records that use the disease id
+            lgd_list = LocusGenotypeDisease.objects.filter(disease_id=current_disease_id, is_deleted=0)
+
+            for lgd_obj in lgd_list:
+                # Check if there is another LGD record linked to the new disease id
+                try:
+                    existing_lgd_obj = LocusGenotypeDisease.objects.get(
+                        locus_id = lgd_obj.locus_id,
+                        disease_id = new_disease_id,
+                        genotype_id = lgd_obj.genotype_id,
+                        mechanism_id = lgd_obj.mechanism_id
+                    )
+                    errors.append({"disease_id": current_disease_id, "error": f"Found a different record with same locus, genotype, disease and mechanism: '{existing_lgd_obj.stable_id.stable_id}'"})
+                except:
+                    # Update record with new disease id
+                    lgd_obj.disease_id = new_disease_id
+                    lgd_obj.save()
+                    updated_records.append({"g2p_id": lgd_obj.stable_id.stable_id, "lgd_id": lgd_obj.id})
+
+        response_data = {}
+        if updated_records:
+            response_data["Updated records"] = updated_records
+
+        if errors:
+            response_data["Errors"] = errors
+
+        return Response(response_data, status=status.HTTP_200_OK if updated_records else status.HTTP_400_BAD_REQUEST)
