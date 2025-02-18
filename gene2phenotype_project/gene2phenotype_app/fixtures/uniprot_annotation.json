@@ -1,0 +1,15 @@
+[
+    {
+        "model": "gene2phenotype_app.uniprotannotation",
+        "pk": 1, 
+        "fields": {
+            "uniprot_accession": "O15078",
+            "gene": 1,
+            "hgnc": "HGNC:29021",
+            "gene_symbol": "CEP290",
+            "mim": "610142",
+            "protein_function": "Involved in early and late steps in cilia formation. Its association with CCP110 is required for inhibition of primary cilia formation by CCP110 (PubMed:18694559).",
+            "source": 8
+        }
+    }
+]
