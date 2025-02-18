@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.db.models import Max
+from django.db.models import Max, OuterRef, Subquery
 
 from gene2phenotype_app.models import Meta
 
@@ -8,16 +8,42 @@ from gene2phenotype_app.serializers import MetaSerializer
 
 
 class MetaView(APIView):
-    def get_queryset(self):
-        # to group by key
-        latest_records =( Meta.objects.values("key").annotate(latest_date=Max('date_update')) )
+    """
+    The View for Meta record
 
-        #then we use a list comprehension to check using the new column latest_date
-        queryset = Meta.objects.filter(date_update__in=[record["latest_date"] for record in latest_records])
+    Args:
+        APIView (_type_): APIView
+    """
+
+    def get_queryset(self):
+        """
+        Method to get latest records using the key to group it
+
+        Returns:
+            _type_: queryset containing the unique keys with the latest records an
+        """
+        # to group by key to create a queryset containing the key and the latest date
+        latest_records = Meta.objects.values("key").annotate(
+            latest_date=Max("date_update")
+        )
+
+        # then we use a list comprehension to check using the column key
+        queryset = Meta.objects.filter(
+            key__in=[record["key"] for record in latest_records]
+        )
 
         return queryset
-    
+
     def get(self, request):
+        """
+        Get method to get the reference data
+
+        Args:
+            request (_type_): A get request
+
+        Returns:
+            _type_: Response object [key, source, version]
+        """
         queryset = self.get_queryset()
         serializer = MetaSerializer(queryset, many=True)
         return Response(serializer.data)
