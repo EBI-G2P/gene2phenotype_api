@@ -178,18 +178,18 @@ class UpdateDisease(BaseAdd):
             # Ensure the new name is unique
             check_disease = Disease.objects.filter(name=new_name).exclude(id=disease_id)
             if check_disease:
+                # If new disease name already exists then flag error
                 errors.append({
                     "id": disease_id,
                     "name": new_name,
                     "existing_id": check_disease[0].id,
                     "error": f"A disease with the name '{new_name}' already exists."
                 })
-                continue
-
-            # Update and save
-            disease.name = new_name
-            disease.save()
-            updated_diseases.append({"id": disease_id, "name": new_name})
+            else:
+                # Else update disease name and save
+                disease.name = new_name
+                disease.save()
+                updated_diseases.append({"id": disease_id, "name": new_name})
 
         response_data = {}
         if updated_diseases:
