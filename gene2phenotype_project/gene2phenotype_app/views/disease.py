@@ -157,14 +157,18 @@ class ExternalDisease(BaseView):
     def get_queryset(self):
         disease_id = self.kwargs['ext_id']
 
-        gene_disease = GeneDisease.objects.filter(identifier=disease_id)
+        if disease_id.startswith('MONDO') or disease_id.isdigit():
+            gene_disease = GeneDisease.objects.filter(identifier=disease_id)
 
-        if not gene_disease.exists():
+            if not gene_disease.exists():
+                self.handle_no_permission('disease', disease_id)
+
+        else:
             self.handle_no_permission('disease', disease_id)
 
         return gene_disease
 
-    def list(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         gene_disease_obj = self.get_queryset().first()
         serializer = GeneDiseaseSerializer(gene_disease_obj)
         return Response(serializer.data)
