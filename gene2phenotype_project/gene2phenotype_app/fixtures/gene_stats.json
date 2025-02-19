@@ -1,0 +1,13 @@
+[
+    {
+        "model": "gene2phenotype_app.genestats",
+        "pk": 1,
+        "fields": {
+            "gene": 1,
+            "gene_symbol": "CEP290",
+            "score": 0.6374434092289847,
+            "source": 9,
+            "description_attrib": 59
+        }
+    }
+]
