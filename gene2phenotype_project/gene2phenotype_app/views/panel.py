@@ -266,9 +266,11 @@ def PanelDownload(request, name):
 
     for data in queryset_lgd_variantype:
         if data['lgd__id'] not in lgd_variantype_data:
-            lgd_variantype_data[data['lgd__id']] = [data['variant_type_ot__term']]
+            # Save terms in a set to make sure they are unique
+            lgd_variantype_data[data['lgd__id']] = set()
+            lgd_variantype_data[data['lgd__id']].add(data['variant_type_ot__term'])
         else:
-            lgd_variantype_data[data['lgd__id']].append(data['variant_type_ot__term'])
+            lgd_variantype_data[data['lgd__id']].add(data['variant_type_ot__term'])
 
     # Preload variant GenCC consequence
     lgd_varianconsequence_data = {} # key = lgd_id; value = variant consequence term
