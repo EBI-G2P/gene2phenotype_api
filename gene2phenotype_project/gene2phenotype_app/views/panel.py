@@ -314,9 +314,10 @@ def PanelDownload(request, name):
 
     for data in queryset_lgd_phenotype:
         if data['lgd__id'] not in lgd_phenotype_data:
-            lgd_phenotype_data[data['lgd__id']] = [data['phenotype__accession']]
+            lgd_phenotype_data[data['lgd__id']] = set()
+            lgd_phenotype_data[data['lgd__id']].add(data['phenotype__accession'])
         else:
-            lgd_phenotype_data[data['lgd__id']].append(data['phenotype__accession'])
+            lgd_phenotype_data[data['lgd__id']].add(data['phenotype__accession'])
 
     # Preload publications
     lgd_publication_data = {} # key = lgd_id; value = pmid
@@ -382,7 +383,7 @@ def PanelDownload(request, name):
         "allelic requirement",
         "cross cutting modifier",
         "confidence",
-        "inferred variant consequence",
+        "variant consequence",
         "variant types",
         "molecular mechanism",
         "molecular mechanism categorisation",
