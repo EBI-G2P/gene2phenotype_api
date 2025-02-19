@@ -416,6 +416,7 @@ def PanelDownload(request, name):
         extra_data_dict = {}
         for data in queryset_list_extra:
             g2p_id = data['stable_id']
+
             if g2p_id not in extra_data_dict:
                 extra_data_dict[g2p_id] = {}
 
@@ -443,6 +444,7 @@ def PanelDownload(request, name):
 
         # Prepare final data
         for lgd in queryset_list:
+            internal_stable_id = lgd.stable_id.id
             lgd_id = lgd.id
             variant_types = ""
             variant_consequences = ""
@@ -462,15 +464,15 @@ def PanelDownload(request, name):
             hgnc_id = ""
             locus_previous = ""
 
-            if lgd_id in extra_data_dict:
-                if 'disease_ids' in extra_data_dict[lgd_id]:
+            if internal_stable_id in extra_data_dict:
+                if 'disease_ids' in extra_data_dict[internal_stable_id]:
                     # Separate disease MIM from MONDO ID
-                    disease_mim, disease_mondo = extract_disease_id(extra_data_dict[lgd_id]['disease_ids'])
-                if 'locus_ids' in extra_data_dict[lgd_id]:
+                    disease_mim, disease_mondo = extract_disease_id(extra_data_dict[internal_stable_id]['disease_ids'])
+                if 'locus_ids' in extra_data_dict[internal_stable_id]:
                     # Separate MIM from HGNC ID
-                    gene_mim, hgnc_id = extract_locus_id(extra_data_dict[lgd_id]['locus_ids'])
-                if 'locus_previous_symbols' in extra_data_dict[lgd_id]:
-                    locus_previous = '; '.join(extra_data_dict[lgd_id]['locus_previous_symbols'])
+                    gene_mim, hgnc_id = extract_locus_id(extra_data_dict[internal_stable_id]['locus_ids'])
+                if 'locus_previous_symbols' in extra_data_dict[internal_stable_id]:
+                    locus_previous = '; '.join(extra_data_dict[internal_stable_id]['locus_previous_symbols'])
 
             # Get preloaded variant types for this g2p entry
             if lgd_id in lgd_variantype_data:
