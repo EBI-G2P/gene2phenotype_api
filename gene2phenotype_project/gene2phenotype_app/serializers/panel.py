@@ -64,39 +64,18 @@ class PanelCreateSerializer(serializers.ModelSerializer):
         try:
             panel = Panel.objects.get(name=name)
 
-            if panel:
-                if not panel.is_visible and is_visible:
-                   return self.update(name, is_visible, description)
+            if panel.is_visible:
+                raise serializers.ValidationError({"message" : f"{name} exists!"})
                 
-                if not panel.is_visible and not is_visible:
-                    raise serializers.ValidationError({"message" : f"{name} exist. It is only visible to authenticated users"})
+            if not panel.is_visible:
+                raise serializers.ValidationError({"message" : f"{name} exist. It is only visible to authenticated users"})
         
         except Panel.DoesNotExist:
             try:
                 panel = Panel.objects.create(name=name, description=description, is_visible=is_visible)
-                return panel 
+                return panel
             except IntegrityError as e:
                 raise serializers.ValidationError({"message": f"Database error: {str(e)}"})     
-
-    def update(self, name, is_visible, description):
-        """
-            Updating the panel if the panel is_visible = 0 
-
-            Args:
-                name (_type_): name of the panel 
-
-            Returns:
-                _type_: Updated panel
-        """   
-        try:     
-            panel = Panel.objects.get(name=name, is_visible=0)
-            panel.is_visible = is_visible
-            panel.description = description
-            panel.save()
-        except ObjectDoesNotExist:
-            raise serializers.ValidationError({"message": f"{panel} does not exist"})
-
-        return panel
 
     class Meta:
         model = Panel
