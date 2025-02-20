@@ -90,10 +90,10 @@ urlpatterns = [
     path('token/refresh/', views.CustomTokenRefreshView.as_view(), name='token_refresh'),
 
     #meta information
-    path("reference_data/", views.MetaView.as_view(), name="get_reference_data")
+    path("reference_data/", views.MetaView.as_view(), name="get_reference_data"),
 
-    #panels management 
-    path("create/panel/", views.PanelCreateView.as_view(), name="panel_create")
+    #panels management
+    path("create/panel/", views.PanelCreateView.as_view(), name="panel_create"),
 
 ]
 urlpatterns = format_suffix_patterns(urlpatterns)
