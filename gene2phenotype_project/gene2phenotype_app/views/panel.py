@@ -364,10 +364,11 @@ def PanelDownload(request, name):
     ).select_related('lgd__id').values('lgd__id', 'comment')
 
     for data in queryset_lgd_comment:
+        comment = data['comment'].strip()
         if data['lgd__id'] not in lgd_comments:
-            lgd_comments[data['lgd__id']] = [data['comment']]
+            lgd_comments[data['lgd__id']] = [comment]
         else:
-            lgd_comments[data['lgd__id']].append(data['comment'])
+            lgd_comments[data['lgd__id']].append(comment)
 
     writer = csv.writer(response)
     # Write file header
