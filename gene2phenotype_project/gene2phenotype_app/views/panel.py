@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Q
 import csv, gzip, tempfile, os
 from datetime import datetime
+import re
 
 from gene2phenotype_app.models import (Panel, User, LocusGenotypeDisease,
                                        LGDVariantType, LGDVariantGenccConsequence,
@@ -53,9 +54,11 @@ class PanelList(generics.ListAPIView):
             panel_info = {}
             if panel.is_visible == 1 or (user.is_authenticated and panel.is_visible == 0):
                 stats = serializer.calculate_stats(panel)
+                last_updated = serializer.get_last_updated(panel)
                 panel_info['name'] = panel.name
                 panel_info['description'] = panel.description
                 panel_info['stats'] = stats
+                panel_info['last_updated'] = last_updated
                 panel_list.append(panel_info)
 
         sorted_panels = sorted(panel_list, key=lambda panel_info: panel_info['description'])
@@ -270,9 +273,11 @@ def PanelDownload(request, name):
 
     for data in queryset_lgd_variantype:
         if data['lgd__id'] not in lgd_variantype_data:
-            lgd_variantype_data[data['lgd__id']] = [data['variant_type_ot__term']]
+            # Save terms in a set to make sure they are unique
+            lgd_variantype_data[data['lgd__id']] = set()
+            lgd_variantype_data[data['lgd__id']].add(data['variant_type_ot__term'])
         else:
-            lgd_variantype_data[data['lgd__id']].append(data['variant_type_ot__term'])
+            lgd_variantype_data[data['lgd__id']].add(data['variant_type_ot__term'])
 
     # Preload variant GenCC consequence
     lgd_varianconsequence_data = {} # key = lgd_id; value = variant consequence term
@@ -316,9 +321,10 @@ def PanelDownload(request, name):
 
     for data in queryset_lgd_phenotype:
         if data['lgd__id'] not in lgd_phenotype_data:
-            lgd_phenotype_data[data['lgd__id']] = [data['phenotype__accession']]
+            lgd_phenotype_data[data['lgd__id']] = set()
+            lgd_phenotype_data[data['lgd__id']].add(data['phenotype__accession'])
         else:
-            lgd_phenotype_data[data['lgd__id']].append(data['phenotype__accession'])
+            lgd_phenotype_data[data['lgd__id']].add(data['phenotype__accession'])
 
     # Preload publications
     lgd_publication_data = {} # key = lgd_id; value = pmid
@@ -365,10 +371,11 @@ def PanelDownload(request, name):
     ).select_related('lgd__id').values('lgd__id', 'comment')
 
     for data in queryset_lgd_comment:
+        comment = re.sub(r'[\n\r]+', ' ', data['comment'])
         if data['lgd__id'] not in lgd_comments:
-            lgd_comments[data['lgd__id']] = [data['comment']]
+            lgd_comments[data['lgd__id']] = [comment]
         else:
-            lgd_comments[data['lgd__id']].append(data['comment'])
+            lgd_comments[data['lgd__id']].append(comment)
 
     writer = csv.writer(response)
     # Write file header
@@ -384,7 +391,7 @@ def PanelDownload(request, name):
         "allelic requirement",
         "cross cutting modifier",
         "confidence",
-        "inferred variant consequence",
+        "variant consequence",
         "variant types",
         "molecular mechanism",
         "molecular mechanism categorisation",
@@ -420,6 +427,7 @@ def PanelDownload(request, name):
         extra_data_dict = {}
         for data in queryset_list_extra:
             g2p_id = data['stable_id']
+
             if g2p_id not in extra_data_dict:
                 extra_data_dict[g2p_id] = {}
 
@@ -447,6 +455,7 @@ def PanelDownload(request, name):
 
         # Prepare final data
         for lgd in queryset_list:
+            internal_stable_id = lgd.stable_id.id
             lgd_id = lgd.id
             variant_types = ""
             variant_consequences = ""
@@ -466,15 +475,15 @@ def PanelDownload(request, name):
             hgnc_id = ""
             locus_previous = ""
 
-            if lgd_id in extra_data_dict:
-                if 'disease_ids' in extra_data_dict[lgd_id]:
+            if internal_stable_id in extra_data_dict:
+                if 'disease_ids' in extra_data_dict[internal_stable_id]:
                     # Separate disease MIM from MONDO ID
-                    disease_mim, disease_mondo = extract_disease_id(extra_data_dict[lgd_id]['disease_ids'])
-                if 'locus_ids' in extra_data_dict[lgd_id]:
+                    disease_mim, disease_mondo = extract_disease_id(extra_data_dict[internal_stable_id]['disease_ids'])
+                if 'locus_ids' in extra_data_dict[internal_stable_id]:
                     # Separate MIM from HGNC ID
-                    gene_mim, hgnc_id = extract_locus_id(extra_data_dict[lgd_id]['locus_ids'])
-                if 'locus_previous_symbols' in extra_data_dict[lgd_id]:
-                    locus_previous = '; '.join(extra_data_dict[lgd_id]['locus_previous_symbols'])
+                    gene_mim, hgnc_id = extract_locus_id(extra_data_dict[internal_stable_id]['locus_ids'])
+                if 'locus_previous_symbols' in extra_data_dict[internal_stable_id]:
+                    locus_previous = '; '.join(extra_data_dict[internal_stable_id]['locus_previous_symbols'])
 
             # Get preloaded variant types for this g2p entry
             if lgd_id in lgd_variantype_data:
@@ -573,7 +582,7 @@ def extract_locus_id(locus_ids):
 
     for gene in locus_ids:
         if gene.startswith("HGNC"):
-            hgnc_id = gene
+            hgnc_id = gene.replace("HGNC:", "")
         elif gene.isdigit():
             gene_mim = gene
     

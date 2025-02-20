@@ -5,7 +5,8 @@ from .panel import (PanelCreateView, PanelList, PanelDetail, PanelRecordsSummary
 
 from .locus import LocusGene, LocusGeneSummary, GeneFunction
 
-from .disease import GeneDiseaseView, DiseaseDetail, DiseaseSummary, AddDisease
+from .disease import (GeneDiseaseView, DiseaseDetail, DiseaseSummary, AddDisease,
+                      UpdateDisease, LGDUpdateDisease, ExternalDisease)
 
 from .curation import (AddCurationData, ListCurationEntries, CurationDataDetail,
                        UpdateCurationData, PublishRecord, DeleteCurationData)
@@ -18,6 +19,8 @@ from .user import (UserList, CreateUserView, AddUserToPanelView, LoginView, Mana
                    UserPanels, LogOutView, CustomTokenRefreshView, ChangePasswordView, VerifyEmailView, ResetPasswordView)
 
 from .publication import PublicationDetail, AddPublication, LGDEditPublications
+
+from .meta import MetaView
 
 from .locus_genotype_disease import (ListMolecularMechanisms, VariantTypesList,
                                      LocusGenotypeDiseaseDetail, LGDEditCCM,
