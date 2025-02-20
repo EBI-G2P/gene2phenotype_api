@@ -365,7 +365,7 @@ def PanelDownload(request, name):
     ).select_related('lgd__id').values('lgd__id', 'comment')
 
     for data in queryset_lgd_comment:
-        comment = re.sub(r'[\n\r]+', '', data['comment'])
+        comment = re.sub(r'[\n\r]+', ' ', data['comment'])
         if data['lgd__id'] not in lgd_comments:
             lgd_comments[data['lgd__id']] = [comment]
         else:
