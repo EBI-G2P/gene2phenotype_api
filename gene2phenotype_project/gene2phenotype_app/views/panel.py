@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Q
 import csv, gzip, tempfile, os
 from datetime import datetime
+import re
 
 from gene2phenotype_app.models import (Panel, User, LocusGenotypeDisease,
                                        LGDVariantType, LGDVariantGenccConsequence,
@@ -364,7 +365,7 @@ def PanelDownload(request, name):
     ).select_related('lgd__id').values('lgd__id', 'comment')
 
     for data in queryset_lgd_comment:
-        comment = data['comment'].strip()
+        comment = re.sub(r'[\n\r]+', '', data['comment'])
         if data['lgd__id'] not in lgd_comments:
             lgd_comments[data['lgd__id']] = [comment]
         else:
