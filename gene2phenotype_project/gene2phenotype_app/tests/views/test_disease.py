@@ -87,3 +87,15 @@ class DiseaseSummaryTests(TestCase):
             }
         ]
         self.assertEqual(list(response.data["records_summary"]), expected_data)
+
+    def test_not_found(self):
+        """
+            Test the response of the disease summary endpoint
+            when disease is not found
+        """
+        self.url_disease = reverse("disease_summary", kwargs={"id": "CACNA1F-related Aland Island"})
+
+        response = self.client.get(self.url_disease)
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.data["message"], "No matching Disease found for: CACNA1F-related Aland Island")
