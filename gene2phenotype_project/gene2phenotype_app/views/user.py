@@ -104,6 +104,12 @@ class CreateUserView(generics.CreateAPIView):
     permission_classes = [permissions.IsAdminUser]
 
 class AddUserToPanelView(generics.CreateAPIView):
+    """
+        Add User to Panel view
+
+        Args:
+            generics (_type_): Adds User to panel, permissions is AdminUser, so views only available to AdminUser
+    """    
     serializer_class = AddUserToPanelSerializer
     permission_classes = [permissions.IsAdminUser]
 
