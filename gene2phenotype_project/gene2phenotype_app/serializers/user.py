@@ -92,25 +92,27 @@ class UserSerializer(serializers.ModelSerializer):
                 panels: a list of panels
 
             Returns:
-                True if user has permission to edit all panels from the list
-                False if user does not have permission to edit at least one panel
+                True if user has permission to edit at least one of the panels from the list
+                False if user does not have permission to edit any of the panels
         """
-        user_login = self.context.get('user')
+        user_login = self.context.get("user")
 
         if user_login and user_login.is_authenticated:
             for panel in panels:
                 panel_name = panel.get("name")
                 try:
-                    user_panel_obj = UserPanel.objects.get(
+                    UserPanel.objects.get(
                         user = user_login.id,
                         panel__name = panel_name,
                         is_deleted = 0
                     )
                 except UserPanel.DoesNotExist:
-                    return False
+                    continue
+                else:
+                    return True
 
-        return True
-    
+        return False
+
     class Meta:
         model = User
         fields = ['user_name', 'email', 'is_active', 'panels', 'is_superuser', 'is_staff']
