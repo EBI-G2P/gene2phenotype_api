@@ -30,7 +30,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ["SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config.get('settings', 'DEBUG')
+DEBUG = config.getboolean('settings', 'DEBUG')
 
 ALLOWED_HOSTS = json.loads(config.get('settings', 'ALLOWED_HOSTS'))
 
@@ -102,7 +102,7 @@ SIMPLE_JWT = {
   "AUTH_COOKIE": "access_token",
   "REFRESH_COOKIE": "refresh_token",
   "AUTH_COOKIE_DOMAIN": None,
-  "AUTH_COOKIE_SECURE": config.get('settings', 'AUTH_COOKIE_SECURE'),
+  "AUTH_COOKIE_SECURE": config.getboolean('settings', 'AUTH_COOKIE_SECURE'),
   "AUTH_COOKIE_HTTP_ONLY": True, #prevents client side js from accessing the cookie
   "AUTH_COOKIE_PATH": "/",
   "AUTH_COOKIE_SAMESITE": "Lax",
