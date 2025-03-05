@@ -4,8 +4,6 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-import html
-import re
 
 from gene2phenotype_app.serializers import (PublicationSerializer, LGDPublicationSerializer,
                                             LGDPublicationListSerializer, LGDPhenotypeSerializer,
@@ -18,7 +16,7 @@ from gene2phenotype_app.models import (Publication, LocusGenotypeDisease, LGDPub
 
 from .base import BaseAdd, BaseUpdate, IsSuperUser
 
-from ..utils import get_publication, get_authors
+from ..utils import get_publication, get_authors, clean_title
 
 
 """
@@ -76,7 +74,7 @@ def PublicationDetail(request, pmids):
                     authors = get_authors(response)
                     year = None
                     publication_info = response['result']
-                    title = re.sub(r"<.*?>", "", html.unescape(publication_info['title']))
+                    title = clean_title(publication_info['title'])
                     if 'pubYear' in publication_info:
                         year = publication_info['pubYear']
 

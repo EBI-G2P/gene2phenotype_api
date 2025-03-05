@@ -4,7 +4,7 @@ from ..models import (Publication, PublicationComment,
                       PublicationFamilies, Attrib, LGDPublication)
 from ..utils import (get_publication, get_authors)
 
-from ..utils import get_date_now
+from ..utils import get_date_now, clean_title
 
 class PublicationCommentSerializer(serializers.ModelSerializer):
     """
@@ -250,7 +250,7 @@ class PublicationSerializer(serializers.ModelSerializer):
             year = None
             doi = None
             publication_info = response['result']
-            title = publication_info['title']
+            title = clean_title(publication_info['title'])
             if 'doi' in publication_info:
                 doi = publication_info['doi']
             if 'pubYear' in publication_info:

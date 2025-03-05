@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-import os
 import sys
+import html
+import re
 import requests
 
 def get_publication(pmid):
@@ -27,3 +28,10 @@ def get_authors(response):
             authors = f"{authors_split[0]} et al."
     
     return authors
+
+def clean_title(title):
+    title = re.sub(r"<.*?>", "", html.unescape(title))
+    title = re.sub(r"^\[", "", title)
+    title = re.sub(r"\]\.$", ".", title)
+
+    return title
