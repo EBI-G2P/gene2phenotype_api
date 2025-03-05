@@ -2,16 +2,30 @@ from rest_framework import serializers
 from django.db import connection, IntegrityError
 from django.db.models import Prefetch
 import itertools
+import re
 
-from ..models import (Panel, Attrib,
-                     LGDPanel, LocusGenotypeDisease, LGDVariantGenccConsequence,
-                     LGDCrossCuttingModifier, LGDPublication,
-                     LGDPhenotype, LGDVariantType, Locus,
-                     LGDComment, LGDVariantTypeComment, User,
-                     LGDMolecularMechanismEvidence, CVMolecularMechanism,
-                     OntologyTerm, Publication, LGDPhenotypeSummary,
-                     LGDVariantTypeDescription, LGDMolecularMechanismSynopsis)
-
+from ..models import (
+    Panel,
+    Attrib,
+    LGDPanel,
+    LocusGenotypeDisease,
+    LGDVariantGenccConsequence,
+    LGDCrossCuttingModifier,
+    LGDPublication,
+    LGDPhenotype,
+    LGDVariantType,
+    Locus,
+    LGDComment,
+    LGDVariantTypeComment,
+    User,
+    LGDMolecularMechanismEvidence,
+    CVMolecularMechanism,
+    OntologyTerm,
+    Publication,
+    LGDPhenotypeSummary,
+    LGDVariantTypeDescription,
+    LGDMolecularMechanismSynopsis
+)
 
 from .publication import LGDPublicationSerializer
 from .locus import LocusSerializer
@@ -296,9 +310,11 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             if comment.date is not None:
                 date = comment.date.strftime("%Y-%m-%d")
 
-            text = { 'text': comment.comment,
-                     'date': date,
-                     'is_public': comment.is_public }
+            text = {
+                'text': comment.comment,
+                'date': date,
+                'is_public': comment.is_public
+            }
 
             # authenticated users can have access to the user name
             if authenticated_user == 1:
@@ -410,7 +426,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         mechanism_support_obj = data.get('mechanism_support')
 
         if not panels or not publications_list:
-            raise serializers.ValidationError({"message": f"Missing data to create the G2P record {stable_id_obj.stable_id}"})
+            raise serializers.ValidationError(
+                {"message": f"Missing data to create the G2P record {stable_id_obj.stable_id}"}
+            )
 
         # Check if record (LGD) is already inserted
         try:
@@ -757,11 +775,16 @@ class LGDCommentSerializer(serializers.ModelSerializer):
         lgd = self.context["lgd"]
         user = self.context["user"]
 
+        # Remove newlines from comment
+        comment = re.sub(r"\n", " ", comment)
+
         # Check if this comment is already linked to the G2P entry
         lgd_comments = LGDComment.objects.filter(lgd_id=lgd, is_deleted=0, comment=comment)
 
         if lgd_comments:
-            raise serializers.ValidationError({"message": f"Comment is already associated with {lgd.stable_id.stable_id}"})
+            raise serializers.ValidationError(
+                {"message": f"Comment is already associated with {lgd.stable_id.stable_id}"}
+            )
 
         else:
             try:
