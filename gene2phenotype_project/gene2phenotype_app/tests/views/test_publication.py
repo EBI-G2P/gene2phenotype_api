@@ -48,4 +48,4 @@ class PublicationTests(TestCase):
         response = self.client.get(self.url_publication)
 
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.data["detail"], "Invalid PMID(s): 0")
+        self.assertEqual(response.data["error"], "Invalid PMID(s): 0")
