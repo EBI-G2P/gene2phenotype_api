@@ -111,7 +111,7 @@ class AttribList(generics.ListAPIView):
             attrib_type_obj = AttribType.objects.get(code=code)
         except AttribType.DoesNotExist:
             return Response(
-                {"message": f"Attrib type {code} not found"},
+                {"error": f"Attrib type {code} not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
 

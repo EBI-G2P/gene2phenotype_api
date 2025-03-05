@@ -163,7 +163,10 @@ class LGDEditPanel(CustomPermissionAPIView):
         panel_name_input = request.data.get("name", None)
 
         if panel_name_input is None or panel_name_input == "":
-            return Response({"message": f"Please enter a panel name"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": f"Please enter a panel name"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Check if panel name is valid
         panel_obj = get_object_or_404(Panel, name=panel_name_input)
@@ -174,7 +177,10 @@ class LGDEditPanel(CustomPermissionAPIView):
         user_panel_list_lower = [panel.lower() for panel in serializer.panels_names(user_obj)]
 
         if panel_name_input.lower() not in user_panel_list_lower:
-            return Response({"message": f"No permission to update panel {panel_name_input}"}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"error": f"No permission to update panel {panel_name_input}"},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
 
@@ -182,9 +188,15 @@ class LGDEditPanel(CustomPermissionAPIView):
 
         if serializer_class.is_valid():
             serializer_class.save()
-            response = Response({"message": "Panel added to the G2P entry successfully."}, status=status.HTTP_201_CREATED)
+            response = Response(
+                {"message": "Panel added to the G2P entry successfully."},
+                status=status.HTTP_201_CREATED
+            )
         else:
-            response = Response({"errors": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST)
+            response = Response(
+                {"error": serializer_class.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         return response
 
@@ -209,7 +221,7 @@ class LGDEditPanel(CustomPermissionAPIView):
             LGDPanel.objects.filter(lgd=lgd_obj, panel=panel_obj, is_deleted=0).update(is_deleted=1)
         except:
             return Response(
-                {"errors": f"Could not delete panel '{panel}' for ID '{stable_id}'"},
+                {"error": f"Could not delete panel '{panel}' for ID '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(

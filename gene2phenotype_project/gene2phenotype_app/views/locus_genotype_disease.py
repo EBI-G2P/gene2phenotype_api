@@ -7,22 +7,47 @@ from django.shortcuts import get_object_or_404
 from django.db import transaction, IntegrityError
 
 
-from gene2phenotype_app.serializers import (UserSerializer, LocusGenotypeDiseaseSerializer,
-                                            LGDCrossCuttingModifierSerializer,
-                                            LGDCommentSerializer, LGDVariantConsequenceListSerializer,
-                                            LGDVariantGenCCConsequenceSerializer, LGDCrossCuttingModifierListSerializer,
-                                            LGDVariantTypeListSerializer, LGDVariantTypeSerializer,
-                                            LGDVariantTypeDescriptionListSerializer, LGDVariantTypeDescriptionSerializer,
-                                            LGDCommentListSerializer)
+from gene2phenotype_app.serializers import (
+    UserSerializer,
+    LocusGenotypeDiseaseSerializer,
+    LGDCrossCuttingModifierSerializer,
+    LGDCommentSerializer,
+    LGDVariantConsequenceListSerializer,
+    LGDVariantGenCCConsequenceSerializer,
+    LGDCrossCuttingModifierListSerializer,
+    LGDVariantTypeListSerializer,
+    LGDVariantTypeSerializer,
+    LGDVariantTypeDescriptionListSerializer,
+    LGDVariantTypeDescriptionSerializer,
+    LGDCommentListSerializer
+)
 
-from gene2phenotype_app.models import (User, Attrib, LocusGenotypeDisease, OntologyTerm,
-                                       G2PStableID, CVMolecularMechanism, LGDCrossCuttingModifier, 
-                                       LGDVariantGenccConsequence, LGDVariantType, LGDVariantTypeComment,
-                                       LGDVariantTypeDescription, LGDPanel, LGDPhenotype, LGDPhenotypeSummary,
-                                       LGDMolecularMechanismEvidence, LGDMolecularMechanismSynopsis, LGDPublication,
-                                       LGDComment)
+from gene2phenotype_app.models import (
+    User,
+    Attrib,
+    LocusGenotypeDisease,
+    OntologyTerm,
+    G2PStableID,
+    CVMolecularMechanism,
+    LGDCrossCuttingModifier,
+    LGDVariantGenccConsequence,
+    LGDVariantType,
+    LGDVariantTypeComment,
+    LGDVariantTypeDescription,
+    LGDPanel,
+    LGDPhenotype,
+    LGDPhenotypeSummary,
+    LGDMolecularMechanismEvidence,
+    LGDMolecularMechanismSynopsis,
+    LGDPublication,
+    LGDComment
+)
 
-from .base import BaseUpdate, CustomPermissionAPIView, IsSuperUser
+from .base import (
+    BaseUpdate,
+    CustomPermissionAPIView,
+    IsSuperUser
+)
 
 
 class ListMolecularMechanisms(generics.ListAPIView):
@@ -83,6 +108,7 @@ class VariantTypesList(generics.ListAPIView):
         list_regulatory = []
         list_protein = []
         list = []
+
         for obj in queryset:
             if "NMD" in obj.term:
                 list_nmd.append({"term": obj.term, "accession":obj.accession})
@@ -94,11 +120,16 @@ class VariantTypesList(generics.ListAPIView):
                 list_protein.append({"term": obj.term, "accession":obj.accession})
             else:
                 list.append({"term": obj.term, "accession":obj.accession})
-        return Response({'NMD_variants': list_nmd,
-                         'splice_variants': list_splice,
-                         'regulatory_variants': list_regulatory,
-                         'protein_changing_variants': list_protein,
-                         'other_variants': list})
+
+        return Response(
+            {
+                'NMD_variants': list_nmd,
+                'splice_variants': list_splice,
+                'regulatory_variants': list_regulatory,
+                'protein_changing_variants': list_protein,
+                'other_variants': list
+            }
+        )
 
 class LocusGenotypeDiseaseDetail(generics.ListAPIView):
     """
@@ -216,7 +247,10 @@ class LGDUpdateConfidence(BaseUpdate):
                  status=status.HTTP_200_OK)
 
         else:
-            return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 class LGDUpdateMechanism(BaseUpdate):
     http_method_names = ['patch', 'options']
@@ -326,7 +360,7 @@ class LGDUpdateMechanism(BaseUpdate):
         try:
             serializer.update_mechanism(lgd_obj, mechanism_data)
         except Exception as e:
-            if hasattr(e, 'detail') and 'message' in e.detail:
+            if hasattr(e, "detail") and "message" in e.detail:
                 return Response(
                 {"error": f"Error while updating molecular mechanism: {e.detail['message']}"},
                 status=status.HTTP_400_BAD_REQUEST
@@ -339,7 +373,8 @@ class LGDUpdateMechanism(BaseUpdate):
         else:
             return Response(
                 {"message": f"Molecular mechanism updated successfully for '{stable_id}'"},
-                status=status.HTTP_200_OK)
+                status=status.HTTP_200_OK
+            )
 
 class LGDEditVariantConsequences(CustomPermissionAPIView):
     """
@@ -402,7 +437,7 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
         has_common = LocusGenotypeDiseaseSerializer(lgd).check_user_permission(lgd, user_panel_list)
         if has_common is False:
-            return Response({"message": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
 
         # LGDVariantConsequenceListSerializer accepts a list of variant consequences
         serializer_list = LGDVariantConsequenceListSerializer(data=request.data)
@@ -413,7 +448,7 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
             # Check if list of consequences is empty
             if(not variant_consequence_data):
                 response = Response(
-                    {"message": "Empty variant consequence. Please provide valid data."},
+                    {"error": "Empty variant consequence. Please provide valid data."},
                      status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -437,12 +472,12 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
                     )
                 else:
                     response = Response(
-                        {"errors": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST
+                        {"error": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST
                     )
 
         else:
             response = Response(
-                {"errors": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST
+                {"error": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
         return response
@@ -457,7 +492,7 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
         # Check if input has the expected value
         if "variant_consequence" not in request.data or request.data.get('variant_consequence') == "":
             return Response(
-                {"errors": f"Empty variant consequence. Please provide the 'variant_consequence'."},
+                {"error": f"Empty variant consequence. Please provide the 'variant_consequence'."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -465,7 +500,7 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
 
         if consequence is None:
             return Response(
-                {"errors": f"Empty variant consequence"},
+                {"error": f"Empty variant consequence"},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -481,7 +516,7 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
         has_common = LocusGenotypeDiseaseSerializer(lgd_obj).check_user_permission(lgd_obj, user_panel_list)
         if has_common is False:
-            return Response({"message": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
 
         # Get variant gencc consequence value from ontology_term
         try:
@@ -496,7 +531,7 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
             LGDVariantGenccConsequence.objects.filter(lgd=lgd_obj, variant_consequence=consequence_obj, is_deleted=0).update(is_deleted=1)
         except:
             return Response(
-                {"errors": f"Could not delete variant consequence '{consequence}' for ID '{stable_id}'"},
+                {"error": f"Could not delete variant consequence '{consequence}' for ID '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST
             )
         else:
@@ -562,7 +597,10 @@ class LGDEditCCM(CustomPermissionAPIView):
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
         has_common = LocusGenotypeDiseaseSerializer(lgd).check_user_permission(lgd, user_panel_list)
         if has_common is False:
-            return Response({"message": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"error": f"No permission to update record '{stable_id}'"},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         # LGDCrossCuttingModifierListSerializer accepts a list of cross cutting modifiers
         serializer_list = LGDCrossCuttingModifierListSerializer(data=request.data)
@@ -571,9 +609,9 @@ class LGDEditCCM(CustomPermissionAPIView):
             ccm_data = serializer_list.validated_data.get('cross_cutting_modifiers')
 
             # Check if list of consequences is empty
-            if(not ccm_data):
-                response = Response(
-                    {"message": "Empty cross cutting modifier. Please provide valid data."},
+            if not ccm_data :
+                return Response(
+                    {"error": "Empty cross cutting modifier. Please provide valid data."},
                      status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -594,12 +632,12 @@ class LGDEditCCM(CustomPermissionAPIView):
                     )
                 else:
                     response = Response(
-                        {"errors": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST
+                        {"error": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST
                     )
 
         else:
             response = Response(
-                {"errors": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST
+                {"error": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
         return response
@@ -612,7 +650,7 @@ class LGDEditCCM(CustomPermissionAPIView):
                     { "term": "typically mosaic" }
         """
         if "term" not in request.data or request.data.get('term') == "":
-            return Response({"errors": f"Empty cross cutting modifier. Please provide the 'term'."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": f"Empty cross cutting modifier. Please provide the 'term'."}, status=status.HTTP_400_BAD_REQUEST)
 
         ccm_tmp = request.data.get('term')
         ccm = ccm_tmp.replace("_", " ")
@@ -626,7 +664,10 @@ class LGDEditCCM(CustomPermissionAPIView):
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
         has_common = LocusGenotypeDiseaseSerializer(lgd_obj).check_user_permission(lgd_obj, user_panel_list)
         if has_common is False:
-            return Response({"message": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"error": f"No permission to update record '{stable_id}'"},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         try:
             ccm_obj = Attrib.objects.get(
@@ -640,12 +681,14 @@ class LGDEditCCM(CustomPermissionAPIView):
             LGDCrossCuttingModifier.objects.filter(lgd=lgd_obj, ccm=ccm_obj, is_deleted=0).update(is_deleted=1)
         except:
             return Response(
-                {"errors": f"Could not delete cross cutting modifier '{ccm}' for ID '{stable_id}'"},
-                status=status.HTTP_400_BAD_REQUEST)
+                {"error": f"Could not delete cross cutting modifier '{ccm}' for ID '{stable_id}'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         else:
             return Response(
                 {"message": f"Cross cutting modifier '{ccm}' successfully deleted for ID '{stable_id}'"},
-                 status=status.HTTP_200_OK)
+                 status=status.HTTP_200_OK
+            )
 
 class LGDEditVariantTypes(CustomPermissionAPIView):
     """
@@ -716,7 +759,10 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
         has_common = LocusGenotypeDiseaseSerializer(lgd).check_user_permission(lgd, user_panel_list)
         if has_common is False:
-            return Response({"message": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"error": f"No permission to update record '{stable_id}'"},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         # LGDVariantTypeListSerializer accepts a list of variant types
         serializer_list = LGDVariantTypeListSerializer(data=request.data)
@@ -727,7 +773,7 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
             # Check if list of variants is empty
             if(not variant_type_data):
                 response = Response(
-                    {"message": "Empty variant type. Please provide valid data."},
+                    {"error": "Empty variant type. Please provide valid data."},
                      status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -747,12 +793,12 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
                     )
                 else:
                     response = Response(
-                        {"errors": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST
+                        {"error": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST
                     )
 
         else:
             response = Response(
-                {"errors": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST
+                {"error": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
         return response
@@ -766,7 +812,10 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
         """
         # Check if the input has the expected data
         if "secondary_type" not in request.data or request.data.get('secondary_type') == "":
-            return Response({"errors": f"Empty variant type. Please provide the 'secondary_type'."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": f"Empty variant type. Please provide the 'secondary_type'."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         variant_type = request.data.get('secondary_type')
 
@@ -779,7 +828,10 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
         has_common = LocusGenotypeDiseaseSerializer(lgd_obj).check_user_permission(lgd_obj, user_panel_list)
         if has_common is False:
-            return Response({"message": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"error": f"No permission to update record '{stable_id}'"},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         # Get variant type value from ontology_term
         try:
@@ -796,8 +848,10 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
         lgd_var_type_set = LGDVariantType.objects.filter(lgd=lgd_obj, variant_type_ot=var_type_obj, is_deleted=0)
 
         if not lgd_var_type_set.exists():
-            return Response({"errors": f"Could not find variant type '{variant_type}' for ID '{stable_id}'"},
-                            status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": f"Could not find variant type '{variant_type}' for ID '{stable_id}'"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         for lgd_var_type_obj in lgd_var_type_set:
             # Check if the lgd-variant type has comments
@@ -808,11 +862,15 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
             try:
                 lgd_var_type_obj.save()
             except:
-                return Response({"errors": f"Could not delete variant type '{variant_type}' for ID '{stable_id}'"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": f"Could not delete variant type '{variant_type}' for ID '{stable_id}'"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
         return Response(
                 {"message": f"Variant type '{variant_type}' successfully deleted for ID '{stable_id}'"},
-                status=status.HTTP_200_OK)
+                status=status.HTTP_200_OK
+            )
 
 class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
     """
@@ -877,7 +935,7 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
         has_common = LocusGenotypeDiseaseSerializer(lgd).check_user_permission(lgd, user_panel_list)
         if has_common is False:
-            return Response({"message": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
 
         # LGDVariantTypeDescriptionListSerializer accepts a list of HGVS
         serializer_list = LGDVariantTypeDescriptionListSerializer(data=request.data)
@@ -886,9 +944,9 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
             descriptions_data = request.data.get('variant_descriptions')
 
             # Check if list of descriptions is empty
-            if(not descriptions_data):
-                response = Response(
-                    {"message": "Empty variant descriptions. Please provide valid data."},
+            if not descriptions_data:
+                return Response(
+                    {"error": "Empty variant descriptions. Please provide valid data."},
                      status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -909,12 +967,12 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
                     )
                 else:
                     response = Response(
-                        {"errors": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST
+                        {"error": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST
                     )
 
         else:
             response = Response(
-                {"errors": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST
+                {"error": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
         return response
@@ -928,7 +986,7 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
         """
         # Check if the input has the expected data
         if "description" not in request.data or request.data.get('description') == "":
-            return Response({"errors": f"Empty variant type description. Please provide the 'description'."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": f"Empty variant type description. Please provide the 'description'."}, status=status.HTTP_400_BAD_REQUEST)
 
         var_desc = request.data.get('description')
         user = request.user
@@ -941,7 +999,7 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
         has_common = LocusGenotypeDiseaseSerializer(lgd_obj).check_user_permission(lgd_obj, user_panel_list)
         if has_common is False:
-            return Response({"message": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
 
         # Get entries to be deleted
         # Different rows mean the lgd-variant type description is associated with multiple publications
@@ -950,7 +1008,7 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
             LGDVariantTypeDescription.objects.filter(lgd=lgd_obj, description=var_desc, is_deleted=0).update(is_deleted=1)
         except:
             return Response(
-                {"errors": f"Could not delete variant type description '{var_desc}' for ID '{stable_id}'"},
+                {"error": f"Could not delete variant type description '{var_desc}' for ID '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(
@@ -1019,7 +1077,7 @@ class LGDEditComment(CustomPermissionAPIView):
         user_serializer = UserSerializer(user_obj, context={"user": user})
 
         if not user_serializer.check_panel_permission(lgd_panels):
-            return Response({"message": f"No permission to edit {stable_id}"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error": f"No permission to edit {stable_id}"}, status=status.HTTP_403_FORBIDDEN)
 
         # LGDCommentListSerializer accepts a list of comments
         serializer_list = LGDCommentListSerializer(data=request.data)
@@ -1027,9 +1085,9 @@ class LGDEditComment(CustomPermissionAPIView):
         if serializer_list.is_valid():
             lgd_comments_data = serializer_list.validated_data.get("comments")
 
-            if(not lgd_comments_data):
-                response = Response(
-                    {"message": "Empty comment. Please provide valid data."},
+            if not lgd_comments_data:
+                return Response(
+                    {"error": "Empty comment. Please provide valid data."},
                      status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -1045,18 +1103,29 @@ class LGDEditComment(CustomPermissionAPIView):
                     try:
                         serializer_class.save()
                     except IntegrityError as e:
-                        return Response({"message": f"A database integrity error occurred: {str(e)}"},
-                            status=status.HTTP_400_BAD_REQUEST)
+                        return Response(
+                            {"error": f"A database integrity error occurred: {str(e)}"},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
                 else:
                     errors.append(serializer_class.errors)
 
             if errors:
-                return Response({"message": errors}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": errors},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-            response = Response({"message": f"Comments added to the G2P entry successfully."}, status=status.HTTP_201_CREATED)
+            response = Response(
+                {"message": f"Comments added to the G2P entry successfully."},
+                status=status.HTTP_201_CREATED
+            )
 
         else:
-            response = Response({"errors": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST)
+            response = Response(
+                {"error": serializer_list.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         return response
 
@@ -1078,18 +1147,23 @@ class LGDEditComment(CustomPermissionAPIView):
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
         has_common = LocusGenotypeDiseaseSerializer(lgd_obj).check_user_permission(lgd_obj, user_panel_list)
         if has_common is False:
-            return Response({"message": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"error": f"No permission to update record '{stable_id}'"},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         try:
             LGDComment.objects.filter(lgd=lgd_obj, comment=comment, is_deleted=0).update(is_deleted=1)
         except:
             return Response(
-                {"message": f"Cannot delete comment for ID '{stable_id}'"},
-                status=status.HTTP_400_BAD_REQUEST)
+                {"error": f"Cannot delete comment for ID '{stable_id}'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         else:
             return Response(
-                    {"message": f"Comment successfully deleted for ID '{stable_id}'"},
-                    status=status.HTTP_200_OK)
+                {"message": f"Comment successfully deleted for ID '{stable_id}'"},
+                status=status.HTTP_200_OK
+            )
 
 class LocusGenotypeDiseaseDelete(APIView):
     """
@@ -1117,7 +1191,10 @@ class LocusGenotypeDiseaseDelete(APIView):
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
         has_common = LocusGenotypeDiseaseSerializer(lgd_obj).check_user_permission(lgd_obj, user_panel_list)
         if has_common is False:
-            return Response({"message": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"error": f"No permission to update record '{stable_id}'"},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         # Delete the LGD record
         lgd_obj.is_deleted = 1
@@ -1167,5 +1244,6 @@ class LocusGenotypeDiseaseDelete(APIView):
         LGDPublication.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
 
         return Response(
-                {"message": f"ID '{stable_id}' successfully deleted"},
-                status=status.HTTP_200_OK)
+            {"message": f"ID '{stable_id}' successfully deleted"},
+            status=status.HTTP_200_OK
+        )

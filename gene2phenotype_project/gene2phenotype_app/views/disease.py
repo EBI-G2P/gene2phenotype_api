@@ -193,7 +193,10 @@ class UpdateDisease(BaseAdd):
         diseases = request.data  # list of diseases {'id': ..., 'name': ...}
 
         if not isinstance(diseases, list):
-            return Response({"error": "Request should be a list"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Request should be a list"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         updated_diseases = []
         errors = []
@@ -230,7 +233,7 @@ class UpdateDisease(BaseAdd):
             response_data["updated"] = updated_diseases
 
         if errors:
-            response_data["errors"] = errors
+            response_data["error"] = errors
 
         return Response(response_data, status=status.HTTP_200_OK if updated_diseases else status.HTTP_400_BAD_REQUEST)
 
@@ -242,7 +245,10 @@ class LGDUpdateDisease(BaseAdd):
         data_to_update = request.data
 
         if not isinstance(data_to_update, list):
-            return Response({"error": "Request should be a list"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Request should be a list"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         updated_records = []
         errors = []
@@ -279,6 +285,6 @@ class LGDUpdateDisease(BaseAdd):
             response_data["Updated records"] = updated_records
 
         if errors:
-            response_data["Errors"] = errors
+            response_data["error"] = errors
 
         return Response(response_data, status=status.HTTP_200_OK if updated_records else status.HTTP_400_BAD_REQUEST)
