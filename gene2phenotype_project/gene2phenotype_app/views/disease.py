@@ -175,12 +175,12 @@ class ExternalDisease(BaseView):
         return Response(serializer.data)
 
 ### Add data
-"""
-    Add new disease.
-    This view is called by the endpoint that directly adds a disease (add/disease/).
-    The create method is in the CreateDiseaseSerializer.
-"""
 class AddDisease(BaseAdd):
+    """
+        Add new disease.
+        This view is called by the endpoint that directly adds a disease (add/disease/).
+        The create method is in the CreateDiseaseSerializer.
+    """
     serializer_class = CreateDiseaseSerializer
     permission_classes = [IsSuperUser]
 
@@ -233,6 +233,12 @@ class UpdateDisease(BaseAdd):
             response_data["errors"] = errors
 
         return Response(response_data, status=status.HTTP_200_OK if updated_diseases else status.HTTP_400_BAD_REQUEST)
+
+class DiseaseUpdateReferences(BaseAdd):
+    http_method_names = ["post", "delete", "options"]
+    permission_classes = [IsSuperUser]
+
+    
 
 class LGDUpdateDisease(BaseAdd):
     http_method_names = ['post', 'options']
