@@ -9,7 +9,8 @@ from .publication import PublicationSerializer, LGDPublicationSerializer, LGDPub
 from .locus import LocusSerializer, LocusGeneSerializer
 
 from .phenotype import (PhenotypeOntologyTermSerializer, LGDPhenotypeSerializer,
-                        LGDPhenotypeListSerializer, LGDPhenotypeSummarySerializer)
+                        LGDPhenotypeListSerializer, LGDPhenotypeSummarySerializer,
+                        LGDPhenotypeSummaryListSerializer)
 
 from .disease import (DiseaseSerializer, DiseaseOntologyTermSerializer,
                       CreateDiseaseSerializer, DiseaseDetailSerializer,
