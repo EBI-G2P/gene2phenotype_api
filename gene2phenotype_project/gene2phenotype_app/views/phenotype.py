@@ -202,7 +202,6 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
             serializer_summary_list = LGDPhenotypeSummaryListSerializer(data={"summaries":request.data["summaries"]})
 
             if serializer_summary_list.is_valid():
-                print(serializer_summary_list.validated_data)
                 phenotype_summary_data = serializer_summary_list.validated_data.get("summaries")
 
                 if not phenotype_summary_data:
