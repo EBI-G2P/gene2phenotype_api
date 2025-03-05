@@ -149,8 +149,17 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
         """
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
 
+        if not request.data:
+            return Response(
+                {"error": "Empty data. Please provide valid data."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         # Prepare the response in case the data does not follow correct format
-        response = Response({"error": "Invalid data format."}, status=status.HTTP_400_BAD_REQUEST)
+        response = Response(
+            {"error": "Invalid data format. Please provide valid data."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
         # Check and prepare data structure the send to the serializer
         # LGDPhenotypeListSerializer accepts the phenotypes in a specific struture
