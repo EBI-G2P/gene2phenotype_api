@@ -207,3 +207,10 @@ class LGDPhenotypeSummarySerializer(serializers.ModelSerializer):
     class Meta:
         model = LGDPhenotypeSummary
         fields = ['summary', 'publication']
+
+class LGDPhenotypeSummaryListSerializer(serializers.Serializer):
+    """
+        Serializer to accept a list of phenotype summary.
+        Called by: view LGDEditPhenotypes()
+    """
+    summaries = LGDPhenotypeSummarySerializer(many=True)
