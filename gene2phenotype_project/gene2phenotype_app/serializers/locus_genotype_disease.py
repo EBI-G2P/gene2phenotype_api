@@ -193,9 +193,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         )
         data = {}
 
+        list_of_comments = []
         for lgd_variant in queryset:
             # Prepare the list of comments
-            list_of_comments = []
             comments = lgd_variant.current_comments # Get the prefetched comments
             for comment_obj in comments:
                 # Format date
@@ -1160,7 +1160,7 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
                 lgd_variant_type_obj.save()
 
             # The LGDPhenotypeSummary is created - next step is to create the LGDVariantTypeComment
-            if(comment != ""):
+            if comment != "":
                 try:
                     lgd_comment_obj = LGDVariantTypeComment.objects.get(
                         comment = comment,
@@ -1251,7 +1251,7 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
                         lgd_variant_type_obj.save()
 
                     # The LGDPhenotypeSummary is created - next step is to create the LGDVariantTypeComment
-                    if(comment != ""):
+                    if comment != "":
                         try:
                             lgd_comment_obj = LGDVariantTypeComment.objects.get(
                                 comment = comment,
@@ -1283,7 +1283,7 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
 class LGDVariantTypeListSerializer(serializers.Serializer):
     """
         Serializer to accept a list of variant types.
-        Called by: LGDAddVariantTypes()
+        Called by: LGDEditVariantTypes()
     """
     variant_types = LGDVariantTypeSerializer(many=True)
 

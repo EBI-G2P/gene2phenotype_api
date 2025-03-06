@@ -707,7 +707,7 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
     # Define specific permissions
     method_permissions = {
         "post": [permissions.IsAuthenticated],
-        "update": [permissions.IsAuthenticated, IsSuperUser],
+        "update": [permissions.IsAuthenticated, IsSuperUser]
     }
 
     def get_serializer_class(self, action):
@@ -771,8 +771,8 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
             variant_type_data = serializer_list.validated_data.get('variant_types')
 
             # Check if list of variants is empty
-            if(not variant_type_data):
-                response = Response(
+            if not variant_type_data :
+                return Response(
                     {"error": "Empty variant type. Please provide valid data."},
                      status=status.HTTP_400_BAD_REQUEST
                 )
