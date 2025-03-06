@@ -194,20 +194,24 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         data = {}
 
         list_of_comments = []
+        unique_comments = set()
         for lgd_variant in queryset:
             # Prepare the list of comments
             comments = lgd_variant.current_comments # Get the prefetched comments
             for comment_obj in comments:
-                # Format date
-                date = None
-                if comment_obj.date is not None:
-                    date = comment_obj.date.strftime("%Y-%m-%d")
-                list_of_comments.append(
-                    {
-                        "text": comment_obj.comment,
-                        "date": date
-                    }
-                )
+                comment_text = comment_obj.comment
+                if comment_text not in unique_comments:
+                    # Format date
+                    date = None
+                    if comment_obj.date is not None:
+                        date = comment_obj.date.strftime("%Y-%m-%d")
+                    list_of_comments.append(
+                        {
+                            "text": comment_text,
+                            "date": date
+                        }
+                    )
+                    unique_comments.add(comment_text)
 
             accession = lgd_variant.variant_type_ot.accession
 
