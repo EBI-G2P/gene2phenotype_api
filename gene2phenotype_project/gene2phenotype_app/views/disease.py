@@ -250,7 +250,6 @@ class UpdateDisease(BaseAdd):
 
 class DiseaseUpdateReferences(BaseAdd):
     http_method_names = ["post", "delete", "options"]
-    permission_classes = [IsSuperUser]
 
     def get_serializer_class(self, action):
         """
@@ -267,14 +266,28 @@ class DiseaseUpdateReferences(BaseAdd):
         else:
             return None
 
+    def get_permissions(self):
+        """
+            Instantiates and returns the list of permissions for this view.
+            post(): adds/updates data - available to all authenticated users
+            delete(): deletes data - only available to authenticated super users
+        """
+        if self.request.method.lower() == "delete":
+            return [permissions.IsAuthenticated(), IsSuperUser()]
+        return [permissions.IsAuthenticated()]
+
     @transaction.atomic
-    def post(self, request, id):
+    def post(self, request, name):
         """
             The post method creates an association between the disease and a list of cross references (external disease IDs).
             We want to whole process to be done in one db transaction.
 
             Args:
-                (dict) request
+                (dict) request: dictionary with the following keys
+                                - accession (mandatory)
+                                - term (mandatory)
+                                - description (optional)
+                                - source (mandatory)
 
                 Example:
                 { 
@@ -294,7 +307,7 @@ class DiseaseUpdateReferences(BaseAdd):
                     ]
                 }
         """
-        disease_obj = get_object_or_404(Disease, name=id)
+        disease_obj = get_object_or_404(Disease, name=name)
 
         # DiseaseOntologyTermListSerializer accepts a list of disease ontologies
         disease_ont_list = DiseaseOntologyTermListSerializer(data=request.data)
@@ -338,6 +351,46 @@ class DiseaseUpdateReferences(BaseAdd):
                 {"error": disease_ont_list.errors},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        return response
+
+    def delete(self, request, name):
+        """
+            This method deletes the disease cross reference
+
+            Input data example:
+                {
+                    "accession": "MONDO:0008693"
+                }
+        """
+        disease_obj = get_object_or_404(Disease, name=name)
+
+        if "accession" not in request.data:
+            return Response(
+                {"error": "'accession' is missing. Please provide valid data."},
+                    status=status.HTTP_400_BAD_REQUEST
+            )
+
+        accession = request.data.get('accession')
+
+        # Fetch phenotype from Ontology Term
+        try:
+            disease_ont_obj = DiseaseOntologyTerm.objects.get(disease=disease_obj.id, ontology_term__accession=accession)
+        except DiseaseOntologyTerm.DoesNotExist:
+            raise Http404(f"Cannot find '{accession}' for disease '{name}'")
+        else:
+            try:
+                disease_ont_obj.delete()
+            except:
+                return Response(
+                    {"error": f"Could not delete '{accession}' deleted succesfully from disease '{name}'"},
+                        status=status.HTTP_400_BAD_REQUEST
+                )
+            else:
+                response = Response(
+                    {"message": f"'{accession}' deleted succesfully from disease '{name}'"},
+                    status=status.HTTP_200_OK
+                )
 
         return response
 

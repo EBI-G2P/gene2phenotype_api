@@ -90,7 +90,7 @@ urlpatterns = [
     # Endpoint to update disease cross references
     # It has to be included before the other /disease/ endpoints
     path(
-        "disease/<path:id>/cross_references/",
+        "disease/<path:name>/cross_references/",
         views.DiseaseUpdateReferences.as_view(),
         name="update_disease_references",
     ),
@@ -156,29 +156,77 @@ urlpatterns = [
         name="lgd_update_confidence"
     ),
     # Update molecular mechanism - only allows to update if mechanism is "undetermined" and support is "inferred"
-    path("lgd/<str:stable_id>/update_mechanism/", views.LGDUpdateMechanism.as_view(), name="lgd_update_mechanism"),
+    path(
+        "lgd/<str:stable_id>/update_mechanism/",
+        views.LGDUpdateMechanism.as_view(),
+        name="lgd_update_mechanism"
+    ),
     # Add or delete panel from LGD record. Actions: UPDATE (to delete one panel), POST (to add one panel)
-    path("lgd/<str:stable_id>/panel/", views.LGDEditPanel.as_view(), name="lgd_panel"),
+    path(
+        "lgd/<str:stable_id>/panel/",
+        views.LGDEditPanel.as_view(),
+        name="lgd_panel"
+    ),
     # Add or delete publication(s) from LGD record. Actions: UPDATE (to delete one publication), POST (to add multiple publications)
-    path("lgd/<str:stable_id>/publication/", views.LGDEditPublications.as_view(), name="lgd_publication"),
+    path(
+        "lgd/<str:stable_id>/publication/",
+        views.LGDEditPublications.as_view(),
+        name="lgd_publication"
+    ),
     # Add or delete phenotype(s) from LGD record. Actions: UPDATE (to delete one phenotype), POST (to add multiple phenotypes)
-    path("lgd/<str:stable_id>/phenotype/", views.LGDEditPhenotypes.as_view(), name="lgd_phenotype"),
+    path(
+        "lgd/<str:stable_id>/phenotype/",
+        views.LGDEditPhenotypes.as_view(),
+        name="lgd_phenotype"
+    ),
     # Add or delete a phenotype summary from LGD record. Actions: UPDATE (to delete data), POST (to add data)
-    path("lgd/<str:stable_id>/phenotype_summary/", views.LGDEditPhenotypeSummary.as_view(), name="lgd_phenotype_summary"),
+    path(
+        "lgd/<str:stable_id>/phenotype_summary/",
+        views.LGDEditPhenotypeSummary.as_view(),
+        name="lgd_phenotype_summary"
+    ),
     # Add or delete variant consequence(s) from LGD record. Actions: UPDATE (to delete one consequence), POST (to add multiple consequences)
-    path("lgd/<str:stable_id>/variant_consequence/", views.LGDEditVariantConsequences.as_view(), name="lgd_var_consequence"),
+    path(
+        "lgd/<str:stable_id>/variant_consequence/",
+        views.LGDEditVariantConsequences.as_view(),
+        name="lgd_var_consequence"
+    ),
     # Add or delete cross cutting modifier(s) from LGD record. Actions: UPDATE (to delete one ccm), POST (to add multiple ccm)
-    path("lgd/<str:stable_id>/cross_cutting_modifier/", views.LGDEditCCM.as_view(), name="lgd_cross_cutting_modifier"),
+    path(
+        "lgd/<str:stable_id>/cross_cutting_modifier/",
+        views.LGDEditCCM.as_view(),
+        name="lgd_cross_cutting_modifier"
+    ),
     # Add or delete variant type(s) from LGD record. Actions: UPDATE (to delete one variant type), POST (to add multiple variant types)
-    path("lgd/<str:stable_id>/variant_type/", views.LGDEditVariantTypes.as_view(), name="lgd_variant_type"),
+    path(
+        "lgd/<str:stable_id>/variant_type/",
+        views.LGDEditVariantTypes.as_view(),
+        name="lgd_variant_type"
+    ),
     # Add or delete variant description(s) from LGD record. Actions: UPDATE (to delete one variant description), POST (to add multiple variant descriptions)
-    path("lgd/<str:stable_id>/variant_description/", views.LGDEditVariantTypeDescriptions.as_view(), name="lgd_variant_description"),
+    path(
+        "lgd/<str:stable_id>/variant_description/",
+        views.LGDEditVariantTypeDescriptions.as_view(),
+        name="lgd_variant_description"
+    ),
     # Add or delete comment(s) from LGD record. Actions: UPDATE (to delete comment), POST (to add comment)
-    path("lgd/<str:stable_id>/comment/", views.LGDEditComment.as_view(), name="lgd_comment"),
+    path(
+        "lgd/<str:stable_id>/comment/",
+        views.LGDEditComment.as_view(),
+        name="lgd_comment"
+    ),
     # Delete LGD record. Action: UPDATE
-    path("lgd/<str:stable_id>/delete/", views.LocusGenotypeDiseaseDelete.as_view(), name="lgd_delete"),
+    path(
+        "lgd/<str:stable_id>/delete/",
+        views.LocusGenotypeDiseaseDelete.as_view(),
+        name="lgd_delete"
+    ),
     # Update disease IDs for LGD records. Action: POST
-    path("lgd_disease_updates/", views.LGDUpdateDisease.as_view(), name="lgd_disease_updates"),
+    path(
+        "lgd_disease_updates/",
+        views.LGDUpdateDisease.as_view(),
+        name="lgd_disease_updates"
+    ),
 
     ### Endpoints to update other data ###
     # Update disease names in bulk
@@ -223,18 +271,57 @@ urlpatterns = [
     ),
 
     ### User management ###
-    path("create/user/", views.CreateUserView.as_view(), name="create"),
-    path("add_user/panel/", views.AddUserToPanelView.as_view(), name="add_user"),
-    path("profile/", views.ManageUserView.as_view(), name="profile"),
-    path("change_password/", views.ChangePasswordView.as_view(), name="change_password"),
-    path("reset_password/<uid>/<token>/", views.ResetPasswordView.as_view(), name="reset_password"),
-    path("verify/email/", views.VerifyEmailView.as_view(), name="verify_email"),
-    path("login/", views.LoginView.as_view(), name="_login"),
-    path("logout/", views.LogOutView.as_view(), name="logout"),
-    path("token/refresh/", views.CustomTokenRefreshView.as_view(), name="token_refresh"),
+    path(
+        "create/user/",
+        views.CreateUserView.as_view(),
+        name="create"
+    ),
+    path(
+        "add_user/panel/",
+        views.AddUserToPanelView.as_view(),
+        name="add_user"
+    ),
+    path(
+        "profile/",
+        views.ManageUserView.as_view(),
+        name="profile"
+    ),
+    path(
+        "change_password/",
+        views.ChangePasswordView.as_view(),
+        name="change_password"
+    ),
+    path(
+        "reset_password/<uid>/<token>/",
+        views.ResetPasswordView.as_view(),
+        name="reset_password"
+    ),
+    path(
+        "verify/email/",
+        views.VerifyEmailView.as_view(),
+        name="verify_email"
+    ),
+    path(
+        "login/",
+        views.LoginView.as_view(),
+        name="_login"
+    ),
+    path(
+        "logout/",
+        views.LogOutView.as_view(),
+        name="logout"
+    ),
+    path(
+        "token/refresh/",
+        views.CustomTokenRefreshView.as_view(),
+        name="token_refresh"
+    ),
 
     ### Meta information ###
-    path("reference_data/", views.MetaView.as_view(), name="get_reference_data")
-
+    path(
+        "reference_data/",
+        views.MetaView.as_view(),
+        name="get_reference_data"
+    )
 ]
 urlpatterns = format_suffix_patterns(urlpatterns)
