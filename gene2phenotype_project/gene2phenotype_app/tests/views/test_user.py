@@ -90,8 +90,35 @@ class CreateUserEndpointTest(TestCase):
         json_data = json.dumps(post_data)
         response = self.client.post(self.url_create_user, json_data, content_type='application/json')
         self.assertEqual(response.status_code, 201)
+        # test if the user was really created
         new_user = User.objects.get(username='test_user6')
         self.assertEqual(new_user.email, 'user6@test.ac.uk')
+
+class AddUserToPanelEndpointTest(TestCase):
+    fixtures = ['gene2phenotype_app/fixtures/user_panels.json']
+
+    def setUp(self):
+        self.url_add_to_panel = reverse("add_user")
+
+        user = User.objects.get(email="user5@test.ac.uk")
+
+        access_token = login(user)
+
+        self.client.cookies[settings.SIMPLE_JWT['AUTH_COOKIE']] = access_token
+
+    def test_add_user_to_panel(self):
+        post_data = {
+            'user' : "user2@test.ac.uk",
+            'panel': ["Eye"]
+        }
+
+        json_data = json.dumps(post_data)
+  
+        response = self.client.post(self.url_add_to_panel, json_data, content_type='application/json')
+
+        self.assertEqual(response.status_code, 201)
+
+
 
 
 
