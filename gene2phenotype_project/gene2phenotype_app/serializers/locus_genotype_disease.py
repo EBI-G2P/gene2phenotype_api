@@ -193,32 +193,35 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         )
         data = {}
 
-        list_of_comments = []
-        unique_comments = set()
+        list_of_comments = {}
         for lgd_variant in queryset:
+            # Get the variant type term (ex:frameshift_variant)
+            accession = lgd_variant.variant_type_ot.accession
+
             # Prepare the list of comments
             comments = lgd_variant.current_comments # Get the prefetched comments
             for comment_obj in comments:
                 comment_text = comment_obj.comment
-                if comment_text not in unique_comments:
-                    # Format date
-                    date = None
-                    if comment_obj.date is not None:
-                        date = comment_obj.date.strftime("%Y-%m-%d")
-                    list_of_comments.append(
-                        {
-                            "text": comment_text,
-                            "date": date
-                        }
-                    )
-                    unique_comments.add(comment_text)
+                # Format date
+                date = None
+                if comment_obj.date is not None:
+                    date = comment_obj.date.strftime("%Y-%m-%d")
 
-            accession = lgd_variant.variant_type_ot.accession
+                if accession not in list_of_comments:
+                    list_of_comments[accession] = [{
+                        "text": comment_text,
+                        "date": date
+                    }]
+                elif not any(comment['text'] == comment_text for comment in list_of_comments[accession]):
+                    list_of_comments[accession].append({
+                        "text": comment_text,
+                        "date": date
+                    })
 
             if accession in data and lgd_variant.publication:
                 # Add pmid to list of publications
                 data[accession]["publications"].append(lgd_variant.publication.pmid)
-                data[accession]["comments"] = list_of_comments
+                data[accession]["comments"] = list_of_comments[accession]
                 # Check the variant inheritance - we group this data for each publication
                 if(lgd_variant.inherited is True):
                     data[accession]["inherited"] = lgd_variant.inherited
@@ -238,7 +241,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     "de_novo": lgd_variant.de_novo,
                     "unknown_inheritance": lgd_variant.unknown_inheritance,
                     "publications": publication_list,
-                    "comments": list_of_comments
+                    "comments": list_of_comments[accession]
                 }
 
         return data.values()
