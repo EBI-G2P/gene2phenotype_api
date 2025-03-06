@@ -14,7 +14,7 @@ from .phenotype import (PhenotypeOntologyTermSerializer, LGDPhenotypeSerializer,
 
 from .disease import (DiseaseSerializer, DiseaseOntologyTermSerializer,
                       CreateDiseaseSerializer, DiseaseDetailSerializer,
-                      GeneDiseaseSerializer)
+                      GeneDiseaseSerializer, DiseaseOntologyTermListSerializer)
 
 from .locus_genotype_disease import (LocusGenotypeDiseaseSerializer, LGDCommentSerializer,
                                      LGDVariantConsequenceListSerializer, LGDVariantGenCCConsequenceSerializer,

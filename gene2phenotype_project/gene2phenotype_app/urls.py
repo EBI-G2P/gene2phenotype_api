@@ -7,7 +7,6 @@ def perform_create(self, serializer):
 
 # specify URL Path for rest_framework
 urlpatterns = [
-    ### Endpoints to display data ###
     path(
         "",
         views.ListEndpoints,
@@ -43,32 +42,119 @@ urlpatterns = [
         views.UserPanels.as_view(),
         name="user_panels"
     ),
-    path("attribs/", views.AttribTypeList.as_view(), name="list_attrib_type"),
-    path("attribs/description", views.AttribTypeDescriptionList.as_view(), name="description_attrib_type"),
-    path("attrib/<str:code>/", views.AttribList.as_view(), name="list_attribs_by_type"),
-    path("molecular_mechanisms/", views.ListMolecularMechanisms.as_view(), name="list_mechanisms"),
-    path("ontology_terms/variant_types/", views.VariantTypesList.as_view(), name="list_variant_types"),
-    path("gene/<str:name>/", views.LocusGene.as_view(), name="locus_gene"),
-    path("gene/<str:name>/summary/", views.LocusGeneSummary.as_view(), name="locus_gene_summary"),
-    path("gene/<str:name>/function/", views.GeneFunction.as_view(), name="locus_gene_function"),
-    path("gene/<str:name>/disease/", views.GeneDiseaseView.as_view(), name="locus_gene_disease"),
-    path("disease/<path:id>/summary/", views.DiseaseSummary.as_view(), name="disease_summary"),
-    path("disease/<path:id>/", views.DiseaseDetail.as_view(), name="disease_details"),
-    path("publication/<str:pmids>/", views.PublicationDetail, name="publication_details"),
-    path("phenotype/<str:hpo_list>/", views.PhenotypeDetail, name="phenotype_details"),
-    path("lgd/<str:stable_id>/", views.LocusGenotypeDiseaseDetail.as_view(), name="lgd"),
-    path("search/", views.SearchView.as_view(), name="search"),
+    path(
+        "attribs/",
+        views.AttribTypeList.as_view(),
+        name="list_attrib_type"
+    ),
+    path(
+        "attribs/description",
+        views.AttribTypeDescriptionList.as_view(),
+        name="description_attrib_type"
+    ),
+    path(
+        "attrib/<str:code>/",
+        views.AttribList.as_view(),
+        name="list_attribs_by_type"
+    ),
+    path(
+        "molecular_mechanisms/",
+        views.ListMolecularMechanisms.as_view(),
+        name="list_mechanisms"
+    ),
+    path(
+        "ontology_terms/variant_types/",
+        views.VariantTypesList.as_view(),
+        name="list_variant_types"
+    ),
+    path(
+        "gene/<str:name>/",
+        views.LocusGene.as_view(),
+        name="locus_gene"
+    ),
+    path(
+        "gene/<str:name>/summary/",
+        views.LocusGeneSummary.as_view(),
+        name="locus_gene_summary"
+    ),
+    path(
+        "gene/<str:name>/function/",
+        views.GeneFunction.as_view(),
+        name="locus_gene_function"
+    ),
+    path(
+        "gene/<str:name>/disease/",
+        views.GeneDiseaseView.as_view(),
+        name="locus_gene_disease"
+    ),
+    # Endpoint to update disease cross references
+    # It has to be included before the other /disease/ endpoints
+    path(
+        "disease/<path:id>/cross_references/",
+        views.DiseaseUpdateReferences.as_view(),
+        name="update_disease_references",
+    ),
+    path(
+        "disease/<path:id>/summary/",
+        views.DiseaseSummary.as_view(),
+        name="disease_summary"
+    ),
+    path(
+        "disease/<path:id>/",
+        views.DiseaseDetail.as_view(),
+        name="disease_details"
+    ),
+    path(
+        "publication/<str:pmids>/",
+        views.PublicationDetail,
+        name="publication_details"
+    ),
+    path(
+        "phenotype/<str:hpo_list>/",
+        views.PhenotypeDetail,
+        name="phenotype_details"
+    ),
+    path(
+        "lgd/<str:stable_id>/",
+        views.LocusGenotypeDiseaseDetail.as_view(),
+        name="lgd"
+    ),
+    path(
+        "search/",
+        views.SearchView.as_view(),
+        name="search"
+    ),
 
     # Endpoint to fetch disease from external sources (OMIM/Mondo)
-    path("external_disease/<str:ext_id>/", views.ExternalDisease.as_view(), name="external_disease"),
+    path(
+        "external_disease/<str:ext_id>/",
+        views.ExternalDisease.as_view(),
+        name="external_disease"
+    ),
 
     ### Endpoints to add data ###
-    path("add/disease/", views.AddDisease.as_view(), name="add_disease"),
-    path("add/phenotype/", views.AddPhenotype.as_view(), name="add_phenotype"),
-    path("add/publication/", views.AddPublication.as_view(), name="add_publication"),
+    path(
+        "add/disease/",
+        views.AddDisease.as_view(),
+        name="add_disease"
+    ),
+    path(
+        "add/phenotype/",
+        views.AddPhenotype.as_view(),
+        name="add_phenotype"
+    ),
+    path(
+        "add/publication/",
+        views.AddPublication.as_view(),
+        name="add_publication"
+    ),
 
     ### Endpoints to update/add/delete the G2P record (LGD) ###
-    path("lgd/<str:stable_id>/update_confidence/", views.LGDUpdateConfidence.as_view(), name="lgd_update_confidence"),
+    path(
+        "lgd/<str:stable_id>/update_confidence/",
+        views.LGDUpdateConfidence.as_view(),
+        name="lgd_update_confidence"
+    ),
     # Update molecular mechanism - only allows to update if mechanism is "undetermined" and support is "inferred"
     path("lgd/<str:stable_id>/update_mechanism/", views.LGDUpdateMechanism.as_view(), name="lgd_update_mechanism"),
     # Add or delete panel from LGD record. Actions: UPDATE (to delete one panel), POST (to add one panel)
@@ -95,15 +181,11 @@ urlpatterns = [
     path("lgd_disease_updates/", views.LGDUpdateDisease.as_view(), name="lgd_disease_updates"),
 
     ### Endpoints to update other data ###
+    # Update disease names in bulk
     path(
         "update/diseases/",
         views.UpdateDisease.as_view(),
         name="update_diseases"
-    ),
-    path(
-        "disease/<path:id>/cross_references/",
-        views.DiseaseUpdateReferences.as_view(),
-        name="update_disease_references",
     ),
 
     ### Curation endpoints ###
