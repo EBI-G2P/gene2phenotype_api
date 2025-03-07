@@ -2,8 +2,10 @@ from django.urls import path, include
 from rest_framework.urlpatterns import format_suffix_patterns
 from gene2phenotype_app import views
 
+
 def perform_create(self, serializer):
     serializer.save(owner=self.request.user)
+
 
 # specify URL Path for rest_framework
 urlpatterns = [
@@ -92,7 +94,7 @@ urlpatterns = [
     path(
         "disease/<path:name>/cross_references/",
         views.DiseaseUpdateReferences.as_view(),
-        name="update_disease_references",
+        name="update_disease_references"
     ),
     path(
         "disease/<path:id>/summary/",
