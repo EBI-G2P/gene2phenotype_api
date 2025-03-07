@@ -134,4 +134,4 @@ class SearchTests(TestCase):
         response = self.client.get(url_search_gene)
 
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.data["message"], "No matching Gene found for: TUBB4A")
+        self.assertEqual(response.data["error"], "No matching Gene found for: TUBB4A")

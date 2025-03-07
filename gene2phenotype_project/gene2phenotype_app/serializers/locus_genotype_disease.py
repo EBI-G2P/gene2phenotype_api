@@ -207,28 +207,40 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         )
         data = {}
 
+        list_of_comments = {}
         for lgd_variant in queryset:
+            # Get the variant type term (ex:frameshift_variant)
+            accession = lgd_variant.variant_type_ot.accession
+
             # Prepare the list of comments
-            list_of_comments = []
             comments = lgd_variant.current_comments # Get the prefetched comments
+
             for comment_obj in comments:
+                comment_text = comment_obj.comment
                 # Format date
                 date = None
                 if comment_obj.date is not None:
                     date = comment_obj.date.strftime("%Y-%m-%d")
-                list_of_comments.append(
-                    {
-                        "text": comment_obj.comment,
-                        "date": date
-                    }
-                )
 
-            accession = lgd_variant.variant_type_ot.accession
+                if accession not in list_of_comments:
+                    list_of_comments[accession] = [{
+                        "text": comment_text,
+                        "date": date
+                    }]
+                elif not any(comment['text'] == comment_text for comment in list_of_comments[accession]):
+                    list_of_comments[accession].append({
+                        "text": comment_text,
+                        "date": date
+                    })
 
             if accession in data and lgd_variant.publication:
+                variant_type_comments = []
+                if accession in list_of_comments:
+                    variant_type_comments = list_of_comments[accession]
+
                 # Add pmid to list of publications
                 data[accession]["publications"].append(lgd_variant.publication.pmid)
-                data[accession]["comments"] = list_of_comments
+                data[accession]["comments"] = variant_type_comments
                 # Check the variant inheritance - we group this data for each publication
                 if(lgd_variant.inherited is True):
                     data[accession]["inherited"] = lgd_variant.inherited
@@ -241,6 +253,10 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 if lgd_variant.publication:
                     publication_list = [lgd_variant.publication.pmid]
 
+                variant_type_comments = []
+                if accession in list_of_comments:
+                    variant_type_comments = list_of_comments[accession]
+
                 data[accession] = {
                     "term": lgd_variant.variant_type_ot.term,
                     "accession": accession,
@@ -248,7 +264,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     "de_novo": lgd_variant.de_novo,
                     "unknown_inheritance": lgd_variant.unknown_inheritance,
                     "publications": publication_list,
-                    "comments": list_of_comments
+                    "comments": variant_type_comments
                 }
 
         return data.values()
@@ -1183,7 +1199,9 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
                 lgd_variant_type_obj.save()
 
             # The LGDPhenotypeSummary is created - next step is to create the LGDVariantTypeComment
-            if(comment != ""):
+            if comment != "":
+                # Remove newlines from comment
+                comment = re.sub(r"\n", " ", comment)
                 try:
                     lgd_comment_obj = LGDVariantTypeComment.objects.get(
                         comment = comment,
@@ -1274,7 +1292,9 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
                         lgd_variant_type_obj.save()
 
                     # The LGDPhenotypeSummary is created - next step is to create the LGDVariantTypeComment
-                    if(comment != ""):
+                    if comment != "":
+                        # Remove newlines from comment
+                        comment = re.sub(r"\n", " ", comment)
                         try:
                             lgd_comment_obj = LGDVariantTypeComment.objects.get(
                                 comment = comment,
@@ -1306,7 +1326,7 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
 class LGDVariantTypeListSerializer(serializers.Serializer):
     """
         Serializer to accept a list of variant types.
-        Called by: LGDAddVariantTypes()
+        Called by: LGDEditVariantTypes()
     """
     variant_types = LGDVariantTypeSerializer(many=True)
 

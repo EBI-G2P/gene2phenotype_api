@@ -40,7 +40,9 @@ class AddCurationData(BaseAdd):
             with open(json_file_path, 'r') as file:
                 schema = json.load(file)
         except FileNotFoundError:
-            return Response({"message": "Schema file not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Schema file not found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
         # json format accepts null values but in python these values are represented as 'None'
         # dumps() converts 'None' to 'null' before json validation
@@ -48,21 +50,33 @@ class AddCurationData(BaseAdd):
         input_json_data = json.loads(input_data)
 
         if "json_data" not in input_json_data:
-            return Response({"message": "Invalid data format: 'json_data' is missing"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Invalid data format: 'json_data' is missing"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Validate the JSON data against the schema
         try:
             validate(instance=input_json_data["json_data"], schema=schema)
         except jsonschema.exceptions.ValidationError as e:
-            return Response({"message": "JSON data does not follow the required format. Required format is" + str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "JSON data does not follow the required format. Required format is" + str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         serializer = self.serializer_class(data=request.data, context={'user': user})
 
         if serializer.is_valid():
             instance = serializer.save()
-            return Response({"message": f"Data saved successfully for session name '{instance.session_name}'", "result": f"{instance.stable_id.stable_id}"}, status=status.HTTP_200_OK)
+            return Response(
+                {
+                    "message": f"Data saved successfully for session name '{instance.session_name}'",
+                    "result": f"{instance.stable_id.stable_id}"
+                },
+                status=status.HTTP_200_OK
+            )
         else:
-            return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 class ListCurationEntries(BaseView):
     """
@@ -203,7 +217,10 @@ class UpdateCurationData(generics.UpdateAPIView):
             with open(json_file_path, 'r') as file:
                 schema = json.load(file)
         except FileNotFoundError:
-            return Response({"message": "Schema file not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Schema file not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         # json format accepts null values but in python these values are represented as 'None'
         # dumps() converts 'None' to 'null' before json validation
@@ -214,7 +231,10 @@ class UpdateCurationData(generics.UpdateAPIView):
         try:
             validate(instance=input_json_data["json_data"], schema=schema)
         except jsonschema.exceptions.ValidationError as e:
-            return Response({"message": "JSON data does not follow the required format. Required format is" + str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "JSON data does not follow the required format. Required format is" + str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Update data - it replaces the data
         serializer = CurationDataSerializer(
@@ -225,10 +245,16 @@ class UpdateCurationData(generics.UpdateAPIView):
 
         if serializer.is_valid():
             instance = serializer.save()
-            return Response({"message": f"Data updated successfully for session name '{instance.session_name}'"}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": f"Data updated successfully for session name '{instance.session_name}'"},
+                status=status.HTTP_200_OK
+            )
 
         else:
-            return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 class PublishRecord(APIView):
     """
@@ -264,19 +290,22 @@ class PublishRecord(APIView):
                 # Delete entry from 'curation_data'
                 curation_obj.delete()
 
-                return Response({
-                    "message": f"Record '{lgd_obj.stable_id.stable_id}' published successfully"
-                    }, status=status.HTTP_201_CREATED)
+                return Response(
+                    {"message": f"Record '{lgd_obj.stable_id.stable_id}' published successfully"},
+                    status=status.HTTP_201_CREATED
+                )
 
             except LocusGenotypeDisease.DoesNotExist:
-                Response({
-                    "message": f"Failed to publish record ID '{stable_id}'"
-                    }, status=status.HTTP_400_BAD_REQUEST)
+                Response(
+                    {"error": f"Failed to publish record ID '{stable_id}'"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
         except CurationData.DoesNotExist:
-            return Response({
-                "message": f"Curation data not found for ID '{stable_id}'"
-                }, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": f"Curation data not found for ID '{stable_id}'"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
 class DeleteCurationData(generics.DestroyAPIView):
     """
@@ -331,12 +360,21 @@ class DeleteCurationData(generics.DestroyAPIView):
         stable_id = self.kwargs['stable_id']
 
         if not curation_obj or len(curation_obj) == 0:
-            return Response({"error": f"Cannot find ID {stable_id}"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": f"Cannot find ID {stable_id}"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         try:
             # delete record + G2P ID
             self.perform_destroy(curation_obj, stable_id)
         except:
-            return Response({"message": f"Cannot delete data for ID {stable_id}"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": f"Cannot delete data for ID {stable_id}"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-        return Response({"message": f"Data deleted successfully for ID {stable_id}"}, status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {"message": f"Data deleted successfully for ID {stable_id}"},
+            status=status.HTTP_204_NO_CONTENT
+        )

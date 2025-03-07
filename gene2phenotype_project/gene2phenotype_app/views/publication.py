@@ -89,10 +89,10 @@ def PublicationDetail(request, pmids):
     # if any of the PMIDs is invalid raise error and display all invalid IDs
     if invalid_pmids:
         pmid_list = ", ".join(invalid_pmids)
-        response = Response({'detail': f"Invalid PMID(s): {pmid_list}"}, status=status.HTTP_404_NOT_FOUND)
+        response = Response({"error": f"Invalid PMID(s): {pmid_list}"}, status=status.HTTP_404_NOT_FOUND)
 
     else:
-        response = Response({'results': data, 'count': len(data)})
+        response = Response({"results": data, "count": len(data)})
 
     return response
 
@@ -238,7 +238,7 @@ class LGDEditPublications(BaseUpdate):
                 if serializer_class.is_valid():
                     serializer_class.save()
                 else:
-                    response = Response({"errors": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST)
+                    response = Response({"error": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST)
 
             # Add extra data linked to the publication - phenotypes
             # Expected structure:
@@ -260,11 +260,14 @@ class LGDEditPublications(BaseUpdate):
                             # save() is going to call create()
                             lgd_phenotype_serializer.save()
                         else:
-                            response = Response({"errors": lgd_phenotype_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+                            response = Response(
+                                {"error": lgd_phenotype_serializer.errors},
+                                status=status.HTTP_400_BAD_REQUEST
+                            )
                     except:
                         accession = phenotype_data["accession"]
                         return Response(
-                            {"errors": f"Could not insert phenotype '{accession}' for ID '{stable_id}'"},
+                            {"error": f"Could not insert phenotype '{accession}' for ID '{stable_id}'"},
                             status=status.HTTP_400_BAD_REQUEST
                         )
 
@@ -284,7 +287,7 @@ class LGDEditPublications(BaseUpdate):
                             lgd_phenotype_summary_serializer.save()
                     except:
                         return Response(
-                            {"errors": f"Could not insert phenotype summary for PMID '{phenotype['pmid']}'"},
+                            {"error": f"Could not insert phenotype summary for PMID '{phenotype['pmid']}'"},
                             status=status.HTTP_400_BAD_REQUEST
                         )
 
@@ -343,10 +346,16 @@ class LGDEditPublications(BaseUpdate):
                 except Exception as e:
                     return self.handle_update_exception(e, "Error while updating molecular mechanism evidence")
 
-            response = Response({'message': 'Publication added to the G2P entry successfully.'}, status=status.HTTP_201_CREATED)
+            response = Response(
+                {"message": "Publication added to the G2P entry successfully."},
+                status=status.HTTP_201_CREATED
+            )
 
         else:
-            response = Response({"errors": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST)
+            response = Response(
+                {"error": serializer_list.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         return response
 
@@ -368,7 +377,7 @@ class LGDEditPublications(BaseUpdate):
             lgd_publication_obj = LGDPublication.objects.get(lgd=lgd_obj, publication=publication_obj, is_deleted=0)
         except LGDPublication.DoesNotExist:
             return Response(
-                {"errors": f"Could not find publication '{pmid}' for ID '{stable_id}'"},
+                {"error": f"Could not find publication '{pmid}' for ID '{stable_id}'"},
                 status=status.HTTP_404_NOT_FOUND)
 
         # Before deleting this publication check if LGD record is linked to other publications
@@ -377,7 +386,7 @@ class LGDEditPublications(BaseUpdate):
         # TODO: if we are going to delete the last publication then delete LGD record
         if(queryset_all.exists() and len(queryset_all) == 1):
             return Response(
-                {"errors": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
+                {"error": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -388,7 +397,7 @@ class LGDEditPublications(BaseUpdate):
             lgd_publication_obj.save()
         except:
             return Response(
-                {"errors": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
+                {"error": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST)
 
         # Delete publication from other tables
@@ -400,7 +409,7 @@ class LGDEditPublications(BaseUpdate):
                 is_deleted=0).update(is_deleted=1)
         except:
             return Response(
-                {"errors": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
+                {"error": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -414,7 +423,7 @@ class LGDEditPublications(BaseUpdate):
                 is_deleted=0).update(is_deleted=1)
         except:
             return Response(
-                {"errors": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
+                {"error": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -426,7 +435,7 @@ class LGDEditPublications(BaseUpdate):
                 is_deleted=0).update(is_deleted=1)
         except:
             return Response(
-                {"errors": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
+                {"error": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -438,7 +447,7 @@ class LGDEditPublications(BaseUpdate):
                 is_deleted=0).update(is_deleted=1)
         except:
             return Response(
-                {"errors": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
+                {"error": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -465,6 +474,7 @@ class LGDEditPublications(BaseUpdate):
             #     lgd_mechanism_obj.save()
 
         return Response(
-                {"message": f"Publication '{pmid}' successfully deleted for ID '{stable_id}'"},
-                 status=status.HTTP_200_OK)
+            {"message": f"Publication '{pmid}' successfully deleted for ID '{stable_id}'"},
+            status=status.HTTP_200_OK
+        )
 
