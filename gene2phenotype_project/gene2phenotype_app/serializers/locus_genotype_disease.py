@@ -2,16 +2,30 @@ from rest_framework import serializers
 from django.db import connection, IntegrityError
 from django.db.models import Prefetch
 import itertools
+import re
 
-from ..models import (Panel, Attrib,
-                     LGDPanel, LocusGenotypeDisease, LGDVariantGenccConsequence,
-                     LGDCrossCuttingModifier, LGDPublication,
-                     LGDPhenotype, LGDVariantType, Locus,
-                     LGDComment, LGDVariantTypeComment, User,
-                     LGDMolecularMechanismEvidence, CVMolecularMechanism,
-                     OntologyTerm, Publication, LGDPhenotypeSummary,
-                     LGDVariantTypeDescription, LGDMolecularMechanismSynopsis)
-
+from ..models import (
+    Panel,
+    Attrib,
+    LGDPanel,
+    LocusGenotypeDisease,
+    LGDVariantGenccConsequence,
+    LGDCrossCuttingModifier,
+    LGDPublication,
+    LGDPhenotype,
+    LGDVariantType,
+    Locus,
+    LGDComment,
+    LGDVariantTypeComment,
+    User,
+    LGDMolecularMechanismEvidence,
+    CVMolecularMechanism,
+    OntologyTerm,
+    Publication,
+    LGDPhenotypeSummary,
+    LGDVariantTypeDescription,
+    LGDMolecularMechanismSynopsis
+)
 
 from .publication import LGDPublicationSerializer
 from .locus import LocusSerializer
@@ -1177,6 +1191,8 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
 
             # The LGDPhenotypeSummary is created - next step is to create the LGDVariantTypeComment
             if comment != "":
+                # Remove newlines from comment
+                comment = re.sub(r"\n", " ", comment)
                 try:
                     lgd_comment_obj = LGDVariantTypeComment.objects.get(
                         comment = comment,
@@ -1268,6 +1284,8 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
 
                     # The LGDPhenotypeSummary is created - next step is to create the LGDVariantTypeComment
                     if comment != "":
+                        # Remove newlines from comment
+                        comment = re.sub(r"\n", " ", comment)
                         try:
                             lgd_comment_obj = LGDVariantTypeComment.objects.get(
                                 comment = comment,
