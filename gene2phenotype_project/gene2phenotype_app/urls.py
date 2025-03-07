@@ -319,6 +319,13 @@ urlpatterns = [
         name="token_refresh"
     ),
 
+    ### Panels management
+    path(
+        "create/panel/",
+        views.PanelCreateView.as_view(),
+        name="panel_create"
+    ),
+
     ### Meta information ###
     path(
         "reference_data/",
