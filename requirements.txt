@@ -20,4 +20,4 @@ rpds-py==0.23.1
 setuptools==70.0.0
 sqlparse==0.5.3
 urllib3==2.3.0
-wheel==0.41.2
+wheel==0.45.1
