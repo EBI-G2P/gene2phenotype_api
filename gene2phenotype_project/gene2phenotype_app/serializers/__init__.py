@@ -2,7 +2,7 @@ from .attrib import AttribSerializer, AttribTypeSerializer
 
 from .user import UserSerializer, LoginSerializer, CreateUserSerializer, AddUserToPanelSerializer, LogoutSerializer, ChangePasswordSerializer, VerifyEmailSerializer, PasswordResetSerializer
 
-from .panel import PanelDetailSerializer, LGDPanelSerializer
+from .panel import PanelCreateSerializer, PanelDetailSerializer, LGDPanelSerializer
 
 from .publication import PublicationSerializer, LGDPublicationSerializer, LGDPublicationListSerializer
 
