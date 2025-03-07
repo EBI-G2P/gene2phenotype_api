@@ -200,6 +200,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
             # Prepare the list of comments
             comments = lgd_variant.current_comments # Get the prefetched comments
+
             for comment_obj in comments:
                 comment_text = comment_obj.comment
                 # Format date
@@ -219,9 +220,13 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     })
 
             if accession in data and lgd_variant.publication:
+                variant_type_comments = []
+                if accession in list_of_comments:
+                    variant_type_comments = list_of_comments[accession]
+
                 # Add pmid to list of publications
                 data[accession]["publications"].append(lgd_variant.publication.pmid)
-                data[accession]["comments"] = list_of_comments[accession]
+                data[accession]["comments"] = variant_type_comments
                 # Check the variant inheritance - we group this data for each publication
                 if(lgd_variant.inherited is True):
                     data[accession]["inherited"] = lgd_variant.inherited
@@ -234,6 +239,10 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 if lgd_variant.publication:
                     publication_list = [lgd_variant.publication.pmid]
 
+                variant_type_comments = []
+                if accession in list_of_comments:
+                    variant_type_comments = list_of_comments[accession]
+
                 data[accession] = {
                     "term": lgd_variant.variant_type_ot.term,
                     "accession": accession,
@@ -241,7 +250,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     "de_novo": lgd_variant.de_novo,
                     "unknown_inheritance": lgd_variant.unknown_inheritance,
                     "publications": publication_list,
-                    "comments": list_of_comments[accession]
+                    "comments": variant_type_comments
                 }
 
         return data.values()
