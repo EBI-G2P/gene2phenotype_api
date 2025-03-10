@@ -276,12 +276,12 @@ urlpatterns = [
     path(
         "create/user/",
         views.CreateUserView.as_view(),
-        name="create"
+        name="create_user"
     ),
     path(
         "add_user/panel/",
         views.AddUserToPanelView.as_view(),
-        name="add_user"
+        name="add_user_panel"
     ),
     path(
         "profile/",
