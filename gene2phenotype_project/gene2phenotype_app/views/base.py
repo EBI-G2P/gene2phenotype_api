@@ -25,7 +25,7 @@ class BaseView(generics.ListAPIView):
 
     def handle_exception(self, exc):
         if isinstance(exc, Http404):
-            return Response({"message": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         return super().handle_exception(exc)
 

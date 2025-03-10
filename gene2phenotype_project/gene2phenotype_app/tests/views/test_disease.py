@@ -43,7 +43,7 @@ class DiseaseEndpointTests(TestCase):
         response = self.client.get(self.url_disease)
 
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.data["message"], "No matching Disease found for: CACNA1F-related Aland Island")
+        self.assertEqual(response.data["error"], "No matching Disease found for: CACNA1F-related Aland Island")
 
 class DiseaseSummaryTests(TestCase):
     """
@@ -98,4 +98,4 @@ class DiseaseSummaryTests(TestCase):
         response = self.client.get(self.url_disease)
 
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.data["message"], "No matching Disease found for: CACNA1F-related Aland Island")
+        self.assertEqual(response.data["error"], "No matching Disease found for: CACNA1F-related Aland Island")

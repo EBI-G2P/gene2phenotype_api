@@ -1,8 +1,18 @@
 from rest_framework import serializers
+import re
 
-from ..models import (Publication, PublicationComment,
-                      PublicationFamilies, Attrib, LGDPublication)
-from ..utils import (get_publication, get_authors)
+from ..models import (
+    Publication,
+    PublicationComment,
+    PublicationFamilies,
+    Attrib,
+    LGDPublication
+)
+
+from ..utils import (
+    get_publication,
+    get_authors
+)
 
 from ..utils import get_date_now, clean_title
 
@@ -28,6 +38,9 @@ class PublicationCommentSerializer(serializers.ModelSerializer):
         comment_text = data.get("comment")
         is_public = data.get("is_public")
         user_obj = self.context['user'] # gets the user from the context
+
+        # Remove newlines from comment
+        comment_text = re.sub(r"\n", " ", comment_text)
 
         # Check if comment is already stored. We consider same comment if they have the same:
         #   publication, comment text, user and it's not deleted TODO

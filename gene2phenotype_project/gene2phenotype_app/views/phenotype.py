@@ -149,8 +149,17 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
         """
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
 
+        if not request.data:
+            return Response(
+                {"error": "Empty data. Please provide valid data."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         # Prepare the response in case the data does not follow correct format
-        response = Response({"errors": "Invalid data format."}, status=status.HTTP_400_BAD_REQUEST)
+        response = Response(
+            {"error": "Invalid data format. Please provide valid data."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
         # Check and prepare data structure the send to the serializer
         # LGDPhenotypeListSerializer accepts the phenotypes in a specific struture
@@ -163,7 +172,7 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
 
                 if not phenotypes_data:
                     return Response(
-                        {"errors": "Empty phenotype. Please provide valid data."},
+                        {"error": "Empty phenotype. Please provide valid data."},
                         status=status.HTTP_400_BAD_REQUEST
                     )
 
@@ -186,13 +195,13 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
                         )
                     else:
                         response = Response(
-                            {"errors": serializer_class.errors},
+                            {"error": serializer_class.errors},
                             status=status.HTTP_400_BAD_REQUEST
                         )
 
             else:
                 response = Response(
-                    {"errors": serializer_list.errors},
+                    {"error": serializer_list.errors},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -206,7 +215,7 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
 
                 if not phenotype_summary_data:
                     return Response(
-                        {"errors": "Empty phenotype summary. Please provide valid data."},
+                        {"error": "Empty phenotype summary. Please provide valid data."},
                         status=status.HTTP_400_BAD_REQUEST
                     )
                 
@@ -225,13 +234,13 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
                         )
                     else:
                         response = Response(
-                            {"errors": serializer_class.errors},
+                            {"error": serializer_class.errors},
                             status=status.HTTP_400_BAD_REQUEST
                         )
 
             else:
                 response = Response(
-                    {"errors": serializer_summary_list.errors},
+                    {"error": serializer_summary_list.errors},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -259,7 +268,7 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
             LGDPhenotype.objects.filter(lgd=lgd_obj, phenotype=phenotype_obj, is_deleted=0).update(is_deleted=1)
         except:
             return Response(
-                {"errors": f"Could not delete phenotype '{accession}' for ID '{stable_id}'"},
+                {"error": f"Could not delete phenotype '{accession}' for ID '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(
@@ -331,7 +340,7 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
 
             if not phenotype_summary_data:
                 return Response(
-                    {"errors": "Empty phenotype summary. Please provide valid data."},
+                    {"error": "Empty phenotype summary. Please provide valid data."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
@@ -351,13 +360,13 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
                     )
                 else:
                     response = Response(
-                        {"errors": serializer_class.errors},
+                        {"error": serializer_class.errors},
                         status=status.HTTP_400_BAD_REQUEST
                     )
 
         else:
             response = Response(
-                {"errors": serializer_summary_list.errors},
+                {"error": serializer_summary_list.errors},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -380,7 +389,7 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
             LGDPhenotypeSummary.objects.filter(lgd=lgd_obj, summary=summary, is_deleted=0).update(is_deleted=1)
         except:
             return Response(
-                {"errors": f"Could not delete phenotype summary for ID '{stable_id}'"},
+                {"error": f"Could not delete phenotype summary for ID '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST
             )
         else:
