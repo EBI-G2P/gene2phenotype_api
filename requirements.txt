@@ -1,7 +1,7 @@
 asgiref==3.8.1
 attrs==25.1.0
 certifi==2025.1.31
-charset-normalizer==3.3.2
+charset-normalizer==3.4.1
 deepdiff==8.3.0
 Django==5.1.5
 django-mail-templated==2.6.5
