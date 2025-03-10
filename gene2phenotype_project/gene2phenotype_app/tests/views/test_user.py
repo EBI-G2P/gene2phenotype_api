@@ -67,7 +67,7 @@ class CreateUserEndpointTest(TestCase):
     fixtures = ['gene2phenotype_app/fixtures/user_panels.json']
 
     def setUp(self):
-        self.url_create_user = reverse("create")
+        self.url_create_user = reverse("create_user")
 
         user = User.objects.get(email="user5@test.ac.uk")
 
@@ -98,7 +98,7 @@ class AddUserToPanelEndpointTest(TestCase):
     fixtures = ['gene2phenotype_app/fixtures/user_panels.json']
 
     def setUp(self):
-        self.url_add_to_panel = reverse("add_user")
+        self.url_add_to_panel = reverse("add_user_panel")
 
         user = User.objects.get(email="user5@test.ac.uk")
 
