@@ -1,15 +1,29 @@
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from django.db.models import Q
+from django.db import transaction
 from django.shortcuts import get_object_or_404
+from django.http import Http404
 
-from gene2phenotype_app.serializers import (GeneDiseaseSerializer,
-                                            DiseaseDetailSerializer,
-                                            CreateDiseaseSerializer)
+from gene2phenotype_app.serializers import (
+    GeneDiseaseSerializer,
+    DiseaseDetailSerializer,
+    CreateDiseaseSerializer,
+    DiseaseOntologyTermSerializer,
+    DiseaseOntologyTermListSerializer
+)
 
-from gene2phenotype_app.models import (AttribType, Locus, OntologyTerm,
-                                       DiseaseOntologyTerm, Disease,
-                                       LocusAttrib, GeneDisease, LocusGenotypeDisease)
+from gene2phenotype_app.models import (
+    AttribType,
+    Locus,
+    OntologyTerm,
+    DiseaseOntologyTerm,
+    Disease,
+    LocusAttrib,
+    GeneDisease,
+    LocusGenotypeDisease,
+    Source
+)
 
 from ..utils import clean_omim_disease
 from .base import BaseView, BaseAdd, IsSuperUser
@@ -175,12 +189,12 @@ class ExternalDisease(BaseView):
         return Response(serializer.data)
 
 ### Add data
-"""
-    Add new disease.
-    This view is called by the endpoint that directly adds a disease (add/disease/).
-    The create method is in the CreateDiseaseSerializer.
-"""
 class AddDisease(BaseAdd):
+    """
+        Add new disease.
+        This view is called by the endpoint that directly adds a disease (add/disease/).
+        The create method is in the CreateDiseaseSerializer.
+    """
     serializer_class = CreateDiseaseSerializer
     permission_classes = [IsSuperUser]
 
@@ -236,6 +250,152 @@ class UpdateDisease(BaseAdd):
             response_data["error"] = errors
 
         return Response(response_data, status=status.HTTP_200_OK if updated_diseases else status.HTTP_400_BAD_REQUEST)
+
+class DiseaseUpdateReferences(BaseAdd):
+    http_method_names = ["post", "delete", "options"]
+
+    def get_serializer_class(self, action):
+        """
+            Returns the appropriate serializer class based on the action.
+            To add data use DiseaseOntologyTermListSerializer: it accepts a list of disease IDs.
+            To delete data use DiseaseOntologyTermSerializer: it accepts one disease ID.
+        """
+        action = action.lower()
+
+        if action == "post":
+            return DiseaseOntologyTermListSerializer
+        elif action == "delete":
+            return DiseaseOntologyTermSerializer
+        else:
+            return None
+
+    def get_permissions(self):
+        """
+            Instantiates and returns the list of permissions for this view.
+            post(): adds/updates data - available to all authenticated users
+            delete(): deletes data - only available to authenticated super users
+        """
+        if self.request.method.lower() == "delete":
+            return [permissions.IsAuthenticated(), IsSuperUser()]
+        return [permissions.IsAuthenticated()]
+
+    @transaction.atomic
+    def post(self, request, name):
+        """
+            The post method creates an association between the disease and a list of cross references (external disease IDs).
+            We want to whole process to be done in one db transaction.
+
+            Args:
+                (dict) request: dictionary with the following keys
+                                - accession (mandatory)
+                                - term (mandatory)
+                                - description (optional)
+                                - source (mandatory)
+
+                Example:
+                { 
+                    "disease_ontologies": [
+                        {
+                            "accession": "610445",
+                            "term": "NIGHT BLINDNESS, CONGENITAL STATIONARY, AUTOSOMAL DOMINANT 1",
+                            "description": "NIGHT BLINDNESS, CONGENITAL STATIONARY, RHODOPSIN-RELATED",
+                            "source": "OMIM"
+                        },
+                        {
+                            "accession": "MONDO:0012490",
+                            "term": "cone-rod synaptic disorder, congenital nonprogressive",
+                            "description": "cone-rod synaptic disorder, congenital nonprogressive",
+                            "source": "Mondo"
+                        }
+                    ]
+                }
+        """
+        disease_obj = get_object_or_404(Disease, name=name)
+
+        # DiseaseOntologyTermListSerializer accepts a list of disease ontologies
+        disease_ont_list = DiseaseOntologyTermListSerializer(data=request.data)
+
+        if disease_ont_list.is_valid():
+            disease_ontologies = disease_ont_list.validated_data.get("disease_ontologies")
+
+            # Check if list of consequences is empty
+            if not disease_ontologies:
+                return Response(
+                    {"error": "Empty disease cross references. Please provide valid data."},
+                     status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Add each ontology to the disease from the input list
+            for ontology in disease_ontologies:
+                # The data is created in DiseaseOntologyTermSerializer
+                # Input the expected data format
+                if "source" in ontology["ontology_term"]:
+                    ontology["ontology_term"]["source"] = ontology["ontology_term"]["source"]["name"]
+
+                serializer_class = DiseaseOntologyTermSerializer(
+                    data=ontology["ontology_term"],
+                    context={"disease": disease_obj}
+                )
+
+                if serializer_class.is_valid():
+                    serializer_class.save()
+                    response = Response(
+                        {"message": "Disease cross reference added to the G2P entry successfully."},
+                        status=status.HTTP_201_CREATED
+                    )
+                else:
+                    response = Response(
+                        {"error": serializer_class.errors},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+        else:
+            response = Response(
+                {"error": disease_ont_list.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return response
+
+    def delete(self, request, name):
+        """
+            This method deletes the disease cross reference
+
+            Input data example:
+                {
+                    "accession": "MONDO:0008693"
+                }
+        """
+        disease_obj = get_object_or_404(Disease, name=name)
+
+        if "accession" not in request.data:
+            return Response(
+                {"error": "'accession' is missing. Please provide valid data."},
+                    status=status.HTTP_400_BAD_REQUEST
+            )
+
+        accession = request.data.get('accession')
+
+        # Fetch phenotype from Ontology Term
+        try:
+            disease_ont_obj = DiseaseOntologyTerm.objects.get(disease=disease_obj.id, ontology_term__accession=accession)
+        except DiseaseOntologyTerm.DoesNotExist:
+            raise Http404(f"Cannot find '{accession}' for disease '{name}'")
+        else:
+            try:
+                disease_ont_obj.delete()
+            except:
+                return Response(
+                    {"error": f"Could not delete '{accession}' deleted succesfully from disease '{name}'"},
+                        status=status.HTTP_400_BAD_REQUEST
+                )
+            else:
+                response = Response(
+                    {"message": f"'{accession}' deleted succesfully from disease '{name}'"},
+                    status=status.HTTP_200_OK
+                )
+
+        return response
 
 class LGDUpdateDisease(BaseAdd):
     http_method_names = ['post', 'options']
