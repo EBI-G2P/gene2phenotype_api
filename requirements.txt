@@ -14,7 +14,7 @@ jsonschema-specifications==2024.10.1
 mysqlclient==2.1.1
 ordered-set==4.1.0
 pytz==2024.1
-referencing==0.35.0
+referencing==0.36.2
 requests==2.32.3
 rpds-py==0.23.1
 setuptools==70.0.0
