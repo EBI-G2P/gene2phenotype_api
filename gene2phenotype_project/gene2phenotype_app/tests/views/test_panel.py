@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.conf import settings
 from django.urls import reverse
+import datetime
 from gene2phenotype_app.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -60,7 +61,20 @@ class PanelDetailsEndpointTests(TestCase):
         """
         response = self.client.get(self.url_panels)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data.get("description"), "Developmental disorders")
+
+        expected_data = {
+            'name': 'DD',
+            'description': 'Developmental disorders',
+            'last_updated': datetime.date(2017, 4, 24),
+            'stats': {
+                'total_records': 1,
+                'total_genes': 1,
+                'by_confidence': {
+                    'definitive': 1
+                }
+            }
+        }
+        self.assertEqual(response.data, expected_data)
 
 class PanelSummaryEndpointTests(TestCase):
     """

@@ -76,7 +76,6 @@ class PanelDetail(BaseView):
             Response object includes:
                             (string) panel name
                             (string) panel description: long name
-                            (list) curators: list of curators with permission to edit the panel
                             (string) last_updated
                             (dict) stats
     """
@@ -92,13 +91,11 @@ class PanelDetail(BaseView):
 
         if flag == 1:
             serializer = PanelDetailSerializer()
-            curators = serializer.get_curators(queryset.first())
             last_update = serializer.get_last_updated(queryset.first())
             stats = serializer.calculate_stats(queryset.first())
             response_data = {
                 'name': queryset.first().name,
                 'description': queryset.first().description,
-                'curators': curators,
                 'last_updated': last_update,
                 'stats': stats,
             }
