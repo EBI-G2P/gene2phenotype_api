@@ -1,0 +1,41 @@
+from ..models import Locus, LocusGenotypeDisease, Attrib, Sequence
+from django.core.checks import Error, register
+
+
+class AllelicRequirementCheck:
+
+
+    @register()
+    def check_ar_constraint(app_configs, **kwargs):
+        errors = []
+        for obj in LocusGenotypeDisease.objects.all():
+            if "autosomal" in obj.genotype.value.lower() and not (1 <= int(obj.locus.sequence.name) <= 22):
+                errors.append(
+                    Error(
+                        f"Autosomal not in Chr 1-22, {obj.stable_id.stable_id}",
+                        # level="CRITICAL",
+                        hint="Genotype autosomal not in chromosome 1-22",
+                        id="gene2phenotype_app.E002",
+                    )
+                )
+            
+            if obj.genotype.value.lower() == "mitochondrial" and obj.locus.sequence.name != "MT":
+                errors.append(
+                    Error(
+                        f"Mitochondrial genotype in non mitchondrial chromosome {obj.stable_id.stable_id}",
+                        hint="Genotype mitchondrial not in chromosome MT",
+                        id="gene2phenotype_app.E003",
+                    )
+                )
+            
+            if "par" in obj.genotype.value.lower() and (obj.locus.sequence.name != "X" or obj.locus.sequence.name != "Y"):
+                errors.append(
+                    Error(
+                        f"PAR genotype in not X or Y chromosome {obj.stable_id.stable_id}",
+                        hint="Genotype PAR not in chromsome X or Y",
+                        id="gene2phenotype_app.E004",
+                    )
+                )
+            
+        
+        return errors
