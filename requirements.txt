@@ -17,7 +17,7 @@ pytz==2025.1
 referencing==0.36.2
 requests==2.32.3
 rpds-py==0.23.1
-setuptools==70.0.0
+setuptools==76.0.0
 sqlparse==0.5.3
 urllib3==2.3.0
 wheel==0.45.1
