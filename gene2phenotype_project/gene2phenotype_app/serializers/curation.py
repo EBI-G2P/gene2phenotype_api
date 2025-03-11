@@ -129,7 +129,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         if missing_data:
             missing_data_str = ', '.join(missing_data)
             raise serializers.ValidationError(
-                {"message" : f"The following mandatory fields are missing: {missing_data_str}"}
+                {"error" : f"The following mandatory fields are missing: {missing_data_str}"}
             )
 
         # Check if locus data is stored in G2P
@@ -146,7 +146,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             ("_PAR" in json_data["allelic_requirement"] and (locus_chr != "X" and locus_chr != "Y")) or
             ("_X" in json_data["allelic_requirement"] and locus_chr != "X")):
             raise serializers.ValidationError({
-                "message": f"Invalid genotype '{json_data['allelic_requirement']}' for locus '{locus_obj.name}'"
+                "error": f"Invalid genotype '{json_data['allelic_requirement']}' for locus '{locus_obj.name}'"
             })
 
         # Check if G2P record (LGD) is already published
@@ -160,7 +160,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             )
 
             raise serializers.ValidationError({
-                "message": f"Found another record with same locus, genotype, disease and molecular mechanism. Please check G2P ID '{lgd_obj.stable_id.stable_id}'"
+                "error": f"Found another record with same locus, genotype, disease and molecular mechanism. Please check G2P ID '{lgd_obj.stable_id.stable_id}'"
             })
         except LocusGenotypeDisease.DoesNotExist:
             return locus_obj
