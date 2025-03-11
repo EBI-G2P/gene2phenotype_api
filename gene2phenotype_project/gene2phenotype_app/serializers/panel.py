@@ -85,46 +85,12 @@ class PanelDetailSerializer(serializers.ModelSerializer):
     """
         Serializer for the Panel model.
         It returns the panel info including extra data:
-            - list of curators with permission to edit the panel
             - data of the last update
             - some stats: total number of records linked to the panel, etc.
             - summary of records associated with panel
     """
 
-    curators = serializers.SerializerMethodField()
     last_updated = serializers.SerializerMethodField()
-
-    # Returns only the curators excluding staff members
-    def get_curators(self, id):
-        """
-            Returns a list of users with permission to edit the panel.
-        """
-
-        user_panels = UserPanel.objects.filter(
-            panel=id,
-            user__is_active=1
-            ).select_related('user')
-
-        # TODO: decide how to define the curators group
-        curators_group = set(
-            User.groups.through.objects.filter(
-            group__name="curators"
-            ).values_list('user_id', flat=True)
-        )
-
-        users = []
-
-        for user_panel in user_panels:
-            if not user_panel.user.is_staff or user_panel.user.id in curators_group:
-                first_name = user_panel.user.first_name
-                last_name = user_panel.user.last_name
-                if first_name is not None and last_name is not None:
-                    name = f"{first_name} {last_name}"
-                else:
-                    user_name = user_panel.user.username.split('_')
-                    name = ' '.join(user_name).title()
-                users.append(name)
-        return users
 
     def get_last_updated(self, id):
         """
