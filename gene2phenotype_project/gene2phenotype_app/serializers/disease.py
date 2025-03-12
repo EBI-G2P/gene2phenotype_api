@@ -2,11 +2,22 @@ from rest_framework import serializers
 from django.db.models import Q
 import re
 
-from ..models import (Disease, DiseaseOntologyTerm, DiseaseSynonym,
-                      Attrib, LocusGenotypeDisease, OntologyTerm,
-                      Source, GeneDisease)
+from ..models import (
+    Disease,
+    DiseaseOntologyTerm,
+    DiseaseSynonym,
+    Attrib,
+    LocusGenotypeDisease,
+    OntologyTerm,
+    Source,
+    GeneDisease
+)
 
-from ..utils import (clean_string, get_ontology, get_ontology_source)
+from ..utils import (
+    clean_string,
+    get_ontology,
+    get_ontology_source
+)
 
 
 class DiseaseOntologyTermSerializer(serializers.ModelSerializer):
@@ -16,9 +27,9 @@ class DiseaseOntologyTermSerializer(serializers.ModelSerializer):
     """
 
     accession = serializers.CharField(source="ontology_term.accession")
-    term = serializers.CharField(source="ontology_term.term", required=False)
+    term = serializers.CharField(source="ontology_term.term", required=True)
     description = serializers.CharField(source="ontology_term.description", allow_null=True, required=False) # the description is optional
-    source = serializers.CharField(source="ontology_term.source.name", required=False) # external source (ex: OMIM)
+    source = serializers.CharField(source="ontology_term.source.name", required=True) # external source (ex: OMIM)
 
     def create(self, validated_data):
         """
@@ -33,11 +44,16 @@ class DiseaseOntologyTermSerializer(serializers.ModelSerializer):
                     DiseaseOntologyTerm object
         """
 
-        disease_obj = self.context['disease']
-        ontology_accession = validated_data.get('ontology_term')['accession']
-        ontology_term = validated_data.get('ontology_term')['term']
-        ontology_desc = validated_data.get('ontology_term')['description']
-        ontology_source = validated_data.get('ontology_term')['source']
+        disease_obj = self.context["disease"]
+        # Get mandatory fields
+        ontology_accession = validated_data.get("ontology_term")["accession"]
+        ontology_term = validated_data.get("ontology_term")["term"]
+        ontology_source = validated_data.get("ontology_term")["source"]
+        # Get optional fields
+        ontology_desc = None
+        if "description" in validated_data.get("ontology_term"):
+            ontology_desc = validated_data.get("ontology_term")["description"]
+
         disease_ontology_obj = None
 
         # Check if ontology is in db
@@ -46,7 +62,7 @@ class DiseaseOntologyTermSerializer(serializers.ModelSerializer):
             ontology_obj = OntologyTerm.objects.get(accession=ontology_accession)
 
         except OntologyTerm.DoesNotExist:
-            source = Source.objects.get(name=ontology_source['name'])
+            source = Source.objects.get(name=ontology_source["name"])
             # Get attrib 'disease'
             attrib_disease = Attrib.objects.get(
                 value = "disease",
@@ -91,6 +107,13 @@ class DiseaseOntologyTermSerializer(serializers.ModelSerializer):
     class Meta:
         model = DiseaseOntologyTerm
         fields = ['accession', 'term', 'description', 'source']
+
+class DiseaseOntologyTermListSerializer(serializers.Serializer):
+    """
+        Serializer to accept a list of disease ontologies.
+        Called by: view DiseaseUpdateReferences()
+    """
+    disease_ontologies = DiseaseOntologyTermSerializer(many=True)
 
 class DiseaseSerializer(serializers.ModelSerializer):
     """
