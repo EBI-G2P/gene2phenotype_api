@@ -198,13 +198,26 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             The variant type can be linked to several publications therefore response 
             includes the list of publications associated with the variant type.
         """
-        queryset = LGDVariantType.objects.filter(lgd_id=id, is_deleted=0).prefetch_related(
-            Prefetch(
-                'lgdvarianttypecomment_set',
-                queryset=LGDVariantTypeComment.objects.filter(is_deleted=0), # skip deleted comments
-                to_attr="current_comments" # prefetched comments are saved under 'current_comments'
+        # Check if user is authenticated
+        user = self.context.get("user")
+        try:
+            User.objects.get(email=user)
+            authenticated_user = 1
+        except User.DoesNotExist:
+            authenticated_user = 0
+
+        if authenticated_user == 1:
+            # Authenticated users have access to comments
+            queryset = LGDVariantType.objects.filter(lgd_id=id, is_deleted=0).prefetch_related(
+                Prefetch(
+                    'lgdvarianttypecomment_set',
+                    queryset=LGDVariantTypeComment.objects.filter(is_deleted=0), # skip deleted comments
+                    to_attr="current_comments" # prefetched comments are saved under 'current_comments'
+                )
             )
-        )
+        else:
+            queryset = LGDVariantType.objects.filter(lgd_id=id, is_deleted=0)
+
         data = {}
 
         list_of_comments = {}
@@ -213,7 +226,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             accession = lgd_variant.variant_type_ot.accession
 
             # Prepare the list of comments
-            comments = lgd_variant.current_comments # Get the prefetched comments
+            comments = getattr(lgd_variant, "current_comments", []) # Get the prefetched comments
 
             for comment_obj in comments:
                 comment_text = comment_obj.comment
@@ -1206,14 +1219,14 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
                     lgd_comment_obj = LGDVariantTypeComment.objects.get(
                         comment = comment,
                         lgd_variant_type = lgd_variant_type_obj,
-                        is_public = 1, # TODO: update
+                        is_public = 0, # variant type comments are private
                         user = user_obj,
                     )
                 except LGDVariantTypeComment.DoesNotExist:
                     lgd_comment_obj = LGDVariantTypeComment.objects.create(
                         comment = comment,
                         lgd_variant_type = lgd_variant_type_obj,
-                        is_public = 1, # TODO: update
+                        is_public = 0, # variant type comments are private
                         is_deleted = 0,
                         user = user_obj,
                         date = get_date_now()
@@ -1299,14 +1312,14 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
                             lgd_comment_obj = LGDVariantTypeComment.objects.get(
                                 comment = comment,
                                 lgd_variant_type = lgd_variant_type_obj,
-                                is_public = 1, # TODO: update
+                                is_public = 0, # variant type comments are private
                                 user = user_obj,
                             )
                         except LGDVariantTypeComment.DoesNotExist:
                             lgd_comment_obj = LGDVariantTypeComment.objects.create(
                                 comment = comment,
                                 lgd_variant_type = lgd_variant_type_obj,
-                                is_public = 1, # TODO: update
+                                is_public = 0, # variant type comments are private
                                 is_deleted = 0,
                                 user = user_obj,
                                 date = get_date_now()
