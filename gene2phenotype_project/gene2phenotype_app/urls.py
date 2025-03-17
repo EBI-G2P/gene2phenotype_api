@@ -129,8 +129,8 @@ urlpatterns = [
 
     # Endpoint to fetch disease from external sources (OMIM/Mondo)
     path(
-        "external_disease/<str:ext_id>/",
-        views.ExternalDisease.as_view(),
+        "external_disease/<str:ext_ids>/",
+        views.ExternalDisease,
         name="external_disease"
     ),
 

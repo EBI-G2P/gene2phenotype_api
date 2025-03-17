@@ -1,5 +1,6 @@
 from rest_framework import permissions, status
 from rest_framework.response import Response
+from rest_framework.decorators import api_view
 from django.db.models import Q
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -153,40 +154,54 @@ class DiseaseSummary(DiseaseDetail):
 
         return Response(response_data)
 
-class ExternalDisease(BaseView):
+@api_view(['GET'])
+def ExternalDisease(request, ext_ids):
     """
-        Returns the disease for an external disease ID.
+        Returns the disease for a list of external disease IDs.
         External sources can be OMIM or Mondo.
 
         Args:
-            (str) external disease id: the disease ID of the external source (OMIM/Mondo)
+            (str) external disease ids: the list if disease IDs of the external source (OMIM/Mondo)
 
         Returns:
-            Response object is a dict with the following structure
-                    (string) disease: the disease name as represented in the source
-                    (string) identifier: disease ID
-                    (string) source: source name
+            Response object includes:
+                (list) results: contains publication data for each publication
+                                disease: the disease name as represented in the source
+                                identifier: disease ID
+                                source: source name
+                (int) count: number of IDs
+
     """
-    serializer_class = GeneDiseaseSerializer
+    disease_id_list = ext_ids.split(",")
+    data = []
+    invalid_ids = []
 
-    def get_queryset(self):
-        disease_id = self.kwargs['ext_id']
-
-        if disease_id.startswith('MONDO') or disease_id.isdigit():
+    for disease_id in disease_id_list:
+        if disease_id.startswith("MONDO") or disease_id.isdigit():
             gene_disease = GeneDisease.objects.filter(identifier=disease_id)
+            if gene_disease.exists():
+                data.append(
+                    {
+                        "disease": gene_disease.first().disease,
+                        "identifier": gene_disease.first().identifier,
+                        "source": gene_disease.first().source.name
+                    }
+                )
 
-            if not gene_disease.exists():
-                self.handle_no_permission('disease', disease_id)
+            else:
+                invalid_ids.append(disease_id)
 
         else:
-            self.handle_no_permission('disease', disease_id)
+            invalid_ids.append(disease_id)
 
-        return gene_disease
+    if invalid_ids:
+        disease_list = ", ".join(invalid_ids)
+        response = Response({"error": f"Invalid ID(s): {disease_list}"}, status=status.HTTP_404_NOT_FOUND)
 
-    def get(self, request, *args, **kwargs):
-        gene_disease_obj = self.get_queryset().first()
-        serializer = GeneDiseaseSerializer(gene_disease_obj)
-        return Response(serializer.data)
+    else:
+        response = Response({"results": data, "count": len(data)})
+
+    return response
 
 ### Add data
 class AddDisease(BaseAdd):
