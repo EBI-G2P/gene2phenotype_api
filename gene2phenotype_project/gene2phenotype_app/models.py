@@ -213,6 +213,7 @@ class LGDVariantTypeComment(models.Model):
     is_deleted = models.SmallIntegerField(null=False, default=False)
     user = models.ForeignKey("User", on_delete=models.PROTECT)
     date = models.DateTimeField(null=False)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "lgd_variant_type_comment"
@@ -278,6 +279,7 @@ class LGDComment(models.Model):
     is_deleted = models.SmallIntegerField(null=False, default=False)
     user = models.ForeignKey("User", on_delete=models.PROTECT)
     date = models.DateTimeField(null=False)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "lgd_comment"
@@ -339,7 +341,6 @@ class Locus(models.Model):
     end = models.IntegerField(null=False)
     strand = models.SmallIntegerField(null=False, default=1)
     name = models.CharField(max_length=255)
-    history = HistoricalRecords()
 
     class Meta:
         db_table = "locus"
@@ -354,7 +355,6 @@ class LocusIdentifier(models.Model):
     identifier = models.CharField(max_length=100, null=False)
     description = models.CharField(max_length=255, null=True, default=None)
     source = models.ForeignKey("Source", on_delete=models.PROTECT)
-    history = HistoricalRecords()
 
     class Meta:
         db_table = "locus_identifier"
@@ -369,7 +369,6 @@ class LocusAttrib(models.Model):
     value = models.CharField(max_length=255, null=False)
     source = models.ForeignKey("Source", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
-    history = HistoricalRecords()
 
     class Meta:
         db_table = "locus_attrib"
@@ -553,6 +552,7 @@ class PublicationComment(models.Model):
     is_deleted = models.SmallIntegerField(null=False, default=False)
     user = models.ForeignKey("User", on_delete=models.PROTECT)
     date = models.DateTimeField(null=False)
+    history = HistoricalRecords()
 
     class Meta:
         db_table = "publication_comment"
