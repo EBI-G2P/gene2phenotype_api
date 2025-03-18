@@ -398,12 +398,12 @@ class DiseaseUpdateReferences(BaseAdd):
                 disease_ont_obj.delete()
             except:
                 return Response(
-                    {"error": f"Could not delete '{accession}' deleted succesfully from disease '{name}'"},
+                    {"error": f"Could not delete '{accession}' deleted successfully from disease '{name}'"},
                         status=status.HTTP_400_BAD_REQUEST
                 )
             else:
                 response = Response(
-                    {"message": f"'{accession}' deleted succesfully from disease '{name}'"},
+                    {"message": f"'{accession}' deleted successfully from disease '{name}'"},
                     status=status.HTTP_200_OK
                 )
 
