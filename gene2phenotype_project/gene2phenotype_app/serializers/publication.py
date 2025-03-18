@@ -20,6 +20,7 @@ class PublicationCommentSerializer(serializers.ModelSerializer):
     """
         Serializer for the PublicationComment model.
         To insert a comment the user is fetched from the context.
+        Publication comments are only available to authenticated users.
     """
 
     comment = serializers.CharField()
@@ -36,8 +37,8 @@ class PublicationCommentSerializer(serializers.ModelSerializer):
         """
 
         comment_text = data.get("comment")
-        is_public = data.get("is_public")
         user_obj = self.context['user'] # gets the user from the context
+        is_public = 0 # publication comments are private
 
         # Remove newlines from comment
         comment_text = re.sub(r"\n", " ", comment_text)
@@ -359,9 +360,9 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
             # Check if comment text is empty string
             if not comment_text or comment_text == "":
                 comment = None
-            # If 'is_public' is not defined set it to public (default)
+            # Publication comments are always private
             else:
-                comment["is_public"] = comment.get("is_public", 1)
+                comment["is_public"] = 0
 
         # it is necessary to send the user
         # the publication comment is linked to the user
