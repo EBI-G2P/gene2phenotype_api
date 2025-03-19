@@ -97,7 +97,9 @@ class IsSuperUser(BasePermission):
         Allows access only to superusers.
     """
     def has_permission(self, request, view):
-        return request.user and request.user.is_superuser
+        if not (request.user and request.user.is_superuser):
+            raise PermissionDenied({"error": "You do not have permission to perform this action."})
+        return True
 
 
 @api_view(['GET'])
