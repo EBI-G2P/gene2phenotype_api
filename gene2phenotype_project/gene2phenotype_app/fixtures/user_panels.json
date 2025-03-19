@@ -1,7 +1,8 @@
 [
 
 	{
-		"model": "gene2phenotype_app.user", "pk": 1,
+		"model": "gene2phenotype_app.user",
+		"pk": 1,
 		"fields": {
 			"password": "pbkdf2_sha256$720000$0k4DsHeXy2xI1czeahgFE8$5zaRcE9orXAf3oMH9b5v4xAwK1WtCsOI893H/7Uy8S0=",
 			"is_staff": false,
@@ -15,7 +16,8 @@
 		}
 	},
 	{
-		"model": "gene2phenotype_app.user", "pk": 2,
+		"model": "gene2phenotype_app.user",
+		"pk": 2,
 		"fields": {
 			"password": "pbkdf2_sha256$720000$iaqz7Y3di11zEhnMU2oR15$OkyarfvlSmJzlgt3ZEgElJGGpg34dKc78e/463qI/l4=",
 			"is_staff": false,
@@ -29,7 +31,8 @@
 		}
 	},
 	{
-		"model": "gene2phenotype_app.user", "pk": 3,
+		"model": "gene2phenotype_app.user",
+		"pk": 3,
 		"fields": {
 			"password": "pbkdf2_sha256$720000$iZL1O7xIUhZYHTJ6g8Vkg0$N47r3fthBDJWgQAVzqxOqXsmAj+pIT3N8jTbMcJDN3g=",
 			"is_staff": false,
@@ -43,7 +46,8 @@
 		}
 	},
 	{
-		"model": "gene2phenotype_app.user", "pk": 4,
+		"model": "gene2phenotype_app.user",
+		"pk": 4,
 		"fields": {
 			"password": "pbkdf2_sha256$720000$lNUtl4QeLK8QaTJ2J6FJei$NQsTN1+LP6PqJMxC0dKEqSaeeTEbFiE0vtWaia1Ufik=",
 			"is_staff": false,
@@ -57,7 +61,8 @@
 		}
 	},
 	{
-		"model": "gene2phenotype_app.user", "pk": 5,
+		"model": "gene2phenotype_app.user",
+		"pk": 5,
 		"fields": {
 			"password": "pbkdf2_sha256$720000$w5I3Bm9k1tX10ZHYbkyXiB$MAOsldxIofWkGpKIVTvgpBp3hWGBfCCwrpuRedueshE=",
 			"is_staff": true,
@@ -70,18 +75,58 @@
 			"last_name": "User5"
 		}
 	},
+	{
+		"model": "gene2phenotype_app.user",
+		"pk": 6,
+		"fields": {
+			"password": "pbkdf2_sha256$720000$w5I3Bm9k1tX10ZHYbkyXiB$MAOsldxIofWkGpKIVTvgpBp3hWGBfCCwrpuRedueshE=",
+			"is_staff": false,
+			"is_active": true,
+			"username": "test_user_john",
+			"email": "john@test.ac.uk",
+			"is_deleted": false,
+			"is_superuser": 1,
+			"first_name": "John",
+			"last_name": "Doe"
+		}
+	},
+
 
 	{
-		"model": "gene2phenotype_app.panel", "pk": 1,
-		"fields": {"name": "DD", "description": "Developmental disorders", "is_visible": 1}
+		"model": "gene2phenotype_app.panel",
+		"pk": 1,
+		"fields": {
+			"name": "DD",
+			"description": "Developmental disorders",
+			"is_visible": 1
+		}
 	},
 	{
-		"model": "gene2phenotype_app.panel", "pk": 2,
-		"fields": {"name": "Ear", "description": "Ear disorders", "is_visible": 0}
+		"model": "gene2phenotype_app.panel",
+		"pk": 2,
+		"fields": {
+			"name": "Ear",
+			"description": "Ear disorders",
+			"is_visible": 0
+		}
 	},
 	{
-		"model": "gene2phenotype_app.panel", "pk": 3,
-		"fields": {"name": "Eye", "description": "Eye disorders", "is_visible": 1}
+		"model": "gene2phenotype_app.panel",
+		"pk": 3,
+		"fields": {
+			"name": "Eye",
+			"description": "Eye disorders",
+			"is_visible": 1
+		}
+	},
+	{
+		"model": "gene2phenotype_app.panel",
+		"pk": 4,
+		"fields": {
+			"name": "Cardiac",
+			"description": "Cardiac disorders",
+			"is_visible": 1
+		}
 	},
 
 	{
@@ -98,42 +143,54 @@
 	},
 	{
 		"model": "gene2phenotype_app.userpanel", "pk": 4,
-		"fields": {"user": 2, "panel": 1, "is_deleted": 0}
+		"fields": {"user": 1, "panel": 4, "is_deleted": 0}
 	},
 	{
 		"model": "gene2phenotype_app.userpanel", "pk": 5,
-		"fields": {"user": 2, "panel": 2, "is_deleted": 0}
+		"fields": {"user": 2, "panel": 1, "is_deleted": 0}
 	},
 	{
 		"model": "gene2phenotype_app.userpanel", "pk": 6,
-		"fields": {"user": 3, "panel": 1, "is_deleted": 0}
+		"fields": {"user": 2, "panel": 2, "is_deleted": 0}
 	},
 	{
 		"model": "gene2phenotype_app.userpanel", "pk": 7,
-		"fields": {"user": 3, "panel": 2, "is_deleted": 0}
+		"fields": {"user": 3, "panel": 1, "is_deleted": 0}
 	},
 	{
 		"model": "gene2phenotype_app.userpanel", "pk": 8,
-		"fields": {"user": 3, "panel": 3, "is_deleted": 1}
+		"fields": {"user": 3, "panel": 2, "is_deleted": 0}
 	},
 	{
 		"model": "gene2phenotype_app.userpanel", "pk": 9,
-		"fields": {"user": 4, "panel": 1, "is_deleted": 0}
+		"fields": {"user": 3, "panel": 3, "is_deleted": 1}
 	},
 	{
 		"model": "gene2phenotype_app.userpanel", "pk": 10,
-		"fields": {"user": 4, "panel": 2, "is_deleted": 0}
+		"fields": {"user": 3, "panel": 4, "is_deleted": 0}
+	},
+	{
+		"model": "gene2phenotype_app.userpanel", "pk": 11,
+		"fields": {"user": 4, "panel": 1, "is_deleted": 0}
 	},
 	{
 		"model": "gene2phenotype_app.userpanel", "pk": 12,
-		"fields": {"user": 5, "panel": 1, "is_deleted": 0}
+		"fields": {"user": 4, "panel": 2, "is_deleted": 0}
 	},
 	{
 		"model": "gene2phenotype_app.userpanel", "pk": 13,
-		"fields": {"user": 5, "panel": 2, "is_deleted": 0}
+		"fields": {"user": 5, "panel": 1, "is_deleted": 0}
 	},
 	{
 		"model": "gene2phenotype_app.userpanel", "pk": 14,
+		"fields": {"user": 5, "panel": 2, "is_deleted": 0}
+	},
+	{
+		"model": "gene2phenotype_app.userpanel", "pk": 15,
 		"fields": {"user": 5, "panel": 3, "is_deleted": 0}
+	},
+	{
+		"model": "gene2phenotype_app.userpanel", "pk": 16,
+		"fields": {"user": 6, "panel": 4, "is_deleted": 0}
 	}
 ]

@@ -133,12 +133,20 @@
   {
     "model": "gene2phenotype_app.cvmolecularmechanism",
     "pk": 16,
-    "fields": { "type": "support", "subtype": null, "value": "inferred" }
+    "fields": {
+      "type": "support",
+      "subtype": null,
+      "value": "inferred"
+    }
   },
   {
     "model": "gene2phenotype_app.cvmolecularmechanism",
     "pk": 17,
-    "fields": { "type": "support", "subtype": null, "value": "evidence" }
+    "fields": {
+      "type": "support",
+      "subtype": null,
+      "value": "evidence"
+    }
   },
   {
     "model": "gene2phenotype_app.cvmolecularmechanism",
@@ -233,6 +241,10 @@
   {
     "model": "gene2phenotype_app.cvmolecularmechanism",
     "pk": 28,
-    "fields": { "type": "evidence", "subtype": "rescue", "value": "human" }
+    "fields": {
+      "type": "evidence",
+      "subtype": "rescue",
+      "value": "human"
+    }
   }
 ]

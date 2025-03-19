@@ -1,10 +1,38 @@
 [
     {
-        "model": "gene2phenotype_app.lgdpublication", "pk": 1,
+        "model": "gene2phenotype_app.lgdpublication",
+        "pk": 1,
         "fields": {
             "lgd": 1,
             "publication": 1,
             "is_deleted": 0
+        }
+    },
+    {
+        "model": "gene2phenotype_app.lgdpublication",
+        "pk": 2,
+        "fields": {
+            "lgd": 2,
+            "publication": 2,
+            "is_deleted": 0
+        }
+    },
+    {
+        "model": "gene2phenotype_app.lgdpublication",
+        "pk": 3,
+        "fields": {
+            "lgd": 2,
+            "publication": 3,
+            "is_deleted": 0
+        }
+    },
+    {
+        "model": "gene2phenotype_app.lgdpublication",
+        "pk": 4,
+        "fields": {
+            "lgd": 3,
+            "publication": 4,
+            "is_deleted": 1
         }
     }
 ]
