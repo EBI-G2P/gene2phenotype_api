@@ -35,13 +35,13 @@ class SearchView(BaseView):
         search_query = self.request.query_params.get('query', None)
         search_panel = self.request.query_params.get('panel', None)
 
+        if not search_query:
+            return LocusGenotypeDisease.objects.none()
+
         # Some disease names contain parenthesis
         # In mysql, parenthesis is a special character that has to be search with "\\("
         if search_query.find("(") or search_query.find(")"):
             search_query = search_query.replace("(", "\\(").replace(")", "\\)")
-
-        if not search_query:
-            return LocusGenotypeDisease.objects.none()
 
         # Remove leading whitespaces, newline and tab characters from the beginning and end of the query text
         search_query = search_query.lstrip().rstrip()
