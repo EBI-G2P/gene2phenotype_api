@@ -91,7 +91,6 @@
 		}
 	},
 
-
 	{
 		"model": "gene2phenotype_app.panel",
 		"pk": 1,

@@ -1,0 +1,22 @@
+[
+    {
+        "model": "gene2phenotype_app.lgdvarianttypedescription",
+        "pk": 1,
+        "fields": {
+            "lgd": 2,
+            "publication": 2,
+            "description": "NM_001130004.2:c.137G>A",
+            "is_deleted": 0
+        }
+    },
+    {
+        "model": "gene2phenotype_app.lgdvarianttypedescription",
+        "pk": 2,
+        "fields": {
+            "lgd": 2,
+            "publication": 2,
+            "description": "NM_001130004.2:c.137G>T",
+            "is_deleted": 0
+        }
+    }
+]

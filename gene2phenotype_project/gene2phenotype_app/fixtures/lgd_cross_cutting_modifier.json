@@ -1,0 +1,11 @@
+[
+    {
+        "model": "gene2phenotype_app.lgdcrosscuttingmodifier",
+        "pk": 1,
+        "fields": {
+            "lgd": 2,
+            "ccm": 8,
+            "is_deleted": 0
+        }
+    }
+]

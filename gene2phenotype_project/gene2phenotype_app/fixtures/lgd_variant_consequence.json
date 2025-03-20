@@ -1,0 +1,12 @@
+[
+    {
+        "model": "gene2phenotype_app.lgdvariantgenccconsequence",
+        "pk": 1,
+        "fields": {
+            "lgd": 2,
+            "variant_consequence": 1,
+            "support": 44,
+            "is_deleted": 0
+        }
+    }
+]
