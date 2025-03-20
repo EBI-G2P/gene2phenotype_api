@@ -1,3 +1,29 @@
 [
-	{"model": "gene2phenotype_app.g2pstableid", "pk": 1, "fields": {"stable_id": "G2P00001", "is_live": true}}
+	{
+		"model": "gene2phenotype_app.g2pstableid",
+		"pk": 1,
+		"fields": {
+			"stable_id": "G2P00001",
+			"is_live": true,
+			"is_deleted": 0
+		}
+	},
+	{
+		"model": "gene2phenotype_app.g2pstableid",
+		"pk": 2,
+		"fields": {
+			"stable_id": "G2P00002",
+			"is_live": true,
+			"is_deleted": 0
+		}
+	},
+	{
+		"model": "gene2phenotype_app.g2pstableid",
+		"pk": 3,
+		"fields": {
+			"stable_id": "G2P00003",
+			"is_live": false,
+			"is_deleted": 1
+		}
+	}
 ]

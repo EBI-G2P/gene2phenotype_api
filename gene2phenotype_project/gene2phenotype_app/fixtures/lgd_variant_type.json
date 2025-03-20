@@ -1,0 +1,28 @@
+[
+    {
+        "model": "gene2phenotype_app.lgdvarianttype",
+        "pk": 1,
+        "fields": {
+            "lgd": 2,
+            "variant_type_ot": 21,
+            "inherited": false,
+            "de_novo": false,
+            "unknown_inheritance": false,
+            "publication": 2,
+            "is_deleted": 0
+        }
+    },
+    {
+        "model": "gene2phenotype_app.lgdvarianttype",
+        "pk": 2,
+        "fields": {
+            "lgd": 2,
+            "variant_type_ot": 18,
+            "inherited": false,
+            "de_novo": false,
+            "unknown_inheritance": true,
+            "publication": 2,
+            "is_deleted": 0
+        }
+    }
+]

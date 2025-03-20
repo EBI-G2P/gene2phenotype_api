@@ -99,6 +99,17 @@ class SearchTests(TestCase):
         ]
         self.assertEqual(response.data["results"], expected_data)
 
+    def test_search_g2p_id_not_found(self):
+        """
+            Test the response when searching by G2P stable ID that has been deleted
+        """
+        base_url_search = reverse("search")
+        url_search_id = f"{base_url_search}?type=g2p_id&query=G2P00003"
+        response = self.client.get(url_search_id)
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.data["error"], "No matching g2p_id found for: G2P00003")
+
     def test_search_all(self):
         """
             Test the response when searching without specific type
@@ -135,3 +146,14 @@ class SearchTests(TestCase):
 
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.data["error"], "No matching Gene found for: TUBB4A")
+
+    def test_search_not_found_2(self):
+        """
+            Test the response when not found because the record is deleted
+        """
+        base_url_search = reverse("search")
+        url_search_gene = f"{base_url_search}?type=gene&query=STRA6"
+        response = self.client.get(url_search_gene)
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.data["error"], "No matching Gene found for: STRA6")

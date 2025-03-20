@@ -1,0 +1,14 @@
+[
+    {
+        "model": "gene2phenotype_app.lgdvarianttypecomment",
+        "pk": 1,
+        "fields": {
+            "lgd_variant_type": 1,
+            "comment": "Recurrent c.340C>T; p.Arg114Ter in 5/9 cases.",
+            "is_public": 0,
+            "is_deleted": 0,
+            "user": 1,
+            "date": "2025-02-19T11:31:34Z"
+        }
+    }
+]

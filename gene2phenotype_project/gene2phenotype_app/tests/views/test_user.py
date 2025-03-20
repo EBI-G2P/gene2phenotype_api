@@ -60,7 +60,7 @@ class UserListEndpointTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 2)
-        self.assertEqual(len(response.data['results']), 4)
+        self.assertEqual(len(response.data['results']), 5)
 
 
 class CreateUserEndpointTest(TestCase):

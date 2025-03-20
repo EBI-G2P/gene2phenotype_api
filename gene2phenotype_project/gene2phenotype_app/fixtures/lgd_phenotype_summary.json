@@ -1,0 +1,12 @@
+[
+    {
+        "model": "gene2phenotype_app.lgdphenotypesummary",
+        "pk": 1,
+        "fields": {
+            "lgd": 2,
+            "publication": 2,
+            "summary": "Abnormality of connective tissue and of the musculoskeletal system",
+            "is_deleted": 0
+        }
+    }
+]

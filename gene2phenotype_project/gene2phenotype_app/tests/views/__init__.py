@@ -1,2 +1,5 @@
-from .test_panel import (PanelListEndpointTests, PanelDetailsEndpointTests,
-                    PanelSummaryEndpointTests)
+from .test_panel import (
+    PanelListEndpointTests,
+    PanelDetailsEndpointTests,
+    PanelSummaryEndpointTests
+)

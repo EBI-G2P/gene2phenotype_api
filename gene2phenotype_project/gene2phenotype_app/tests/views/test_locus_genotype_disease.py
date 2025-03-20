@@ -13,7 +13,8 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
                 "gene2phenotype_app/fixtures/locus.json", "gene2phenotype_app/fixtures/publication.json",
                 "gene2phenotype_app/fixtures/sequence.json", "gene2phenotype_app/fixtures/user_panels.json",
                 "gene2phenotype_app/fixtures/ontology_term.json", "gene2phenotype_app/fixtures/source.json",
-                "gene2phenotype_app/fixtures/lgd_publication.json"
+                "gene2phenotype_app/fixtures/lgd_publication.json", "gene2phenotype_app/fixtures/lgd_comment.json",
+                "gene2phenotype_app/fixtures/lgd_phenotype.json",
                 ]
 
     def setUp(self):
@@ -31,13 +32,20 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         self.assertEqual(response.data["variant_consequence"], [])
         self.assertEqual(list(response.data["variant_type"]), []),
         self.assertEqual(list(response.data["variant_description"]), []),
-        self.assertEqual(list(response.data["phenotypes"]), []),
         self.assertEqual(list(response.data["phenotype_summary"]), []),
         self.assertEqual(response.data["cross_cutting_modifier"], []),
-        self.assertEqual(response.data["comments"], [])
         self.assertEqual(response.data["last_updated"], "2017-04-24")
         self.assertEqual(response.data["date_created"], None)
         self.assertEqual(response.data["curators"], set())
+
+        expected_data_comments = [
+            {
+                "date": "2024-09-24",
+                "is_public": 1,
+                "text": "JLNS is due to altered gene product sequence"
+            }
+        ]
+        self.assertEqual(response.data["comments"], expected_data_comments)
 
         expected_data_publication = [
             {"publication": {
@@ -67,3 +75,12 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
             {"name": "Eye", "description": "Eye disorders"}
         ]
         self.assertEqual(response.data["panels"], expected_data_panels)
+
+        expected_data_phenotypes = [
+            {
+                "accession": "HP:0033127",
+                "publications": [3897232],
+                "term": "Abnormality of the musculoskeletal system"
+            }
+        ]
+        self.assertEqual(list(response.data["phenotypes"]), expected_data_phenotypes)

@@ -1,0 +1,26 @@
+[
+    {
+        "model": "gene2phenotype_app.lgdcomment",
+        "pk": 1,
+        "fields": {
+            "lgd": 2,
+            "comment": "All mutations are located in the aminoterminal part of the gene, before the first epidermal growth factor-like domain.",
+            "is_public": 1,
+            "is_deleted": 0,
+            "user": 1,
+            "date": "2024-09-11T14:10:21Z"
+        }
+    },
+    {
+        "model": "gene2phenotype_app.lgdcomment",
+        "pk": 2,
+        "fields": {
+            "lgd": 1,
+            "comment": "JLNS is due to altered gene product sequence",
+            "is_public": 1,
+            "is_deleted": 0,
+            "user": 1,
+            "date": "2024-09-24T14:10:21Z"
+        }
+    }
+]
