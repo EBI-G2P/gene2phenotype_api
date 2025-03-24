@@ -7,5 +7,5 @@ class Gene2PhenotypeAppConfig(AppConfig):
     name = 'gene2phenotype_app'
     
     @receiver(post_migrate)
-    def ready(self):
+    def ready(self, **kwargs):
         from . import checks
