@@ -1,11 +1,10 @@
 from ..models import Locus, LocusGenotypeDisease, Attrib, Sequence
 from django.core.checks import Error, register
 
-
 class AllelicRequirementCheck:
 
 
-    @register()
+    @register() # to register this so the systemcheck can recognize it
     def check_ar_constraint(app_configs, **kwargs):
         errors = []
         for obj in LocusGenotypeDisease.objects.all():
