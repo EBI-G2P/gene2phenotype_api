@@ -1,18 +1,11 @@
-from ..models import LocusGenotypeDisease, CVMolecularMechanism, LGDMolecularMechanismSynopsis, LGDPanel, Panel
-from django.core.checks import Error, register
+from gene2phenotype_app.models import LocusGenotypeDisease, LGDMolecularMechanismSynopsis, LGDPanel
+from django.core.checks import Error
+from .AllelicRequirement import should_process
 
 
 
 #helper function 
-
-def should_process(obj):
-    # to skip checks for anything in Demo
-    lgd_panels = LGDPanel.objects.filter(lgd_id=obj)
-    for lgd_panel in lgd_panels:
-        return lgd_panel.panel.name != "Demo"
-
-@register()
-def mutation_consequence(app_configs, **kwargs):
+def mutation_consequence_constraint():
     errors = []
     for obj in LocusGenotypeDisease.objects.all():
         if not should_process(obj.id):

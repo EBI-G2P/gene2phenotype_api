@@ -1,10 +1,8 @@
-from django.core.checks import Error, register
-from ..models import PublicationFamilies
+from django.core.checks import Error
+from gene2phenotype_app.models import PublicationFamilies
 
 
-
-@register()
-def check_model_constraints(app_configs, **kwargs):
+def check_model_constraints():
     errors = []
 
     for obj in PublicationFamilies.objects.all():
