@@ -1,11 +1,18 @@
-from ..models import Locus, LocusGenotypeDisease, Attrib, Sequence
+from ..models import Locus, LocusGenotypeDisease, Attrib, Sequence, LGDPanel, Panel
 from django.core.checks import Error, register
 
+def should_process(obj):
+    # to skip checks for anything in Demo
+    lgd_panels = LGDPanel.objects.filter(lgd_id=obj)
+    for lgd_panel in lgd_panels:
+        return lgd_panel.panel.name != "Demo"
 
 @register() # to register this so the systemcheck can recognize it
 def check_ar_constraint(app_configs, **kwargs):
     errors = []
     for obj in LocusGenotypeDisease.objects.all():
+        if not should_process(obj.id):
+            continue
         if "autosomal" in obj.genotype.value.lower() and not (1 <= int(obj.locus.sequence.name) <= 22):
             errors.append(
                 Error(

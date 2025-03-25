@@ -1,13 +1,22 @@
-from ..models import LocusGenotypeDisease, CVMolecularMechanism, LGDMolecularMechanismSynopsis
+from ..models import LocusGenotypeDisease, CVMolecularMechanism, LGDMolecularMechanismSynopsis, LGDPanel, Panel
 from django.core.checks import Error, register
 
 
 
+#helper function 
+
+def should_process(obj):
+    # to skip checks for anything in Demo
+    lgd_panels = LGDPanel.objects.filter(lgd_id=obj)
+    for lgd_panel in lgd_panels:
+        return lgd_panel.panel.name != "Demo"
 
 @register()
 def mutation_consequence(app_configs, **kwargs):
     errors = []
     for obj in LocusGenotypeDisease.objects.all():
+        if not should_process(obj.id):
+            continue
         if obj.mechanism.value == "undetermined" and obj.mechanism_support.value != "inferred":
             errors.append(
                 Error(
@@ -18,22 +27,50 @@ def mutation_consequence(app_configs, **kwargs):
             )
     
     for obj in LGDMolecularMechanismSynopsis.objects.all():
+        if not should_process(obj.lgd_id):
+            continue
         if obj.lgd.mechanism.value == "undetermined non-loss-of-function" and obj.synopsis_id is not NULL and obj.synopsis_support_id is not NULL:
             errors.append(
                 Error(
-                    f"Mechanism value is undetermined non loss of function, Mechanism synopis can not be defined {obj.stable_id.stable_id}",
-                    hint="Change mechanism synopsis to Null",
+                    f"Mechanism value is undetermined non loss of function, Mechanism synopis can not be defined {obj.lgd.stable_id.stable_id}",
+                    hint="Change mechanism categorization to Null",
                     id="gene2phenotype_app.E008",
                 )
             )
     
     for obj in LGDMolecularMechanismSynopsis.objects.all():
-        if "LOF" in obj.synopsis.value and "loss of function" not in obj.lgd.mechanism.value:
+        if not should_process(obj.lgd_id):
+            continue
+        if obj.lgd.mechanism.value == "loss of function" and "LOF" not in obj.synopsis.value:
             errors.append(
                 Error(
-                    f"Mechanism synopsis is loss of function related and Mechanism synopsis is not loss of function {obj.stable_id.stable_id}",
-                    hint="Change synopsis to a loss of function related synopsis",
+                    f"Mechanism value is loss of function and categorization is not loss of functionr related{obj.lgd.stable_id.stable_id}",
+                    hint="Change categorization to a loss of function categorization",
                     id="gene2phenotype_app.E009",
+                )
+            )
+    
+    for obj in LGDMolecularMechanismSynopsis.objects.all():
+        if not should_process(obj.lgd_id):
+            continue
+        if obj.lgd.mechanism.value == "dominant negative" and "dominant" not in obj.synopsis.value:
+            errors.append(
+                Error(
+                    f"Mechanism value is dominant negative and categorization is not considered dominant negative{obj.lgd.stable_id.stable_id}",
+                    hint="Change categorization to a dominant negative related synopsis",
+                    id="gene2phenotype_app.E0010"
+                )
+            )
+    
+    for obj in LGDMolecularMechanismSynopsis.objects.all():
+        if not should_process(obj.lgd_id):
+            continue
+        if obj.lgd.mechanism.value == "gain of function" and not ("GOF" in obj.synopsis.value or obj.synopsis.value == "aggregation"):
+            errors.append(
+                Error(
+                    f"Mechanism value is gain of function and mechanism categorization is not GOF or aggregation{obj.lgd.stable_id.stable_id}",
+                    hint="Change categorization to gain of function related or aggregation",
+                    id="gene2phenotype_app.E0011"
                 )
             )
     
