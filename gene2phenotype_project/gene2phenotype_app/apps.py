@@ -6,6 +6,8 @@ class Gene2PhenotypeAppConfig(AppConfig):
     default_auto_field = 'django.db.models.AutoField'
     name = 'gene2phenotype_app'
     
-    @receiver(post_migrate)
     def ready(self, **kwargs):
         from . import checks
+        post_migrate.connect(checks.check_ar_constraint, sender=self)
+        post_migrate.connect(checks.mutation_consequence, sender=self)
+        post_migrate.connect(checks.check_model_constraints, sender=self)
