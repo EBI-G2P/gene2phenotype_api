@@ -3,8 +3,6 @@ from django.core.checks import Error
 from .AllelicRequirement import should_process
 
 
-
-#helper function 
 def mutation_consequence_constraint():
     errors = []
     for obj in LocusGenotypeDisease.objects.all():

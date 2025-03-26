@@ -8,7 +8,7 @@ class Command(BaseCommand):
     help = "Check for issues in the data"
 
     def handle(self, *args, **kwargs):
-        self.stdout.write("Running data checks ......")
+        logger.info("Running data checks ......")
         publication_families_errors = check_model_constraints()
         if publication_families_errors:
             for error in publication_families_errors:

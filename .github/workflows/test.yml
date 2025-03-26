@@ -64,7 +64,7 @@ jobs:
         run: |
           export SECRET_KEY=$(openssl rand -base64 12)
           python manage.py makemigrations
-          python manage.py migrate 
+          python manage.py migrate
           python manage.py test gene2phenotype_app.tests
         env:
           PROJECT_CONFIG_PATH: /home/runner/work/config.ini
