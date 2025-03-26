@@ -200,10 +200,10 @@ class LGDEditPublications(BaseUpdate):
                     "name": "gain of function",
                     "support": "evidence"
                 },
-                "mechanism_synopsis": {
+                "mechanism_synopsis": [{
                     "name": "",
                     "support": ""
-                },
+                }],
                 "mechanism_evidence": [{
                             "pmid": "1234",
                             "description": "This is new evidence for the existing mechanism evidence.",
@@ -225,7 +225,7 @@ class LGDEditPublications(BaseUpdate):
             variant_types_data = serializer_list.validated_data.get('variant_types', []) # optional
             variant_descriptions_data = serializer_list.validated_data.get('variant_descriptions', []) # optional
             mechanism_data = serializer_list.validated_data.get('molecular_mechanism', None) # optional
-            mechanism_synopsis_data = serializer_list.validated_data.get('mechanism_synopsis', None) # optional
+            mechanism_synopsis_data = serializer_list.validated_data.get('mechanism_synopsis', []) # optional
             mechanism_evidence_data = serializer_list.validated_data.get('mechanism_evidence', None) # optional
 
             for publication in publications_data:

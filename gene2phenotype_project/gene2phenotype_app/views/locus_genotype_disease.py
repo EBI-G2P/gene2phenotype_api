@@ -305,10 +305,10 @@ class LGDUpdateMechanism(BaseUpdate):
                             "name": "gain of function",
                             "support": "evidence"
                         },
-                        "mechanism_synopsis": {
+                        "mechanism_synopsis": [{
                             "name": "destabilising LOF",
                             "support": "evidence"
-                        },
+                        }],
                         "mechanism_evidence": [{'pmid': '25099252', 'description': 'text', 'evidence_types': 
                                             [{'primary_type': 'Rescue', 'secondary_type': ['Patient Cells']}]}]
                     }
@@ -335,11 +335,11 @@ class LGDUpdateMechanism(BaseUpdate):
 
         # Validate mechanism data
         molecular_mechanism = mechanism_data.get("molecular_mechanism", None) # mechanism value can be updated if current value is "undetermined"
-        mechanism_synopsis = mechanism_data.get("mechanism_synopsis", None) # optional
+        mechanism_synopsis = mechanism_data.get("mechanism_synopsis", []) # optional
         mechanism_evidence = mechanism_data.get("mechanism_evidence", None) # optional
 
         # Return error if no data is provided
-        if(molecular_mechanism is None and mechanism_synopsis is None and 
+        if(molecular_mechanism is None and not mechanism_synopsis and 
            mechanism_evidence is None):
             self.handle_missing_data("Mechanism data")
 

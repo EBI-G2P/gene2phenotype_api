@@ -157,13 +157,16 @@
         },
         "mechanism_synopsis": {
             "description": "Synopsis of the mechanism",
-            "type": "object",
-            "properties":{
-                "name":  {
-                    "type": "string"
-                },
-                "support": {
-                    "type": "string"
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "support": {
+                        "type": "string"
+                    }
                 }
             }
         },
