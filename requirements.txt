@@ -16,7 +16,7 @@ ordered-set==4.1.0
 pytz==2025.1
 referencing==0.36.2
 requests==2.32.3
-rpds-py==0.23.1
+rpds-py==0.24.0
 setuptools==78.1.0
 sqlparse==0.5.3
 urllib3==2.3.0
