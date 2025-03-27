@@ -78,5 +78,22 @@ def mutation_consequence_constraint():
             )
         )
 
+    #first Count the occurence grouped by gene_name, disease_name and genotype_obj and mutation mechanism obj
+    monoallelic_counts = LocusGenotypeDisease.objects.filter(genotype__value__icontains="monoallelic", mechanism__value="loss of function")
+    biallelic_counts = LocusGenotypeDisease.objects.filter(genotype__value__icontains="biallelic", mechanism__value="loss of function")
+    for monoallelic in monoallelic_counts:
+        for biallelic in biallelic_counts:
+            #skip demo
+            if not should_process(monoallelic.id):
+                continue
+            if monoallelic.disease.name == biallelic.disease.name and monoallelic.locus.name == biallelic.locus.name:
+                errors.append(
+                    Error(
+                        f"Mechanism value of monoallelic and biallelic loss of function exists with the same disease name and locus name {monoallelic.stable_id.stable_id} and {biallelic.stable_id.stable_id}",
+                        hint="Flag this to the curators",
+                        id="gene2phenotype_app.E0012"
+                    )
+                )
+    
     
     return errors
