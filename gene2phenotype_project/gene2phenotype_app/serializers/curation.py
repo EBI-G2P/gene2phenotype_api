@@ -507,7 +507,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
                     "mechanism_support": mechanism_support_obj
                 }
 
-        lgd_obj = LocusGenotypeDiseaseSerializer(context={'user':user_obj}).create(lgd_data, disease_obj, publications_list)
+
+        lgd_obj, check = LocusGenotypeDiseaseSerializer(context={'user':user_obj}).create(lgd_data, disease_obj, publications_list)
         ##############################
 
         ### Insert data attached to the record Locus-Genotype-Disease ###
@@ -691,7 +692,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         # Update stable_id status to live (is_live=1)
         G2PStableIDSerializer(context={'stable_id': data.stable_id.stable_id}).update_g2p_id_status(1)
 
-        return lgd_obj
+        return lgd_obj, check
 
     class Meta:
         model = CurationData
