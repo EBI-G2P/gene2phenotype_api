@@ -6,7 +6,7 @@ from django.db.models import F
 def check_model_constraints():
     errors = []
 
-    pub_families_check = PublicationFamilies.objects.filter(families__gt=F("individual"))
+    pub_families_check = PublicationFamilies.objects.filter(families__gt=F("affected_individuals"))
     for obj in pub_families_check:
         errors.append(
             Error(
