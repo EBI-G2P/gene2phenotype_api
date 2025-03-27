@@ -1,6 +1,7 @@
 from gene2phenotype_app.models import LocusGenotypeDisease, LGDMolecularMechanismSynopsis, LGDPanel
 from django.core.checks import Error
 from .AllelicRequirement import should_process
+from django.db.models import Q, Count
 
 
 def mutation_consequence_constraint():
@@ -79,21 +80,19 @@ def mutation_consequence_constraint():
         )
 
     #first Count the occurence grouped by gene_name, disease_name and genotype_obj and mutation mechanism obj
-    monoallelic_counts = LocusGenotypeDisease.objects.filter(genotype__value__icontains="monoallelic", mechanism__value="loss of function")
-    biallelic_counts = LocusGenotypeDisease.objects.filter(genotype__value__icontains="biallelic", mechanism__value="loss of function")
-    for monoallelic in monoallelic_counts:
-        for biallelic in biallelic_counts:
-            #skip demo
-            if not should_process(monoallelic.id):
-                continue
-            if monoallelic.disease.name == biallelic.disease.name and monoallelic.locus.name == biallelic.locus.name:
-                errors.append(
-                    Error(
-                        f"Mechanism value of monoallelic and biallelic loss of function exists with the same disease name and locus name {monoallelic.stable_id.stable_id} and {biallelic.stable_id.stable_id}",
-                        hint="Flag this to the curators",
-                        id="gene2phenotype_app.E0012"
-                    )
-                )
+    monoallelic_biallelic_counts = LocusGenotypeDisease.objects.filter(mechanism__value="loss of function").values("disease__name", "locus__name").annotate(
+        mono_count=Count('id', filter=Q(genotype__value__icontains="monoallelic")),
+        bi_count=Count('id', filter=Q(genotype__value__icontains="biallelic")),
+    ).filter(mono_count__gt=0, bi_count__gt=0)
+    for entry in monoallelic_biallelic_counts:
+        errors.append(
+            Error(
+                f"Mechanism value of monoallelic and biallelic loss of function exists with the same disease name ({entry['disease__name']}) and locus name ({entry['locus__name']})",
+                hint="Flag this to the curators",
+                id="gene2phenotype_app.E0012"
+            )
+        )
+
     
     
     return errors
