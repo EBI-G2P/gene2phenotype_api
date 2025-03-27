@@ -453,7 +453,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         confidence = data.get('confidence') # confidence level
         mechanism_obj = data.get('mechanism')
         mechanism_support_obj = data.get('mechanism_support')
-
+        
+        check = 0
         if not panels or not publications_list:
             raise serializers.ValidationError(
                 {"message": f"Missing data to create the G2P record {stable_id_obj.stable_id}"}
@@ -489,6 +490,17 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 )
             except Attrib.DoesNotExist:
                 raise serializers.ValidationError({"message": f"Invalid confidence value {confidence}"})
+            
+            # a check that for if the monoallelic record exists
+            if "biallelic" in genotype_obj.value and mechanism_obj.value == "loss of function":
+                #fetch the genotype obj
+                # using a django orm like query
+                monoallelic_obj = Attrib.objects.filter(
+                    value__icontains="monoallelic"
+                )
+                for monoallelic in monoallelic_obj:
+                    if LocusGenotypeDisease.objects.filter(locus=locus_obj, genotype=monoallelic, disease=disease_obj, mechanism=mechanism_obj).exists():
+                        check = 1
 
             # Insert new G2P record (LGD)
             lgd_obj = LocusGenotypeDisease.objects.create(
@@ -552,7 +564,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     # Save the lgd-publication data which will call the create method
                     lgd_publication_serializer.save()
 
-        return lgd_obj
+        return lgd_obj, check
 
     def update(self, instance, validated_data):
         """
