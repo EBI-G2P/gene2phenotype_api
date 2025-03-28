@@ -8,7 +8,7 @@ class LGDAddCurationEndpoint(TestCase):
     """
         Test endpoint to add curation
     """
-    fixtures = ["gene2phenotype_app/fixtures/user_panels.json"]
+    fixtures = ["gene2phenotype_app/fixtures/g2p_stable_id.json", "gene2phenotype_app/fixtures/user_panels.json", "gene2phenotype_app/fixtures/curation_data.json"]
 
     def setUp(self):
         self.url_add_curation = reverse("add_curation_data")
@@ -136,3 +136,182 @@ class LGDAddCurationEndpoint(TestCase):
 
         curation_entries = CurationData.objects.filter(session_name="unit test session")
         self.assertEqual(len(curation_entries), 1)
+
+    def test_add_curation_existing_curation(self):
+        """
+            Test call to add curation endpoint with existing curation
+        """
+        # Define the complex data structure
+        curation_to_add = {
+            "json_data": {
+                "allelic_requirement": "",
+                "confidence": "",
+                "cross_cutting_modifier": [],
+                "disease": {
+                    "cross_references": [],
+                    "disease_name": ""
+                },
+                "locus": "RHO",
+                "mechanism_evidence": [],
+                "mechanism_synopsis": {
+                    "name": "",
+                    "support": ""
+                },
+                "molecular_mechanism": {
+                    "name": "",
+                    "support": ""
+                },
+                "panels": [],
+                "phenotypes": [],
+                "private_comment": "",
+                "public_comment": "",
+                "publications": [],
+                "session_name": "unit test session",
+                "variant_consequences": [],
+                "variant_descriptions": [],
+                "variant_types": []
+            }
+        }
+
+
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT['AUTH_COOKIE']] = access_token
+
+        response = self.client.post(self.url_add_curation, curation_to_add, content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(response_data["error"]["message"][0], "Data already under curation. Please check session 'test session'")
+
+    def test_add_curation_unauthorised_panel(self):
+        """
+            Test call to add curation endpoint with unauthorised panel
+        """
+        # Define the complex data structure
+        curation_to_add = {
+            "json_data": {
+                "allelic_requirement": "",
+                "confidence": "",
+                "cross_cutting_modifier": [],
+                "disease": {
+                    "cross_references": [],
+                    "disease_name": ""
+                },
+                "locus": "RHO",
+                "mechanism_evidence": [],
+                "mechanism_synopsis": {
+                    "name": "",
+                    "support": ""
+                },
+                "molecular_mechanism": {
+                    "name": "",
+                    "support": ""
+                },
+                "panels": [
+                    "Demo"
+                ],
+                "phenotypes": [],
+                "private_comment": "",
+                "public_comment": "",
+                "publications": [],
+                "session_name": "unit test session",
+                "variant_consequences": [],
+                "variant_descriptions": [],
+                "variant_types": []
+            }
+        }
+
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT['AUTH_COOKIE']] = access_token
+
+        response = self.client.post(self.url_add_curation, curation_to_add, content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(response_data["error"]["message"][0], "You do not have permission to curate on these panels: 'Demo'")
+    
+    def test_add_curation_invalid_request_body(self):
+        """
+            Test call to add curation endpoint with invalid request body
+        """
+        # Define the complex data structure
+        curation_to_add = {
+            "json_data": {
+                "locus": "CEP290",
+                "disease": "CEP290-related bardet-biedl syndrome"
+            }
+        }
+
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT['AUTH_COOKIE']] = access_token
+
+        response = self.client.post(self.url_add_curation, curation_to_add, content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertIn("JSON data does not follow the required format.", response_data["error"])
+    
+    def test_add_curation_empty_locus(self):
+        """
+            Test call to add curation endpoint with empty locus field
+        """
+        # Define the complex data structure
+        curation_to_add = {
+            "json_data": {
+                "allelic_requirement": "",
+                "confidence": "",
+                "cross_cutting_modifier": [],
+                "disease": {
+                    "cross_references": [],
+                    "disease_name": ""
+                },
+                "locus": "",
+                "mechanism_evidence": [],
+                "mechanism_synopsis": {
+                    "name": "",
+                    "support": ""
+                },
+                "molecular_mechanism": {
+                    "name": "",
+                    "support": ""
+                },
+                "panels": [],
+                "phenotypes": [],
+                "private_comment": "",
+                "public_comment": "",
+                "publications": [],
+                "session_name": "unit test session",
+                "variant_consequences": [],
+                "variant_descriptions": [],
+                "variant_types": []
+            }
+        }
+
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT['AUTH_COOKIE']] = access_token
+
+        response = self.client.post(self.url_add_curation, curation_to_add, content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(response_data["error"]["message"][0], "To save a draft, the minimum requirement is a locus entry. Please save this draft with locus information")

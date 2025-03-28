@@ -1,0 +1,42 @@
+[
+  {
+    "model": "gene2phenotype_app.curationdata",
+    "pk": 1,
+    "fields": {
+      "date_created": "2024-09-11T14:10:21Z",
+      "date_last_update": "2024-09-11T14:10:21Z",
+      "session_name": "test session",
+      "json_data": {
+        "allelic_requirement": "",
+        "confidence": "",
+        "cross_cutting_modifier": [],
+        "disease": {
+          "cross_references": [],
+          "disease_name": ""
+        },
+        "locus": "RHO",
+        "mechanism_evidence": [],
+        "mechanism_synopsis": {
+          "name": "",
+          "support": ""
+        },
+        "molecular_mechanism": {
+          "name": "",
+          "support": ""
+        },
+        "panels": [],
+        "phenotypes": [],
+        "private_comment": "",
+        "public_comment": "",
+        "publications": [],
+        "session_name": "test session",
+        "variant_consequences": [],
+        "variant_descriptions": [],
+        "variant_types": []
+      },
+      "gene_symbol": "CEP290",
+      "user_id": 5,
+      "stable_id": 4
+    }
+  }
+]
