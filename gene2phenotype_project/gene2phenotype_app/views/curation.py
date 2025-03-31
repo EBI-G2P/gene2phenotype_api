@@ -291,7 +291,7 @@ class PublishRecord(APIView):
                 curation_obj.delete()
 
                 if check:
-                    return Response({"message": f"Record '{lgd_obj.stable_id.stable_id}' published successfully, Monoallelic record with the same mechanism exists"}, status=status.HTTP_201_CREATED)
+                    return Response({"message": f"Record '{lgd_obj.stable_id.stable_id}' published successfully. Info: there is a monoallelic record with the same locus, disease and mechanism"}, status=status.HTTP_201_CREATED)
             
                 return Response(
                     {"message": f"Record '{lgd_obj.stable_id.stable_id}' published successfully"},
