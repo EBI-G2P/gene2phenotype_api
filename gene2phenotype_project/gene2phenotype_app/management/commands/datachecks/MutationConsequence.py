@@ -12,8 +12,8 @@ def mutation_consequence_constraint():
             continue
         errors.append(
             Error(
-                f"Mechanism value is undetermined, Mechanism support is not inferred {obj.stable_id.stable_id}",
-                hint="Change mechanism support to inferred",
+                f"{obj.stable_id.stable_id} has mechanism value undetermined and support is not inferred",
+                hint="Undetermined mechanism should have inferred support",
                 id="gene2phenotype_app.E007",
             )
         )
@@ -27,8 +27,8 @@ def mutation_consequence_constraint():
             continue
         errors.append(
             Error(
-                f"Mechanism value is undetermined non loss of function, Mechanism synopis can not be defined {obj.lgd.stable_id.stable_id}",
-                hint="Change mechanism categorization to Null",
+                f"{obj.lgd.stable_id.stable_id} has mechanism 'undetermined non-loss of function' and a defined mechanism categorization {obj.synopsis.value}",
+                hint="Undetermined non loss of function cannot have mechanism categorization",
                 id="gene2phenotype_app.E008",
             )
         )
@@ -41,8 +41,8 @@ def mutation_consequence_constraint():
             continue
         errors.append(
             Error(
-                f"Mechanism value is loss of function and categorization is not loss of functionr related{obj.lgd.stable_id.stable_id}",
-                hint="Change categorization to a loss of function categorization",
+                f"{obj.lgd.stable_id.stable_id} mechanism value is loss of function and mechanism categorization is {obj.synopis.value}",
+                hint="Loss of function mechanism should have a loss of function related categorization",
                 id="gene2phenotype_app.E009",
             )
         )
@@ -55,8 +55,8 @@ def mutation_consequence_constraint():
             continue
         errors.append(
             Error(
-                f"Mechanism value is dominant negative and categorization is not considered dominant negative{obj.lgd.stable_id.stable_id}",
-                hint="Change categorization to a dominant negative related synopsis",
+                f"{obj.lgd.stable_id.stable_id} mechanism value is dominant negative and mechanism categorization is {obj.synopsis.value}",
+                hint="Dominant negative mechanism should have dominant negative related categorization",
                 id="gene2phenotype_app.E0010"
             )
         )
@@ -73,21 +73,23 @@ def mutation_consequence_constraint():
             continue
         errors.append(
             Error(
-                f"Mechanism value is gain of function and mechanism categorization is not GOF or aggregation{obj.lgd.stable_id.stable_id}",
-                hint="Change categorization to gain of function related or aggregation",
+                f"{obj.lgd.stable_id.stable_id} mechanism value is gain of function and mechanism categorization is {obj.synopsis.value}",
+                hint="Gain of function mechanism should have GOF related or aggregation categorization",
                 id="gene2phenotype_app.E0011"
             )
         )
 
-    #first Count the occurence grouped by gene_name, disease_name and genotype_obj and mutation mechanism obj
-    monoallelic_biallelic_counts = LocusGenotypeDisease.objects.filter(mechanism__value="loss of function").values("disease__name", "locus__name").annotate(
+    #first Count the occurrence grouped by gene_name, disease_name and genotype_obj and mutation mechanism obj
+    monoallelic_biallelic_counts = LocusGenotypeDisease.objects.filter(mechanism__value="loss of function").values("disease__name", "locus__name", "id").annotate(
         mono_count=Count('id', filter=Q(genotype__value__icontains="monoallelic")),
         bi_count=Count('id', filter=Q(genotype__value__icontains="biallelic")),
     ).filter(mono_count__gt=0, bi_count__gt=0)
     for entry in monoallelic_biallelic_counts:
+        if not should_process(entry.id):
+            continue
         errors.append(
             Error(
-                f"Mechanism value of monoallelic and biallelic loss of function exists with the same disease name ({entry['disease__name']}) and locus name ({entry['locus__name']})",
+                f"There are monoallelic and biallelic records for the same mechanism (loss of function), disease name : ({entry['disease__name']}) and gene: ({entry['locus__name']})",
                 hint="Flag this to the curators",
                 id="gene2phenotype_app.E0012"
             )

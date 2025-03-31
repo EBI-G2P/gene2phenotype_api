@@ -10,7 +10,7 @@ def check_model_constraints():
     for obj in pub_families_check:
         errors.append(
             Error(
-                "PublicationFanilies families can not be greater than affected individuals",
+                f"{obj.publication_id} has number of families greater than the number of affected individuals",
                 hint="Number of families can not be greater than affected individuals",
                 id="gene2phenotype_app.E001",
             )
