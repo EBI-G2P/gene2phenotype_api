@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.db import connection, IntegrityError
 from django.db.models import Prefetch
+from django.conf import settings
 import itertools
 import re
 
@@ -32,7 +33,8 @@ from .locus import LocusSerializer
 from .disease import DiseaseSerializer
 from .panel import LGDPanelSerializer
 
-from ..utils import get_date_now
+from ..utils import get_date_now, ConfidenceCustomMail
+
 
 class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     """
@@ -561,7 +563,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         # validated_data example:
         # { "confidence": "definitive" }
         validated_confidence = validated_data.get("confidence", None)
-
+        user = self.context.get('user')
         if(validated_confidence is not None and isinstance(validated_confidence, dict) 
            and "value" in validated_confidence):
             confidence = validated_confidence["value"]
@@ -582,8 +584,12 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"error": f"G2P record '{instance.stable_id.stable_id}' already has confidence value {confidence}"}
             )
+        
+        #get user information
+        user_string = self.get_user_info(user)
 
         # Update confidence
+        old_confidence = instance.confidence
         instance.confidence = confidence_obj
 
         # Update the 'date_review'
@@ -591,8 +597,26 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         # Save all updates
         instance.save()
+        subject = f"Updated confidence for {instance.stable_id.stable_id}"
+        ConfidenceCustomMail.send_confidence_update_email(instance.stable_id.stable_id,old_confidence,confidence_obj.value,instance.date_review,user_string,subject,settings.DEFAULT_FROM_EMAIL)
 
         return instance
+
+    @staticmethod
+    def get_user_info(self, user:str) -> str:
+        """
+            User details that will be sent as a string
+            Args:
+                user (str): user
+
+            Returns:
+                str: A string containing the user first name, last name and email
+        """        
+        user_obj = User.objects.get(email=user)
+        user_string =  f"{user_obj.first_name} {user_obj.last_name} ({user_obj.email})"
+
+        return user_string
+
 
     def update_mechanism(self, lgd_instance, validated_data):
         """
