@@ -286,10 +286,13 @@ class PublishRecord(APIView):
 
             # Publish record
             try:
-                lgd_obj = self.serializer_class(context={'user': user}).publish(curation_obj)
+                lgd_obj, check = self.serializer_class(context={'user': user}).publish(curation_obj)
                 # Delete entry from 'curation_data'
                 curation_obj.delete()
 
+                if check:
+                    return Response({"message": f"Record '{lgd_obj.stable_id.stable_id}' published successfully. Info: there is a monoallelic record with the same locus, disease and mechanism"}, status=status.HTTP_201_CREATED)
+            
                 return Response(
                     {"message": f"Record '{lgd_obj.stable_id.stable_id}' published successfully"},
                     status=status.HTTP_201_CREATED
