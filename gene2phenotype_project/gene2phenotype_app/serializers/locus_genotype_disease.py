@@ -566,7 +566,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 disease_obj (object): disease object
 
             Returns:
-                bool: 1 if it exists 0 if it does not 
+                bool: True if it exists False if it does not
         """
         if "biallelic" in genotype_obj.value and mechanism_obj.value == "loss of function":
             #fetch all the existing monoallelic existing obj using a django ORM query 
