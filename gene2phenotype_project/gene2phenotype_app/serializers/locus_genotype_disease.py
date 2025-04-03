@@ -454,7 +454,6 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         mechanism_obj = data.get('mechanism')
         mechanism_support_obj = data.get('mechanism_support')
         
-        check = 0
         if not panels or not publications_list:
             raise serializers.ValidationError(
                 {"message": f"Missing data to create the G2P record {stable_id_obj.stable_id}"}
@@ -492,15 +491,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({"message": f"Invalid confidence value {confidence}"})
             
             # a check that for if the monoallelic record exists
-            if "biallelic" in genotype_obj.value and mechanism_obj.value == "loss of function":
-                #fetch the genotype obj
-                # using a django orm like query
-                monoallelic_obj = Attrib.objects.filter(
-                    value__icontains="monoallelic"
-                )
-                for monoallelic in monoallelic_obj:
-                    if LocusGenotypeDisease.objects.filter(locus=locus_obj, genotype=monoallelic, disease=disease_obj, mechanism=mechanism_obj).exists():
-                        check = 1
+            check = self.check_monoallelic_exists(genotype_obj, mechanism_obj, locus_obj, disease_obj)
 
             # Insert new G2P record (LGD)
             lgd_obj = LocusGenotypeDisease.objects.create(
@@ -565,6 +556,30 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     lgd_publication_serializer.save()
 
         return lgd_obj, check
+    
+    def check_monoallelic_exists(self, genotype_obj: object, mechanism_obj: object, locus_obj: object, disease_obj: object) -> bool:
+        """
+            Checks if the about to be created biallelic related genotype has a monoallelic related genotype with the same disease name and mechanism
+            Args:
+                genotype_obj (object): genotype object 
+                mechanism_obj (object): mechanism object
+                locus_obj (object) : locus object
+                disease_obj (object): disease object
+
+            Returns:
+                bool: 1 if it exists 0 if it does not 
+        """
+        if "biallelic" in genotype_obj.value and mechanism_obj.value == "loss of function":
+            #fetch all the existing monoallelic existing obj using a django ORM query 
+            #such as monoallelic_autosomal etc
+            monoallelic_obj = Attrib.objects.filter(value__icontains="monoallelic")
+            for monoallelic in monoallelic_obj:
+                if LocusGenotypeDisease.objects.filter(locus=locus_obj, disease=disease_obj, mechanism=mechanism_obj, genotype=monoallelic).exists():
+                    return True
+        
+        return False
+
+            
 
     def update(self, instance, validated_data):
         """
