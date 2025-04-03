@@ -597,12 +597,11 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         # Save all updates
         instance.save()
-        subject = f"Updated confidence for {instance.stable_id.stable_id}"
-        ConfidenceCustomMail.send_confidence_update_email(instance.stable_id.stable_id,old_confidence,confidence_obj.value,instance.date_review,user_string,subject,settings.DEFAULT_FROM_EMAIL)
+        ConfidenceCustomMail.send_confidence_update_email(instance,old_confidence,user_string,settings.DEFAULT_FROM_EMAIL)
 
         return instance
 
-    @staticmethod
+
     def get_user_info(self, user:str) -> str:
         """
             User details that will be sent as a string
