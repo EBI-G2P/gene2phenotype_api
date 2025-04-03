@@ -7,7 +7,7 @@ from typing import Dict, Any
 class ConfidenceCustomMail():
 
     @staticmethod
-    def send_confidence_update_email(instance: object, old_confidence: str, user_updated: str, to_email: str, request: object) -> None:
+    def send_confidence_update_email(instance: object, old_confidence: str, user_updated: str, request: object) -> None:
         """
             Confidence email update mail setup
 
@@ -15,7 +15,6 @@ class ConfidenceCustomMail():
                 instance (object): Instance object
                 old_confidence (str): old confidence object
                 user_updated (str): user that updated the confidence
-                to_email (str):  # this would be changed later
                 request (object): the request object
 
             Returns:
@@ -35,7 +34,7 @@ class ConfidenceCustomMail():
         
         message = EmailMessage()
         message['From'] = settings.DEFAULT_FROM_EMAIL
-        message['To'] = to_email
+        message['To'] = settings.MAILING_LIST
         message['Subject'] = ConfidenceCustomMail.subject_confidence(stable_id)
         message.set_content(email_body, 'html')
         try:
