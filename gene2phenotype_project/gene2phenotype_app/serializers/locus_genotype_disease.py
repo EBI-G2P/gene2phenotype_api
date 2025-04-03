@@ -453,7 +453,6 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         confidence = data.get('confidence') # confidence level
         mechanism_obj = data.get('mechanism')
         mechanism_support_obj = data.get('mechanism_support')
-        
         if not panels or not publications_list:
             raise serializers.ValidationError(
                 {"message": f"Missing data to create the G2P record {stable_id_obj.stable_id}"}
