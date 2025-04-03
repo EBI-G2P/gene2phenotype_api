@@ -71,7 +71,8 @@ class ConfidenceCustomMail():
         """        
         http_response = request.scheme
         host = request.get_host()
-        return f"{http_response}://{host}gene2phenotype/api/lgd/{stable_id}"
+        return f"{http_response}://{host}/gene2phenotype/api/lgd/{stable_id}"
+
     
         
 
