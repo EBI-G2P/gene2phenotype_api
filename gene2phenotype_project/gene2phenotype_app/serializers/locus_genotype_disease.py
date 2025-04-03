@@ -563,7 +563,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         # validated_data example:
         # { "confidence": "definitive" }
         validated_confidence = validated_data.get("confidence", None)
-        user = self.context.get('user')
+        request = self.context.get('request')
         if(validated_confidence is not None and isinstance(validated_confidence, dict) 
            and "value" in validated_confidence):
             confidence = validated_confidence["value"]
@@ -586,7 +586,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             )
         
         #get user information
-        user_string = self.get_user_info(user)
+        user_string = self.get_user_info(request.user)
 
         # Update confidence
         old_confidence = instance.confidence
@@ -597,7 +597,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         # Save all updates
         instance.save()
-        ConfidenceCustomMail.send_confidence_update_email(instance,old_confidence,user_string,settings.DEFAULT_FROM_EMAIL)
+        ConfidenceCustomMail.send_confidence_update_email(instance,old_confidence,user_string,settings.DEFAULT_FROM_EMAIL,request)
 
         return instance
 
@@ -612,7 +612,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 str: A string containing the user first name, last name and email
         """        
         user_obj = User.objects.get(email=user)
-        user_string =  f"{user_obj.first_name} {user_obj.last_name} ({user_obj.email})"
+        user_string =  f"{user_obj.first_name} {user_obj.last_name}"
 
         return user_string
 
