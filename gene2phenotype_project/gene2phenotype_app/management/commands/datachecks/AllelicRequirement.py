@@ -12,7 +12,7 @@ def should_process(obj):
 
 def check_ar_constraint():
     errors = []
-    locus_genotype_check = LocusGenotypeDisease.objects.all().prefetch_related('genotype', 'locus').annotate(genotype_value=F('genotype__value'), locus_sequence=F('locus__sequence__name'), g2p_id=F('stable_id__stable_id'))
+    locus_genotype_check = LocusGenotypeDisease.objects.all().select_related('genotype', 'locus').annotate(genotype_value=F('genotype__value'), locus_sequence=F('locus__sequence__name'), g2p_id=F('stable_id__stable_id'))
     for obj in locus_genotype_check:
         if not should_process(obj.id):
             continue
