@@ -23,7 +23,7 @@ from gene2phenotype_app.models import (
     LocusAttrib,
     GeneDisease,
     LocusGenotypeDisease,
-    Source
+    ExternalDisease
 )
 
 from ..utils import clean_omim_disease
@@ -187,9 +187,18 @@ def ExternalDisease(request, ext_ids):
                         "source": gene_disease.first().source.name
                     }
                 )
-
             else:
-                invalid_ids.append(disease_id)
+                external_disease = ExternalDisease.objects.filter(identifier=disease_id)
+                if external_disease.exists():
+                    data.append(
+                    {
+                        "disease": external_disease.first().disease,
+                        "identifier": external_disease.first().identifier,
+                        "source": external_disease.first().source.name
+                    }
+                )
+                else:
+                    invalid_ids.append(disease_id)
 
         else:
             invalid_ids.append(disease_id)
