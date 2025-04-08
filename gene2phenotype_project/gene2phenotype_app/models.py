@@ -698,7 +698,7 @@ class GeneDisease(models.Model):
             models.Index(fields=['disease'])
         ]
 
-class ExternalDisease(models.Model):
+class DiseaseExternal(models.Model):
     """
         Disease IDs from external sources and respective disease name.
         This data is imported in bulk from the source (ex: Mondo) and will
@@ -710,7 +710,7 @@ class ExternalDisease(models.Model):
     source = models.ForeignKey("Source", on_delete=models.PROTECT)
 
     class Meta:
-        db_table = "external_disease"
+        db_table = "disease_external"
         unique_together = ['disease', 'source']
         indexes = [
             models.Index(fields=['identifier'])

@@ -23,7 +23,7 @@ from gene2phenotype_app.models import (
     LocusAttrib,
     GeneDisease,
     LocusGenotypeDisease,
-    ExternalDisease
+    DiseaseExternal
 )
 
 from ..utils import clean_omim_disease
@@ -188,7 +188,7 @@ def ExternalDisease(request, ext_ids):
                     }
                 )
             else:
-                external_disease = ExternalDisease.objects.filter(identifier=disease_id)
+                external_disease = DiseaseExternal.objects.filter(identifier=disease_id)
                 if external_disease.exists():
                     data.append(
                     {
