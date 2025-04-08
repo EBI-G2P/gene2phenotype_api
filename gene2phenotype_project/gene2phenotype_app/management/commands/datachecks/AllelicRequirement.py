@@ -28,7 +28,7 @@ def check_ar_constraint():
         if obj.genotype_value.lower() == "mitochondrial" and obj.locus_sequence != "MT":
             errors.append(
                 Error(
-                    f"'{obj.g2p_id}' with mitochondrial genotype in non mitchondrial chromosome",
+                    f"'{obj.g2p_id}' with mitochondrial genotype in non mitochondrial chromosome",
                     hint="Mitochondrial genotype should be linked to chromosome MT",
                     id="gene2phenotype_app.E003",
                 )
