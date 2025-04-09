@@ -3,10 +3,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import Http404, HttpResponse
 from rest_framework.decorators import api_view
+from drf_spectacular.utils import extend_schema
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
-import csv, gzip, tempfile, os
+import csv
 from datetime import datetime
 import re
 
@@ -20,6 +21,7 @@ from gene2phenotype_app.serializers import PanelCreateSerializer, PanelDetailSer
 
 from .base import BaseView, IsSuperUser, CustomPermissionAPIView
 
+@extend_schema(exclude=True)
 class PanelCreateView(generics.CreateAPIView):
     """ 
         Panel Creation View 
@@ -143,17 +145,18 @@ class PanelRecordsSummary(BaseView):
             self.handle_no_permission('Panel', name)
 
 ### Edit data ###
+@extend_schema(exclude=True)
 class LGDEditPanel(CustomPermissionAPIView):
     """
         Method to add or delete LGD-panel association.
     """
-    http_method_names = ['post', 'update', 'options']
+    http_method_names = ['post', 'patch', 'options']
     serializer_class = LGDPanelSerializer
 
     # Define specific permissions
     method_permissions = {
         "post": [permissions.IsAuthenticated],
-        "update": [IsSuperUser],
+        "patch": [IsSuperUser],
     }
 
     @transaction.atomic
@@ -208,7 +211,7 @@ class LGDEditPanel(CustomPermissionAPIView):
         return response
 
     @transaction.atomic
-    def update(self, request, stable_id):
+    def patch(self, request, stable_id):
         """
             This method deletes the LGD-panel
         """

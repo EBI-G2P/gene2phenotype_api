@@ -3,15 +3,9 @@ from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from rest_framework.response import Response
 from django.db import transaction
-from django.urls import get_resolver
-from rest_framework.decorators import api_view
 from rest_framework.permissions import BasePermission
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.views import APIView
-
-import re
-
-from gene2phenotype_app.models import User
 
 
 class BaseView(generics.ListAPIView):
@@ -107,46 +101,3 @@ class IsSuperUser(BasePermission):
         if not (request.user and request.user.is_superuser):
             raise PermissionDenied({"error": "You do not have permission to perform this action."})
         return True
-
-
-@api_view(['GET'])
-def ListEndpoints(request):
-    """
-        Returns a list of available endpoints.
-    """
-    user = request.user
-
-    # Get user obj
-    try:
-        user_obj = User.objects.get(email=user, is_active=1)
-    except User.DoesNotExist:
-        user_obj = None
-
-    resolver = get_resolver()
-    url_patterns = []
-    # use a set to avoid duplicates
-    list_urls = set()
-
-    for key in resolver.reverse_dict.keys():
-        url_patterns.extend(resolver.reverse_dict[key])
-
-    for url_pattern in url_patterns:
-        if isinstance(url_pattern, list):
-            pattern = url_pattern[0][0]
-
-            # Format the url to display the django format
-            # Remove 'gene2phenotype/api/' from the urls
-            pattern = pattern.replace("%(", "<").replace(")s", ">").replace("gene2phenotype/api/", "")
-
-            # To filter the endpoints to update LGD records
-            match = re.match(r"lgd\/\<stable_id\>\/\w+\/", pattern)
-
-            # Authenticated users have access to all endpoints
-            # Non-authenticated users can only search data
-            if(user_obj is not None and pattern != ""):
-                list_urls.add(pattern)
-            elif(user_obj is None and pattern != "" and "add" not in pattern
-                 and "curation" not in pattern and not match):
-                list_urls.add(pattern)
-
-    return Response({"endpoints": sorted(list_urls)})

@@ -1,22 +1,36 @@
 from rest_framework.response import Response
 from rest_framework import generics, permissions
 from rest_framework.exceptions import ParseError
-from django.db.models import F
-from rest_framework_simplejwt.serializers import TokenRefreshSerializer 
-from datetime import timedelta, datetime
 from rest_framework import status
 from rest_framework_simplejwt.views import TokenRefreshView
-from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
-from datetime import timedelta
-from gene2phenotype_app.serializers import (UserSerializer, LoginSerializer,
-                                            CreateUserSerializer, AddUserToPanelSerializer, LogoutSerializer, ChangePasswordSerializer, VerifyEmailSerializer, PasswordResetSerializer)
-from gene2phenotype_app.models import User, UserPanel
-from .base import BaseView
-from gene2phenotype_app.authentication import CustomAuthentication
 from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from drf_spectacular.utils import extend_schema
+from datetime import timedelta, datetime
+from django.conf import settings
+from datetime import timedelta
+from .base import BaseView
+from django.db.models import F
 
+from gene2phenotype_app.authentication import CustomAuthentication
 
+from gene2phenotype_app.serializers import (
+    UserSerializer,
+    LoginSerializer,
+    CreateUserSerializer,
+    AddUserToPanelSerializer,
+    LogoutSerializer,
+    ChangePasswordSerializer,
+    VerifyEmailSerializer,
+    PasswordResetSerializer
+)
+from gene2phenotype_app.models import (
+    User,
+    UserPanel
+)
+
+@extend_schema(exclude=True)
 class UserPanels(BaseView):
     """
         Returns the list of panels the current user can edit
@@ -52,7 +66,7 @@ class UserPanels(BaseView):
 
         return Response(queryset_user_panels)
 
-
+@extend_schema(exclude=True)
 class UserList(generics.ListAPIView):
     """
         Display a list of active users and their info.
@@ -86,7 +100,7 @@ class UserList(generics.ListAPIView):
 
         return Response({'results': serializer.data, 'count':len(serializer.data)})
 
-
+@extend_schema(exclude=True)
 class CreateUserView(generics.CreateAPIView):
     """
         View for creating a new user.
@@ -103,6 +117,7 @@ class CreateUserView(generics.CreateAPIView):
     serializer_class = CreateUserSerializer
     permission_classes = [permissions.IsAdminUser]
 
+@extend_schema(exclude=True)
 class AddUserToPanelView(generics.CreateAPIView):
     """
         Add User to Panel view
@@ -113,9 +128,7 @@ class AddUserToPanelView(generics.CreateAPIView):
     serializer_class = AddUserToPanelSerializer
     permission_classes = [permissions.IsAdminUser]
 
-
-
-
+@extend_schema(exclude=True)
 class LoginView(generics.GenericAPIView):
     """
         LoginView: Handles user authentication and login.
@@ -204,7 +217,8 @@ class LoginView(generics.GenericAPIView):
             raise ValueError("Failed to set cookies")
         del(login_data['tokens']) # to delete tokens from the response after setting cookies
         return response
-    
+
+@extend_schema(exclude=True)
 class LogOutView(generics.GenericAPIView):
     """
         API view for user logout.
@@ -277,8 +291,8 @@ class LogOutView(generics.GenericAPIView):
                 path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
             )
         return response
-    
 
+@extend_schema(exclude=True)
 class ManageUserView(generics.RetrieveUpdateAPIView):
     """
         View for managing the authenticated user.
@@ -315,6 +329,7 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
         result['refresh_token_time'] = refresh_token_value
         return Response(result, status=status.HTTP_200_OK)
 
+@extend_schema(exclude=True)
 class ChangePasswordView(generics.GenericAPIView):
     """
         Change password view  - Authenticated View 
@@ -336,7 +351,8 @@ class ChangePasswordView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         result = serializer.change_password(user=request.user)
         return Response(result,  status=status.HTTP_201_CREATED)
-    
+
+@extend_schema(exclude=True)  
 class VerifyEmailView(generics.GenericAPIView):
     """
         View for Verification of Email for Password Reset
@@ -360,7 +376,8 @@ class VerifyEmailView(generics.GenericAPIView):
         result = serializer.get_user_and_send_email(user=request.data)
 
         return Response(result)
-    
+
+@extend_schema(exclude=True)
 class ResetPasswordView(generics.GenericAPIView):
     """
         View for Password Reset - UnAuthenticated View 
@@ -385,6 +402,7 @@ class ResetPasswordView(generics.GenericAPIView):
         result = serializer.reset(password=request.data,user=uid)
         return Response(result)
 
+@extend_schema(exclude=True)
 class CustomTokenRefreshView(TokenRefreshView):
     """
         Custom view for TokenRefresh, inheriting from BaseClass TokenRefreshView

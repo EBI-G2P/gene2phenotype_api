@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from django.http import Http404
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema
 import re
 
 from gene2phenotype_app.serializers import (
@@ -88,6 +89,7 @@ def PhenotypeDetail(request, hpo_list):
 
 ### LGD-phenotype ###
 # Add or delete data
+@extend_schema(exclude=True)
 class LGDEditPhenotypes(CustomPermissionAPIView):
     """
         Add or delete lgd-phenotype.
@@ -95,17 +97,17 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
         Add data (action: POST)
             Add a list of phenotypes to an existing G2P record (LGD).
 
-        Delete data (action: UPDATE)
+        Delete data (action: PATCH)
             Delete a phenotype associated with the LGD.
             The deletion does not remove the entry from the database, instead
             it sets the flag 'is_deleted' to 1.
     """
-    http_method_names = ['post', 'update', 'options']
+    http_method_names = ['post', 'patch', 'options']
 
     # Define specific permissions
     method_permissions = {
         "post": [permissions.IsAuthenticated],
-        "update": [permissions.IsAuthenticated, IsSuperUser]
+        "patch": [permissions.IsAuthenticated, IsSuperUser]
     }
 
     def get_serializer_class(self, action):
@@ -118,7 +120,7 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
 
         if action == "post":
             return LGDPhenotypeListSerializer
-        elif action == "update":
+        elif action == "patch":
             return LGDPhenotypeSerializer
         else:
             return None
@@ -247,7 +249,7 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
         return response
 
     @transaction.atomic
-    def update(self, request, stable_id):
+    def patch(self, request, stable_id):
         """
             This method deletes the LGD-phenotypes
         """
@@ -275,6 +277,7 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
                 {"message": f"Phenotype '{accession}' successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK)
 
+@extend_schema(exclude=True)
 class LGDEditPhenotypeSummary(CustomPermissionAPIView):
     """
         Add or delete a LGD-phenotype summary
@@ -287,12 +290,12 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
             The deletion does not remove the entry from the database, instead
             it sets the flag 'is_deleted' to 1.
     """
-    http_method_names = ['post', 'update', 'options']
+    http_method_names = ['post', 'patch', 'options']
 
     # Define specific permissions
     method_permissions = {
         "post": [permissions.IsAuthenticated],
-        "update": [permissions.IsAuthenticated, IsSuperUser],
+        "patch": [permissions.IsAuthenticated, IsSuperUser],
     }
 
     def get_serializer_class(self, action):
@@ -305,7 +308,7 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
 
         if action == "post":
             return LGDPhenotypeSummaryListSerializer
-        elif action == "update":
+        elif action == "patch":
             return LGDPhenotypeSummarySerializer
         else:
             return None
@@ -373,7 +376,7 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
         return response
 
     @transaction.atomic
-    def update(self, request, stable_id):
+    def patch(self, request, stable_id):
         """
             This method deletes the LGD-phenotype summary
         """
@@ -399,6 +402,7 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
             )
 
 ### Add phenotype ###
+@extend_schema(exclude=True)
 class AddPhenotype(BaseAdd):
     """
         Add new phenotype.
