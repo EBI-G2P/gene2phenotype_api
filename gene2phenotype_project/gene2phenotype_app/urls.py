@@ -13,6 +13,10 @@ def perform_create(self, serializer):
 
 # specify URL Path for rest_framework
 urlpatterns = [
+    path("schema/",
+         SpectacularAPIView.as_view(),
+         name="schema"
+    ),
     path(
         "",
         SpectacularSwaggerView.as_view(
