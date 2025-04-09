@@ -13,6 +13,8 @@ class AttribTypeList(generics.ListAPIView):
         Returns:
                 (dict) response: list of attribs for each attrib type.
     """
+    serializer_class = AttribTypeSerializer
+
     queryset = AttribType.objects.filter(is_deleted=0)
 
     def list(self, request, *args, **kwargs):
@@ -60,10 +62,10 @@ class AttribTypeDescriptionList(generics.ListAPIView):
                 ]
             }
     """
-    
+    serializer_class = AttribTypeSerializer
 
     queryset = AttribType.objects.filter(is_deleted=0)
-    
+
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         result = {}
@@ -99,7 +101,6 @@ class AttribList(generics.ListAPIView):
                     "count": 6
                 }
     """
-
     lookup_field = 'type'
     serializer_class = AttribSerializer
 

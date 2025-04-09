@@ -5,6 +5,7 @@ from django.db.models import Q
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.http import Http404
+from drf_spectacular.utils import extend_schema
 
 from gene2phenotype_app.serializers import (
     GeneDiseaseSerializer,
@@ -213,6 +214,7 @@ def ExternalDisease(request, ext_ids):
     return response
 
 ### Add data
+@extend_schema(exclude=True)
 class AddDisease(BaseAdd):
     """
         Add new disease.
@@ -223,6 +225,7 @@ class AddDisease(BaseAdd):
     permission_classes = [IsSuperUser]
 
 ### Update data
+@extend_schema(exclude=True)
 class UpdateDisease(BaseAdd):
     http_method_names = ['post', 'options']
     permission_classes = [IsSuperUser]
@@ -275,6 +278,7 @@ class UpdateDisease(BaseAdd):
 
         return Response(response_data, status=status.HTTP_200_OK if updated_diseases else status.HTTP_400_BAD_REQUEST)
 
+@extend_schema(exclude=True)
 class DiseaseUpdateReferences(BaseAdd):
     http_method_names = ["post", "delete", "options"]
 
@@ -421,6 +425,7 @@ class DiseaseUpdateReferences(BaseAdd):
 
         return response
 
+@extend_schema(exclude=True)
 class LGDUpdateDisease(BaseAdd):
     http_method_names = ['post', 'options']
     permission_classes = [IsSuperUser]

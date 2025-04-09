@@ -224,7 +224,7 @@ class PanelDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Panel
-        fields = ['name', 'description', 'curators', 'last_updated']
+        fields = ['name', 'description', 'last_updated']
 
 ### G2P record (LGD) - panels ###
 class LGDPanelSerializer(serializers.ModelSerializer):
