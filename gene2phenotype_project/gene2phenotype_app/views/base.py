@@ -1,11 +1,12 @@
 from rest_framework import generics, status, permissions
 from django.core.exceptions import PermissionDenied
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from rest_framework.response import Response
 from django.db import transaction
 from django.urls import get_resolver
 from rest_framework.decorators import api_view
 from rest_framework.permissions import BasePermission
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.views import APIView
 
 import re
@@ -22,6 +23,12 @@ class BaseView(generics.ListAPIView):
             raise Http404(f"{name_type}")
         else:
             raise Http404(f"No matching {name_type} found for: {name}")
+    
+    def handle_no_permission_authentication(self, name_type, name):
+        if name is None:
+            raise AuthenticationFailed("No permission")
+        else:
+            raise AuthenticationFailed(f"No permission to access {name_type} {name}")
 
     def handle_exception(self, exc):
         if isinstance(exc, Http404):
