@@ -1,0 +1,3181 @@
+openapi: 3.0.3
+info:
+  title: Gene2Phenotype (G2P)
+  version: 3.0.0
+  description: Accelerating genomic medicine with high confidence evidence based gene
+    disease models
+paths:
+  /gene2phenotype/api/attrib/{code}/:
+    get:
+      operationId: attrib_list
+      description: |-
+        Fetch a list of attributes for a specific attribute type.
+
+        Args:
+            (string) `code`: attribute type
+
+        Returns: list of attributes with the following format
+                    (list) `results`: list of attributes
+                    (int) `count`: number of attributes
+
+        Example:
+
+                {
+                    "results": [
+                        "definitive",
+                        "disputed",
+                        "limited",
+                        "moderate",
+                        "refuted",
+                        "strong"
+                    ],
+                    "count": 6
+                }
+      parameters:
+      - in: path
+        name: code
+        schema:
+          type: string
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - attrib
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAttribList'
+          description: ''
+  /gene2phenotype/api/attrib/{code}{format}:
+    get:
+      operationId: attrib_formatted_list
+      description: |-
+        Fetch a list of attributes for a specific attribute type.
+
+        Args:
+            (string) `code`: attribute type
+
+        Returns: list of attributes with the following format
+                    (list) `results`: list of attributes
+                    (int) `count`: number of attributes
+
+        Example:
+
+                {
+                    "results": [
+                        "definitive",
+                        "disputed",
+                        "limited",
+                        "moderate",
+                        "refuted",
+                        "strong"
+                    ],
+                    "count": 6
+                }
+      parameters:
+      - in: path
+        name: code
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - attrib
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAttribList'
+          description: ''
+  /gene2phenotype/api/attribs/:
+    get:
+      operationId: attribs_list
+      description: |-
+        Display all available attributes by their type.
+
+        Returns: A dictionary where the keys represent attribute types,
+                 and the values are lists of their respective attributes.
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - attribs
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAttribTypeList'
+          description: ''
+  /gene2phenotype/api/attribs{format}:
+    get:
+      operationId: attribs_formatted_list
+      description: |-
+        Display all available attributes by their type.
+
+        Returns: A dictionary where the keys represent attribute types,
+                 and the values are lists of their respective attributes.
+      parameters:
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - attribs
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAttribTypeList'
+          description: ''
+  /gene2phenotype/api/attribs/description:
+    get:
+      operationId: attribs_description_list
+      description: |-
+        List all attribute types with their associated descriptions.
+
+        Returns: A list of attribute types, each with details of their respective attributes.
+
+        Example:
+
+            {
+                "type1": [
+                    {"definitive": "This category is well-supported by evidence."},
+                    {"disputed": "This category has conflicting evidence."},
+                    ...
+                ],
+                "type2": [
+                    {"limited": "This category is based on limited evidence."},
+                    {"strong": "This category is strongly supported by evidence."},
+                    ...
+                ]
+            }
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - attribs
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAttribTypeList'
+          description: ''
+  /gene2phenotype/api/attribs/description{format}:
+    get:
+      operationId: attribs_description_formatted_list
+      description: |-
+        List all attribute types with their associated descriptions.
+
+        Returns: A list of attribute types, each with details of their respective attributes.
+
+        Example:
+
+            {
+                "type1": [
+                    {"definitive": "This category is well-supported by evidence."},
+                    {"disputed": "This category has conflicting evidence."},
+                    ...
+                ],
+                "type2": [
+                    {"limited": "This category is based on limited evidence."},
+                    {"strong": "This category is strongly supported by evidence."},
+                    ...
+                ]
+            }
+      parameters:
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - attribs
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAttribTypeList'
+          description: ''
+  /gene2phenotype/api/disease/{id}/:
+    get:
+      operationId: disease_list
+      description: |-
+        Fetch information for a specific disease.
+
+        Args:
+            (str) `id`: disease name or ontology ID (example: MONDO:0006411)
+
+        Returns: Disease object
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - disease
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDiseaseDetailList'
+          description: ''
+  /gene2phenotype/api/disease/{id}{format}:
+    get:
+      operationId: disease_formatted_list
+      description: |-
+        Fetch information for a specific disease.
+
+        Args:
+            (str) `id`: disease name or ontology ID (example: MONDO:0006411)
+
+        Returns: Disease object
+      parameters:
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - disease
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDiseaseDetailList'
+          description: ''
+  /gene2phenotype/api/disease/{id}/summary/:
+    get:
+      operationId: disease_summary_list
+      description: |-
+        Fetch a summary of the latest G2P entries associated with the disease.
+
+        Args:
+            (str) `id`: disease name or ontology ID (example: 251450)
+
+        Returns a dictionary with the following format:
+                    (string) `disease`: input disease;
+                    (list) `records_summary`: summary of the G2P records linked to the disease
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - disease
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - count
+                - results
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=400&limit=100
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=200&limit=100
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        disease:
+                          type: string
+                        records_summary:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              locus:
+                                type: string
+                              genotype:
+                                type: string
+                              confidence:
+                                type: string
+                              panels:
+                                type: array
+                                items:
+                                  type: string
+                              variant_consequence:
+                                type: array
+                                items:
+                                  type: string
+                              variant_type:
+                                type: array
+                                items:
+                                  type: string
+                              molecular_mechanism:
+                                type: string
+                              stable_id:
+                                type: string
+          description: Disease summary response
+  /gene2phenotype/api/disease/{id}/summary{format}:
+    get:
+      operationId: disease_summary_formatted_list
+      description: |-
+        Fetch a summary of the latest G2P entries associated with the disease.
+
+        Args:
+            (str) `id`: disease name or ontology ID (example: 251450)
+
+        Returns a dictionary with the following format:
+                    (string) `disease`: input disease;
+                    (list) `records_summary`: summary of the G2P records linked to the disease
+      parameters:
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - disease
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - count
+                - results
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=400&limit=100
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=200&limit=100
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        disease:
+                          type: string
+                        records_summary:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              locus:
+                                type: string
+                              genotype:
+                                type: string
+                              confidence:
+                                type: string
+                              panels:
+                                type: array
+                                items:
+                                  type: string
+                              variant_consequence:
+                                type: array
+                                items:
+                                  type: string
+                              variant_type:
+                                type: array
+                                items:
+                                  type: string
+                              molecular_mechanism:
+                                type: string
+                              stable_id:
+                                type: string
+          description: Disease summary response
+  /gene2phenotype/api/external_disease/{ext_ids}/:
+    get:
+      operationId: external_disease_retrieve
+      description: |-
+        Returns the disease for a list of external disease IDs.
+        External sources can be OMIM or Mondo.
+
+        Args:
+            (str) `ext_ids`: the list if disease IDs of the external source (OMIM/Mondo)
+
+        Returns a dictionary with the following format:
+                (list) `results`: contains the disease name, identifier ID
+                                  and the source name;
+                (int) `count`: number of diseases in the response
+      parameters:
+      - in: path
+        name: ext_ids
+        schema:
+          type: string
+        required: true
+      tags:
+      - external_disease
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        disease:
+                          type: string
+                        identifier:
+                          type: string
+                        source:
+                          type: string
+                  count:
+                    type: integer
+          description: External disease response
+  /gene2phenotype/api/external_disease/{ext_ids}{format}:
+    get:
+      operationId: external_disease_formatted_retrieve
+      description: |-
+        Returns the disease for a list of external disease IDs.
+        External sources can be OMIM or Mondo.
+
+        Args:
+            (str) `ext_ids`: the list if disease IDs of the external source (OMIM/Mondo)
+
+        Returns a dictionary with the following format:
+                (list) `results`: contains the disease name, identifier ID
+                                  and the source name;
+                (int) `count`: number of diseases in the response
+      parameters:
+      - in: path
+        name: ext_ids
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      tags:
+      - external_disease
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        disease:
+                          type: string
+                        identifier:
+                          type: string
+                        source:
+                          type: string
+                  count:
+                    type: integer
+          description: External disease response
+  /gene2phenotype/api/gene/{name}/:
+    get:
+      operationId: gene_list
+      description: |-
+        Fetch the gene data.
+
+        Args:
+            (str) `name`: gene symbol or the synonym symbol
+
+        Returns a dictionary with the following values:
+                            (str) gene_symbol;
+                            (str) sequence;
+                            (integer) start;
+                            (integer) end;
+                            (integer) strand;
+                            (str) reference;
+                            (list) ids;
+                            (list) list of synonyms: gene symbols;
+                            (str) last_updated: date of the last update;
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - gene
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLocusGeneList'
+          description: ''
+  /gene2phenotype/api/gene/{name}{format}:
+    get:
+      operationId: gene_formatted_list
+      description: |-
+        Fetch the gene data.
+
+        Args:
+            (str) `name`: gene symbol or the synonym symbol
+
+        Returns a dictionary with the following values:
+                            (str) gene_symbol;
+                            (str) sequence;
+                            (integer) start;
+                            (integer) end;
+                            (integer) strand;
+                            (str) reference;
+                            (list) ids;
+                            (list) list of synonyms: gene symbols;
+                            (str) last_updated: date of the last update;
+      parameters:
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - gene
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLocusGeneList'
+          description: ''
+  /gene2phenotype/api/gene/{name}/disease/:
+    get:
+      operationId: gene_disease_list
+      description: |-
+        Return all diseases associated with a specific gene.
+
+        Args:
+            (str) `name`: gene symbol or the synonym symbol
+
+        Returns a list of objects where each object has
+                    (list) `results`:
+                                    (str) original_disease_name;
+                                    (str) disease_name;
+                                    (str) identifier;
+                                    (str) source name;
+                    (int) `count`: number of diseases associated with the gene
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - gene
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGeneDiseaseList'
+          description: ''
+  /gene2phenotype/api/gene/{name}/disease{format}:
+    get:
+      operationId: gene_disease_formatted_list
+      description: |-
+        Return all diseases associated with a specific gene.
+
+        Args:
+            (str) `name`: gene symbol or the synonym symbol
+
+        Returns a list of objects where each object has
+                    (list) `results`:
+                                    (str) original_disease_name;
+                                    (str) disease_name;
+                                    (str) identifier;
+                                    (str) source name;
+                    (int) `count`: number of diseases associated with the gene
+      parameters:
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - gene
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGeneDiseaseList'
+          description: ''
+  /gene2phenotype/api/gene/{name}/function/:
+    get:
+      operationId: gene_function_list
+      description: |-
+        Return the gene product function imported from UniProt.
+
+        Args:
+            (str) `name`: gene symbol or the synonym symbol
+
+        Returns a dictionary with the following:
+                (string) `gene_symbol`;
+                (dict) `function`: gene product function from UniProt;
+                (dict) `gene_stats`: gene scores from the Badonyi probabilities
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - gene
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - count
+                - results
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=400&limit=100
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=200&limit=100
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        gene_symbol:
+                          type: string
+                        function:
+                          type: object
+                          properties:
+                            protein_function:
+                              type: string
+                            uniprot_accession:
+                              type: string
+                        gene_stats:
+                          type: object
+                          properties:
+                            dominant_negative_mp:
+                              type: number
+                              format: double
+                            loss_of_function_mp:
+                              type: number
+                              format: double
+                            gain_of_function_mp:
+                              type: number
+                              format: double
+          description: Gene function response
+  /gene2phenotype/api/gene/{name}/function{format}:
+    get:
+      operationId: gene_function_formatted_list
+      description: |-
+        Return the gene product function imported from UniProt.
+
+        Args:
+            (str) `name`: gene symbol or the synonym symbol
+
+        Returns a dictionary with the following:
+                (string) `gene_symbol`;
+                (dict) `function`: gene product function from UniProt;
+                (dict) `gene_stats`: gene scores from the Badonyi probabilities
+      parameters:
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - gene
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - count
+                - results
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=400&limit=100
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=200&limit=100
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        gene_symbol:
+                          type: string
+                        function:
+                          type: object
+                          properties:
+                            protein_function:
+                              type: string
+                            uniprot_accession:
+                              type: string
+                        gene_stats:
+                          type: object
+                          properties:
+                            dominant_negative_mp:
+                              type: number
+                              format: double
+                            loss_of_function_mp:
+                              type: number
+                              format: double
+                            gain_of_function_mp:
+                              type: number
+                              format: double
+          description: Gene function response
+  /gene2phenotype/api/gene/{name}/summary/:
+    get:
+      operationId: gene_summary_list
+      description: |-
+        Return a summary of the latest G2P entries associated with the gene.
+
+        Args:
+            (str) `name`: gene symbol or the synonym symbol
+
+        Returns a dictionary with the following values:
+                (string) `gene_symbol`
+                (list) `records_summary`
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - gene
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - count
+                - results
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=400&limit=100
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=200&limit=100
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        gene_symbol:
+                          type: string
+                        records_summary:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              disease:
+                                type: string
+                              genotype:
+                                type: string
+                              confidence:
+                                type: string
+                              panels:
+                                type: array
+                                items:
+                                  type: string
+                              variant_consequence:
+                                type: array
+                                items:
+                                  type: string
+                              variant_type:
+                                type: array
+                                items:
+                                  type: string
+                              molecular_mechanism:
+                                type: string
+                              last_updated:
+                                type: string
+                              stable_id:
+                                type: string
+          description: Gene summary response
+  /gene2phenotype/api/gene/{name}/summary{format}:
+    get:
+      operationId: gene_summary_formatted_list
+      description: |-
+        Return a summary of the latest G2P entries associated with the gene.
+
+        Args:
+            (str) `name`: gene symbol or the synonym symbol
+
+        Returns a dictionary with the following values:
+                (string) `gene_symbol`
+                (list) `records_summary`
+      parameters:
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - gene
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - count
+                - results
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=400&limit=100
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=200&limit=100
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        gene_symbol:
+                          type: string
+                        records_summary:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              disease:
+                                type: string
+                              genotype:
+                                type: string
+                              confidence:
+                                type: string
+                              panels:
+                                type: array
+                                items:
+                                  type: string
+                              variant_consequence:
+                                type: array
+                                items:
+                                  type: string
+                              variant_type:
+                                type: array
+                                items:
+                                  type: string
+                              molecular_mechanism:
+                                type: string
+                              last_updated:
+                                type: string
+                              stable_id:
+                                type: string
+          description: Gene summary response
+  /gene2phenotype/api/lgd/{stable_id}/:
+    get:
+      operationId: lgd_list
+      description: |-
+        Return all data for a G2P record.
+
+        Args:
+            (string) `stable_id`: G2P stable ID
+
+        Returns a LocusGenotypeDisease object:
+            (dict) locus;
+            (str) stable_id;
+            (str) genotype;
+            (dict) disease;
+            (dict) molecular_mechanism;
+            (list) phenotypes;
+            (list) publications;
+            ...
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: path
+        name: stable_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - lgd
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLocusGenotypeDiseaseList'
+          description: ''
+  /gene2phenotype/api/lgd/{stable_id}{format}:
+    get:
+      operationId: lgd_formatted_list
+      description: |-
+        Return all data for a G2P record.
+
+        Args:
+            (string) `stable_id`: G2P stable ID
+
+        Returns a LocusGenotypeDisease object:
+            (dict) locus;
+            (str) stable_id;
+            (str) genotype;
+            (dict) disease;
+            (dict) molecular_mechanism;
+            (list) phenotypes;
+            (list) publications;
+            ...
+      parameters:
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - in: path
+        name: stable_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - lgd
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLocusGenotypeDiseaseList'
+          description: ''
+  /gene2phenotype/api/molecular_mechanisms/:
+    get:
+      operationId: molecular_mechanisms_list
+      description: |-
+        Return the molecular mechanisms terms by type and subtype (if applicable).
+
+        Returns a dictionary where the key is the type the value is a list.
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - molecular_mechanisms
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - count
+                - results
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=400&limit=100
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=200&limit=100
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        evidence:
+                          type: object
+                        mechanism:
+                          type: array
+                          items:
+                            type: object
+                        mechanism_synopsis:
+                          type: array
+                          items:
+                            type: object
+                        support:
+                          type: array
+                          items:
+                            type: object
+          description: Molecular mechanisms response
+  /gene2phenotype/api/molecular_mechanisms{format}:
+    get:
+      operationId: molecular_mechanisms_formatted_list
+      description: |-
+        Return the molecular mechanisms terms by type and subtype (if applicable).
+
+        Returns a dictionary where the key is the type the value is a list.
+      parameters:
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - molecular_mechanisms
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - count
+                - results
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=400&limit=100
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=200&limit=100
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        evidence:
+                          type: object
+                        mechanism:
+                          type: array
+                          items:
+                            type: object
+                        mechanism_synopsis:
+                          type: array
+                          items:
+                            type: object
+                        support:
+                          type: array
+                          items:
+                            type: object
+          description: Molecular mechanisms response
+  /gene2phenotype/api/ontology_terms/variant_types/:
+    get:
+      operationId: ontology_terms_variant_types_list
+      description: |-
+        Return all variant types by group.
+
+        Returns a dictionary where the key is the variant group and the value is a list of terms
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - ontology_terms
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - count
+                - results
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=400&limit=100
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=200&limit=100
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        NMD_variants:
+                          type: array
+                          items:
+                            type: object
+                        splice_variants:
+                          type: array
+                          items:
+                            type: object
+                        regulatory_variants:
+                          type: array
+                          items:
+                            type: object
+                        protein_changing_variants:
+                          type: array
+                          items:
+                            type: object
+                        other_variants:
+                          type: array
+                          items:
+                            type: object
+          description: Variant types response
+  /gene2phenotype/api/ontology_terms/variant_types{format}:
+    get:
+      operationId: ontology_terms_variant_types_formatted_list
+      description: |-
+        Return all variant types by group.
+
+        Returns a dictionary where the key is the variant group and the value is a list of terms
+      parameters:
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - ontology_terms
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - count
+                - results
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=400&limit=100
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=200&limit=100
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        NMD_variants:
+                          type: array
+                          items:
+                            type: object
+                        splice_variants:
+                          type: array
+                          items:
+                            type: object
+                        regulatory_variants:
+                          type: array
+                          items:
+                            type: object
+                        protein_changing_variants:
+                          type: array
+                          items:
+                            type: object
+                        other_variants:
+                          type: array
+                          items:
+                            type: object
+          description: Variant types response
+  /gene2phenotype/api/panel/{name}/:
+    get:
+      operationId: panel_list
+      description: |-
+        Return the panel info.
+
+        Args:
+            (str) `name`: the panel short name
+
+        Returns a dictionary with the following values:
+            (string) panel name;
+            (string) panel description: the panel long name;
+            (string) last_updated;
+            (dict) stats;
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - panel
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - count
+                - results
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=400&limit=100
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=200&limit=100
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        last_updated:
+                          type: string
+                        stats:
+                          type: object
+                          properties:
+                            total_records:
+                              type: integer
+                            total_genes:
+                              type: integer
+                            by_confidence:
+                              type: object
+                              properties:
+                                definitive:
+                                  type: integer
+                                strong:
+                                  type: integer
+                                limited:
+                                  type: integer
+                                moderate:
+                                  type: integer
+                                refuted:
+                                  type: integer
+          description: Panel detail response
+  /gene2phenotype/api/panel/{name}{format}:
+    get:
+      operationId: panel_formatted_list
+      description: |-
+        Return the panel info.
+
+        Args:
+            (str) `name`: the panel short name
+
+        Returns a dictionary with the following values:
+            (string) panel name;
+            (string) panel description: the panel long name;
+            (string) last_updated;
+            (dict) stats;
+      parameters:
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - panel
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - count
+                - results
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=400&limit=100
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=200&limit=100
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        last_updated:
+                          type: string
+                        stats:
+                          type: object
+                          properties:
+                            total_records:
+                              type: integer
+                            total_genes:
+                              type: integer
+                            by_confidence:
+                              type: object
+                              properties:
+                                definitive:
+                                  type: integer
+                                strong:
+                                  type: integer
+                                limited:
+                                  type: integer
+                                moderate:
+                                  type: integer
+                                refuted:
+                                  type: integer
+          description: Panel detail response
+  /gene2phenotype/api/panel/{name}/download/:
+    get:
+      operationId: panel_download_retrieve
+      description: |-
+        Method to download the panel data.
+        Authenticated users can download data for all panels.
+
+        Args:
+            (str) `name`: the short name of the panel to download
+
+        Returns: Uncompressed csv file
+
+        Raises: Invalid panel
+      parameters:
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      tags:
+      - panel
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /gene2phenotype/api/panel/{name}/download{format}:
+    get:
+      operationId: panel_download_formatted_retrieve
+      description: |-
+        Method to download the panel data.
+        Authenticated users can download data for all panels.
+
+        Args:
+            (str) `name`: the short name of the panel to download
+
+        Returns: Uncompressed csv file
+
+        Raises: Invalid panel
+      parameters:
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      tags:
+      - panel
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /gene2phenotype/api/panel/{name}/summary/:
+    get:
+      operationId: panel_summary_list
+      description: |-
+        Display a summary of the latest G2P entries associated with panel.
+
+        Args:
+            (str) panel: the panel short name
+
+        Returns:
+            Response object includes:
+                            (string) panel name
+                            (list) records_summary: summary of entries linked to panel
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - panel
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - count
+                - results
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=400&limit=100
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=200&limit=100
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        panel_name:
+                          type: string
+                        records_summary:
+                          type: object
+                          properties:
+                            locus:
+                              type: string
+                            disease:
+                              type: string
+                            genotype:
+                              type: string
+                            confidence:
+                              type: string
+                            variant_consequence:
+                              type: array
+                              items:
+                                type: string
+                            variant_type:
+                              type: array
+                              items:
+                                type: string
+                            molecular_mechanism:
+                              type: string
+                            last_updated:
+                              type: string
+                            stable_id:
+                              type: string
+          description: Panel summary response
+  /gene2phenotype/api/panel/{name}/summary{format}:
+    get:
+      operationId: panel_summary_formatted_list
+      description: |-
+        Display a summary of the latest G2P entries associated with panel.
+
+        Args:
+            (str) panel: the panel short name
+
+        Returns:
+            Response object includes:
+                            (string) panel name
+                            (list) records_summary: summary of entries linked to panel
+      parameters:
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - panel
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - count
+                - results
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=400&limit=100
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=200&limit=100
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        panel_name:
+                          type: string
+                        records_summary:
+                          type: object
+                          properties:
+                            locus:
+                              type: string
+                            disease:
+                              type: string
+                            genotype:
+                              type: string
+                            confidence:
+                              type: string
+                            variant_consequence:
+                              type: array
+                              items:
+                                type: string
+                            variant_type:
+                              type: array
+                              items:
+                                type: string
+                            molecular_mechanism:
+                              type: string
+                            last_updated:
+                              type: string
+                            stable_id:
+                              type: string
+          description: Panel summary response
+  /gene2phenotype/api/panels/:
+    get:
+      operationId: panels_list
+      description: |-
+        Return all panels info.
+        The information includes some stats:
+            - total number of records linked to panel
+            - total number of genes linked to panel
+            - total number of records by confidence
+
+        Returns a dictionary with the following values:
+            (list) `results`: list of panels and respective data;
+            (int) `count`: number of panels in the response
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - panels
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - count
+                - results
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=400&limit=100
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=200&limit=100
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        results:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                              description:
+                                type: string
+                              stats:
+                                type: object
+                                properties:
+                                  total_records:
+                                    type: integer
+                                  total_genes:
+                                    type: integer
+                                  by_confidence:
+                                    type: object
+                                    properties:
+                                      definitive:
+                                        type: integer
+                                      strong:
+                                        type: integer
+                                      limited:
+                                        type: integer
+                                      moderate:
+                                        type: integer
+                                      refuted:
+                                        type: integer
+                              last_updated:
+                                type: string
+                        count:
+                          type: integer
+          description: Panels response
+  /gene2phenotype/api/panels{format}:
+    get:
+      operationId: panels_formatted_list
+      description: |-
+        Return all panels info.
+        The information includes some stats:
+            - total number of records linked to panel
+            - total number of genes linked to panel
+            - total number of records by confidence
+
+        Returns a dictionary with the following values:
+            (list) `results`: list of panels and respective data;
+            (int) `count`: number of panels in the response
+      parameters:
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - panels
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - count
+                - results
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=400&limit=100
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?offset=200&limit=100
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        results:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                              description:
+                                type: string
+                              stats:
+                                type: object
+                                properties:
+                                  total_records:
+                                    type: integer
+                                  total_genes:
+                                    type: integer
+                                  by_confidence:
+                                    type: object
+                                    properties:
+                                      definitive:
+                                        type: integer
+                                      strong:
+                                        type: integer
+                                      limited:
+                                        type: integer
+                                      moderate:
+                                        type: integer
+                                      refuted:
+                                        type: integer
+                              last_updated:
+                                type: string
+                        count:
+                          type: integer
+          description: Panels response
+  /gene2phenotype/api/phenotype/{hpo_list}/:
+    get:
+      operationId: phenotype_retrieve
+      description: |-
+        Retrieve phenotypes for a list of HPO IDs.
+        The phenotype info is fetched from the HPO API.
+
+        Args:
+            (str) `hpo_list`: A comma-separated string of HPO IDs
+
+        Returns a dictionary with the following format:
+            (list) `results`: list of the phenotype data
+            (int) `count`: number of HPO IDs in the response
+
+        Raises: Invalid HPO
+      parameters:
+      - in: path
+        name: hpo_list
+        schema:
+          type: string
+        required: true
+      tags:
+      - phenotype
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        accession:
+                          type: string
+                        term:
+                          type: string
+                        description:
+                          type: string
+                  count:
+                    type: integer
+          description: Phenotype response
+  /gene2phenotype/api/phenotype/{hpo_list}{format}:
+    get:
+      operationId: phenotype_formatted_retrieve
+      description: |-
+        Retrieve phenotypes for a list of HPO IDs.
+        The phenotype info is fetched from the HPO API.
+
+        Args:
+            (str) `hpo_list`: A comma-separated string of HPO IDs
+
+        Returns a dictionary with the following format:
+            (list) `results`: list of the phenotype data
+            (int) `count`: number of HPO IDs in the response
+
+        Raises: Invalid HPO
+      parameters:
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      - in: path
+        name: hpo_list
+        schema:
+          type: string
+        required: true
+      tags:
+      - phenotype
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        accession:
+                          type: string
+                        term:
+                          type: string
+                        description:
+                          type: string
+                  count:
+                    type: integer
+          description: Phenotype response
+  /gene2phenotype/api/publication/{pmids}/:
+    get:
+      operationId: publication_retrieve
+      description: |-
+        Return the publication data for a list of PMIDs.
+        If PMID is found in G2P then return details from G2P.
+        If PMID not found in G2P then returns data from EuropePMC.
+
+        Args:
+            (str) `pmids`: A comma-separated string of PMIDs
+
+        Returns a dictionary with the following format:
+            (list) `results`: a list of the publication data for each PMID
+            (int) `count`: number of PMIDs in the response
+
+        Raises: Invalid PMID
+      parameters:
+      - in: path
+        name: pmids
+        schema:
+          type: string
+        required: true
+      tags:
+      - publication
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        pmid:
+                          type: integer
+                        title:
+                          type: string
+                        authors:
+                          type: string
+                        year:
+                          type: integer
+                        source:
+                          type: string
+                  count:
+                    type: integer
+          description: Phenotype response
+  /gene2phenotype/api/publication/{pmids}{format}:
+    get:
+      operationId: publication_formatted_retrieve
+      description: |-
+        Return the publication data for a list of PMIDs.
+        If PMID is found in G2P then return details from G2P.
+        If PMID not found in G2P then returns data from EuropePMC.
+
+        Args:
+            (str) `pmids`: A comma-separated string of PMIDs
+
+        Returns a dictionary with the following format:
+            (list) `results`: a list of the publication data for each PMID
+            (int) `count`: number of PMIDs in the response
+
+        Raises: Invalid PMID
+      parameters:
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      - in: path
+        name: pmids
+        schema:
+          type: string
+        required: true
+      tags:
+      - publication
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        pmid:
+                          type: integer
+                        title:
+                          type: string
+                        authors:
+                          type: string
+                        year:
+                          type: integer
+                        source:
+                          type: string
+                  count:
+                    type: integer
+          description: Phenotype response
+  /gene2phenotype/api/reference_data/:
+    get:
+      operationId: reference_data_retrieve
+      description: Return a list with the reference data used in G2P and respective
+        version
+      tags:
+      - reference_data
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    key:
+                      type: string
+                    source:
+                      type: string
+                    version:
+                      type: string
+          description: Reference data response
+  /gene2phenotype/api/reference_data{format}:
+    get:
+      operationId: reference_data_formatted_retrieve
+      description: Return a list with the reference data used in G2P and respective
+        version
+      parameters:
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      tags:
+      - reference_data
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    key:
+                      type: string
+                    source:
+                      type: string
+                    version:
+                      type: string
+          description: Reference data response
+  /gene2phenotype/api/search/:
+    get:
+      operationId: search_list
+      description: |-
+        Search G2P records. Supported search types are:
+
+            - gene
+            - disease
+            - phenotype
+            - G2P ID
+            - draft (only available for authenticated users)
+
+        If no search type is specified then it performs a generic search.
+        The search can be specific to one panel if using parameter 'panel'.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - search
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - count
+                - results
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?page=4
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?page=2
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        results:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              gene:
+                                type: string
+                              genotype:
+                                type: string
+                              disease:
+                                type: string
+                              mechanism:
+                                type: string
+                              panel:
+                                type: array
+                                items:
+                                  type: string
+                              confidence:
+                                type: string
+                        count:
+                          type: integer
+                        next:
+                          type: integer
+                          nullable: true
+                        previous:
+                          type: integer
+                          nullable: true
+          description: Phenotype response
+  /gene2phenotype/api/search{format}:
+    get:
+      operationId: search_formatted_list
+      description: |-
+        Search G2P records. Supported search types are:
+
+            - gene
+            - disease
+            - phenotype
+            - G2P ID
+            - draft (only available for authenticated users)
+
+        If no search type is specified then it performs a generic search.
+        The search can be specific to one panel if using parameter 'panel'.
+      parameters:
+      - in: path
+        name: format
+        schema:
+          type: string
+          enum:
+          - .json
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - search
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - count
+                - results
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?page=4
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://api.example.org/accounts/?page=2
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        results:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              gene:
+                                type: string
+                              genotype:
+                                type: string
+                              disease:
+                                type: string
+                              mechanism:
+                                type: string
+                              panel:
+                                type: array
+                                items:
+                                  type: string
+                              confidence:
+                                type: string
+                        count:
+                          type: integer
+                        next:
+                          type: integer
+                          nullable: true
+                        previous:
+                          type: integer
+                          nullable: true
+          description: Phenotype response
+components:
+  schemas:
+    Attrib:
+      type: object
+      description: Attribs represent controlled vocabulary.
+      properties:
+        value:
+          type: string
+          maxLength: 255
+      required:
+      - value
+    AttribType:
+      type: object
+      description: Return the list of attribs for a specific type.
+      properties:
+        code:
+          type: string
+          maxLength: 255
+      required:
+      - code
+    DiseaseDetail:
+      type: object
+      description: Serializer for the Disease model - extra fields.
+      properties:
+        name:
+          type: string
+        ontology_terms:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          description: Returns the ontology terms associated with the disease.
+          readOnly: true
+        synonyms:
+          type: array
+          items:
+            type: string
+          description: Returns disease synonyms used in other sources.
+          readOnly: true
+        last_updated:
+          type: string
+          format: date
+          nullable: true
+          description: Returns the date an entry linked to the disease has been updated.
+          readOnly: true
+      required:
+      - last_updated
+      - name
+      - ontology_terms
+      - synonyms
+    GeneDisease:
+      type: object
+      description: |-
+        Serializer for the GeneDisease model.
+        The GeneDisease model stores external gene-disease associations.
+      properties:
+        disease:
+          type: string
+        identifier:
+          type: string
+        source:
+          type: string
+      required:
+      - disease
+      - identifier
+      - source
+    LocusGene:
+      type: object
+      description: |-
+        Serializer for the LocusSerializer model extra data.
+        It returns the Locus data and the date of the last update.
+        It can also include:
+         - summary of records associated with the locus (method records_summary)
+         - gene product function from UniProt (method function)
+      properties:
+        gene_symbol:
+          type: string
+        sequence:
+          type: string
+        start:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        end:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        strand:
+          type: integer
+          maximum: 32767
+          minimum: -32768
+        reference:
+          type: string
+          readOnly: true
+        ids:
+          type: object
+          additionalProperties:
+            type: string
+          description: |-
+            Locus IDs from external sources.
+            It can be the HGNC ID for a gene.
+          readOnly: true
+        synonyms:
+          type: array
+          items:
+            type: string
+          description: |-
+            Returns the locus synonyms.
+            The locus synonym can be an old gene symbol.
+          readOnly: true
+        last_updated:
+          type: string
+          format: date
+          nullable: true
+          description: Returns the date last time the locus was updated.
+          readOnly: true
+      required:
+      - end
+      - gene_symbol
+      - ids
+      - last_updated
+      - reference
+      - sequence
+      - start
+      - synonyms
+    LocusGenotypeDisease:
+      type: object
+      description: |-
+        Serializer for the LocusGenotypeDisease model.
+        LocusGenotypeDisease represents a G2P record.
+      properties:
+        locus:
+          type: object
+          additionalProperties: {}
+          description: |-
+            Locus linked to the LGD record.
+            It can be a gene, variant or region.
+          readOnly: true
+        stable_id:
+          type: string
+          readOnly: true
+        genotype:
+          type: string
+          readOnly: true
+        variant_consequence:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          description: |-
+            Variant consequences linked to the LGD record.
+            This is the GenCC level of variant consequence: altered_gene_product_level, etc.
+          readOnly: true
+          nullable: true
+        molecular_mechanism:
+          type: object
+          additionalProperties: {}
+          description: |-
+            Molecular mechanism associated with the LGD record.
+            If available, also returns the evidence.
+          readOnly: true
+          nullable: true
+        disease:
+          type: object
+          additionalProperties: {}
+          description: Disease associated with the LGD record.
+          readOnly: true
+        confidence:
+          type: string
+        publications:
+          type: array
+          items:
+            type: object
+            additionalProperties:
+              type: object
+              additionalProperties: {}
+          description: Publications associated with the LGD record.
+          readOnly: true
+        panels:
+          type: array
+          items:
+            type: object
+            additionalProperties:
+              type: string
+          description: Panel(s) associated with the LGD record.
+          readOnly: true
+        cross_cutting_modifier:
+          type: array
+          items:
+            type: object
+            additionalProperties:
+              type: string
+          description: Cross cutting modifier terms associated with the LGD record.
+          readOnly: true
+          nullable: true
+        variant_type:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          description: |-
+            Variant types associated with the LGD record.
+            The variant type can be linked to several publications therefore response
+            includes the list of publications associated with the variant type.
+          readOnly: true
+          nullable: true
+        variant_description:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          description: |-
+            Variant HGVS description linked to the LGD record and publication(s).
+            The response includes a list of publications associated with the HGVS description.
+          readOnly: true
+          nullable: true
+        phenotypes:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          description: |-
+            Phenotypes associated with the LGD record.
+            The response includes the list of publications associated with the phenotype.
+          readOnly: true
+          nullable: true
+        phenotype_summary:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          description: |-
+            A summary about the phenotypes associated with the LGD record.
+            The response includes the publication associated with the summary.
+          readOnly: true
+          nullable: true
+        last_updated:
+          type: string
+          nullable: true
+          description: Date last time the LGD record was updated by a curator.
+          readOnly: true
+        date_created:
+          type: string
+          format: date
+          nullable: true
+          description: |-
+            Date the LGD record was created.
+            Dependency: this method depends on the history table.
+
+            Note: entries that were migrated from the old db don't have the date when they were created.
+          readOnly: true
+        comments:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          description: |-
+            LGD record comments.
+            Comments can be public or private. Private comments can only be
+            seen by curators.
+          readOnly: true
+          nullable: true
+        curators:
+          type: array
+          items:
+            type: string
+          description: |-
+            List of curators who worked on the LGD record.
+            Dependency: this method depends on the history table.
+
+            Note: entries that were migrated from the old db have limited info details.
+          readOnly: true
+          nullable: true
+        is_reviewed:
+          type: integer
+          nullable: true
+      required:
+      - comments
+      - confidence
+      - cross_cutting_modifier
+      - curators
+      - date_created
+      - disease
+      - genotype
+      - last_updated
+      - locus
+      - molecular_mechanism
+      - panels
+      - phenotype_summary
+      - phenotypes
+      - publications
+      - stable_id
+      - variant_consequence
+      - variant_description
+      - variant_type
+    PaginatedAttribList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attrib'
+    PaginatedAttribTypeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttribType'
+    PaginatedDiseaseDetailList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiseaseDetail'
+    PaginatedGeneDiseaseList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/GeneDisease'
+    PaginatedLocusGeneList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocusGene'
+    PaginatedLocusGenotypeDiseaseList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocusGenotypeDisease'
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

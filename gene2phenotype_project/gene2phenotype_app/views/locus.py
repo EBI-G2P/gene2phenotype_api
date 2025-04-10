@@ -91,10 +91,9 @@ class LocusGeneSummary(BaseView):
         Args:
             (str) `name`: gene symbol or the synonym symbol
 
-        Returns:
-            Response object includes:
-                            (string) `gene_symbol`
-                            (list) `records_summary`
+        Returns a dictionary with the following values:
+                (string) `gene_symbol`
+                (list) `records_summary`
     """
     serializer_class = LocusGeneSerializer
 
