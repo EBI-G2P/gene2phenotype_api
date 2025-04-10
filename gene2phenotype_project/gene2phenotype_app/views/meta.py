@@ -1,12 +1,31 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db.models import Max
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 from gene2phenotype_app.models import Meta
 
 from gene2phenotype_app.serializers import MetaSerializer
 
 
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="Reference data response",
+            response={
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "key": {"type": "string"},
+                            "source": {"type": "string"},
+                            "version": {"type": "string"}
+                        }
+                    }
+            }
+        )
+    }
+)
 class MetaView(APIView):
     """
     The View for Meta record
@@ -30,18 +49,11 @@ class MetaView(APIView):
         # then we use a list comprehension to check using the new column latest date 
         queryset = Meta.objects.filter(date_update__in=[record["latest_date"] for record in latest_records])
 
-
         return queryset
 
     def get(self, request):
         """
-        Get method to get the reference data
-
-        Args:
-            request (_type_): A get request
-
-        Returns:
-            _type_: Response object [key, source, version]
+        Return a list with the reference data used in G2P and respective version
         """
         queryset = self.get_queryset()
         serializer = MetaSerializer(queryset, many=True)

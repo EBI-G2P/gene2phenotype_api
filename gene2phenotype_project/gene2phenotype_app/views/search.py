@@ -1,6 +1,7 @@
 from rest_framework.response import Response
 from django.db.models import Q, F
 from rest_framework.pagination import PageNumberPagination
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 from gene2phenotype_app.serializers import LocusGenotypeDiseaseSerializer, CurationDataSerializer
 
@@ -9,14 +10,46 @@ from gene2phenotype_app.models import LGDPanel, LocusGenotypeDisease, CurationDa
 from .base import BaseView
 
 
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="Phenotype response",
+            response={
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "string"},
+                                "gene": {"type": "string"},
+                                "genotype": {"type": "string"},
+                                "disease": {"type": "string"},
+                                "mechanism": {"type": "string"},
+                                "panel": {"type": "array", "items": {"type": "string"}},
+                                "confidence": {"type": "string"}
+                            }
+                        }
+                    },
+                    "count": {"type": "integer"},
+                    "next": {"type": "integer", "nullable": True},
+                    "previous": {"type": "integer", "nullable": True}
+                }
+            }
+        )
+    }
+)
 class SearchView(BaseView):
     """
-        Search G2P entries by different types:
-                                            - gene
-                                            - disease
-                                            - phenotype
-                                            - G2P ID
-                                            - draft (only available for authenticated users)
+        Search G2P records. Supported search types are:
+
+            - gene
+            - disease
+            - phenotype
+            - G2P ID
+            - draft (only available for authenticated users)
+
         If no search type is specified then it performs a generic search.
         The search can be specific to one panel if using parameter 'panel'.
     """

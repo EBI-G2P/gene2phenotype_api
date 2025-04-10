@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import Http404, HttpResponse
 from rest_framework.decorators import api_view
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
@@ -29,18 +29,58 @@ class PanelCreateView(generics.CreateAPIView):
     serializer_class = PanelCreateSerializer
     permission_classes = [permissions.IsAdminUser]
 
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="Panels response",
+            response={
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "description": {"type": "string"},
+                                "stats": {
+                                    "type": "object",
+                                    "properties": {
+                                        "total_records": {"type": "integer"},
+                                        "total_genes": {"type": "integer"},
+                                        "by_confidence": {
+                                            "type": "object",
+                                            "properties": {
+                                                "definitive": {"type": "integer"},
+                                                "strong": {"type": "integer"},
+                                                "limited": {"type": "integer"},
+                                                "moderate": {"type": "integer"},
+                                                "refuted": {"type": "integer"}
+                                            }
+                                        }
+                                    }
+                                },
+                                "last_updated": {"type": "string"}
+                            }
+                        }
+                    },
+                    "count": {"type": "integer"}
+                }
+            }
+        )
+    }
+)
 class PanelList(generics.ListAPIView):
     """
-        Display all panels info.
+        Return all panels info.
         The information includes some stats: 
             - total number of records linked to panel
             - total number of genes linked to panel
             - total number of records by confidence
 
-        Returns:
-            Response object includes:
-                            (list) results: list of panels info
-                            (int) count: number of panels
+        Returns a dictionary with the following values:
+            (list) `results`: list of panels and respective data;
+            (int) `count`: number of panels in the response
     """
 
     queryset = Panel.objects.all()
@@ -67,19 +107,50 @@ class PanelList(generics.ListAPIView):
 
         return Response({'results':sorted_panels, 'count':len(sorted_panels)})
 
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="Panel detail response",
+            response={
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "description": {"type": "string"},
+                    "last_updated": {"type": "string"},
+                    "stats": {
+                        "type": "object",
+                        "properties": {
+                            "total_records": {"type": "integer"},
+                            "total_genes": {"type": "integer"},
+                            "by_confidence": {
+                                "type": "object",
+                                "properties": {
+                                    "definitive": {"type": "integer"},
+                                    "strong": {"type": "integer"},
+                                    "limited": {"type": "integer"},
+                                    "moderate": {"type": "integer"},
+                                    "refuted": {"type": "integer"}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        )
+    }
+)
 class PanelDetail(BaseView):
     """
-        Display the panel info.
+        Return the panel info.
 
         Args:
-            (str) panel: the panel short name
+            (str) `name`: the panel short name
 
-        Returns:
-            Response object includes:
-                            (string) panel name
-                            (string) panel description: long name
-                            (string) last_updated
-                            (dict) stats
+        Returns a dictionary with the following values:
+            (string) panel name;
+            (string) panel description: the panel long name;
+            (string) last_updated;
+            (dict) stats;
     """
     serializer_class = PanelDetailSerializer
 
@@ -109,6 +180,33 @@ class PanelDetail(BaseView):
         else:
             self.handle_no_permission('Panel', name)
 
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="Panel summary response",
+            response={
+                "type": "object",
+                "properties": {
+                    "panel_name": {"type": "string"},
+                    "records_summary": {
+                        "type": "object",
+                        "properties": {
+                            "locus": {"type": "string"},
+                            "disease": {"type": "string"},
+                            "genotype": {"type": "string"},
+                            "confidence": {"type": "string"},
+                            "variant_consequence": {"type": "array", "items": {"type": "string"}},
+                            "variant_type": {"type": "array", "items": {"type": "string"}},
+                            "molecular_mechanism": {"type": "string"},
+                            "last_updated": {"type": "string"},
+                            "stable_id": {"type": "string"},
+                        }
+                    }
+                }
+            }
+        )
+    }
+)
 class PanelRecordsSummary(BaseView):
     """
         Display a summary of the latest G2P entries associated with panel.
@@ -241,22 +339,17 @@ class LGDEditPanel(CustomPermissionAPIView):
                  status=status.HTTP_200_OK)
 
 @api_view(['GET'])
-# TODO: fix
 def PanelDownload(request, name):
     """
         Method to download the panel data.
         Authenticated users can download data for all panels.
-        Note: the file format is still work in progress.
 
         Args:
-                (HttpRequest) request: HTTP request
-                (str) name: the name of the panel to download
+            (str) `name`: the short name of the panel to download
 
-        Returns:
-                uncompressed csv file
+        Returns: Uncompressed csv file
 
-        Raises:
-                Invalid panel
+        Raises: Invalid panel
     """
 
     user_email = request.user

@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from django.http import Http404
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 import re
 
 from gene2phenotype_app.serializers import (
@@ -27,27 +27,46 @@ from .base import BaseAdd, CustomPermissionAPIView, IsSuperUser
 
 from ..utils import validate_phenotype
 
-"""
-    Retrieve phenotypes for a list of HPO IDs.
-    The phenotype info is fetched from the HPO API.
 
-    Args:
-            (HttpRequest) request: HTTP request
-            (str) hpo_list: A comma-separated string of HPO IDs
-
-    Returns:
-            Response object includes:
-                (list) results: contains phenotype data for each HPO
-                                    - accession
-                                    - term
-                                    - description
-                (int) count: number of HPO IDs
-
-    Raises:
-            Invalid HPO
-"""
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="Phenotype response",
+            response={
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "accession": {"type": "string"},
+                                "term": {"type": "string"},
+                                "description": {"type": "string"}
+                            }
+                        }
+                    },
+                    "count": {"type": "integer"}
+                }
+            }
+        )
+    }
+)
 @api_view(['GET'])
 def PhenotypeDetail(request, hpo_list):
+    """
+        Retrieve phenotypes for a list of HPO IDs.
+        The phenotype info is fetched from the HPO API.
+
+        Args:
+            (str) `hpo_list`: A comma-separated string of HPO IDs
+
+        Returns a dictionary with the following format:
+            (list) `results`: list of the phenotype data
+            (int) `count`: number of HPO IDs in the response
+
+        Raises: Invalid HPO
+    """
     id_list = hpo_list.split(',')
     data = []
     invalid_hpos = []

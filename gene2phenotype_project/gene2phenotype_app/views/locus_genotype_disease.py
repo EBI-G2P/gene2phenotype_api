@@ -5,7 +5,7 @@ from django.http import Http404
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.db import transaction, IntegrityError
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 
 from gene2phenotype_app.serializers import (
@@ -50,14 +50,27 @@ from .base import (
     IsSuperUser
 )
 
-
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="Molecular mechanisms response",
+            response={
+                "type": "object",
+                "properties": {
+                    "evidence": {"type": "object"},
+                    "mechanism": {"type": "array", "items": {"type": "object"}},
+                    "mechanism_synopsis": {"type": "array", "items": {"type": "object"}},
+                    "support": {"type": "array", "items": {"type": "object"}}
+                }
+            }
+        )
+    }
+)
 class ListMolecularMechanisms(generics.ListAPIView):
     """
-        Display the molecular mechanisms terms by type and subtype (if applicable).
-        Only type 'evidence' has a defined subtype.
+        Return the molecular mechanisms terms by type and subtype (if applicable).
 
-        Returns:
-            (dict) response: list of molecular mechanisms by type and subtype.
+        Returns a dictionary where the key is the type the value is a list.
     """
 
     queryset = CVMolecularMechanism.objects.all().values('type', 'subtype', 'value', 'description').order_by('type')
@@ -89,13 +102,28 @@ class ListMolecularMechanisms(generics.ListAPIView):
 
         return Response(result)
 
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="Variant types response",
+            response={
+                "type": "object",
+                "properties": {
+                    "NMD_variants": {"type": "array", "items": {"type": "object"}},
+                    "splice_variants": {"type": "array", "items": {"type": "object"}},
+                    "regulatory_variants": {"type": "array", "items": {"type": "object"}},
+                    "protein_changing_variants": {"type": "array", "items": {"type": "object"}},
+                    "other_variants": {"type": "array", "items": {"type": "object"}}
+                }
+            }
+        )
+    }
+)
 class VariantTypesList(generics.ListAPIView):
     """
-        Display all variant types by group.
+        Return all variant types by group.
 
-        Returns:
-            Returns:
-                (dict) response: variant types by group
+        Returns a dictionary where the key is the variant group and the value is a list of terms
     """
 
     def get_queryset(self):
@@ -134,23 +162,21 @@ class VariantTypesList(generics.ListAPIView):
 
 class LocusGenotypeDiseaseDetail(generics.ListAPIView):
     """
-        Display all data for a specific G2P stable ID.
+        Return all data for a G2P record.
 
         Args:
-            (string) stable_id
+            (string) `stable_id`: G2P stable ID
 
-        Returns:
-                Response containing the LocusGenotypeDisease object
-                    - locus
-                    - stable_id
-                    - genotype
-                    - disease
-                    - molecular_mechanism
-                    - phenotypes
-                    - publications
-                    - etc
+        Returns a LocusGenotypeDisease object:
+            (dict) locus;
+            (str) stable_id;
+            (str) genotype;
+            (dict) disease;
+            (dict) molecular_mechanism;
+            (list) phenotypes;
+            (list) publications;
+            ...
     """
-
     serializer_class = LocusGenotypeDiseaseSerializer
 
     def get_queryset(self):

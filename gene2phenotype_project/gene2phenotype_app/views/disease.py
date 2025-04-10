@@ -139,19 +139,19 @@ class DiseaseDetail(BaseView):
                     "disease": {"type": "string"},
                     "records_summary": {
                         "type": "array",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "locus": {"type": "string"},
-                                    "genotype": {"type": "string"},
-                                    "confidence": {"type": "string"},
-                                    "panels": {"type": "array", "items": {"type": "string"}},
-                                    "variant_consequence": {"type": "array", "items": {"type": "string"}},
-                                    "variant_type": {"type": "array", "items": {"type": "string"}},
-                                    "molecular_mechanism": {"type": "string"},
-                                    "stable_id": {"type": "string"}
-                                }
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "locus": {"type": "string"},
+                                "genotype": {"type": "string"},
+                                "confidence": {"type": "string"},
+                                "panels": {"type": "array", "items": {"type": "string"}},
+                                "variant_consequence": {"type": "array", "items": {"type": "string"}},
+                                "variant_type": {"type": "array", "items": {"type": "string"}},
+                                "molecular_mechanism": {"type": "string"},
+                                "stable_id": {"type": "string"}
                             }
+                        }
                     }
                 }
             }
