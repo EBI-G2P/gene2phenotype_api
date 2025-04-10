@@ -596,7 +596,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         # Save all updates
         instance.save()
-        ConfidenceCustomMail.send_confidence_update_email(instance,old_confidence,user_string,request)
+        ConfidenceCustomMail(instance,old_confidence,user_string,request).send_confidence_update_email()
 
         return instance
 

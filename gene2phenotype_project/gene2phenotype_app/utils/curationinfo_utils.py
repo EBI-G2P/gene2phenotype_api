@@ -6,8 +6,14 @@ from typing import Dict, Any
 
 class ConfidenceCustomMail():
 
-    @staticmethod
-    def send_confidence_update_email(instance: object, old_confidence: str, user_updated: str, request: object) -> None:
+    def __init__(self, instance: object, old_confidence: str, user_updated: str, request: object):
+        self.instance = instance
+        self.stable_id = instance.stable_id.stable_id
+        self.old_confidence = old_confidence
+        self.user_updated = user_updated
+        self.request = request
+    
+    def send_confidence_update_email(self) -> None:
         """
             Confidence email update mail setup
 
@@ -21,21 +27,21 @@ class ConfidenceCustomMail():
                 An exception, if there is an error in sending the mail or returns None
         """
 
-        stable_id = instance.stable_id.stable_id
-        g2p_url = ConfidenceCustomMail.create_url_record(stable_id,request)
+        stable_id = self.stable_id
+        g2p_url = self.create_url_record()
         email_body = render_to_string('gene2phenotype_app/confidence_change_email.tpl', {
             'url': g2p_url,
             'g2p_record': stable_id,
-            'old_confidence': old_confidence,
-            'new_confidence': instance.confidence,
-            'date': instance.date_review,
-            'user_updated': user_updated,
+            'old_confidence': self.old_confidence,
+            'new_confidence': self.instance.confidence,
+            'date': self.instance.date_review,
+            'user_updated':self.user_updated,
         })
         
         message = EmailMessage()
         message['From'] = settings.DEFAULT_FROM_EMAIL
-        message['To'] = settings.MAILING_LIST
-        message['Subject'] = ConfidenceCustomMail.subject_confidence(stable_id)
+        message['To'] = "olaaustine@ebi.ac.uk"
+        message['Subject'] = self.subject_confidence()
         message.set_content(email_body, 'html')
         try:
             with SMTP(host=settings.EMAIL_HOST, port=settings.EMAIL_PORT) as server:
@@ -43,8 +49,7 @@ class ConfidenceCustomMail():
         except Exception as e:
             return str(e)
         
-    @staticmethod
-    def subject_confidence(stable_id: str)-> str:
+    def subject_confidence(self)-> str:
         """
         Subject confidence for this email
 
@@ -54,11 +59,10 @@ class ConfidenceCustomMail():
         Returns:
             str: Subject string
         """        
-        return f"Updated confidence for {stable_id}"
+        return f"Updated confidence for {self.stable_id}"
     
 
-    @staticmethod
-    def create_url_record(stable_id: str, request: object) -> str:
+    def create_url_record(self) -> str:
         """
         Create url link to the record
 
@@ -69,9 +73,9 @@ class ConfidenceCustomMail():
         Returns:
             str: url string
         """        
-        http_response = request.scheme
-        host = request.get_host()
-        return f"{http_response}://{host}/gene2phenotype/api/lgd/{stable_id}"
+        http_response = self.request.scheme
+        host = self.request.get_host()
+        return f"{http_response}://{host}/gene2phenotype/api/lgd/{self.stable_id}"
 
     
         
