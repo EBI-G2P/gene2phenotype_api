@@ -5,8 +5,20 @@ from django.template.loader import render_to_string
 from typing import Dict, Any
 
 class ConfidenceCustomMail():
+    """
+        Class for the Confidence Email Setup
+    """    
 
     def __init__(self, instance: object, old_confidence: str, user_updated: str, request: object):
+        """
+            Initialization of the confidence email setup 
+
+            Args:
+                instance (object): Instance of the record to be updated 
+                old_confidence (str): confidence to be updated from
+                user_updated (str): User that updated the confidence
+                request (object): Request object
+        """        
         self.instance = instance
         self.stable_id = instance.stable_id.stable_id
         self.old_confidence = old_confidence
@@ -16,12 +28,6 @@ class ConfidenceCustomMail():
     def send_confidence_update_email(self) -> None:
         """
             Confidence email update mail setup
-
-            Args:
-                instance (object): Instance object
-                old_confidence (str): old confidence object
-                user_updated (str): user that updated the confidence
-                request (object): the request object
 
             Returns:
                 An exception, if there is an error in sending the mail or returns None
@@ -40,7 +46,7 @@ class ConfidenceCustomMail():
         
         message = EmailMessage()
         message['From'] = settings.DEFAULT_FROM_EMAIL
-        message['To'] = "olaaustine@ebi.ac.uk"
+        message['To'] = settings.MAILING_LIST
         message['Subject'] = self.subject_confidence()
         message.set_content(email_body, 'html')
         try:
@@ -53,9 +59,6 @@ class ConfidenceCustomMail():
         """
         Subject confidence for this email
 
-        Args:
-            instance (object): Instance object
-
         Returns:
             str: Subject string
         """        
@@ -65,10 +68,6 @@ class ConfidenceCustomMail():
     def create_url_record(self) -> str:
         """
         Create url link to the record
-
-        Args:
-            stable_id (str): stable id for the object
-            request (object): Request objet
 
         Returns:
             str: url string
