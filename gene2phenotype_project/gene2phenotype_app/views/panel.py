@@ -81,6 +81,7 @@ class PanelDetail(BaseView):
                             (string) last_updated
                             (dict) stats
     """
+    serializer_class = PanelDetailSerializer
 
     def get(self, request, name, *args, **kwargs):
         user = self.request.user
@@ -120,6 +121,7 @@ class PanelRecordsSummary(BaseView):
                             (string) panel name
                             (list) records_summary: summary of entries linked to panel
     """
+    serializer_class = PanelDetailSerializer
 
     def get(self, request, name, *args, **kwargs):
         user = self.request.user

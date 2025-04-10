@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from django.db.models import Q
+from typing import Any, Optional
+from datetime import date
 import re
 
 from ..models import (
@@ -126,14 +128,14 @@ class DiseaseSerializer(serializers.ModelSerializer):
     ontology_terms = serializers.SerializerMethodField()
     synonyms = serializers.SerializerMethodField()
 
-    def get_ontology_terms(self, id):
+    def get_ontology_terms(self, id: int) -> list[dict[str, Any]]:
         """
             Returns the ontology terms associated with the disease.
         """
         disease_ontologies = DiseaseOntologyTerm.objects.filter(disease=id)
         return DiseaseOntologyTermSerializer(disease_ontologies, many=True).data
 
-    def get_synonyms(self, id):
+    def get_synonyms(self, id: int) -> list[str]:
         """
             Returns disease synonyms used in other sources.
         """
@@ -153,7 +155,7 @@ class DiseaseDetailSerializer(DiseaseSerializer):
     """
     last_updated = serializers.SerializerMethodField()
 
-    def get_last_updated(self, id):
+    def get_last_updated(self, id: int) -> Optional[date]:
         """
             Returns the date an entry linked to the disease has been updated.
         """

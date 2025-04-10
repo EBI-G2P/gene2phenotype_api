@@ -67,7 +67,7 @@ class LGDDeleteLGDEndpoint(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT['AUTH_COOKIE']] = access_token
 
-        response = self.client.generic("UPDATE", self.url_delete_lgd, content_type="application/json")
+        response = self.client.patch(self.url_delete_lgd, content_type="application/json")
         self.assertEqual(response.status_code, 403)
 
     def test_lgd_delete_no_superuser(self):
@@ -83,7 +83,7 @@ class LGDDeleteLGDEndpoint(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT['AUTH_COOKIE']] = access_token
 
-        response = self.client.generic("UPDATE", self.url_delete_lgd, content_type="application/json")
+        response = self.client.patch(self.url_delete_lgd, content_type="application/json")
         self.assertEqual(response.status_code, 403)
 
     def test_lgd_delete(self):
@@ -99,7 +99,7 @@ class LGDDeleteLGDEndpoint(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT['AUTH_COOKIE']] = access_token
 
-        response = self.client.generic("UPDATE", self.url_delete_lgd, content_type="application/json")
+        response = self.client.patch(self.url_delete_lgd, content_type="application/json")
         self.assertEqual(response.status_code, 200)
 
         # Check deleted record

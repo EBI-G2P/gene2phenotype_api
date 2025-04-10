@@ -1,9 +1,10 @@
 from rest_framework import serializers
 from django.db.models import Q
 from django.db import IntegrityError
-from django.core.exceptions import ObjectDoesNotExist
+from typing import Optional
+from datetime import date
 
-from ..models import Panel, User, UserPanel, LGDPanel, Attrib
+from ..models import Panel, LGDPanel, Attrib
 
 from ..utils import get_date_now
 
@@ -92,7 +93,7 @@ class PanelDetailSerializer(serializers.ModelSerializer):
 
     last_updated = serializers.SerializerMethodField()
 
-    def get_last_updated(self, id):
+    def get_last_updated(self, id: int) -> Optional[date]:
         """
             Retrives the date of the last time a record associated with the panel was updated.
         """
