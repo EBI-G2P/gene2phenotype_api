@@ -111,14 +111,25 @@ class AttribList(generics.ListAPIView):
         try:
             attrib_type_obj = AttribType.objects.get(code=code)
         except AttribType.DoesNotExist:
+            return None
+        else:
+            return Attrib.objects.filter(type=attrib_type_obj)
+
+    def list(self, request, *args, **kwargs):
+        code = self.kwargs['code']
+        queryset = self.get_queryset()
+
+        if not queryset:
             return Response(
-                {"error": f"Attrib type {code} not found"},
+                {"error": f"Attrib type '{code}' not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        return Attrib.objects.filter(type=attrib_type_obj)
-
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
         code_list = [attrib.value for attrib in queryset]
-        return Response({'results':code_list, 'count':len(code_list)})
+
+        return Response(
+            {
+                "results": code_list,
+                "count": len(code_list)
+            }
+        )
