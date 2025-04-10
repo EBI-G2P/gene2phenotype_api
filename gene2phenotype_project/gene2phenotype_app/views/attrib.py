@@ -7,11 +7,10 @@ from gene2phenotype_app.models import AttribType, Attrib
 
 class AttribTypeList(generics.ListAPIView):
     """
-        Display all available attribs by type.
-        Some attribs can be deprecated.
+        Display all available attributes by their type.
 
-        Returns:
-                (dict) response: list of attribs for each attrib type.
+        Returns: A dictionary where the keys represent attribute types,
+                 and the values are lists of their respective attributes.
     """
     serializer_class = AttribTypeSerializer
 
@@ -29,25 +28,11 @@ class AttribTypeList(generics.ListAPIView):
 
 class AttribTypeDescriptionList(generics.ListAPIView):
     """
-        API view to list all attribute types with their associated attribute descriptions.
+        List all attribute types with their associated descriptions.
 
-        This view inherits from Django REST Framework's `ListAPIView` and is responsible
-        for retrieving and returning a dictionary where each key corresponds to an 
-        attribute type code, and each value is a list of dictionaries. Each dictionary 
-        in the list contains a mapping of an attribute's value to its description.
-
-        Attributes:
-            queryset (QuerySet): The base queryset of `AttribType` objects.
-
-        Methods:
-            list(request, *args, **kwargs):
-                Customizes the default list method to return a dictionary where each key 
-                is an attribute type code and each value is a list of attribute descriptions.
+        Returns: A list of attribute types, each with details of their respective attributes.
 
         Example:
-            Suppose the `AttribType` model has entries with `code = "type1"` and an `id` of `1`.
-            If `Attrib` objects related to this type have values and descriptions, the 
-            response might look like this:
 
             {
                 "type1": [
@@ -57,7 +42,7 @@ class AttribTypeDescriptionList(generics.ListAPIView):
                 ],
                 "type2": [
                     {"limited": "This category is based on limited evidence."},
-                        {"strong": "This category is strongly supported by evidence."},
+                    {"strong": "This category is strongly supported by evidence."},
                     ...
                 ]
             }
@@ -67,6 +52,10 @@ class AttribTypeDescriptionList(generics.ListAPIView):
     queryset = AttribType.objects.filter(is_deleted=0)
 
     def list(self, request, *args, **kwargs):
+        """
+            This method customizes the default list method to return a dictionary where each key 
+            is an attribute type code and each value is a list of attribute descriptions.
+        """
         queryset = self.get_queryset()
         result = {}
         for attrib_type in queryset:
@@ -78,17 +67,17 @@ class AttribTypeDescriptionList(generics.ListAPIView):
 
 class AttribList(generics.ListAPIView):
     """
-        Display the attribs for a specific attrib type.
+        Fetch a list of attributes for a specific attribute type.
 
         Args:
-            (string) code: type of attrib
+            (string) `code`: attribute type
 
-        Returns:
-                Response object includes:
-                    (list) results: list of attribs
-                    (int) count: number of attribs
+        Returns: list of attributes with the following format
+                    (list) `results`: list of attributes
+                    (int) `count`: number of attributes
 
         Example:
+
                 {
                     "results": [
                         "definitive",
