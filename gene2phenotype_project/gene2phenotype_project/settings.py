@@ -96,7 +96,7 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'Accelerating genomic medicine with high confidence evidence based gene disease models',
     'VERSION': config.get('g2p', 'version'),
     'SERVE_INCLUDE_SCHEMA': False,
-    # OTHER SETTINGS
+    'DISABLE_FORMAT_SUFFIX': True
 }
 
 SIMPLE_JWT = {
