@@ -61,8 +61,11 @@ class ConfidenceCustomMail():
 
         Returns:
             str: Subject string
-        """        
-        return f"Updated confidence for {self.stable_id}"
+        """
+        subject_string = f"Updated confidence for {self.stable_id}"
+        if self.host != "ebi.ac.uk":
+            return f"[THIS IS A TEST] {subject_string}"
+        return subject_string
     
 
     def create_url_record(self) -> str:
@@ -74,6 +77,7 @@ class ConfidenceCustomMail():
         """        
         http_response = self.request.scheme
         host = self.request.get_host()
+        self.host = host
         return f"{http_response}://{host}/gene2phenotype/api/lgd/{self.stable_id}"
 
     
