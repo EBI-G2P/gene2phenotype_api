@@ -4,3 +4,4 @@ from .locus_utils import validate_gene
 from .phenotype_utils import validate_phenotype
 from .user_utils import CustomMail
 from .date_utils import get_date_now
+from .curationinfo_utils import ConfidenceCustomMail
