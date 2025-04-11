@@ -63,7 +63,7 @@ class ConfidenceCustomMail():
             str: Subject string
         """
         subject_string = f"Updated confidence for {self.stable_id}"
-        if self.host != "ebi.ac.uk":
+        if self.host != "www.ebi.ac.uk":
             return f"[THIS IS A TEST] {subject_string}"
         return subject_string
     
