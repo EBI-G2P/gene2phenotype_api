@@ -1,9 +1,9 @@
 from rest_framework import permissions, status
-from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 from gene2phenotype_app.serializers import (PublicationSerializer, LGDPublicationSerializer,
                                             LGDPublicationListSerializer, LGDPhenotypeSerializer,
@@ -19,30 +19,48 @@ from .base import BaseAdd, BaseUpdate, IsSuperUser
 from ..utils import get_publication, get_authors, clean_title
 
 
-"""
-    Retrieve publication data for a list of PMIDs.
-    If PMID is found in G2P then return details from G2P.
-    If PMID not found in G2P then returns info from EuropePMC.
-
-    Args:
-            (HttpRequest) request: HTTP request
-            (str) pmids: A comma-separated string of PMIDs
-
-    Returns:
-            Response object includes:
-                (list) results: contains publication data for each publication
-                                    - pmid
-                                    - title
-                                    - authors
-                                    - year
-                                    - source (possible values: 'G2P', 'EuropePMC')
-                (int) count: number of PMIDs
-    
-    Raises:
-            Invalid PMID
-"""
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="Phenotype response",
+            response={
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "pmid": {"type": "integer"},
+                                "title": {"type": "string"},
+                                "authors": {"type": "string"},
+                                "year": {"type": "integer"},
+                                "source": {"type": "string"}
+                            }
+                        }
+                    },
+                    "count": {"type": "integer"}
+                }
+            }
+        )
+    }
+)
 @api_view(['GET'])
 def PublicationDetail(request, pmids):
+    """
+        Return the publication data for a list of PMIDs.
+        If PMID is found in G2P then return details from G2P.
+        If PMID not found in G2P then returns data from EuropePMC.
+
+        Args:
+            (str) `pmids`: A comma-separated string of PMIDs
+
+        Returns a dictionary with the following format:
+            (list) `results`: a list of the publication data for each PMID
+            (int) `count`: number of PMIDs in the response
+        
+        Raises: Invalid PMID
+    """
     id_list = pmids.split(',')
     data = []
     invalid_pmids = []
@@ -98,6 +116,7 @@ def PublicationDetail(request, pmids):
 
 
 ### Add publication ###
+@extend_schema(exclude=True)
 class AddPublication(BaseAdd):
     """
         Add new publication.
@@ -108,6 +127,7 @@ class AddPublication(BaseAdd):
 
 ### LGD-publication ###
 # Add or delete data
+@extend_schema(exclude=True)
 class LGDEditPublications(BaseUpdate):
     """
         Add or delete lgd-publication.
@@ -123,15 +143,15 @@ class LGDEditPublications(BaseUpdate):
             The deletion does not remove the entry from the database, instead
             it sets the flag 'is_deleted' to 1.
     """
-    http_method_names = ['post', 'update', 'options']
+    http_method_names = ['post', 'patch', 'options']
 
     def get_permissions(self):
         """
             Instantiates and returns the list of permissions for this view.
             post(): updates data - available to all authenticated users
-            update(): deletes data - only available to authenticated super users
+            patch(): deletes data - only available to authenticated super users
         """
-        if self.request.method.lower() == "update":
+        if self.request.method.lower() == "patch":
             return [permissions.IsAuthenticated(), IsSuperUser()]
         return [permissions.IsAuthenticated()]
 
@@ -145,7 +165,7 @@ class LGDEditPublications(BaseUpdate):
 
         if action == "post":
             return LGDPublicationListSerializer
-        elif action == "update":
+        elif action == "patch":
             return LGDPublicationSerializer
         else:
             return None
@@ -360,7 +380,7 @@ class LGDEditPublications(BaseUpdate):
         return response
 
     @transaction.atomic
-    def update(self, request, stable_id):
+    def patch(self, request, stable_id):
         """
             This method deletes the LGD-publication.
 
@@ -477,4 +497,3 @@ class LGDEditPublications(BaseUpdate):
             {"message": f"Publication '{pmid}' successfully deleted for ID '{stable_id}'"},
             status=status.HTTP_200_OK
         )
-

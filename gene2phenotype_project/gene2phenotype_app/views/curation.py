@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404
 from jsonschema import validate, exceptions
 from django.conf import settings
 from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema
 
 from gene2phenotype_app.serializers import CurationDataSerializer
 
@@ -14,6 +15,7 @@ from .base import BaseView, BaseAdd
 
 
 ### Curation data
+@extend_schema(exclude=True)
 class AddCurationData(BaseAdd):
     """
         Add a new curation entry.
@@ -78,6 +80,7 @@ class AddCurationData(BaseAdd):
         else:
             return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+@extend_schema(exclude=True)
 class ListCurationEntries(BaseView):
     """
         List all the curation entries being curated by the user.
@@ -131,6 +134,7 @@ class ListCurationEntries(BaseView):
 
         return Response({'results':list_data, 'count':len(list_data)})
 
+@extend_schema(exclude=True)
 class CurationDataDetail(BaseView):
     """
         Returns all data for a specific curation entry.
@@ -176,6 +180,7 @@ class CurationDataDetail(BaseView):
             }
         return Response(response_data)
 
+@extend_schema(exclude=True)
 class UpdateCurationData(generics.UpdateAPIView):
     """
         Update the JSON data for the specific G2P ID.
@@ -256,6 +261,7 @@ class UpdateCurationData(generics.UpdateAPIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+@extend_schema(exclude=True)
 class PublishRecord(APIView):
     """
         Publish the data.
@@ -310,6 +316,7 @@ class PublishRecord(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+@extend_schema(exclude=True)
 class DeleteCurationData(generics.DestroyAPIView):
     """
         Deletes a curation record.

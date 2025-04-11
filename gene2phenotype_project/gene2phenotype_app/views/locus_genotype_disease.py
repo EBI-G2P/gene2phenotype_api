@@ -5,6 +5,7 @@ from django.http import Http404
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.db import transaction, IntegrityError
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 
 from gene2phenotype_app.serializers import (
@@ -49,14 +50,27 @@ from .base import (
     IsSuperUser
 )
 
-
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="Molecular mechanisms response",
+            response={
+                "type": "object",
+                "properties": {
+                    "evidence": {"type": "object"},
+                    "mechanism": {"type": "array", "items": {"type": "object"}},
+                    "mechanism_synopsis": {"type": "array", "items": {"type": "object"}},
+                    "support": {"type": "array", "items": {"type": "object"}}
+                }
+            }
+        )
+    }
+)
 class ListMolecularMechanisms(generics.ListAPIView):
     """
-        Display the molecular mechanisms terms by type and subtype (if applicable).
-        Only type 'evidence' has a defined subtype.
+        Return the molecular mechanisms terms by type and subtype (if applicable).
 
-        Returns:
-            (dict) response: list of molecular mechanisms by type and subtype.
+        Returns a dictionary where the key is the type the value is a list.
     """
 
     queryset = CVMolecularMechanism.objects.all().values('type', 'subtype', 'value', 'description').order_by('type')
@@ -88,13 +102,28 @@ class ListMolecularMechanisms(generics.ListAPIView):
 
         return Response(result)
 
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="Variant types response",
+            response={
+                "type": "object",
+                "properties": {
+                    "NMD_variants": {"type": "array", "items": {"type": "object"}},
+                    "splice_variants": {"type": "array", "items": {"type": "object"}},
+                    "regulatory_variants": {"type": "array", "items": {"type": "object"}},
+                    "protein_changing_variants": {"type": "array", "items": {"type": "object"}},
+                    "other_variants": {"type": "array", "items": {"type": "object"}}
+                }
+            }
+        )
+    }
+)
 class VariantTypesList(generics.ListAPIView):
     """
-        Display all variant types by group.
+        Return all variant types by group.
 
-        Returns:
-            Returns:
-                (dict) response: variant types by group
+        Returns a dictionary where the key is the variant group and the value is a list of terms
     """
 
     def get_queryset(self):
@@ -133,23 +162,21 @@ class VariantTypesList(generics.ListAPIView):
 
 class LocusGenotypeDiseaseDetail(generics.ListAPIView):
     """
-        Display all data for a specific G2P stable ID.
+        Return all data for a G2P record.
 
         Args:
-            (string) stable_id
+            (string) `stable_id`: G2P stable ID
 
-        Returns:
-                Response containing the LocusGenotypeDisease object
-                    - locus
-                    - stable_id
-                    - genotype
-                    - disease
-                    - molecular_mechanism
-                    - phenotypes
-                    - publications
-                    - etc
+        Returns a LocusGenotypeDisease object:
+            (dict) locus;
+            (str) stable_id;
+            (str) genotype;
+            (dict) disease;
+            (dict) molecular_mechanism;
+            (list) phenotypes;
+            (list) publications;
+            ...
     """
-
     serializer_class = LocusGenotypeDiseaseSerializer
 
     def get_queryset(self):
@@ -178,6 +205,7 @@ class LocusGenotypeDiseaseDetail(generics.ListAPIView):
 
 
 ### Add or delete data ###
+@extend_schema(exclude=True)
 class LGDUpdateConfidence(BaseUpdate):
     http_method_names = ['put', 'options']
     serializer_class = LocusGenotypeDiseaseSerializer
@@ -252,6 +280,7 @@ class LGDUpdateConfidence(BaseUpdate):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+@extend_schema(exclude=True)
 class LGDUpdateMechanism(BaseUpdate):
     http_method_names = ['patch', 'options']
     serializer_class = LocusGenotypeDiseaseSerializer
@@ -376,6 +405,7 @@ class LGDUpdateMechanism(BaseUpdate):
                 status=status.HTTP_200_OK
             )
 
+@extend_schema(exclude=True)
 class LGDEditVariantConsequences(CustomPermissionAPIView):
     """
         Add or delete lgd-variant consequence(s).
@@ -388,12 +418,12 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
             The deletion does not remove the entry from the database, instead
             it sets the flag 'is_deleted' to 1.
     """
-    http_method_names = ['post', 'update', 'options']
+    http_method_names = ['post', 'patch', 'options']
 
     # Define specific permissions
     method_permissions = {
         "post": [permissions.IsAuthenticated],
-        "update": [permissions.IsAuthenticated, IsSuperUser],
+        "patch": [permissions.IsAuthenticated, IsSuperUser],
     }
 
     def get_serializer_class(self, action):
@@ -406,7 +436,7 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
 
         if action == "post":
             return LGDVariantConsequenceListSerializer
-        elif action == "update":
+        elif action == "patch":
             return LGDVariantGenCCConsequenceSerializer
         else:
             return None
@@ -483,7 +513,7 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
         return response
 
     @transaction.atomic
-    def update(self, request, stable_id):
+    def patch(self, request, stable_id):
         """
             This method deletes the LGD-variant gencc consequence.
 
@@ -539,6 +569,7 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
                 {"message": f"Variant consequence '{consequence}' successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK)
 
+@extend_schema(exclude=True)
 class LGDEditCCM(CustomPermissionAPIView):
     """
         Add or delete LGD-cross cutting modifier(s).
@@ -551,12 +582,12 @@ class LGDEditCCM(CustomPermissionAPIView):
             The deletion does not remove the entry from the database, instead
             it sets the flag 'is_deleted' to 1.
     """
-    http_method_names = ['post', 'update', 'options']
+    http_method_names = ['post', 'patch', 'options']
 
     # Define specific permissions
     method_permissions = {
         "post": [permissions.IsAuthenticated],
-        "update": [permissions.IsAuthenticated, IsSuperUser],
+        "patch": [permissions.IsAuthenticated, IsSuperUser],
     }
 
     def get_serializer_class(self, action):
@@ -569,7 +600,7 @@ class LGDEditCCM(CustomPermissionAPIView):
 
         if action == "post":
             return LGDCrossCuttingModifierListSerializer
-        elif action == "update":
+        elif action == "patch":
             return LGDCrossCuttingModifierSerializer
         else:
             return None
@@ -643,7 +674,7 @@ class LGDEditCCM(CustomPermissionAPIView):
         return response
 
     @transaction.atomic
-    def update(self, request, stable_id):
+    def patch(self, request, stable_id):
         """
             This method deletes the LGD-cross cutting modifier.
             Example:
@@ -690,6 +721,7 @@ class LGDEditCCM(CustomPermissionAPIView):
                  status=status.HTTP_200_OK
             )
 
+@extend_schema(exclude=True)
 class LGDEditVariantTypes(CustomPermissionAPIView):
     """
         Add or delete LGD-variant type(s).
@@ -702,12 +734,12 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
             The deletion does not remove the entry from the database, instead
             it sets the flag 'is_deleted' to 1.
     """
-    http_method_names = ['post', 'update', 'options']
+    http_method_names = ['post', 'patch', 'options']
 
     # Define specific permissions
     method_permissions = {
         "post": [permissions.IsAuthenticated],
-        "update": [permissions.IsAuthenticated, IsSuperUser]
+        "patch": [permissions.IsAuthenticated, IsSuperUser]
     }
 
     def get_serializer_class(self, action):
@@ -720,7 +752,7 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
 
         if action == "post":
             return LGDVariantTypeListSerializer
-        elif action == "update":
+        elif action == "patch":
             return LGDVariantTypeSerializer
         else:
             return None
@@ -804,7 +836,7 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
         return response
 
     @transaction.atomic
-    def update(self, request, stable_id):
+    def patch(self, request, stable_id):
         """
             This method deletes the LGD-variant type.
 
@@ -872,6 +904,7 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
                 status=status.HTTP_200_OK
             )
 
+@extend_schema(exclude=True)
 class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
     """
         Add or delete LGD-variant type(s)
@@ -884,12 +917,12 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
             The deletion does not remove the entry from the database, instead
             it sets the flag 'is_deleted' to 1.
     """
-    http_method_names = ['post', 'update', 'options']
+    http_method_names = ['post', 'patch', 'options']
 
     # Define specific permissions
     method_permissions = {
         "post": [permissions.IsAuthenticated],
-        "update": [permissions.IsAuthenticated, IsSuperUser],
+        "patch": [permissions.IsAuthenticated, IsSuperUser],
     }
 
     def get_serializer_class(self, action):
@@ -902,7 +935,7 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
 
         if action == "post":
             return LGDVariantTypeDescriptionListSerializer
-        elif action == "update":
+        elif action == "patch":
             return LGDVariantTypeDescriptionSerializer
         else:
             return None
@@ -978,7 +1011,7 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
         return response
 
     @transaction.atomic
-    def update(self, request, stable_id):
+    def patch(self, request, stable_id):
         """
             This method deletes the LGD-variant type descriptions.
 
@@ -1015,16 +1048,18 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
                 {"message": f"Variant type description '{var_desc}' successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK)
 
+@extend_schema(exclude=True)
 class LGDEditComment(CustomPermissionAPIView):
     """
         Add or delete a comment to a G2P record (LGD).
     """
-    http_method_names = ['post', 'update', 'options']
+    http_method_names = ['post', 'patch', 'options']
+    serializer_class = LGDCommentSerializer
 
     # Define specific permissions
     method_permissions = {
         "post": [permissions.IsAuthenticated],
-        "update": [permissions.IsAuthenticated, IsSuperUser]
+        "patch": [permissions.IsAuthenticated, IsSuperUser]
     }
 
     def get_serializer_class(self, action):
@@ -1037,10 +1072,8 @@ class LGDEditComment(CustomPermissionAPIView):
 
         if action == "post":
             return LGDCommentListSerializer
-        elif action == "update":
-            return LGDCommentSerializer
         else:
-            return None
+            return LGDCommentSerializer
 
     @transaction.atomic
     def post(self, request, stable_id):
@@ -1130,7 +1163,7 @@ class LGDEditComment(CustomPermissionAPIView):
         return response
 
     @transaction.atomic
-    def update(self, request, stable_id):
+    def patch(self, request, stable_id):
         """
             This method deletes the LGD-comment.
 
@@ -1165,16 +1198,17 @@ class LGDEditComment(CustomPermissionAPIView):
                 status=status.HTTP_200_OK
             )
 
+@extend_schema(exclude=True)
 class LocusGenotypeDiseaseDelete(APIView):
     """
         Delete a LGD record
     """
-    http_method_names = ['update', 'options']
+    http_method_names = ['patch', 'options']
     serializer_class = LocusGenotypeDiseaseSerializer
     permission_classes = [permissions.IsAuthenticated, IsSuperUser]
 
     @transaction.atomic
-    def update(self, request, stable_id):
+    def patch(self, request, stable_id):
         """
             This method deletes the LGD record.
             The deletion does not remove the entry from the database, instead
