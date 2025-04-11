@@ -15,7 +15,7 @@ urlpatterns = [
          name="schema"
     ),
     path(
-        "docs/",
+        "",
         SpectacularSwaggerView.as_view(
             template_name="swagger-ui.html", url_name="schema"
         ),
@@ -340,4 +340,3 @@ urlpatterns = [
         name="get_reference_data"
     )
 ]
-urlpatterns = format_suffix_patterns(urlpatterns)
