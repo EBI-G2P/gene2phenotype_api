@@ -632,16 +632,16 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                             "name": "gain of function",
                             "support": "evidence"
                         },
-                        "mechanism_synopsis": {
+                        "mechanism_synopsis": [{
                             "name": "",
                             "support": ""
-                        },
+                        }],
                         "mechanism_evidence": [{'pmid': '25099252', 'description': 'text', 'evidence_types': 
                             [{'primary_type': 'Rescue', 'secondary_type': ['Human', 'Patient Cells']}]}]
 
         """
         molecular_mechanism = validated_data.get("molecular_mechanism", None) # only updates mechanism if current value is 'undetermined'
-        mechanism_synopsis = validated_data.get("mechanism_synopsis", None) # mechanism synopsis is optional
+        mechanism_synopsis_list = validated_data.get("mechanism_synopsis", []) # mechanism synopsis is optional
         mechanism_evidence = validated_data.get("mechanism_evidence", None) # molecular mechanism evidence is optional
 
         cv_mechanism_obj = None
@@ -685,50 +685,51 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         lgd_instance.save()
 
         # The mechanism synopsis is optional
-        if mechanism_synopsis and mechanism_synopsis["name"] != "":
-            mechanism_synopsis_value = mechanism_synopsis["name"]
-            mechanism_synopsis_support = mechanism_synopsis["support"]
+        for mechanism_synopsis in mechanism_synopsis_list:
+            if mechanism_synopsis and mechanism_synopsis["name"] != "":
+                mechanism_synopsis_value = mechanism_synopsis["name"]
+                mechanism_synopsis_support = mechanism_synopsis["support"]
 
-            cv_synopsis_obj = None
-            cv_synopsis_support_obj = None
+                cv_synopsis_obj = None
+                cv_synopsis_support_obj = None
 
-            try:
-                cv_synopsis_obj = CVMolecularMechanism.objects.get(
-                    value = mechanism_synopsis_value,
-                    type = "mechanism_synopsis"
-                )
-            except CVMolecularMechanism.DoesNotExist:
-                raise serializers.ValidationError({"message": f"Invalid mechanism synopsis value '{mechanism_synopsis_value}'"})
+                try:
+                    cv_synopsis_obj = CVMolecularMechanism.objects.get(
+                        value = mechanism_synopsis_value,
+                        type = "mechanism_synopsis"
+                    )
+                except CVMolecularMechanism.DoesNotExist:
+                    raise serializers.ValidationError({"message": f"Invalid mechanism synopsis value '{mechanism_synopsis_value}'"})
 
-            try:
-                cv_synopsis_support_obj = CVMolecularMechanism.objects.get(
-                    value = mechanism_synopsis_support,
-                    type = "support"
-                )
-            except CVMolecularMechanism.DoesNotExist:
-                raise serializers.ValidationError({"message": f"Invalid mechanism synopsis support '{mechanism_synopsis_support}'"})
+                try:
+                    cv_synopsis_support_obj = CVMolecularMechanism.objects.get(
+                        value = mechanism_synopsis_support,
+                        type = "support"
+                    )
+                except CVMolecularMechanism.DoesNotExist:
+                    raise serializers.ValidationError({"message": f"Invalid mechanism synopsis support '{mechanism_synopsis_support}'"})
 
-            # Check if synopsis already exists
-            try:
-                mechanism_syn_obj = LGDMolecularMechanismSynopsis.objects.get(
-                    lgd = lgd_instance,
-                    synopsis = cv_synopsis_obj
-                )
-            except LGDMolecularMechanismSynopsis.DoesNotExist:
-                # Create mechanism synopsis
-                mechanism_syn_obj = LGDMolecularMechanismSynopsis.objects.create(
-                    lgd = lgd_instance,
-                    synopsis = cv_synopsis_obj,
-                    synopsis_support = cv_synopsis_support_obj,
-                    is_deleted = 0
-                )
-            else:
-                if mechanism_syn_obj.is_deleted == 1:
-                    mechanism_syn_obj.is_deleted = 0
-                    mechanism_syn_obj.save()
-                if mechanism_syn_obj.synopsis_support.value != mechanism_synopsis_support:
-                    mechanism_syn_obj.synopsis_support = cv_synopsis_support_obj
-                    mechanism_syn_obj.save()
+                # Check if synopsis already exists
+                try:
+                    mechanism_syn_obj = LGDMolecularMechanismSynopsis.objects.get(
+                        lgd = lgd_instance,
+                        synopsis = cv_synopsis_obj
+                    )
+                except LGDMolecularMechanismSynopsis.DoesNotExist:
+                    # Create mechanism synopsis
+                    mechanism_syn_obj = LGDMolecularMechanismSynopsis.objects.create(
+                        lgd = lgd_instance,
+                        synopsis = cv_synopsis_obj,
+                        synopsis_support = cv_synopsis_support_obj,
+                        is_deleted = 0
+                    )
+                else:
+                    if mechanism_syn_obj.is_deleted == 1:
+                        mechanism_syn_obj.is_deleted = 0
+                        mechanism_syn_obj.save()
+                    if mechanism_syn_obj.synopsis_support.value != mechanism_synopsis_support:
+                        mechanism_syn_obj.synopsis_support = cv_synopsis_support_obj
+                        mechanism_syn_obj.save()
 
         # Get evidence - the mechanism evidence was validated in the view 'LGDUpdateMechanism'
         # Example: {'pmid': '25099252', 'description': 'text', 'evidence_types': 
