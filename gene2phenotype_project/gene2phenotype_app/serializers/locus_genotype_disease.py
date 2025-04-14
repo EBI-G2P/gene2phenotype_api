@@ -585,7 +585,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             )
         
         #get user information
-        user_info = self.get_user_info(request.user)
+        user_string = self.get_user_info(request.user)
 
         # Update confidence
         old_confidence = instance.confidence
@@ -596,7 +596,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         # Save all updates
         instance.save()
-        ConfidenceCustomMail(instance,old_confidence,user_info,request).send_confidence_update_email()
+        ConfidenceCustomMail(instance,old_confidence,user_string,request).send_confidence_update_email()
 
         return instance
 
