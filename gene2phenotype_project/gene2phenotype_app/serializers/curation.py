@@ -507,7 +507,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
                     "mechanism_support": mechanism_support_obj
                 }
 
-        lgd_obj = LocusGenotypeDiseaseSerializer(context={'user':user_obj}).create(lgd_data, disease_obj, publications_list)
+
+        lgd_obj, check = LocusGenotypeDiseaseSerializer(context={'user':user_obj}).create(lgd_data, disease_obj, publications_list)
         ##############################
 
         ### Insert data attached to the record Locus-Genotype-Disease ###
@@ -516,25 +517,27 @@ class CurationDataSerializer(serializers.ModelSerializer):
         # A record can only have one molecular mechanism
         # The mechanism evidence attaches the evidence data to a publication
         # the PMIDs should already be stored in G2P
-        if("name" in data.json_data["mechanism_synopsis"] and "support" in data.json_data["mechanism_synopsis"] and
-           data.json_data["mechanism_synopsis"]["name"] != "" and data.json_data["mechanism_synopsis"]["support"] != ""):
-            try:
-                lgd_mechanism_synopsis_serializer = LGDMechanismSynopsisSerializer(
-                    data={
-                        "synopsis": data.json_data["mechanism_synopsis"]["name"],
-                        "synopsis_support": data.json_data["mechanism_synopsis"]["support"]
-                    },
-                    context={"lgd": lgd_obj}
-                )
+        # data.json_data["mechanism_synopsis"] is a list of dictionaries
+        for m_synopsis in data.json_data["mechanism_synopsis"]:
+            if("name" in m_synopsis and "support" in m_synopsis and
+                m_synopsis["name"] != "" and m_synopsis["support"] != ""):
+                try:
+                    lgd_mechanism_synopsis_serializer = LGDMechanismSynopsisSerializer(
+                        data={
+                            "synopsis": m_synopsis["name"],
+                            "synopsis_support": m_synopsis["support"]
+                        },
+                        context={"lgd": lgd_obj}
+                    )
 
-                # Validate the input data
-                if lgd_mechanism_synopsis_serializer.is_valid(raise_exception=True):
-                    # save() is going to call create()
-                    lgd_mechanism_synopsis_serializer.save()
-            except serializers.ValidationError as e:
-                raise serializers.ValidationError({
-                    "error" : str(e)
-                })
+                    # Validate the input data
+                    if lgd_mechanism_synopsis_serializer.is_valid(raise_exception=True):
+                        # save() is going to call create()
+                        lgd_mechanism_synopsis_serializer.save()
+                except serializers.ValidationError as e:
+                    raise serializers.ValidationError({
+                        "error" : str(e)
+                    })
 
         for mechanism_evidence in data.json_data["mechanism_evidence"]:
             pmid = mechanism_evidence["pmid"]
@@ -691,7 +694,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         # Update stable_id status to live (is_live=1)
         G2PStableIDSerializer(context={'stable_id': data.stable_id.stable_id}).update_g2p_id_status(1)
 
-        return lgd_obj
+        return lgd_obj, check
 
     class Meta:
         model = CurationData

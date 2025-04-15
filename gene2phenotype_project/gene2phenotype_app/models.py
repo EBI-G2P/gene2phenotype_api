@@ -698,6 +698,23 @@ class GeneDisease(models.Model):
             models.Index(fields=['disease'])
         ]
 
+class DiseaseExternal(models.Model):
+    """
+        Disease IDs from external sources and respective disease name.
+        This data is imported in bulk from the source (ex: Mondo) and will
+        be used by curators to link G2P diseases to external disease IDs.
+    """
+    id = models.AutoField(primary_key=True)
+    disease = models.CharField(max_length=255, null=False)
+    identifier = models.CharField(max_length=50, null=False)
+    source = models.ForeignKey("Source", on_delete=models.PROTECT)
+
+    class Meta:
+        db_table = "disease_external"
+        unique_together = ['disease', 'source']
+        indexes = [
+            models.Index(fields=['identifier'])
+        ]
 
 ### Table to keep track of GenCC submissions ###
 class GenCCSubmission(models.Model):
