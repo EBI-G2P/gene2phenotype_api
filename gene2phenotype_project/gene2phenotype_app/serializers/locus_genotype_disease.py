@@ -584,8 +584,6 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 {"error": f"G2P record '{instance.stable_id.stable_id}' already has confidence value {confidence}"}
             )
         
-        #get user information
-        user_string = self.get_user_info(request.user)
 
         # Update confidence
         old_confidence = instance.confidence
@@ -596,24 +594,10 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         # Save all updates
         instance.save()
-        ConfidenceCustomMail(instance,old_confidence,user_string,request).send_confidence_update_email()
+        user = User.objects.get(email=request.user)
+        ConfidenceCustomMail(instance,old_confidence,user,request).send_confidence_update_email()
 
         return instance
-
-
-    def get_user_info(self, user:str) -> str:
-        """
-            User details that will be sent as a string
-            Args:
-                user (str): user
-
-            Returns:
-                str: A string containing the user first name, last name and email
-        """        
-        user_obj = User.objects.get(email=user)
-        user_info =  f"{user_obj.first_name} {user_obj.last_name}"
-
-        return user_info
 
 
     def update_mechanism(self, lgd_instance, validated_data):

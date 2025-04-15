@@ -33,15 +33,13 @@ class ConfidenceCustomMail():
                 An exception, if there is an error in sending the mail or returns None
         """
 
-        stable_id = self.stable_id
-        g2p_url = self.create_url_record()
         email_body = render_to_string('gene2phenotype_app/confidence_change_email.tpl', {
-            'url': g2p_url,
-            'g2p_record': stable_id,
+            'url': self.create_url_record(),
+            'g2p_record': self.stable_id,
             'old_confidence': self.old_confidence,
             'new_confidence': self.instance.confidence,
             'date': self.instance.date_review,
-            'user_updated':self.user_updated,
+            'user_updated': self.get_user_info(),
         })
         
         message = EmailMessage()
@@ -79,6 +77,17 @@ class ConfidenceCustomMail():
         host = self.request.get_host()
         self.host = host
         return f"{http_response}://{host}/gene2phenotype/api/lgd/{self.stable_id}"
+    
+    def get_user_info(self) -> str:
+        """
+            Gets user info from the user object
+
+            Returns:
+                str: A string containing the user first name and last name 
+        """        
+        user_info =  f"{self.user_updated.first_name} {self.user_updated.last_name}"
+
+        return user_info
 
     
         
