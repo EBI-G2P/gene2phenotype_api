@@ -225,7 +225,7 @@ class LGDUpdateConfidence(BaseUpdate):
         serializer = LocusGenotypeDiseaseSerializer(
             lgd_obj,
             data=request.data,
-            context={'request': request}
+            context={'request': request, 'user': user}
         )
 
         # Check if user has permission to update panel

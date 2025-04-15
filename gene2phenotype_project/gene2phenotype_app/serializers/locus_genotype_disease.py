@@ -563,6 +563,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         # { "confidence": "definitive" }
         validated_confidence = validated_data.get("confidence", None)
         request = self.context.get('request')
+        user = self.context.get('user')
         if(validated_confidence is not None and isinstance(validated_confidence, dict) 
            and "value" in validated_confidence):
             confidence = validated_confidence["value"]
@@ -594,8 +595,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         # Save all updates
         instance.save()
-        user = User.objects.get(email=request.user)
-        ConfidenceCustomMail(instance,old_confidence,user,request).send_confidence_update_email()
+        user_obj = User.objects.get(email=user)
+        ConfidenceCustomMail(instance,old_confidence,user_obj,request).send_confidence_update_email()
 
         return instance
 
