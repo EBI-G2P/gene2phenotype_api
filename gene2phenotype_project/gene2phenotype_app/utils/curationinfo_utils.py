@@ -45,18 +45,19 @@ class ConfidenceCustomMail():
         
         message = EmailMessage()
         message['From'] = settings.DEFAULT_FROM_EMAIL
-        message['To'] = settings.MAILING_LIST
+        message['To'] =  settings.MAILING_LIST
         message['Subject'] = self.get_email_subject()
         message.set_content(email_body, 'html')
-        try:
-            with SMTP(host=settings.EMAIL_HOST, port=settings.EMAIL_PORT) as server:
-                server.send_message(message)
-        except Exception as e:
-            return str(e)
+         
+        if settings.SEND_MAILS == "True": 
+            try:
+                with SMTP(host=settings.EMAIL_HOST, port=settings.EMAIL_PORT) as server:
+                    server.send_message(message)
+            except Exception as e:
+                return str(e)
 
 
-
-    def get_email_subject(self)-> str:
+    def get_email_subject(self) -> str:
         """
         Subject line for this email
 
@@ -81,7 +82,7 @@ class ConfidenceCustomMail():
         self.host = host
         return f"{http_response}://{host}/gene2phenotype/api/lgd/{self.stable_id}"
     
-    
+
     def get_user_info(self) -> str:
         """
             Gets user info from the user object

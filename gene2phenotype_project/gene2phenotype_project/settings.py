@@ -128,6 +128,7 @@ EMAIL_PORT = MAIL_PORT
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = DEFAULT_FROM_EMAIL
 MAILING_LIST = config.get('email', 'mailing_list')
+SEND_MAILS = config.get('email', 'send_to_mailing_list')
 
 ROOT_URLCONF = 'gene2phenotype_project.urls'
 
