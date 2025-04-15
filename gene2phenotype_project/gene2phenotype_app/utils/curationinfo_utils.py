@@ -25,6 +25,7 @@ class ConfidenceCustomMail():
         self.user_updated = user_updated
         self.request = request
     
+
     def send_confidence_update_email(self) -> None:
         """
             Confidence email update mail setup
@@ -52,7 +53,9 @@ class ConfidenceCustomMail():
                 server.send_message(message)
         except Exception as e:
             return str(e)
-        
+
+
+
     def get_email_subject(self)-> str:
         """
         Subject line for this email
@@ -77,6 +80,7 @@ class ConfidenceCustomMail():
         host = self.request.get_host()
         self.host = host
         return f"{http_response}://{host}/gene2phenotype/api/lgd/{self.stable_id}"
+    
     
     def get_user_info(self) -> str:
         """
