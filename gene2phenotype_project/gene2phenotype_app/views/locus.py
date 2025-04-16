@@ -1,17 +1,23 @@
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiResponse
+import textwrap
 
 from gene2phenotype_app.models import (AttribType, Attrib,
                                        Locus, LocusAttrib)
 
 from gene2phenotype_app.serializers import LocusGeneSerializer
 
-from .base import BaseView
+from .base import BaseAPIView
 
 
-class LocusGene(BaseView):
+@extend_schema(
+description=textwrap.dedent("""
+    Fetch information for a specific gene.
+    """)
+)
+class LocusGene(BaseAPIView):
     """
-        Fetch the gene data.
+        Fetch information for a specific gene.
 
         Args:
             (str) `name`: gene symbol or the synonym symbol
@@ -49,12 +55,15 @@ class LocusGene(BaseView):
 
         return queryset
 
-    def list(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         queryset = self.get_queryset().first()
         serializer = LocusGeneSerializer(queryset)
         return Response(serializer.data)
 
 @extend_schema(
+    description=textwrap.dedent("""
+        Fetch latest G2P entries associated with a specific gene.
+        """),
     responses={
         200: OpenApiResponse(
             description="Gene summary response",
@@ -84,7 +93,7 @@ class LocusGene(BaseView):
         )
     }
 )
-class LocusGeneSummary(BaseView):
+class LocusGeneSummary(BaseAPIView):
     """
         Return a summary of the latest G2P entries associated with the gene.
 
@@ -122,6 +131,9 @@ class LocusGeneSummary(BaseView):
         return Response(response_data)
 
 @extend_schema(
+    description=textwrap.dedent("""
+        Fetch gene product function (imported from UniProt) for a specific gene.
+        """),
     responses={
         200: OpenApiResponse(
             description="Gene function response",
@@ -149,7 +161,7 @@ class LocusGeneSummary(BaseView):
         )
     }
 )
-class GeneFunction(BaseView):
+class GeneFunction(BaseAPIView):
     """
         Return the gene product function imported from UniProt.
 

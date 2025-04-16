@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404
 from django.http import Http404
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from typing import Any
+import textwrap
 
 from gene2phenotype_app.serializers import (
     GeneDiseaseSerializer,
@@ -29,9 +30,38 @@ from gene2phenotype_app.models import (
 )
 
 from ..utils import clean_omim_disease
-from .base import BaseView, BaseAdd, IsSuperUser
+from .base import BaseAPIView, BaseAdd, IsSuperUser
 
-class GeneDiseaseView(BaseView):
+
+@extend_schema(
+description=textwrap.dedent("""
+    Fetch all diseases associated with a specific gene.
+    """),
+    responses={
+        200: OpenApiResponse(
+            description="Gene disease response",
+            response={
+                "type": "object",
+                "properties": {
+                    "count": {"type": "integer"},
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "original_disease_name": {"type": "string"},
+                                "disease_name": {"type": "string"},
+                                "identifier": {"type": "string"},
+                                "source": {"type": "string"}
+                            }
+                        }
+                    }
+                }
+            }
+        )
+    }
+)
+class GeneDiseaseView(BaseAPIView):
     """
         Return all diseases associated with a specific gene.
 
@@ -86,7 +116,14 @@ class GeneDiseaseView(BaseView):
 
         return Response({'results': results, 'count': len(results)})
 
-class DiseaseDetail(BaseView):
+
+@extend_schema(
+description=textwrap.dedent("""
+    Fetch information for a specific disease.
+    The disease input can be a disease name or ontology ID from Mondo or OMIM
+    """)
+)
+class DiseaseDetail(BaseAPIView):
     """
         Fetch information for a specific disease.
 
@@ -124,12 +161,15 @@ class DiseaseDetail(BaseView):
 
         return queryset
 
-    def list(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         disease_obj = self.get_queryset().first()
         serializer = DiseaseDetailSerializer(disease_obj)
         return Response(serializer.data)
 
 @extend_schema(
+    description=textwrap.dedent("""
+        Fetch latest G2P entries associated with a specific disease.
+        """),
     responses={
         200: OpenApiResponse(
             description="Disease summary response",
@@ -170,7 +210,7 @@ class DiseaseSummary(DiseaseDetail):
                     (list) `records_summary`: summary of the G2P records linked to the disease
     """
 
-    def list(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         disease = kwargs.get('id')
         disease_obj = self.get_queryset().first()
         serializer = DiseaseDetailSerializer(disease_obj)
@@ -183,6 +223,10 @@ class DiseaseSummary(DiseaseDetail):
         return Response(response_data)
 
 @extend_schema(
+    description=textwrap.dedent("""
+        Fetch the disease information for a list of external disease IDs.
+        External sources can be OMIM or Mondo.
+        """),
     responses={
         200: OpenApiResponse(
             description="External disease response",
@@ -209,7 +253,7 @@ class DiseaseSummary(DiseaseDetail):
 @api_view(['GET'])
 def ExternalDisease(request, ext_ids):
     """
-        Returns the disease for a list of external disease IDs.
+        Returns the disease information for a list of external disease IDs.
         External sources can be OMIM or Mondo.
 
         Args:

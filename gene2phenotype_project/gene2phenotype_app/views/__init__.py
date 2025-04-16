@@ -1,4 +1,4 @@
-from .base import BaseView, BaseAdd, BaseUpdate
+from .base import BaseView, BaseAPIView, BaseAdd, BaseUpdate
 
 from .panel import (PanelCreateView, PanelList, PanelDetail, PanelRecordsSummary, 
                     PanelDownload, LGDEditPanel)

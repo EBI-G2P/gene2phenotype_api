@@ -10,7 +10,25 @@ from rest_framework.views import APIView
 
 class BaseView(generics.ListAPIView):
     """
-        Generic methods to handle expection and permissions.
+        Generic methods to handle expection and permissions for classes
+        using generics.ListAPIView.
+    """
+    def handle_no_permission(self, name_type, name):
+        if name is None:
+            raise Http404(f"{name_type}")
+        else:
+            raise Http404(f"No matching {name_type} found for: {name}")
+
+    def handle_exception(self, exc):
+        if isinstance(exc, Http404):
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        return super().handle_exception(exc)
+
+class BaseAPIView(APIView):
+    """
+        Generic methods to handle expection and permissions for classes
+        using APIView.
     """
     def handle_no_permission(self, name_type, name):
         if name is None:
