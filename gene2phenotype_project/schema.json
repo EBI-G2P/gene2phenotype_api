@@ -5,35 +5,15 @@ info:
   description: Accelerating genomic medicine with high confidence evidence based gene
     disease models
 paths:
-  /gene2phenotype/api/attrib/{code}/:
+  /gene2phenotype/api/attrib/{attrib_type}/:
     get:
-      operationId: attrib_list
-      description: |-
-        Fetch a list of attributes for a specific attribute type.
+      operationId: attrib_retrieve
+      description: |2
 
-        Args:
-            (string) `code`: attribute type
-
-        Returns: list of attributes with the following format
-                    (list) `results`: list of attributes
-                    (int) `count`: number of attributes
-
-        Example:
-
-                {
-                    "results": [
-                        "definitive",
-                        "disputed",
-                        "limited",
-                        "moderate",
-                        "refuted",
-                        "strong"
-                    ],
-                    "count": 6
-                }
+        Fetch all attribute values for a specific attribute type.
       parameters:
       - in: path
-        name: code
+        name: attrib_type
         schema:
           type: string
         required: true
@@ -47,18 +27,21 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Attrib'
-          description: ''
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: string
+                  count:
+                    type: integer
+          description: Attribute response
   /gene2phenotype/api/attribs/:
     get:
       operationId: attribs_list
-      description: |-
-        Display all available attributes by their type.
+      description: |2
 
-        Returns: A dictionary where the keys represent attribute types,
-                 and the values are lists of their respective attributes.
+        Fetch all available attributes grouped by type.
       tags:
       - attribs
       security:
@@ -75,26 +58,10 @@ paths:
           description: ''
   /gene2phenotype/api/attribs/description:
     get:
-      operationId: attribs_description_list
-      description: |-
-        List all attribute types with their associated descriptions.
+      operationId: attribs_description_retrieve
+      description: |2
 
-        Returns: A list of attribute types, each with details of their respective attributes.
-
-        Example:
-
-            {
-                "type1": [
-                    {"definitive": "This category is well-supported by evidence."},
-                    {"disputed": "This category has conflicting evidence."},
-                    ...
-                ],
-                "type2": [
-                    {"limited": "This category is based on limited evidence."},
-                    {"strong": "This category is strongly supported by evidence."},
-                    ...
-                ]
-            }
+        Fetch all attributes with their corresponding descriptions grouped by attribute type.
       tags:
       - attribs
       security:
@@ -105,10 +72,13 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/AttribType'
-          description: ''
+                type: object
+                properties:
+                  attrib_type:
+                    type: array
+                    items:
+                      type: object
+          description: Attribute details response
   /gene2phenotype/api/disease/{id}/:
     get:
       operationId: disease_list
@@ -895,17 +865,20 @@ paths:
   /gene2phenotype/api/search/:
     get:
       operationId: search_list
-      description: |-
-        Search G2P records. Supported search types are:
+      description: |2
 
-            - gene
-            - disease
-            - phenotype
-            - G2P ID
-            - draft (only available for authenticated users)
+        Search G2P records.
+        Supported search types are:
+
+            gene
+            disease
+            phenotype
+            g2p_id
 
         If no search type is specified then it performs a generic search.
         The search can be specific to one panel if using parameter 'panel'.
+
+        Example: `search/?type=gene&query=RHO&panel=Cancer`
       parameters:
       - name: page
         required: false
@@ -913,6 +886,21 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - in: query
+        name: panel
+        schema:
+          type: string
+        description: Search specific panel
+      - in: query
+        name: query
+        schema:
+          type: string
+        description: Search term
+      - in: query
+        name: type
+        schema:
+          type: string
+        description: 'Type of search can be: gene, disease, phenotype or g2p_id'
       tags:
       - search
       security:
@@ -965,15 +953,6 @@ paths:
           description: Search response
 components:
   schemas:
-    Attrib:
-      type: object
-      description: Attribs represent controlled vocabulary.
-      properties:
-        value:
-          type: string
-          maxLength: 255
-      required:
-      - value
     AttribType:
       type: object
       description: Return the list of attribs for a specific type.

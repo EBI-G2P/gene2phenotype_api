@@ -62,7 +62,7 @@ urlpatterns = [
         name="description_attrib_type"
     ),
     path(
-        "attrib/<str:code>/",
+        "attrib/<str:attrib_type>/",
         views.AttribList.as_view(),
         name="list_attribs_by_type"
     ),

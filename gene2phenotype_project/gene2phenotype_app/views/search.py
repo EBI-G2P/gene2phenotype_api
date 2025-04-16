@@ -44,7 +44,7 @@ class CustomPagination(PageNumberPagination):
             name='type',
             type=str,
             location=OpenApiParameter.QUERY,
-            description='Type of search'
+            description='Type of search can be: gene, disease, phenotype or g2p_id'
         ),
         OpenApiParameter(
             name='panel',

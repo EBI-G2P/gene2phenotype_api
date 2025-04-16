@@ -20,14 +20,14 @@ class AttribListTestEndpoint(TestCase):
     fixtures = ["gene2phenotype_app/fixtures/attribs.json"]
 
     def test_attrib_list_code(self):
-        url_attriblist = reverse("list_attribs_by_type", kwargs={"code": "confidence_category"})
+        url_attriblist = reverse("list_attribs_by_type", kwargs={"attrib_type": "confidence_category"})
         response = self.client.get(url_attriblist)
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["count"], 6)
 
     def test_invalid_attrib_query(self):
-        url_attriblist = reverse("list_attribs_by_type", kwargs={"code": "confidence"})
+        url_attriblist = reverse("list_attribs_by_type", kwargs={"attrib_type": "confidence"})
         response = self.client.get(url_attriblist)
 
         self.assertEqual(response.status_code, 404)
