@@ -48,13 +48,12 @@ class ConfidenceCustomMail():
         message['To'] =  settings.MAILING_LIST
         message['Subject'] = self.get_email_subject()
         message.set_content(email_body, 'html')
-         
-        if settings.SEND_MAILS == "True": 
-            try:
-                with SMTP(host=settings.EMAIL_HOST, port=settings.EMAIL_PORT) as server:
-                    server.send_message(message)
-            except Exception as e:
-                return str(e)
+               
+        try:
+            with SMTP(host=settings.EMAIL_HOST, port=settings.EMAIL_PORT) as server:
+                server.send_message(message)
+        except Exception as e:
+            return str(e)
 
 
     def get_email_subject(self) -> str:

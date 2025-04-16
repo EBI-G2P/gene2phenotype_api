@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.db import connection, IntegrityError
 from django.db.models import Prefetch
+from django.conf import settings
 import itertools
 import re
 
@@ -622,7 +623,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         # Save all updates
         instance.save()
         user_obj = User.objects.get(email=user)
-        ConfidenceCustomMail(instance,old_confidence,user_obj,request).send_confidence_update_email()
+        if settings.SEND_MAILS == "True":
+            ConfidenceCustomMail(instance,old_confidence,user_obj,request).send_confidence_update_email()
 
         return instance
 
