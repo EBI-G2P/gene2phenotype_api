@@ -946,36 +946,23 @@ paths:
                     items:
                       type: object
                       properties:
-                        results:
+                        id:
+                          type: string
+                        gene:
+                          type: string
+                        genotype:
+                          type: string
+                        disease:
+                          type: string
+                        mechanism:
+                          type: string
+                        panel:
                           type: array
                           items:
-                            type: object
-                            properties:
-                              id:
-                                type: string
-                              gene:
-                                type: string
-                              genotype:
-                                type: string
-                              disease:
-                                type: string
-                              mechanism:
-                                type: string
-                              panel:
-                                type: array
-                                items:
-                                  type: string
-                              confidence:
-                                type: string
-                        count:
-                          type: integer
-                        next:
-                          type: integer
-                          nullable: true
-                        previous:
-                          type: integer
-                          nullable: true
-          description: Phenotype response
+                            type: string
+                        confidence:
+                          type: string
+          description: Search response
 components:
   schemas:
     Attrib:

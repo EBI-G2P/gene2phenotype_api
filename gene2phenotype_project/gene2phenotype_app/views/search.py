@@ -1,7 +1,8 @@
 from rest_framework.response import Response
 from django.db.models import Q, F
 from rest_framework.pagination import PageNumberPagination
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
+import textwrap
 
 from gene2phenotype_app.serializers import LocusGenotypeDiseaseSerializer, CurationDataSerializer
 
@@ -11,34 +12,60 @@ from .base import BaseView
 
 
 class CustomPagination(PageNumberPagination):
-    page_size = 50
+    """
+        Custom method to define the number of results per page
+    """
+    page_size = 20
 
 
 @extend_schema(
+    description=textwrap.dedent("""
+    Search G2P records.
+    Supported search types are:
+
+        gene
+        disease
+        phenotype
+        g2p_id
+
+    If no search type is specified then it performs a generic search.
+    The search can be specific to one panel if using parameter 'panel'.
+
+    Example: `search/?type=gene&query=RHO&panel=Cancer`
+    """),
+    parameters=[
+        OpenApiParameter(
+            name='query',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='Search term'
+        ),
+        OpenApiParameter(
+            name='type',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='Type of search'
+        ),
+        OpenApiParameter(
+            name='panel',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='Search specific panel'
+        ),
+    ],
     responses={
         200: OpenApiResponse(
-            description="Phenotype response",
+            description="Search response",
             response={
                 "type": "object",
                 "properties": {
-                    "results": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "id": {"type": "string"},
-                                "gene": {"type": "string"},
-                                "genotype": {"type": "string"},
-                                "disease": {"type": "string"},
-                                "mechanism": {"type": "string"},
-                                "panel": {"type": "array", "items": {"type": "string"}},
-                                "confidence": {"type": "string"}
-                            }
-                        }
-                    },
-                    "count": {"type": "integer"},
-                    "next": {"type": "integer", "nullable": True},
-                    "previous": {"type": "integer", "nullable": True}
+                    "id": {"type": "string"},
+                    "gene": {"type": "string"},
+                    "genotype": {"type": "string"},
+                    "disease": {"type": "string"},
+                    "mechanism": {"type": "string"},
+                    "panel": {"type": "array", "items": {"type": "string"}},
+                    "confidence": {"type": "string"}
                 }
             }
         )
