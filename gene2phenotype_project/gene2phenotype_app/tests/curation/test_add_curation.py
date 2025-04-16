@@ -51,10 +51,12 @@ class LGDAddCurationEndpoint(TestCase):
                         "pmid": "1"
                     }
                 ],
-                "mechanism_synopsis": {
-                    "name": "destabilising LOF",
-                    "support": "inferred"
-                },
+                "mechanism_synopsis": [
+                    {
+                        "name": "destabilising LOF",
+                        "support": "inferred"
+                    }
+                ],
                 "molecular_mechanism": {
                     "name": "loss of function",
                     "support": "evidence"
@@ -153,10 +155,7 @@ class LGDAddCurationEndpoint(TestCase):
                 },
                 "locus": "RHO",
                 "mechanism_evidence": [],
-                "mechanism_synopsis": {
-                    "name": "",
-                    "support": ""
-                },
+                "mechanism_synopsis": [],
                 "molecular_mechanism": {
                     "name": "",
                     "support": ""
@@ -204,10 +203,7 @@ class LGDAddCurationEndpoint(TestCase):
                 },
                 "locus": "RHO",
                 "mechanism_evidence": [],
-                "mechanism_synopsis": {
-                    "name": "",
-                    "support": ""
-                },
+                "mechanism_synopsis": [],
                 "molecular_mechanism": {
                     "name": "",
                     "support": ""
@@ -282,10 +278,7 @@ class LGDAddCurationEndpoint(TestCase):
                 },
                 "locus": "",
                 "mechanism_evidence": [],
-                "mechanism_synopsis": {
-                    "name": "",
-                    "support": ""
-                },
+                "mechanism_synopsis": [],
                 "molecular_mechanism": {
                     "name": "",
                     "support": ""
