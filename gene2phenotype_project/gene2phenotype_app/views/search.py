@@ -10,6 +10,10 @@ from gene2phenotype_app.models import LGDPanel, LocusGenotypeDisease, CurationDa
 from .base import BaseView
 
 
+class CustomPagination(PageNumberPagination):
+    page_size = 50
+
+
 @extend_schema(
     responses={
         200: OpenApiResponse(
@@ -54,7 +58,7 @@ class SearchView(BaseView):
         The search can be specific to one panel if using parameter 'panel'.
     """
 
-    pagination_class = PageNumberPagination
+    pagination_class = CustomPagination
 
     def get_serializer_class(self):
         if self.request.query_params.get('type', None) == 'draft':
