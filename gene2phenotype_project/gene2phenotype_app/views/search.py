@@ -4,9 +4,16 @@ from rest_framework.pagination import PageNumberPagination
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 import textwrap
 
-from gene2phenotype_app.serializers import LocusGenotypeDiseaseSerializer, CurationDataSerializer
+from gene2phenotype_app.serializers import (
+    LocusGenotypeDiseaseSerializer,
+    CurationDataSerializer
+)
 
-from gene2phenotype_app.models import LGDPanel, LocusGenotypeDisease, CurationData
+from gene2phenotype_app.models import (
+    LGDPanel,
+    LocusGenotypeDisease,
+    CurationData
+)
 
 from .base import BaseView
 
@@ -235,7 +242,11 @@ class SearchView(BaseView):
             # to extend the queryset being annotated when it is draft,
             # want to return username so curator can see who is curating
             # adding the curator email, incase of the notification.
-            queryset = queryset.annotate(first_name=F('user_id__first_name'), last_name=F('user_id__last_name'), user_email=F('user__email'))
+            queryset = queryset.annotate(
+                first_name=F('user_id__first_name'),
+                last_name=F('user_id__last_name'),
+                user_email=F('user__email')
+            )
 
             for obj in queryset:
                 obj.json_data_info = CurationDataSerializer.get_entry_info_from_json_data(self, obj.json_data)

@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from django.db.models import Q
 from django.db import IntegrityError
 from typing import Optional
 from datetime import date
@@ -18,13 +17,12 @@ class PanelCreateSerializer(serializers.ModelSerializer):
             description: complete name of the panel (mandatory)
             is_visible: panel visible to authenticated or non authenticated users
 
-
         Raises:
             serializers.ValidationError: Raises a validation error when the panel exists
 
         Returns:
-            _type_: A created panel
-    """    
+            Panel: A created panel
+    """
     name = serializers.CharField(required=True)
     description = serializers.CharField(required=True)
     is_visible = serializers.BooleanField(required=True)
@@ -34,13 +32,13 @@ class PanelCreateSerializer(serializers.ModelSerializer):
             Validate the request data 
 
             Args:
-                attrs (_type_): A dictionary like object containing the request data
+                attrs (dict): A dictionary like object containing the request data
 
             Raises:
                 serializers.ValidationError: Raises a validation error when the panel exists
 
             Returns:
-                _type_: A validated request object
+                Request: A validated request object
         """        
         name = attrs.get('name')
         if Panel.objects.filter(name=name, is_visible=1).exists():
@@ -54,11 +52,11 @@ class PanelCreateSerializer(serializers.ModelSerializer):
             Updating the panel if is_visible = 0
 
             Args:
-                validated_data (_type_): validated request object
+                validated_data (dict): validated request object
 
             Returns:
-                _type_: Created panel
-        """      
+                Panel: Created panel object
+        """
         name = validated_data.get('name')
         description = validated_data.get('description')
         is_visible = validated_data.get("is_visible")
@@ -81,6 +79,7 @@ class PanelCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Panel
         fields = ['name', 'description', 'is_visible']
+
 
 class PanelDetailSerializer(serializers.ModelSerializer):
     """
@@ -226,6 +225,7 @@ class PanelDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Panel
         fields = ['name', 'description', 'last_updated']
+
 
 ### G2P record (LGD) - panels ###
 class LGDPanelSerializer(serializers.ModelSerializer):

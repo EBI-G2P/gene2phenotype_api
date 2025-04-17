@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db.models import Max
 from drf_spectacular.utils import extend_schema, OpenApiResponse
+import textwrap
 
 from gene2phenotype_app.models import Meta
 
@@ -9,6 +10,9 @@ from gene2phenotype_app.serializers import MetaSerializer
 
 
 @extend_schema(
+    description=textwrap.dedent("""
+    Return a list of the reference data used in G2P with their respective versions.
+    """),
     responses={
         200: OpenApiResponse(
             description="Reference data response",
@@ -28,18 +32,15 @@ from gene2phenotype_app.serializers import MetaSerializer
 )
 class MetaView(APIView):
     """
-    The View for Meta record
-
-    Args:
-        APIView (_type_): APIView
+    API view for retrieving the reference data.
     """
 
     def get_queryset(self):
         """
-        Method to get latest records using the key to group it
+        Method to get a queryset containing the latest records for each unique key
 
         Returns:
-            _type_: queryset containing the unique keys with the latest records an
+            QuerySet: a queryset containing the latest records
         """
         # to group by key to create a queryset containing the key and the latest date
         latest_records = Meta.objects.values("key").annotate(
@@ -53,7 +54,10 @@ class MetaView(APIView):
 
     def get(self, request):
         """
-        Return a list with the reference data used in G2P and respective version
+        Return a list of the reference data used in G2P with their respective versions.
+
+        Returns:
+            Response: A serialized list of the latest meta records.
         """
         queryset = self.get_queryset()
         serializer = MetaSerializer(queryset, many=True)

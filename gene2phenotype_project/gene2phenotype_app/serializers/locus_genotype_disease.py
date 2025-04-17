@@ -818,6 +818,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         model = LocusGenotypeDisease
         exclude = ['id', 'is_deleted', 'date_review', 'mechanism', 'mechanism_support', 'confidence_support']
 
+
 class LGDCommentSerializer(serializers.ModelSerializer):
     """
         Serializer for the LGDComment model.
@@ -863,12 +864,14 @@ class LGDCommentSerializer(serializers.ModelSerializer):
         model = LGDComment
         exclude = ['id', 'is_deleted', 'lgd', 'date', 'user']
 
+
 class LGDCommentListSerializer(serializers.Serializer):
     """
         Serializer to accept a list of comments.
         Called by: view LGDEditComment()
     """
     comments = LGDCommentSerializer(many=True)
+
 
 class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
     """
@@ -953,12 +956,14 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
         model = LGDVariantGenccConsequence
         fields = ['variant_consequence', 'accession', 'support', 'publication']
 
+
 class LGDVariantConsequenceListSerializer(serializers.Serializer):
     """
         Serializer to accept a list of variant GenCC consequences.
         Called by: LGDAddVariantConsequences()
     """
     variant_consequences = LGDVariantGenCCConsequenceSerializer(many=True)
+
 
 class LGDMechanismSynopsisSerializer(serializers.ModelSerializer):
     """
@@ -1010,11 +1015,13 @@ class LGDMechanismSynopsisSerializer(serializers.ModelSerializer):
         model = LGDMolecularMechanismSynopsis
         fields = ['synopsis', 'synopsis_support']
 
+
 class EvidenceSerializer(serializers.Serializer):
     primary_type = serializers.CharField()
     secondary_type = serializers.ListField(
         child=serializers.CharField(), allow_empty=True
 )
+
 
 class LGDMechanismEvidenceSerializer(serializers.ModelSerializer):
     """
@@ -1064,6 +1071,7 @@ class LGDMechanismEvidenceSerializer(serializers.ModelSerializer):
     class Meta:
         model = LGDMolecularMechanismEvidence
         fields = ['description', 'evidence', 'publication']
+
 
 class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
     """
@@ -1129,12 +1137,14 @@ class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
         model = LGDCrossCuttingModifier
         fields = ['term']
 
+
 class LGDCrossCuttingModifierListSerializer(serializers.Serializer):
     """
         Serializer to accept a list of cross cutting modifiers.
         Called by: LocusGenotypeDiseaseAddCCM()
     """
     cross_cutting_modifiers = LGDCrossCuttingModifierSerializer(many=True)
+
 
 class LGDVariantTypeCommentSerializer(serializers.ModelSerializer):
     """
@@ -1150,6 +1160,7 @@ class LGDVariantTypeCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = LGDVariantTypeComment
         fields = ['comment', 'user', 'date']
+
 
 class LGDVariantTypeSerializer(serializers.ModelSerializer):
     """
@@ -1365,12 +1376,14 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
         fields = ['term', 'accession', 'inherited', 'de_novo', 'unknown_inheritance', 
                   'publication', 'comments', 'secondary_type', 'supporting_papers', 'nmd_escape', 'comment']
 
+
 class LGDVariantTypeListSerializer(serializers.Serializer):
     """
         Serializer to accept a list of variant types.
         Called by: LGDEditVariantTypes()
     """
     variant_types = LGDVariantTypeSerializer(many=True)
+
 
 class LGDVariantTypeDescriptionSerializer(serializers.ModelSerializer):
     """
@@ -1450,6 +1463,7 @@ class LGDVariantTypeDescriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = LGDVariantTypeDescription
         fields = ['publication', 'description', 'publications']
+
 
 class LGDVariantTypeDescriptionListSerializer(serializers.Serializer):
     """

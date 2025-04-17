@@ -80,15 +80,17 @@ class AddCurationData(BaseAdd):
         else:
             return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+
 @extend_schema(exclude=True)
 class ListCurationEntries(BaseView):
     """
         List all the curation entries being curated by the user.
         It is only available for authenticated users.
 
-        Returns:
-                list of entries under 'curation'
-                number of entries under 'count'
+        Returns: 
+            The Response object including
+                (list) results: a list of entries under curation
+                (int) count: the total number of entries returned
     """
 
     serializer_class = CurationDataSerializer
@@ -96,7 +98,7 @@ class ListCurationEntries(BaseView):
 
     def get_queryset(self):
         """
-            Retrieve the queryset of CurationData objects.
+            Retrieve the queryset of CurationData objects for the specific user.
 
             Returns:
                 Queryset of CurationData objects.
@@ -133,6 +135,7 @@ class ListCurationEntries(BaseView):
             list_data.append(entry)
 
         return Response({'results':list_data, 'count':len(list_data)})
+
 
 @extend_schema(exclude=True)
 class CurationDataDetail(BaseView):
@@ -179,6 +182,7 @@ class CurationDataDetail(BaseView):
                 'data': curation_data_obj.json_data,
             }
         return Response(response_data)
+
 
 @extend_schema(exclude=True)
 class UpdateCurationData(generics.UpdateAPIView):
@@ -261,6 +265,7 @@ class UpdateCurationData(generics.UpdateAPIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+
 @extend_schema(exclude=True)
 class PublishRecord(APIView):
     """
@@ -315,6 +320,7 @@ class PublishRecord(APIView):
                 {"error": f"Curation data not found for ID '{stable_id}'"},
                 status=status.HTTP_404_NOT_FOUND
             )
+
 
 @extend_schema(exclude=True)
 class DeleteCurationData(generics.DestroyAPIView):

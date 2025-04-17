@@ -25,6 +25,7 @@ class BaseView(generics.ListAPIView):
 
         return super().handle_exception(exc)
 
+
 class BaseAPIView(APIView):
     """
         Generic methods to handle expection and permissions for classes
@@ -48,6 +49,7 @@ class BaseAPIView(APIView):
 
         return super().handle_exception(exc)
 
+
 class BaseAdd(generics.CreateAPIView):
     """
         Generic method to add data
@@ -61,6 +63,7 @@ class BaseAdd(generics.CreateAPIView):
         instance = self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
 
 class BaseUpdate(generics.UpdateAPIView):
     """
@@ -89,6 +92,7 @@ class BaseUpdate(generics.UpdateAPIView):
     def handle_missing_data(self, data_type):
         raise Http404(f"{data_type} is missing")
 
+
 class CustomPermissionAPIView(APIView):
     """
         Base API view with reusable get_permissions logic.
@@ -110,6 +114,7 @@ class CustomPermissionAPIView(APIView):
         if self.request.method.lower() == "update":
             return [permissions.IsAuthenticated(), IsSuperUser()]
         return [permissions.IsAuthenticated()]
+
 
 class IsSuperUser(BasePermission):
     """

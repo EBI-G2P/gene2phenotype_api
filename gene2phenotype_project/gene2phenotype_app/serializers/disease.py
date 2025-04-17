@@ -110,12 +110,14 @@ class DiseaseOntologyTermSerializer(serializers.ModelSerializer):
         model = DiseaseOntologyTerm
         fields = ['accession', 'term', 'description', 'source']
 
+
 class DiseaseOntologyTermListSerializer(serializers.Serializer):
     """
         Serializer to accept a list of disease ontologies.
         Called by: view DiseaseUpdateReferences()
     """
     disease_ontologies = DiseaseOntologyTermSerializer(many=True)
+
 
 class DiseaseSerializer(serializers.ModelSerializer):
     """
@@ -148,6 +150,7 @@ class DiseaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Disease
         fields = ['name', 'ontology_terms', 'synonyms']
+
 
 class DiseaseDetailSerializer(DiseaseSerializer):
     """
@@ -233,6 +236,7 @@ class DiseaseDetailSerializer(DiseaseSerializer):
     class Meta:
         model = Disease
         fields = DiseaseSerializer.Meta.fields + ['last_updated']
+
 
 class CreateDiseaseSerializer(serializers.ModelSerializer):
     """
@@ -376,6 +380,7 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Disease
         fields = ['name', 'ontology_terms']
+
 
 class GeneDiseaseSerializer(serializers.ModelSerializer):
     """

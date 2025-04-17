@@ -6,8 +6,8 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.http import Http404
 from drf_spectacular.utils import extend_schema, OpenApiResponse
-from typing import Any
 import textwrap
+
 
 from gene2phenotype_app.serializers import (
     GeneDiseaseSerializer,
@@ -166,6 +166,7 @@ class DiseaseDetail(BaseAPIView):
         serializer = DiseaseDetailSerializer(disease_obj)
         return Response(serializer.data)
 
+
 @extend_schema(
     description=textwrap.dedent("""
         Fetch latest G2P entries associated with a specific disease.
@@ -221,6 +222,7 @@ class DiseaseSummary(DiseaseDetail):
         }
 
         return Response(response_data)
+
 
 @extend_schema(
     description=textwrap.dedent("""
@@ -304,6 +306,7 @@ def ExternalDisease(request, ext_ids):
 
     return response
 
+
 ### Add data
 @extend_schema(exclude=True)
 class AddDisease(BaseAdd):
@@ -314,6 +317,7 @@ class AddDisease(BaseAdd):
     """
     serializer_class = CreateDiseaseSerializer
     permission_classes = [IsSuperUser]
+
 
 ### Update data
 @extend_schema(exclude=True)
@@ -368,6 +372,7 @@ class UpdateDisease(BaseAdd):
             response_data["error"] = errors
 
         return Response(response_data, status=status.HTTP_200_OK if updated_diseases else status.HTTP_400_BAD_REQUEST)
+
 
 @extend_schema(exclude=True)
 class DiseaseUpdateReferences(BaseAdd):
@@ -515,6 +520,7 @@ class DiseaseUpdateReferences(BaseAdd):
                 )
 
         return response
+
 
 @extend_schema(exclude=True)
 class LGDUpdateDisease(BaseAdd):

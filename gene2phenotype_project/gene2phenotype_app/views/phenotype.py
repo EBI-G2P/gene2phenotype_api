@@ -1,11 +1,11 @@
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from rest_framework.views import APIView
 from django.http import Http404
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiResponse
+import textwrap
 import re
 
 from gene2phenotype_app.serializers import (
@@ -23,12 +23,20 @@ from gene2phenotype_app.models import (
     LGDPhenotypeSummary
 )
 
-from .base import BaseAdd, CustomPermissionAPIView, IsSuperUser
+from .base import (
+    BaseAdd,
+    CustomPermissionAPIView,
+    IsSuperUser
+)
 
 from ..utils import validate_phenotype
 
 
 @extend_schema(
+    description=textwrap.dedent("""
+    Fetch phenotype information for a list of phenotype IDs.
+    The list is a comma-separated string of HPO IDs.
+    """),
     responses={
         200: OpenApiResponse(
             description="Phenotype response",
@@ -296,6 +304,7 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
                 {"message": f"Phenotype '{accession}' successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK)
 
+
 @extend_schema(exclude=True)
 class LGDEditPhenotypeSummary(CustomPermissionAPIView):
     """
@@ -419,6 +428,7 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
                 {"message": f"Phenotype summary successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK
             )
+
 
 ### Add phenotype ###
 @extend_schema(exclude=True)

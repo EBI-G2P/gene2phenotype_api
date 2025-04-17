@@ -6,20 +6,38 @@ from rest_framework.decorators import api_view
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from django.db.models import Q
-import csv
 from datetime import datetime
+import textwrap
+import csv
 import re
 
-from gene2phenotype_app.models import (Panel, User, LocusGenotypeDisease,
-                                       LGDVariantType, LGDVariantGenccConsequence,
-                                       LGDMolecularMechanismEvidence, LGDPhenotype,
-                                       LGDPublication, LGDCrossCuttingModifier,
-                                       LGDPanel, LGDComment)
+from gene2phenotype_app.models import (
+    Panel,
+    User,
+    LocusGenotypeDisease,
+    LGDVariantType,
+    LGDVariantGenccConsequence,
+    LGDMolecularMechanismEvidence,
+    LGDPhenotype,
+    LGDPublication,
+    LGDCrossCuttingModifier,
+    LGDPanel,
+    LGDComment
+)
 
-from gene2phenotype_app.serializers import PanelCreateSerializer, PanelDetailSerializer, LGDPanelSerializer, UserSerializer
+from gene2phenotype_app.serializers import (
+    PanelCreateSerializer,
+    PanelDetailSerializer,
+    LGDPanelSerializer,
+    UserSerializer
+)
 
-from .base import BaseView, IsSuperUser, CustomPermissionAPIView
+from .base import (
+    BaseAPIView,
+    IsSuperUser,
+    CustomPermissionAPIView
+)
+
 
 @extend_schema(exclude=True)
 class PanelCreateView(generics.CreateAPIView):
@@ -29,7 +47,11 @@ class PanelCreateView(generics.CreateAPIView):
     serializer_class = PanelCreateSerializer
     permission_classes = [permissions.IsAdminUser]
 
+
 @extend_schema(
+    description=textwrap.dedent("""
+    Fetch all G2P panels information.
+    """),
     responses={
         200: OpenApiResponse(
             description="Panels response",
@@ -70,7 +92,7 @@ class PanelCreateView(generics.CreateAPIView):
         )
     }
 )
-class PanelList(generics.ListAPIView):
+class PanelList(APIView):
     """
         Return all panels info.
         The information includes some stats: 
@@ -83,12 +105,12 @@ class PanelList(generics.ListAPIView):
             (int) `count`: number of panels in the response
     """
 
-    queryset = Panel.objects.all()
     serializer_class = PanelDetailSerializer
 
-    def list(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         user = self.request.user
-        queryset = self.get_queryset()
+
+        queryset = Panel.objects.all()
         serializer = PanelDetailSerializer()
         panel_list = []
 
@@ -107,7 +129,11 @@ class PanelList(generics.ListAPIView):
 
         return Response({'results':sorted_panels, 'count':len(sorted_panels)})
 
+
 @extend_schema(
+    description=textwrap.dedent("""
+    Fetch information for a specific panel.
+    """),
     responses={
         200: OpenApiResponse(
             description="Panel detail response",
@@ -139,9 +165,9 @@ class PanelList(generics.ListAPIView):
         )
     }
 )
-class PanelDetail(BaseView):
+class PanelDetail(BaseAPIView):
     """
-        Return the panel info.
+        Return information for a specific panel.
 
         Args:
             (str) `name`: the panel short name
@@ -180,7 +206,11 @@ class PanelDetail(BaseView):
         else:
             self.handle_no_permission('Panel', name)
 
+
 @extend_schema(
+    description=textwrap.dedent("""
+    Fetch latest G2P entries associated with a specific panel.
+    """),
     responses={
         200: OpenApiResponse(
             description="Panel summary response",
@@ -207,7 +237,7 @@ class PanelDetail(BaseView):
         )
     }
 )
-class PanelRecordsSummary(BaseView):
+class PanelRecordsSummary(BaseAPIView):
     """
         Display a summary of the latest G2P entries associated with panel.
 
@@ -243,6 +273,7 @@ class PanelRecordsSummary(BaseView):
 
         else:
             self.handle_no_permission('Panel', name)
+
 
 ### Edit data ###
 @extend_schema(exclude=True)
@@ -338,6 +369,12 @@ class LGDEditPanel(CustomPermissionAPIView):
                 {"message": f"Panel '{panel}' successfully deleted for ID '{stable_id}'"},
                  status=status.HTTP_200_OK)
 
+
+@extend_schema(
+    description=textwrap.dedent("""
+    Download all the G2P records associated with a specific panel.
+    """)
+)
 @api_view(['GET'])
 def PanelDownload(request, name):
     """
@@ -682,6 +719,7 @@ def PanelDownload(request, name):
 
     return response
 
+
 def extract_locus_id(locus_ids):
     """
         Method to extract the gene MIM ID and the
@@ -698,6 +736,7 @@ def extract_locus_id(locus_ids):
             gene_mim = gene
     
     return gene_mim, hgnc_id
+
 
 def extract_disease_id(disease_ids):
     disease_mim = ""

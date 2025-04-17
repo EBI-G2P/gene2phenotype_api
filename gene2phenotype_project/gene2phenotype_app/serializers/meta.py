@@ -5,13 +5,7 @@ from ..models import Meta
 
 class MetaSerializer(serializers.ModelSerializer):
     """
-    Meta Serializer for the model Meta
-    Args:
-        serializers (_type_): ModelSerializer
-                        Fields - Key, version, source
-
-    Returns:
-        _type_: Serializer fields
+    Meta Serializer for the model Meta 
     """
 
     key = serializers.CharField()
@@ -23,10 +17,10 @@ class MetaSerializer(serializers.ModelSerializer):
         Used to get the source because the source is a ForeignKey in this table
 
         Args:
-            obj (_type_): Queryset object
+            obj (Queryset): Queryset object
 
         Returns:
-            _type_: source
+            str: source
         """
         source = obj.source.name
         return source

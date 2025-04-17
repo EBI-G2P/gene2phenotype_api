@@ -4,15 +4,30 @@ from rest_framework.decorators import api_view
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiResponse
+import textwrap
 
-from gene2phenotype_app.serializers import (PublicationSerializer, LGDPublicationSerializer,
-                                            LGDPublicationListSerializer, LGDPhenotypeSerializer,
-                                            LGDVariantTypeSerializer, LGDVariantTypeDescriptionSerializer,
-                                            LocusGenotypeDiseaseSerializer, LGDPhenotypeSummarySerializer)
 
-from gene2phenotype_app.models import (Publication, LocusGenotypeDisease, LGDPublication,
-                                       LGDPhenotype, LGDPhenotypeSummary, LGDVariantType,
-                                       LGDVariantTypeDescription, LGDMolecularMechanismEvidence)
+from gene2phenotype_app.serializers import (
+    PublicationSerializer,
+    LGDPublicationSerializer,
+    LGDPublicationListSerializer,
+    LGDPhenotypeSerializer,
+    LGDVariantTypeSerializer,
+    LGDVariantTypeDescriptionSerializer,
+    LocusGenotypeDiseaseSerializer,
+    LGDPhenotypeSummarySerializer
+)
+
+from gene2phenotype_app.models import (
+    Publication,
+    LocusGenotypeDisease,
+    LGDPublication,
+    LGDPhenotype,
+    LGDPhenotypeSummary,
+    LGDVariantType,
+    LGDVariantTypeDescription,
+    LGDMolecularMechanismEvidence
+)
 
 from .base import BaseAdd, BaseUpdate, IsSuperUser
 
@@ -20,9 +35,13 @@ from ..utils import get_publication, get_authors, clean_title
 
 
 @extend_schema(
+    description=textwrap.dedent("""
+    Fetch publication information for a list of publication IDs.
+    The list is a comma-separated string of PMIDs.
+    """),
     responses={
         200: OpenApiResponse(
-            description="Phenotype response",
+            description="Publication response",
             response={
                 "type": "object",
                 "properties": {
@@ -124,6 +143,7 @@ class AddPublication(BaseAdd):
     """
     serializer_class = PublicationSerializer
     permission_classes = [permissions.IsAuthenticated]
+
 
 ### LGD-publication ###
 # Add or delete data

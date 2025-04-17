@@ -30,6 +30,7 @@ from gene2phenotype_app.models import (
     UserPanel
 )
 
+
 @extend_schema(exclude=True)
 class UserPanels(BaseView):
     """
@@ -66,6 +67,7 @@ class UserPanels(BaseView):
 
         return Response(queryset_user_panels)
 
+
 @extend_schema(exclude=True)
 class UserList(generics.ListAPIView):
     """
@@ -100,6 +102,7 @@ class UserList(generics.ListAPIView):
 
         return Response({'results': serializer.data, 'count':len(serializer.data)})
 
+
 @extend_schema(exclude=True)
 class CreateUserView(generics.CreateAPIView):
     """
@@ -117,16 +120,16 @@ class CreateUserView(generics.CreateAPIView):
     serializer_class = CreateUserSerializer
     permission_classes = [permissions.IsAdminUser]
 
+
 @extend_schema(exclude=True)
 class AddUserToPanelView(generics.CreateAPIView):
     """
-        Add User to Panel view
-
-        Args:
-            generics (_type_): Adds User to panel, permissions is AdminUser, so views only available to AdminUser
+        API view to add a user to a panel.
+        Only available to admin users, as enforced by the IsAdminUser permission class.
     """    
     serializer_class = AddUserToPanelSerializer
     permission_classes = [permissions.IsAdminUser]
+
 
 @extend_schema(exclude=True)
 class LoginView(generics.GenericAPIView):
@@ -218,6 +221,7 @@ class LoginView(generics.GenericAPIView):
         del(login_data['tokens']) # to delete tokens from the response after setting cookies
         return response
 
+
 @extend_schema(exclude=True)
 class LogOutView(generics.GenericAPIView):
     """
@@ -292,6 +296,7 @@ class LogOutView(generics.GenericAPIView):
             )
         return response
 
+
 @extend_schema(exclude=True)
 class ManageUserView(generics.RetrieveUpdateAPIView):
     """
@@ -329,11 +334,13 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
         result['refresh_token_time'] = refresh_token_value
         return Response(result, status=status.HTTP_200_OK)
 
+
 @extend_schema(exclude=True)
 class ChangePasswordView(generics.GenericAPIView):
     """
-        Change password view  - Authenticated View 
-    """    
+    API view for authenticated users to change their password.
+    Only accessible to authenticated users. 
+    """
     serializer_class = ChangePasswordSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -342,15 +349,16 @@ class ChangePasswordView(generics.GenericAPIView):
             Post method for ChangePasswordView
 
             Args:
-                request (_type_): DjangoHttp Request object
+                request (Request): the HTTP request object
 
             Returns:
-                _type_: user information
+                Response: a response containing the user information and a success status
         """        
         serializer = self.serializer_class(data=request.data, context={'user':request.user})
         serializer.is_valid(raise_exception=True)
         result = serializer.change_password(user=request.user)
         return Response(result,  status=status.HTTP_201_CREATED)
+
 
 @extend_schema(exclude=True)  
 class VerifyEmailView(generics.GenericAPIView):
@@ -366,16 +374,17 @@ class VerifyEmailView(generics.GenericAPIView):
         Post method for Verify Email View - Unauthenticated view 
 
         Args:
-            request (_type_): Django HttpRequest Object
+            request (Request): the HTTP request object
 
         Returns:
-            _type_: Response (user information)
+            Response: Response (user information)
         """        
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         result = serializer.get_user_and_send_email(user=request.data)
 
         return Response(result)
+
 
 @extend_schema(exclude=True)
 class ResetPasswordView(generics.GenericAPIView):
@@ -390,17 +399,18 @@ class ResetPasswordView(generics.GenericAPIView):
             Post method for Password reset
 
             Args:
-                request (_type_): Django HttpRequest Object
-                uid (_type_): encrypted user id 
-                token (_type_): tine restricted configured password reset token 
+                request (Request): Django HttpRequest Object
+                uid (str): encrypted user id 
+                token (str): tine restricted configured password reset token 
 
             Returns:
-                _type_: response - user.email
+                Response: a response containing the email of the user
         """        
         serializer = self.serializer_class(data=request.data, context={'uid':uid, 'token':token})
         serializer.is_valid(raise_exception=True)
         result = serializer.reset(password=request.data,user=uid)
         return Response(result)
+
 
 @extend_schema(exclude=True)
 class CustomTokenRefreshView(TokenRefreshView):
@@ -413,19 +423,19 @@ class CustomTokenRefreshView(TokenRefreshView):
 
     def post(self, request, *args, **kwargs):
         """
-            Handles the Post nethod to refresh token and generate a new access and refresh token
+            Handles the Post method to refresh token and generate a new access and refresh token
 
             Args:
-                request (_type_): instance of Django's HttpRequest object
+                request (Request): instance of Django's HttpRequest object
 
             Raises:
-                AuthenticationFailed: If the refresh token has been blacklisted (logged out)
+                AuthenticationFailed : If the refresh token has been blacklisted (logged out)
                 ParseError : If the request is bad for other reasons 
 
             Returns:
-                _type_: response
-        """        
-        
+                Response: the response
+        """
+
         #fetch refresh_token from the cookies 
         refresh_token = request.COOKIES.get(getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_COOKIE", "refresh_token"))
 

@@ -1,11 +1,16 @@
 from rest_framework import serializers
-from django.db.models import Q
-from typing import Any, Optional
+from typing import Optional
 from datetime import date
 
-from ..models import (Locus, LocusIdentifier, LocusAttrib,
-                      AttribType, UniprotAnnotation, GeneStats,
-                      LocusGenotypeDisease)
+from ..models import (
+    Locus,
+    LocusIdentifier,
+    LocusAttrib,
+    AttribType,
+    UniprotAnnotation,
+    GeneStats,
+    LocusGenotypeDisease
+)
 
 from ..utils import validate_gene
 
@@ -54,6 +59,7 @@ class LocusSerializer(serializers.ModelSerializer):
     class Meta:
         model = Locus
         fields = ['gene_symbol', 'sequence', 'start', 'end', 'strand', 'reference', 'ids', 'synonyms']
+
 
 class LocusGeneSerializer(LocusSerializer):
     """

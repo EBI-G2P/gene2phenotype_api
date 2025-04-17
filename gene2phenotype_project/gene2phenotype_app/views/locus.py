@@ -2,8 +2,12 @@ from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 import textwrap
 
-from gene2phenotype_app.models import (AttribType, Attrib,
-                                       Locus, LocusAttrib)
+from gene2phenotype_app.models import (
+    AttribType,
+    Attrib,
+    Locus,
+    LocusAttrib
+)
 
 from gene2phenotype_app.serializers import LocusGeneSerializer
 
@@ -59,6 +63,7 @@ class LocusGene(BaseAPIView):
         queryset = self.get_queryset().first()
         serializer = LocusGeneSerializer(queryset)
         return Response(serializer.data)
+
 
 @extend_schema(
     description=textwrap.dedent("""
@@ -129,6 +134,7 @@ class LocusGeneSummary(BaseAPIView):
         }
 
         return Response(response_data)
+
 
 @extend_schema(
     description=textwrap.dedent("""

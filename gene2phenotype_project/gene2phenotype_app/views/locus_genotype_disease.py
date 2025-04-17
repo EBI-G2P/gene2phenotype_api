@@ -1,11 +1,11 @@
-from rest_framework import generics, status, permissions
+from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import Http404
-from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.db import transaction, IntegrityError
 from drf_spectacular.utils import extend_schema, OpenApiResponse
+import textwrap
 
 
 from gene2phenotype_app.serializers import (
@@ -50,7 +50,11 @@ from .base import (
     IsSuperUser
 )
 
+
 @extend_schema(
+    description=textwrap.dedent("""
+    Fetch all the molecular mechanisms grouped by type and subtype.
+    """),
     responses={
         200: OpenApiResponse(
             description="Molecular mechanisms response",
@@ -66,17 +70,17 @@ from .base import (
         )
     }
 )
-class ListMolecularMechanisms(generics.ListAPIView):
+class ListMolecularMechanisms(APIView):
     """
         Return the molecular mechanisms terms by type and subtype (if applicable).
 
         Returns a dictionary where the key is the type the value is a list.
     """
 
-    queryset = CVMolecularMechanism.objects.all().values('type', 'subtype', 'value', 'description').order_by('type')
-
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
+    def get(self, request, *args, **kwargs):
+        queryset = CVMolecularMechanism.objects.all().values(
+            'type', 'subtype', 'value', 'description'
+            ).order_by('type')
         result = {}
         for mechanism in queryset:
             mechanismtype = mechanism["type"]
@@ -102,7 +106,11 @@ class ListMolecularMechanisms(generics.ListAPIView):
 
         return Response(result)
 
+
 @extend_schema(
+    description=textwrap.dedent("""
+    Fetch all the variant types grouped by type of variant.
+    """),
     responses={
         200: OpenApiResponse(
             description="Variant types response",
@@ -119,7 +127,7 @@ class ListMolecularMechanisms(generics.ListAPIView):
         )
     }
 )
-class VariantTypesList(generics.ListAPIView):
+class VariantTypesList(APIView):
     """
         Return all variant types by group.
 
@@ -130,7 +138,7 @@ class VariantTypesList(generics.ListAPIView):
         group = Attrib.objects.filter(value="variant_type", type__code="ontology_term_group")
         return OntologyTerm.objects.filter(group_type=group.first().id)
 
-    def list(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         list_nmd = []
         list_splice = []
@@ -160,7 +168,13 @@ class VariantTypesList(generics.ListAPIView):
             }
         )
 
-class LocusGenotypeDiseaseDetail(generics.ListAPIView):
+
+@extend_schema(
+    description=textwrap.dedent("""
+    Fetch information for a specific G2P record.
+    """)
+)
+class LocusGenotypeDiseaseDetail(APIView):
     """
         Return all data for a G2P record.
 
@@ -198,7 +212,7 @@ class LocusGenotypeDiseaseDetail(generics.ListAPIView):
         else:
             return queryset
 
-    def list(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         queryset = self.get_queryset().first()
         serializer = LocusGenotypeDiseaseSerializer(queryset, context={'user': self.request.user})
         return Response(serializer.data)
@@ -279,6 +293,7 @@ class LGDUpdateConfidence(BaseUpdate):
                 {"error": serializer.errors},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
 
 @extend_schema(exclude=True)
 class LGDUpdateMechanism(BaseUpdate):
@@ -404,6 +419,7 @@ class LGDUpdateMechanism(BaseUpdate):
                 {"message": f"Molecular mechanism updated successfully for '{stable_id}'"},
                 status=status.HTTP_200_OK
             )
+
 
 @extend_schema(exclude=True)
 class LGDEditVariantConsequences(CustomPermissionAPIView):
@@ -569,6 +585,7 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
                 {"message": f"Variant consequence '{consequence}' successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK)
 
+
 @extend_schema(exclude=True)
 class LGDEditCCM(CustomPermissionAPIView):
     """
@@ -720,6 +737,7 @@ class LGDEditCCM(CustomPermissionAPIView):
                 {"message": f"Cross cutting modifier '{ccm}' successfully deleted for ID '{stable_id}'"},
                  status=status.HTTP_200_OK
             )
+
 
 @extend_schema(exclude=True)
 class LGDEditVariantTypes(CustomPermissionAPIView):
@@ -904,6 +922,7 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
                 status=status.HTTP_200_OK
             )
 
+
 @extend_schema(exclude=True)
 class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
     """
@@ -1047,6 +1066,7 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
             return Response(
                 {"message": f"Variant type description '{var_desc}' successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK)
+
 
 @extend_schema(exclude=True)
 class LGDEditComment(CustomPermissionAPIView):
@@ -1197,6 +1217,7 @@ class LGDEditComment(CustomPermissionAPIView):
                 {"message": f"Comment successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK
             )
+
 
 @extend_schema(exclude=True)
 class LocusGenotypeDiseaseDelete(APIView):
