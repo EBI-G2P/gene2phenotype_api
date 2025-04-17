@@ -127,6 +127,8 @@ class PanelRecordsSummary(BaseView):
         for panel in queryset:
             if panel.is_visible == 1 or (user.is_authenticated and panel.is_visible == 0):
                 flag = 1
+            elif panel.is_visible == 0 and not user.is_authenticated:
+                return self.handle_no_permission_authentication('Panel', name)
 
         if flag == 1:
             serializer = PanelDetailSerializer()

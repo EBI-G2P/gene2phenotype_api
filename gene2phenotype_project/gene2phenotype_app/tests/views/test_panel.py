@@ -21,7 +21,7 @@ class PanelListEndpointTests(TestCase):
 
     def test_get_panel_list(self):
         """
-        Test for non-autenticated users.
+        Test for non-authenticated users.
         Non-visible panels are not included in the response.
         """
         response = self.client.get(self.url_panels)
@@ -30,7 +30,7 @@ class PanelListEndpointTests(TestCase):
 
     def test_login_get_panel_list(self):
         """
-        Test for autenticated users.
+        Test for authenticated users.
         All panels are included in the response.
         """
         user = User.objects.get(email="user5@test.ac.uk")
