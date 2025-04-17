@@ -1,27 +1,98 @@
 from rest_framework.response import Response
 from django.db.models import Q, F
 from rest_framework.pagination import PageNumberPagination
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
+import textwrap
 
-from gene2phenotype_app.serializers import LocusGenotypeDiseaseSerializer, CurationDataSerializer
+from gene2phenotype_app.serializers import (
+    LocusGenotypeDiseaseSerializer,
+    CurationDataSerializer
+)
 
-from gene2phenotype_app.models import LGDPanel, LocusGenotypeDisease, CurationData
+from gene2phenotype_app.models import (
+    LGDPanel,
+    LocusGenotypeDisease,
+    CurationData
+)
 
 from .base import BaseView
 
 
+class CustomPagination(PageNumberPagination):
+    """
+        Custom method to define the number of results per page
+    """
+    page_size = 20
+
+
+@extend_schema(
+    description=textwrap.dedent("""
+    Search G2P records.
+    Supported search types are:
+
+        gene
+        disease
+        phenotype
+        g2p_id
+
+    If no search type is specified then it performs a generic search.
+    The search can be specific to one panel if using parameter 'panel'.
+
+    Example: `search/?type=gene&query=RHO&panel=Cancer`
+    """),
+    parameters=[
+        OpenApiParameter(
+            name='query',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='Search term'
+        ),
+        OpenApiParameter(
+            name='type',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='Type of search can be: gene, disease, phenotype or g2p_id'
+        ),
+        OpenApiParameter(
+            name='panel',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='Search specific panel'
+        ),
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="Search response",
+            response={
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "gene": {"type": "string"},
+                    "genotype": {"type": "string"},
+                    "disease": {"type": "string"},
+                    "mechanism": {"type": "string"},
+                    "panel": {"type": "array", "items": {"type": "string"}},
+                    "confidence": {"type": "string"}
+                }
+            }
+        )
+    }
+)
 class SearchView(BaseView):
     """
-        Search G2P entries by different types:
-                                            - gene
-                                            - disease
-                                            - phenotype
-                                            - G2P ID
-                                            - draft (only available for authenticated users)
+        Search G2P records. Supported search types are:
+
+            - gene
+            - disease
+            - phenotype
+            - G2P ID
+            - draft (only available for authenticated users)
+
         If no search type is specified then it performs a generic search.
         The search can be specific to one panel if using parameter 'panel'.
     """
 
-    pagination_class = PageNumberPagination
+    pagination_class = CustomPagination
 
     def get_serializer_class(self):
         if self.request.query_params.get('type', None) == 'draft':
@@ -171,7 +242,11 @@ class SearchView(BaseView):
             # to extend the queryset being annotated when it is draft,
             # want to return username so curator can see who is curating
             # adding the curator email, incase of the notification.
-            queryset = queryset.annotate(first_name=F('user_id__first_name'), last_name=F('user_id__last_name'), user_email=F('user__email'))
+            queryset = queryset.annotate(
+                first_name=F('user_id__first_name'),
+                last_name=F('user_id__last_name'),
+                user_email=F('user__email')
+            )
 
             for obj in queryset:
                 obj.json_data_info = CurationDataSerializer.get_entry_info_from_json_data(self, obj.json_data)

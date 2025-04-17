@@ -66,7 +66,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'simple_history',
     'rest_framework_simplejwt.token_blacklist',
-    'mail_templated'
+    'mail_templated',
+    'drf_spectacular'
 ]
 
 MIDDLEWARE = [
@@ -81,12 +82,19 @@ MIDDLEWARE = [
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 50,
     'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework_simplejwt.authentication.JWTAuthentication', 'gene2phenotype_app.authentication.CustomAuthentication'),
     'DEFAULT_PERMISSION_CLASSES': (
         "rest_framework.permissions.AllowAny",
     ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema'
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Gene2Phenotype (G2P)',
+    'DESCRIPTION': 'Accelerating genomic medicine with high confidence evidence based gene disease models',
+    'VERSION': config.get('g2p', 'version'),
+    'SERVE_INCLUDE_SCHEMA': False,
+    'DISABLE_FORMAT_SUFFIX': True
 }
 
 SIMPLE_JWT = {
@@ -133,7 +141,7 @@ ROOT_URLCONF = 'gene2phenotype_project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

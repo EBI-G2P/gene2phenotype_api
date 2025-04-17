@@ -49,6 +49,7 @@ class AttribTypeSerializer(serializers.ModelSerializer):
         model = AttribType
         fields = ['code']
 
+
 class AttribSerializer(serializers.ModelSerializer):
     """
         Attribs represent controlled vocabulary.

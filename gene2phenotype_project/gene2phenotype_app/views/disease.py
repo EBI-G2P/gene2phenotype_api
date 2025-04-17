@@ -5,6 +5,9 @@ from django.db.models import Q
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.http import Http404
+from drf_spectacular.utils import extend_schema, OpenApiResponse
+import textwrap
+
 
 from gene2phenotype_app.serializers import (
     GeneDiseaseSerializer,
@@ -27,23 +30,51 @@ from gene2phenotype_app.models import (
 )
 
 from ..utils import clean_omim_disease
-from .base import BaseView, BaseAdd, IsSuperUser
+from .base import BaseAPIView, BaseAdd, IsSuperUser
 
-class GeneDiseaseView(BaseView):
+
+@extend_schema(
+description=textwrap.dedent("""
+    Fetch all diseases associated with a specific gene.
+    """),
+    responses={
+        200: OpenApiResponse(
+            description="Gene disease response",
+            response={
+                "type": "object",
+                "properties": {
+                    "count": {"type": "integer"},
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "original_disease_name": {"type": "string"},
+                                "disease_name": {"type": "string"},
+                                "identifier": {"type": "string"},
+                                "source": {"type": "string"}
+                            }
+                        }
+                    }
+                }
+            }
+        )
+    }
+)
+class GeneDiseaseView(BaseAPIView):
     """
-        Retrieves all diseases associated with a specific gene.
+        Return all diseases associated with a specific gene.
 
         Args:
-            (str) gene_name: gene symbol or the synonym symbol
+            (str) `name`: gene symbol or the synonym symbol
 
-        Returns:
-            Response object includes:
-                    (list) results: disease data
-                                    - original_disease_name
-                                    - disease_name
-                                    - identifier
-                                    - source name
-                    (int) count: number of diseases associated with the gene
+        Returns a list of objects where each object has
+                    (list) `results`:
+                                    (str) original_disease_name;
+                                    (str) disease_name;
+                                    (str) identifier;
+                                    (str) source name;
+                    (int) `count`: number of diseases associated with the gene
     """
 
     serializer_class = GeneDiseaseSerializer
@@ -85,15 +116,21 @@ class GeneDiseaseView(BaseView):
 
         return Response({'results': results, 'count': len(results)})
 
-class DiseaseDetail(BaseView):
+
+@extend_schema(
+description=textwrap.dedent("""
+    Fetch information for a specific disease.
+    The disease input can be a disease name or ontology ID from Mondo or OMIM
+    """)
+)
+class DiseaseDetail(BaseAPIView):
     """
-        Display information for a specific disease.
+        Fetch information for a specific disease.
 
         Args:
-            (str) disease id: disease name or ontology ID (Mondo, OMIM)
+            (str) `id`: disease name or ontology ID (example: MONDO:0006411)
 
-        Returns:
-            Disease object
+        Returns: Disease object
     """
 
     serializer_class = DiseaseDetailSerializer
@@ -124,25 +161,57 @@ class DiseaseDetail(BaseView):
 
         return queryset
 
-    def list(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         disease_obj = self.get_queryset().first()
         serializer = DiseaseDetailSerializer(disease_obj)
         return Response(serializer.data)
 
+
+@extend_schema(
+    description=textwrap.dedent("""
+        Fetch latest G2P entries associated with a specific disease.
+        """),
+    responses={
+        200: OpenApiResponse(
+            description="Disease summary response",
+            response={
+                "type": "object",
+                "properties": {
+                    "disease": {"type": "string"},
+                    "records_summary": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "locus": {"type": "string"},
+                                "genotype": {"type": "string"},
+                                "confidence": {"type": "string"},
+                                "panels": {"type": "array", "items": {"type": "string"}},
+                                "variant_consequence": {"type": "array", "items": {"type": "string"}},
+                                "variant_type": {"type": "array", "items": {"type": "string"}},
+                                "molecular_mechanism": {"type": "string"},
+                                "stable_id": {"type": "string"}
+                            }
+                        }
+                    }
+                }
+            }
+        )
+    }
+)
 class DiseaseSummary(DiseaseDetail):
     """
-        Display a summary of the latest G2P entries associated with disease.
+        Fetch a summary of the latest G2P entries associated with the disease.
 
         Args:
-            (str) disease id: disease name or ontology ID (Mondo)
+            (str) `id`: disease name or ontology ID (example: 251450)
 
-        Returns:
-            Response object includes:
-                    (string) disease: disease data
-                    (list) records_summary: summary of records linked to disease
+        Returns a dictionary with the following format:
+                    (string) `disease`: input disease;
+                    (list) `records_summary`: summary of the G2P records linked to the disease
     """
 
-    def list(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         disease = kwargs.get('id')
         disease_obj = self.get_queryset().first()
         serializer = DiseaseDetailSerializer(disease_obj)
@@ -154,23 +223,48 @@ class DiseaseSummary(DiseaseDetail):
 
         return Response(response_data)
 
+
+@extend_schema(
+    description=textwrap.dedent("""
+        Fetch the disease information for a list of external disease IDs.
+        External sources can be OMIM or Mondo.
+        """),
+    responses={
+        200: OpenApiResponse(
+            description="External disease response",
+            response={
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "disease": {"type": "string"},
+                                    "identifier": {"type": "string"},
+                                    "source": {"type": "string"}
+                                }
+                            }
+                    },
+                    "count": {"type": "integer"}
+                }
+            }
+        )
+    }
+)
 @api_view(['GET'])
 def ExternalDisease(request, ext_ids):
     """
-        Returns the disease for a list of external disease IDs.
+        Returns the disease information for a list of external disease IDs.
         External sources can be OMIM or Mondo.
 
         Args:
-            (str) external disease ids: the list if disease IDs of the external source (OMIM/Mondo)
+            (str) `ext_ids`: the list if disease IDs of the external source (OMIM/Mondo)
 
-        Returns:
-            Response object includes:
-                (list) results: contains publication data for each publication
-                                disease: the disease name as represented in the source
-                                identifier: disease ID
-                                source: source name
-                (int) count: number of IDs
-
+        Returns a dictionary with the following format:
+                (list) `results`: contains the disease name, identifier ID
+                                  and the source name;
+                (int) `count`: number of diseases in the response
     """
     disease_id_list = ext_ids.split(",")
     data = []
@@ -212,7 +306,9 @@ def ExternalDisease(request, ext_ids):
 
     return response
 
+
 ### Add data
+@extend_schema(exclude=True)
 class AddDisease(BaseAdd):
     """
         Add new disease.
@@ -222,7 +318,9 @@ class AddDisease(BaseAdd):
     serializer_class = CreateDiseaseSerializer
     permission_classes = [IsSuperUser]
 
+
 ### Update data
+@extend_schema(exclude=True)
 class UpdateDisease(BaseAdd):
     http_method_names = ['post', 'options']
     permission_classes = [IsSuperUser]
@@ -275,6 +373,8 @@ class UpdateDisease(BaseAdd):
 
         return Response(response_data, status=status.HTTP_200_OK if updated_diseases else status.HTTP_400_BAD_REQUEST)
 
+
+@extend_schema(exclude=True)
 class DiseaseUpdateReferences(BaseAdd):
     http_method_names = ["post", "delete", "options"]
 
@@ -421,6 +521,8 @@ class DiseaseUpdateReferences(BaseAdd):
 
         return response
 
+
+@extend_schema(exclude=True)
 class LGDUpdateDisease(BaseAdd):
     http_method_names = ['post', 'options']
     permission_classes = [IsSuperUser]
