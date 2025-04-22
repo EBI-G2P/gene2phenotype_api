@@ -623,7 +623,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         # Save all updates
         instance.save()
         user_obj = User.objects.get(email=user)
-        if settings.SEND_MAILS == "True":
+        if settings.SEND_MAILS is True:
             ConfidenceCustomMail(instance,old_confidence,user_obj,request).send_confidence_update_email()
 
         return instance
