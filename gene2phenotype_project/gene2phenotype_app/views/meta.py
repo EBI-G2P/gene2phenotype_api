@@ -11,7 +11,7 @@ from gene2phenotype_app.serializers import MetaSerializer
 
 @extend_schema(
     description=textwrap.dedent("""
-    Return a list of the reference data used in G2P with their respective versions.
+    Fetch list of all reference data used in G2P with their respective versions.
     """),
     responses={
         200: OpenApiResponse(
