@@ -79,7 +79,7 @@ class ConfidenceCustomMail():
         http_response = self.request.scheme
         host = self.request.get_host()
         self.host = host
-        return f"{http_response}://{host}/gene2phenotype/api/lgd/{self.stable_id}"
+        return f"{http_response}://{host}/gene2phenotype/lgd/{self.stable_id}"
     
 
     def get_user_info(self) -> str:
