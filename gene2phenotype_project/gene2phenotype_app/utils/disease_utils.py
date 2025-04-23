@@ -18,7 +18,8 @@ def latin2arab(match):
         'vii': '7',
         'viii': '8',
         'ix': '9',
-        'xvii': '17'
+        'xvii': '17',
+        'xxi': '21'
     }[latin]
 
 def clean_string(name):

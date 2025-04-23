@@ -95,6 +95,4 @@ def mutation_consequence_constraint():
             )
         )
 
-    
-    
     return errors
