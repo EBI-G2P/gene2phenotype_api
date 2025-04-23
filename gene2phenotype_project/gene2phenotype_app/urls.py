@@ -1,7 +1,10 @@
-from django.urls import path, include
-from rest_framework.urlpatterns import format_suffix_patterns
+from django.urls import path
 from gene2phenotype_app import views
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularSwaggerView,
+    SpectacularRedocView
+)
 
 
 def perform_create(self, serializer):
@@ -10,16 +13,23 @@ def perform_create(self, serializer):
 
 # specify URL Path for rest_framework
 urlpatterns = [
-    path("schema/",
-         SpectacularAPIView.as_view(),
-         name="schema"
-    ),
     path(
         "",
         SpectacularSwaggerView.as_view(
             template_name="swagger-ui.html", url_name="schema"
         ),
         name="swagger-ui",
+    ),
+    path("schema/",
+         SpectacularAPIView.as_view(),
+         name="schema"
+    ),
+    path(
+        'schema/redoc/',
+        SpectacularRedocView.as_view(
+            url_name='schema'
+        ),
+        name='redoc'
     ),
     path(
         "lgd/<str:stable_id>/",
