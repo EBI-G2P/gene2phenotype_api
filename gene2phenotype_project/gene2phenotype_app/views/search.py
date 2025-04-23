@@ -1,8 +1,13 @@
 from rest_framework.response import Response
-from django.db.models import Q, F
 from rest_framework.pagination import PageNumberPagination
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
+from django.db.models import Q, F
 import textwrap
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiResponse,
+    OpenApiParameter,
+    OpenApiExample
+)
 
 from gene2phenotype_app.serializers import (
     LocusGenotypeDiseaseSerializer,
@@ -26,6 +31,7 @@ class CustomPagination(PageNumberPagination):
 
 
 @extend_schema(
+    tags=["Search records"],
     description=textwrap.dedent("""
     Search G2P records.
     Supported search types are:
@@ -59,6 +65,39 @@ class CustomPagination(PageNumberPagination):
             location=OpenApiParameter.QUERY,
             description='Search specific panel'
         ),
+    ],
+    examples=[
+        OpenApiExample(
+            'Example 1',
+            description='Search G2P records associated with phenotype HP:0003416',
+            value={
+                "id": "G2P01947",
+                "gene": "ADAMTS10",
+                "genotype": "biallelic_autosomal",
+                "disease": "ADAMTS10-related Weill-Marchesani syndrome",
+                "mechanism": "loss of function",
+                "panel": [
+                    "Eye",
+                    "Skin"
+                ],
+                "confidence": "definitive"
+            }
+        ),
+        OpenApiExample(
+            'Example 2',
+            description='Search G2P records associated with gene TP53',
+            value={
+                "id": "G2P01830",
+                "gene": "TP53",
+                "genotype": "monoallelic_autosomal",
+                "disease": "TP53-related Li-Fraumeni syndrome",
+                "mechanism": "loss of function",
+                "panel": [
+                    "Cancer"
+                ],
+                "confidence": "definitive"
+            }
+        )
     ],
     responses={
         200: OpenApiResponse(

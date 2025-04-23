@@ -69,7 +69,7 @@ paths:
           type: string
         description: 'Type of search can be: gene, disease, phenotype or g2p_id'
       tags:
-      - search
+      - Search records
       security:
       - jwtAuth: []
       - {}
@@ -117,6 +117,40 @@ paths:
                             type: string
                         confidence:
                           type: string
+              examples:
+                Example1:
+                  value:
+                    count: 123
+                    next: http://api.example.org/accounts/?page=4
+                    previous: http://api.example.org/accounts/?page=2
+                    results:
+                    - id: G2P01947
+                      gene: ADAMTS10
+                      genotype: biallelic_autosomal
+                      disease: ADAMTS10-related Weill-Marchesani syndrome
+                      mechanism: loss of function
+                      panel:
+                      - Eye
+                      - Skin
+                      confidence: definitive
+                  summary: Example 1
+                  description: Search G2P records associated with phenotype HP:0003416
+                Example2:
+                  value:
+                    count: 123
+                    next: http://api.example.org/accounts/?page=4
+                    previous: http://api.example.org/accounts/?page=2
+                    results:
+                    - id: G2P01830
+                      gene: TP53
+                      genotype: monoallelic_autosomal
+                      disease: TP53-related Li-Fraumeni syndrome
+                      mechanism: loss of function
+                      panel:
+                      - Cancer
+                      confidence: definitive
+                  summary: Example 2
+                  description: Search G2P records associated with gene TP53
           description: Search response
   /gene2phenotype/api/panels/:
     get:
