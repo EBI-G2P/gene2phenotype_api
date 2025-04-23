@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.db import connection, IntegrityError
 from django.db.models import Prefetch
+from django.conf import settings
 import itertools
 import re
 
@@ -32,7 +33,8 @@ from .locus import LocusSerializer
 from .disease import DiseaseSerializer
 from .panel import LGDPanelSerializer
 
-from ..utils import get_date_now
+from ..utils import get_date_now, ConfidenceCustomMail
+
 
 class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     """
@@ -587,7 +589,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         # validated_data example:
         # { "confidence": "definitive" }
         validated_confidence = validated_data.get("confidence", None)
-
+        request = self.context.get('request')
+        user = self.context.get('user')
         if(validated_confidence is not None and isinstance(validated_confidence, dict) 
            and "value" in validated_confidence):
             confidence = validated_confidence["value"]
@@ -608,8 +611,10 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"error": f"G2P record '{instance.stable_id.stable_id}' already has confidence value {confidence}"}
             )
+        
 
         # Update confidence
+        old_confidence = instance.confidence
         instance.confidence = confidence_obj
 
         # Update the 'date_review'
@@ -617,8 +622,12 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         # Save all updates
         instance.save()
+        user_obj = User.objects.get(email=user)
+        if settings.SEND_MAILS is True:
+            ConfidenceCustomMail(instance,old_confidence,user_obj,request).send_confidence_update_email()
 
         return instance
+
 
     def update_mechanism(self, lgd_instance, validated_data):
         """

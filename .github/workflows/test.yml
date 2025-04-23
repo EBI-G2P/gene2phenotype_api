@@ -51,6 +51,8 @@ jobs:
           echo "from=test_g2p_help@ebi.ac.uk" >>  /home/runner/work/config.ini
           echo "host=smtp.ebi.ac.uk" >> /home/runner/work/config.ini
           echo "port=465" >> /home/runner/work/config.ini
+          echo "mailing_list=test_g2p_admin@ebi.ac.uk" >> /home/runner/work/config.ini
+          echo "send_to_mailing_list=True" >>  /home/runner/work/config.ini
           echo "[settings]" >> /home/runner/work/config.ini
           echo "DEBUG=True" >> /home/runner/work/config.ini
           echo "ALLOWED_HOSTS=[]" >> /home/runner/work/config.ini

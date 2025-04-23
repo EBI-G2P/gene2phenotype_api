@@ -51,10 +51,12 @@ class LGDAddCurationEndpoint(TestCase):
                         "pmid": "1"
                     }
                 ],
-                "mechanism_synopsis": [{
-                    "name": "destabilising LOF",
-                    "support": "inferred"
-                }],
+                "mechanism_synopsis": [
+                    {
+                        "name": "destabilising LOF",
+                        "support": "inferred"
+                    }
+                ],
                 "molecular_mechanism": {
                     "name": "loss of function",
                     "support": "evidence"
