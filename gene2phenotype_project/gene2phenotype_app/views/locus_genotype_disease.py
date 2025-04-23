@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.db import transaction, IntegrityError
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.utils import extend_schema, extend_schema_serializer
 import textwrap
 
 
@@ -51,25 +51,7 @@ from .base import (
 )
 
 
-@extend_schema(
-    description=textwrap.dedent("""
-    Fetch all the molecular mechanisms grouped by type and subtype.
-    """),
-    responses={
-        200: OpenApiResponse(
-            description="Molecular mechanisms response",
-            response={
-                "type": "object",
-                "properties": {
-                    "evidence": {"type": "object"},
-                    "mechanism": {"type": "array", "items": {"type": "object"}},
-                    "mechanism_synopsis": {"type": "array", "items": {"type": "object"}},
-                    "support": {"type": "array", "items": {"type": "object"}}
-                }
-            }
-        )
-    }
-)
+@extend_schema(exclude=True)
 class ListMolecularMechanisms(APIView):
     """
         Return the molecular mechanisms terms by type and subtype (if applicable).
@@ -107,26 +89,7 @@ class ListMolecularMechanisms(APIView):
         return Response(result)
 
 
-@extend_schema(
-    description=textwrap.dedent("""
-    Fetch all the variant types grouped by type of variant.
-    """),
-    responses={
-        200: OpenApiResponse(
-            description="Variant types response",
-            response={
-                "type": "object",
-                "properties": {
-                    "NMD_variants": {"type": "array", "items": {"type": "object"}},
-                    "splice_variants": {"type": "array", "items": {"type": "object"}},
-                    "regulatory_variants": {"type": "array", "items": {"type": "object"}},
-                    "protein_changing_variants": {"type": "array", "items": {"type": "object"}},
-                    "other_variants": {"type": "array", "items": {"type": "object"}}
-                }
-            }
-        )
-    }
-)
+@extend_schema(exclude=True)
 class VariantTypesList(APIView):
     """
         Return all variant types by group.
@@ -170,6 +133,7 @@ class VariantTypesList(APIView):
 
 
 @extend_schema(
+    tags=["LocusGenotypeDiseaseMechanism"],
     description=textwrap.dedent("""
     Fetch information for a specific G2P record.
     """)

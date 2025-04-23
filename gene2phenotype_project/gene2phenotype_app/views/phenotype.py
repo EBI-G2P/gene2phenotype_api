@@ -32,34 +32,7 @@ from .base import (
 from ..utils import validate_phenotype
 
 
-@extend_schema(
-    description=textwrap.dedent("""
-    Fetch phenotype information for a list of phenotype IDs.
-    The list is a comma-separated string of HPO IDs.
-    """),
-    responses={
-        200: OpenApiResponse(
-            description="Phenotype response",
-            response={
-                "type": "object",
-                "properties": {
-                    "results": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "accession": {"type": "string"},
-                                "term": {"type": "string"},
-                                "description": {"type": "string"}
-                            }
-                        }
-                    },
-                    "count": {"type": "integer"}
-                }
-            }
-        )
-    }
-)
+@extend_schema(exclude=True)
 @api_view(['GET'])
 def PhenotypeDetail(request, hpo_list):
     """

@@ -136,37 +136,7 @@ class LocusGeneSummary(BaseAPIView):
         return Response(response_data)
 
 
-@extend_schema(
-    description=textwrap.dedent("""
-        Fetch gene product function (imported from UniProt) for a specific gene.
-        """),
-    responses={
-        200: OpenApiResponse(
-            description="Gene function response",
-            response={
-                "type": "object",
-                "properties": {
-                    "gene_symbol": {"type": "string"},
-                    "function": {
-                        "type": "object",
-                        "properties": {
-                            "protein_function": {"type": "string"},
-                            "uniprot_accession": {"type": "string"}
-                        }
-                    },
-                    "gene_stats": {
-                        "type": "object",
-                        "properties": {
-                            "dominant_negative_mp": {"type": "number", "format": "double"},
-                            "loss_of_function_mp": {"type": "number", "format": "double"},
-                            "gain_of_function_mp": {"type": "number", "format": "double"}
-                        }
-                    }
-                }
-            }
-        )
-    }
-)
+@extend_schema(exclude=True)
 class GeneFunction(BaseAPIView):
     """
         Return the gene product function imported from UniProt.

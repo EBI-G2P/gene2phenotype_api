@@ -8,27 +8,7 @@ from gene2phenotype_app.serializers import AttribTypeSerializer, AttribSerialize
 from gene2phenotype_app.models import AttribType, Attrib
 
 
-@extend_schema(
-description=textwrap.dedent("""
-    Fetch all available attributes grouped by type.
-    """),
-    responses={
-        200: OpenApiResponse(
-            description="Attributes response",
-            response={
-                "type": "object",
-                "properties": {
-                    "attrib_value": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                    }
-                }
-            }
-        )
-    }
-)
+@extend_schema(exclude=True)
 class AttribTypeList(APIView):
     """
         Fetch all available attributes grouped by type.
@@ -50,32 +30,7 @@ class AttribTypeList(APIView):
         return Response(result)
 
 
-@extend_schema(
-description=textwrap.dedent("""
-    Fetch all attributes with their corresponding descriptions grouped by attribute type.
-    """),
-    responses={
-        200: OpenApiResponse(
-            description="Attribute details response",
-            response={
-                "type": "object",
-                "properties": {
-                    "attrib_type_value": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "attrib_value": {
-                                "type": "string"
-                                }
-                            }
-                        },
-                    }
-                }
-            }
-        )
-    }
-)
+@extend_schema(exclude=True)
 class AttribTypeDescriptionList(APIView):
     """
         Fetch all attributes with their corresponding descriptions
@@ -110,23 +65,7 @@ class AttribTypeDescriptionList(APIView):
         return Response(result)
 
 
-@extend_schema(
-description=textwrap.dedent("""
-    Fetch all attribute values for a specific attribute type.
-    """),
-    responses={
-        200: OpenApiResponse(
-            description="Attribute response",
-            response={
-                "type": "object",
-                "properties": {
-                    "results": {"type": "array", "items": {"type": "string"}},
-                    "count": {"type": "integer"}
-                }
-            }
-        )
-    }
-)
+@extend_schema(exclude=True)
 class AttribList(APIView):
     """
         Fetch all attribute values for a specific attribute type.

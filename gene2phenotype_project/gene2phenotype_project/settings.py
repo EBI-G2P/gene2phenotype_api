@@ -90,11 +90,12 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Gene2Phenotype (G2P)',
-    'DESCRIPTION': 'Accelerating genomic medicine with high confidence evidence based gene disease models',
-    'VERSION': config.get('g2p', 'version'),
-    'SERVE_INCLUDE_SCHEMA': False,
-    'DISABLE_FORMAT_SUFFIX': True
+    "TITLE": "Gene2Phenotype (G2P)",
+    "DESCRIPTION": "Accelerating genomic medicine with high confidence evidence based gene disease models",
+    "VERSION": config.get("g2p", "version"),
+    "SERVE_INCLUDE_SCHEMA": False,
+    "DISABLE_FORMAT_SUFFIX": True,
+    "SORT_OPERATIONS": False
 }
 
 SIMPLE_JWT = {

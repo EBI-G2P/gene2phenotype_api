@@ -22,6 +22,16 @@ urlpatterns = [
         name="swagger-ui",
     ),
     path(
+        "lgd/<str:stable_id>/",
+        views.LocusGenotypeDiseaseDetail.as_view(),
+        name="lgd"
+    ),
+    path(
+        "search/",
+        views.SearchView.as_view(),
+        name="search"
+    ),
+    path(
         "panels/",
         views.PanelList.as_view(),
         name="list_panels"
@@ -122,16 +132,6 @@ urlpatterns = [
         "phenotype/<str:hpo_list>/",
         views.PhenotypeDetail,
         name="phenotype_details"
-    ),
-    path(
-        "lgd/<str:stable_id>/",
-        views.LocusGenotypeDiseaseDetail.as_view(),
-        name="lgd"
-    ),
-    path(
-        "search/",
-        views.SearchView.as_view(),
-        name="search"
     ),
 
     # Endpoint to fetch disease from external sources (OMIM/Mondo)

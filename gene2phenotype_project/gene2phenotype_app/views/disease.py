@@ -33,34 +33,7 @@ from ..utils import clean_omim_disease
 from .base import BaseAPIView, BaseAdd, IsSuperUser
 
 
-@extend_schema(
-description=textwrap.dedent("""
-    Fetch all diseases associated with a specific gene.
-    """),
-    responses={
-        200: OpenApiResponse(
-            description="Gene disease response",
-            response={
-                "type": "object",
-                "properties": {
-                    "count": {"type": "integer"},
-                    "results": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "original_disease_name": {"type": "string"},
-                                "disease_name": {"type": "string"},
-                                "identifier": {"type": "string"},
-                                "source": {"type": "string"}
-                            }
-                        }
-                    }
-                }
-            }
-        )
-    }
-)
+@extend_schema(exclude=True)
 class GeneDiseaseView(BaseAPIView):
     """
         Return all diseases associated with a specific gene.
@@ -224,34 +197,7 @@ class DiseaseSummary(DiseaseDetail):
         return Response(response_data)
 
 
-@extend_schema(
-    description=textwrap.dedent("""
-        Fetch the disease information for a list of external disease IDs.
-        External sources can be OMIM or Mondo.
-        """),
-    responses={
-        200: OpenApiResponse(
-            description="External disease response",
-            response={
-                "type": "object",
-                "properties": {
-                    "results": {
-                        "type": "array",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "disease": {"type": "string"},
-                                    "identifier": {"type": "string"},
-                                    "source": {"type": "string"}
-                                }
-                            }
-                    },
-                    "count": {"type": "integer"}
-                }
-            }
-        )
-    }
-)
+@extend_schema(exclude=True)
 @api_view(['GET'])
 def ExternalDisease(request, ext_ids):
     """

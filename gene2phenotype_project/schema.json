@@ -5,370 +5,6 @@ info:
   description: Accelerating genomic medicine with high confidence evidence based gene
     disease models
 paths:
-  /gene2phenotype/api/attrib/{attrib_type}/:
-    get:
-      operationId: attrib_retrieve
-      description: |2
-
-        Fetch all attribute values for a specific attribute type.
-      parameters:
-      - in: path
-        name: attrib_type
-        schema:
-          type: string
-        required: true
-      tags:
-      - attrib
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  results:
-                    type: array
-                    items:
-                      type: string
-                  count:
-                    type: integer
-          description: Attribute response
-  /gene2phenotype/api/attribs/:
-    get:
-      operationId: attribs_retrieve
-      description: |2
-
-        Fetch all available attributes grouped by type.
-      tags:
-      - attribs
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  attrib_value:
-                    type: array
-                    items:
-                      type: string
-          description: Attributes response
-  /gene2phenotype/api/attribs/description:
-    get:
-      operationId: attribs_description_retrieve
-      description: |2
-
-        Fetch all attributes with their corresponding descriptions grouped by attribute type.
-      tags:
-      - attribs
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  attrib_type_value:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        attrib_value:
-                          type: string
-          description: Attribute details response
-  /gene2phenotype/api/disease/{id}/:
-    get:
-      operationId: disease_retrieve
-      description: |2
-
-        Fetch information for a specific disease.
-        The disease input can be a disease name or ontology ID from Mondo or OMIM
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      tags:
-      - disease
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DiseaseDetail'
-          description: ''
-  /gene2phenotype/api/disease/{id}/summary/:
-    get:
-      operationId: disease_summary_retrieve
-      description: |2
-
-        Fetch latest G2P entries associated with a specific disease.
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      tags:
-      - disease
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  disease:
-                    type: string
-                  records_summary:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        locus:
-                          type: string
-                        genotype:
-                          type: string
-                        confidence:
-                          type: string
-                        panels:
-                          type: array
-                          items:
-                            type: string
-                        variant_consequence:
-                          type: array
-                          items:
-                            type: string
-                        variant_type:
-                          type: array
-                          items:
-                            type: string
-                        molecular_mechanism:
-                          type: string
-                        stable_id:
-                          type: string
-          description: Disease summary response
-  /gene2phenotype/api/external_disease/{ext_ids}/:
-    get:
-      operationId: external_disease_retrieve
-      description: |2
-
-        Fetch the disease information for a list of external disease IDs.
-        External sources can be OMIM or Mondo.
-      parameters:
-      - in: path
-        name: ext_ids
-        schema:
-          type: string
-        required: true
-      tags:
-      - external_disease
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  results:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        disease:
-                          type: string
-                        identifier:
-                          type: string
-                        source:
-                          type: string
-                  count:
-                    type: integer
-          description: External disease response
-  /gene2phenotype/api/gene/{name}/:
-    get:
-      operationId: gene_retrieve
-      description: |2
-
-        Fetch information for a specific gene.
-      parameters:
-      - in: path
-        name: name
-        schema:
-          type: string
-        required: true
-      tags:
-      - gene
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LocusGene'
-          description: ''
-  /gene2phenotype/api/gene/{name}/disease/:
-    get:
-      operationId: gene_disease_retrieve
-      description: |2
-
-        Fetch all diseases associated with a specific gene.
-      parameters:
-      - in: path
-        name: name
-        schema:
-          type: string
-        required: true
-      tags:
-      - gene
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  count:
-                    type: integer
-                  results:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        original_disease_name:
-                          type: string
-                        disease_name:
-                          type: string
-                        identifier:
-                          type: string
-                        source:
-                          type: string
-          description: Gene disease response
-  /gene2phenotype/api/gene/{name}/function/:
-    get:
-      operationId: gene_function_retrieve
-      description: |2
-
-        Fetch gene product function (imported from UniProt) for a specific gene.
-      parameters:
-      - in: path
-        name: name
-        schema:
-          type: string
-        required: true
-      tags:
-      - gene
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  gene_symbol:
-                    type: string
-                  function:
-                    type: object
-                    properties:
-                      protein_function:
-                        type: string
-                      uniprot_accession:
-                        type: string
-                  gene_stats:
-                    type: object
-                    properties:
-                      dominant_negative_mp:
-                        type: number
-                        format: double
-                      loss_of_function_mp:
-                        type: number
-                        format: double
-                      gain_of_function_mp:
-                        type: number
-                        format: double
-          description: Gene function response
-  /gene2phenotype/api/gene/{name}/summary/:
-    get:
-      operationId: gene_summary_retrieve
-      description: |2
-
-        Fetch latest G2P entries associated with a specific gene.
-      parameters:
-      - in: path
-        name: name
-        schema:
-          type: string
-        required: true
-      tags:
-      - gene
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  gene_symbol:
-                    type: string
-                  records_summary:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        disease:
-                          type: string
-                        genotype:
-                          type: string
-                        confidence:
-                          type: string
-                        panels:
-                          type: array
-                          items:
-                            type: string
-                        variant_consequence:
-                          type: array
-                          items:
-                            type: string
-                        variant_type:
-                          type: array
-                          items:
-                            type: string
-                        molecular_mechanism:
-                          type: string
-                        last_updated:
-                          type: string
-                        stable_id:
-                          type: string
-          description: Gene summary response
   /gene2phenotype/api/lgd/{stable_id}/:
     get:
       operationId: lgd_retrieve
@@ -382,7 +18,7 @@ paths:
           type: string
         required: true
       tags:
-      - lgd
+      - LocusGenotypeDiseaseMechanism
       security:
       - jwtAuth: []
       - {}
@@ -393,362 +29,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/LocusGenotypeDisease'
           description: ''
-  /gene2phenotype/api/molecular_mechanisms/:
-    get:
-      operationId: molecular_mechanisms_retrieve
-      description: |2
-
-        Fetch all the molecular mechanisms grouped by type and subtype.
-      tags:
-      - molecular_mechanisms
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  evidence:
-                    type: object
-                  mechanism:
-                    type: array
-                    items:
-                      type: object
-                  mechanism_synopsis:
-                    type: array
-                    items:
-                      type: object
-                  support:
-                    type: array
-                    items:
-                      type: object
-          description: Molecular mechanisms response
-  /gene2phenotype/api/ontology_terms/variant_types/:
-    get:
-      operationId: ontology_terms_variant_types_retrieve
-      description: |2
-
-        Fetch all the variant types grouped by type of variant.
-      tags:
-      - ontology_terms
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  NMD_variants:
-                    type: array
-                    items:
-                      type: object
-                  splice_variants:
-                    type: array
-                    items:
-                      type: object
-                  regulatory_variants:
-                    type: array
-                    items:
-                      type: object
-                  protein_changing_variants:
-                    type: array
-                    items:
-                      type: object
-                  other_variants:
-                    type: array
-                    items:
-                      type: object
-          description: Variant types response
-  /gene2phenotype/api/panel/{name}/:
-    get:
-      operationId: panel_retrieve
-      description: |2
-
-        Fetch information for a specific panel.
-      parameters:
-      - in: path
-        name: name
-        schema:
-          type: string
-        required: true
-      tags:
-      - panel
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  name:
-                    type: string
-                  description:
-                    type: string
-                  last_updated:
-                    type: string
-                  stats:
-                    type: object
-                    properties:
-                      total_records:
-                        type: integer
-                      total_genes:
-                        type: integer
-                      by_confidence:
-                        type: object
-                        properties:
-                          definitive:
-                            type: integer
-                          strong:
-                            type: integer
-                          limited:
-                            type: integer
-                          moderate:
-                            type: integer
-                          refuted:
-                            type: integer
-          description: Panel detail response
-  /gene2phenotype/api/panel/{name}/download/:
-    get:
-      operationId: panel_download_retrieve
-      description: |2
-
-        Download all the G2P records associated with a specific panel.
-      parameters:
-      - in: path
-        name: name
-        schema:
-          type: string
-        required: true
-      tags:
-      - panel
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /gene2phenotype/api/panel/{name}/summary/:
-    get:
-      operationId: panel_summary_retrieve
-      description: |2
-
-        Fetch latest G2P entries associated with a specific panel.
-      parameters:
-      - in: path
-        name: name
-        schema:
-          type: string
-        required: true
-      tags:
-      - panel
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  panel_name:
-                    type: string
-                  records_summary:
-                    type: object
-                    properties:
-                      locus:
-                        type: string
-                      disease:
-                        type: string
-                      genotype:
-                        type: string
-                      confidence:
-                        type: string
-                      variant_consequence:
-                        type: array
-                        items:
-                          type: string
-                      variant_type:
-                        type: array
-                        items:
-                          type: string
-                      molecular_mechanism:
-                        type: string
-                      last_updated:
-                        type: string
-                      stable_id:
-                        type: string
-          description: Panel summary response
-  /gene2phenotype/api/panels/:
-    get:
-      operationId: panels_retrieve
-      description: |2
-
-        Fetch all G2P panels information.
-      tags:
-      - panels
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  results:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        name:
-                          type: string
-                        description:
-                          type: string
-                        stats:
-                          type: object
-                          properties:
-                            total_records:
-                              type: integer
-                            total_genes:
-                              type: integer
-                            by_confidence:
-                              type: object
-                              properties:
-                                definitive:
-                                  type: integer
-                                strong:
-                                  type: integer
-                                limited:
-                                  type: integer
-                                moderate:
-                                  type: integer
-                                refuted:
-                                  type: integer
-                        last_updated:
-                          type: string
-                  count:
-                    type: integer
-          description: Panels response
-  /gene2phenotype/api/phenotype/{hpo_list}/:
-    get:
-      operationId: phenotype_retrieve
-      description: |2
-
-        Fetch phenotype information for a list of phenotype IDs.
-        The list is a comma-separated string of HPO IDs.
-      parameters:
-      - in: path
-        name: hpo_list
-        schema:
-          type: string
-        required: true
-      tags:
-      - phenotype
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  results:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        accession:
-                          type: string
-                        term:
-                          type: string
-                        description:
-                          type: string
-                  count:
-                    type: integer
-          description: Phenotype response
-  /gene2phenotype/api/publication/{pmids}/:
-    get:
-      operationId: publication_retrieve
-      description: |2
-
-        Fetch publication information for a list of publication IDs.
-        The list is a comma-separated string of PMIDs.
-      parameters:
-      - in: path
-        name: pmids
-        schema:
-          type: string
-        required: true
-      tags:
-      - publication
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  results:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        pmid:
-                          type: integer
-                        title:
-                          type: string
-                        authors:
-                          type: string
-                        year:
-                          type: integer
-                        source:
-                          type: string
-                  count:
-                    type: integer
-          description: Publication response
-  /gene2phenotype/api/reference_data/:
-    get:
-      operationId: reference_data_retrieve
-      description: |2
-
-        Return a list of the reference data used in G2P with their respective versions.
-      tags:
-      - reference_data
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    key:
-                      type: string
-                    source:
-                      type: string
-                    version:
-                      type: string
-          description: Reference data response
   /gene2phenotype/api/search/:
     get:
       operationId: search_list
@@ -838,6 +118,367 @@ paths:
                         confidence:
                           type: string
           description: Search response
+  /gene2phenotype/api/panels/:
+    get:
+      operationId: panels_retrieve
+      description: |2
+
+        Fetch all G2P panels information.
+      tags:
+      - panels
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        stats:
+                          type: object
+                          properties:
+                            total_records:
+                              type: integer
+                            total_genes:
+                              type: integer
+                            by_confidence:
+                              type: object
+                              properties:
+                                definitive:
+                                  type: integer
+                                strong:
+                                  type: integer
+                                limited:
+                                  type: integer
+                                moderate:
+                                  type: integer
+                                refuted:
+                                  type: integer
+                        last_updated:
+                          type: string
+                  count:
+                    type: integer
+          description: Panels response
+  /gene2phenotype/api/panel/{name}/:
+    get:
+      operationId: panel_retrieve
+      description: |2
+
+        Fetch information for a specific panel.
+      parameters:
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      tags:
+      - panel
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  last_updated:
+                    type: string
+                  stats:
+                    type: object
+                    properties:
+                      total_records:
+                        type: integer
+                      total_genes:
+                        type: integer
+                      by_confidence:
+                        type: object
+                        properties:
+                          definitive:
+                            type: integer
+                          strong:
+                            type: integer
+                          limited:
+                            type: integer
+                          moderate:
+                            type: integer
+                          refuted:
+                            type: integer
+          description: Panel detail response
+  /gene2phenotype/api/panel/{name}/summary/:
+    get:
+      operationId: panel_summary_retrieve
+      description: |2
+
+        Fetch latest G2P entries associated with a specific panel.
+      parameters:
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      tags:
+      - panel
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  panel_name:
+                    type: string
+                  records_summary:
+                    type: object
+                    properties:
+                      locus:
+                        type: string
+                      disease:
+                        type: string
+                      genotype:
+                        type: string
+                      confidence:
+                        type: string
+                      variant_consequence:
+                        type: array
+                        items:
+                          type: string
+                      variant_type:
+                        type: array
+                        items:
+                          type: string
+                      molecular_mechanism:
+                        type: string
+                      last_updated:
+                        type: string
+                      stable_id:
+                        type: string
+          description: Panel summary response
+  /gene2phenotype/api/panel/{name}/download/:
+    get:
+      operationId: panel_download_retrieve
+      description: |2
+
+        Download all the G2P records associated with a specific panel.
+      parameters:
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      tags:
+      - panel
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /gene2phenotype/api/gene/{name}/:
+    get:
+      operationId: gene_retrieve
+      description: |2
+
+        Fetch information for a specific gene.
+      parameters:
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      tags:
+      - gene
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocusGene'
+          description: ''
+  /gene2phenotype/api/gene/{name}/summary/:
+    get:
+      operationId: gene_summary_retrieve
+      description: |2
+
+        Fetch latest G2P entries associated with a specific gene.
+      parameters:
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      tags:
+      - gene
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  gene_symbol:
+                    type: string
+                  records_summary:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        disease:
+                          type: string
+                        genotype:
+                          type: string
+                        confidence:
+                          type: string
+                        panels:
+                          type: array
+                          items:
+                            type: string
+                        variant_consequence:
+                          type: array
+                          items:
+                            type: string
+                        variant_type:
+                          type: array
+                          items:
+                            type: string
+                        molecular_mechanism:
+                          type: string
+                        last_updated:
+                          type: string
+                        stable_id:
+                          type: string
+          description: Gene summary response
+  /gene2phenotype/api/disease/{id}/summary/:
+    get:
+      operationId: disease_summary_retrieve
+      description: |2
+
+        Fetch latest G2P entries associated with a specific disease.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - disease
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  disease:
+                    type: string
+                  records_summary:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        locus:
+                          type: string
+                        genotype:
+                          type: string
+                        confidence:
+                          type: string
+                        panels:
+                          type: array
+                          items:
+                            type: string
+                        variant_consequence:
+                          type: array
+                          items:
+                            type: string
+                        variant_type:
+                          type: array
+                          items:
+                            type: string
+                        molecular_mechanism:
+                          type: string
+                        stable_id:
+                          type: string
+          description: Disease summary response
+  /gene2phenotype/api/disease/{id}/:
+    get:
+      operationId: disease_retrieve
+      description: |2
+
+        Fetch information for a specific disease.
+        The disease input can be a disease name or ontology ID from Mondo or OMIM
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - disease
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiseaseDetail'
+          description: ''
+  /gene2phenotype/api/reference_data/:
+    get:
+      operationId: reference_data_retrieve
+      description: |2
+
+        Fetch list of all reference data used in G2P with their respective versions.
+      tags:
+      - reference_data
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    key:
+                      type: string
+                    source:
+                      type: string
+                    version:
+                      type: string
+          description: Reference data response
 components:
   schemas:
     DiseaseDetail:

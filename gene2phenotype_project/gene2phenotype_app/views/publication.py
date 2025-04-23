@@ -34,36 +34,7 @@ from .base import BaseAdd, BaseUpdate, IsSuperUser
 from ..utils import get_publication, get_authors, clean_title
 
 
-@extend_schema(
-    description=textwrap.dedent("""
-    Fetch publication information for a list of publication IDs.
-    The list is a comma-separated string of PMIDs.
-    """),
-    responses={
-        200: OpenApiResponse(
-            description="Publication response",
-            response={
-                "type": "object",
-                "properties": {
-                    "results": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "pmid": {"type": "integer"},
-                                "title": {"type": "string"},
-                                "authors": {"type": "string"},
-                                "year": {"type": "integer"},
-                                "source": {"type": "string"}
-                            }
-                        }
-                    },
-                    "count": {"type": "integer"}
-                }
-            }
-        )
-    }
-)
+@extend_schema(exclude=True)
 @api_view(['GET'])
 def PublicationDetail(request, pmids):
     """
