@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import Http404, HttpResponse
 from rest_framework.decorators import api_view
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from datetime import datetime
@@ -49,9 +49,64 @@ class PanelCreateView(generics.CreateAPIView):
 
 
 @extend_schema(
+    tags=["Fetch all panel disorders"],
     description=textwrap.dedent("""
     Fetch all G2P panels information.
     """),
+    examples=[
+        OpenApiExample(
+            'Example',
+            value={
+                "results": [
+                    {
+                        "name": "Cancer",
+                        "description": "Cancer disorders",
+                        "stats": {
+                            "total_records": 129,
+                            "total_genes": 116,
+                            "by_confidence": {
+                            "definitive": 97,
+                            "moderate": 14,
+                            "strong": 10,
+                            "limited": 8
+                            }
+                        },
+                        "last_updated": "2025-04-23"
+                    },
+                    {
+                        "name": "Cardiac",
+                        "description": "Cardiac disorders",
+                        "stats": {
+                            "total_records": 80,
+                            "total_genes": 54,
+                            "by_confidence": {
+                            "strong": 6,
+                            "definitive": 66,
+                            "moderate": 8
+                            }
+                        },
+                        "last_updated": "2025-03-07"
+                    },
+                    {
+                        "name": "DD",
+                        "description": "Developmental disorders",
+                        "stats": {
+                            "total_records": 2768,
+                            "total_genes": 2457,
+                            "by_confidence": {
+                            "definitive": 1482,
+                            "strong": 726,
+                            "limited": 374,
+                            "moderate": 185,
+                            "refuted": 1
+                            }
+                        },
+                        "last_updated": "2025-04-11"
+                    }
+                ]
+            }
+        )
+    ],
     responses={
         200: OpenApiResponse(
             description="Panels response",
@@ -131,9 +186,34 @@ class PanelList(APIView):
 
 
 @extend_schema(
+    tags=["Fetch individual panel disorder"],
     description=textwrap.dedent("""
-    Fetch information for a specific panel.
+    Fetch information for a specific panel by using its short name as the parameter.
+                                
+    The response provides summary statistics about the records associated with it.
     """),
+    examples=[
+        OpenApiExample(
+            'DD panel',
+            description='Fetch details for Developmental disorders (DD) panel',
+            value={
+                "name": "DD",
+                "description": "Developmental disorders",
+                "last_updated": "2025-04-11",
+                "stats": {
+                    "total_records": 2768,
+                    "total_genes": 2457,
+                    "by_confidence": {
+                    "definitive": 1482,
+                    "strong": 726,
+                    "limited": 374,
+                    "moderate": 185,
+                    "refuted": 1
+                    }
+                }
+            }
+        )
+    ],
     responses={
         200: OpenApiResponse(
             description="Panel detail response",
@@ -208,9 +288,75 @@ class PanelDetail(BaseAPIView):
 
 
 @extend_schema(
+    tags=["Fetch individual panel disorder"],
     description=textwrap.dedent("""
-    Fetch latest G2P entries associated with a specific panel.
+    Fetch latest records associated with a specific panel by using its short name as the parameter.
     """),
+    examples=[
+        OpenApiExample(
+            'DD panel',
+            description='Fetch latest records for DD panel',
+            value={
+                "panel_name": "DD",
+                "records_summary": [
+                    {
+                        "locus": "WASF1",
+                        "disease": "WASF1-related neurodevelopmental disorder",
+                        "genotype": "monoallelic_autosomal",
+                        "confidence": "limited",
+                        "variant_consequence": [
+                            "decreased gene product level"
+                        ],
+                        "variant_type": [
+                            "whole_partial_gene_deletion"
+                        ],
+                        "molecular_mechanism": "loss of function",
+                        "last_updated": "2025-04-16",
+                        "stable_id": "G2P03736"
+                    },
+                    {
+                        "locus": "WASF1",
+                        "disease": "WASF1-related intellectual disability with seizures",
+                        "genotype": "monoallelic_autosomal",
+                        "confidence": "moderate",
+                        "variant_consequence": [
+                            "absent gene product",
+                            "altered gene product structure"
+                        ],
+                        "variant_type": [
+                            "missense_variant",
+                            "stop_gained_NMD_escaping",
+                            "frameshift_variant_NMD_escaping",
+                            "whole_partial_gene_deletion"
+                        ],
+                        "molecular_mechanism": "loss of function",
+                        "last_updated": "2025-04-16",
+                        "stable_id": "G2P02611"
+                    },
+                    {
+                        "locus": "UBR5",
+                        "disease": "UBR5-related neurodevelopmental disorder",
+                        "genotype": "monoallelic_autosomal",
+                        "confidence": "moderate",
+                        "variant_consequence": [
+                            "altered gene product structure",
+                            "decreased gene product level"
+                        ],
+                        "variant_type": [
+                            "frameshift_variant",
+                            "stop_gained",
+                            "missense_variant",
+                            "inframe_deletion",
+                            "inframe_insertion"
+                        ],
+                        "molecular_mechanism": "loss of function",
+                        "last_updated": "2025-04-16",
+                        "stable_id": "G2P03734"
+                    }
+                ]
+            }
+        )
+    ],
     responses={
         200: OpenApiResponse(
             description="Panel summary response",
@@ -371,8 +517,11 @@ class LGDEditPanel(CustomPermissionAPIView):
 
 
 @extend_schema(
+    tags=["Fetch individual panel disorder"],
     description=textwrap.dedent("""
-    Download all the G2P records associated with a specific panel.
+    Download all records associated with a specific panel by using its short name as the parameter.
+                                
+    It returns an uncompressed csv file.
     """)
 )
 @api_view(['GET'])

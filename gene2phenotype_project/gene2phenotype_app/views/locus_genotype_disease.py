@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.db import transaction, IntegrityError
-from drf_spectacular.utils import extend_schema, extend_schema_serializer
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
 import textwrap
 
 
@@ -133,10 +133,167 @@ class VariantTypesList(APIView):
 
 
 @extend_schema(
-    tags=["LocusGenotypeDiseaseMechanism"],
+    tags=["G2P record"],
     description=textwrap.dedent("""
-    Fetch information for a specific G2P record.
-    """)
+    Fetch detailed information about a specific record using the G2P stable ID.
+    
+    A record is a unique collection of Locus-Genotype-Mechanism-Disease-Evidence (LGMDE).
+    """),
+    examples=[
+        OpenApiExample(
+            "Example 1",
+            description="Fetch detailed information for record 'G2P02104'",
+            value={
+                "locus": {
+                    "gene_symbol": "FBN1",
+                    "sequence": "15",
+                    "start": 48408313,
+                    "end": 48645721,
+                    "strand": -1,
+                    "reference": "grch38",
+                    "ids": {
+                        "HGNC": "HGNC:3603",
+                        "Ensembl": "ENSG00000166147",
+                        "OMIM": "134797"
+                    },
+                    "synonyms": [
+                        "FBN",
+                        "MASS",
+                        "MFS1",
+                        "OCTD",
+                        "SGS",
+                        "WMS"
+                    ]
+                },
+                "stable_id": "G2P02104",
+                "genotype": "monoallelic_autosomal",
+                "variant_consequence": [
+                    {
+                        "variant_consequence": "altered gene product structure",
+                        "accession": "SO:0002318",
+                        "support": "inferred",
+                        "publication": None
+                    }
+                ],
+                "molecular_mechanism": {
+                    "mechanism": "undetermined",
+                    "mechanism_support": "inferred",
+                    "synopsis": [],
+                    "evidence": {}
+                },
+                "disease": {
+                    "name": "FBN1-related isolated ectopia lentis",
+                    "ontology_terms": [
+                        {
+                            "accession": "129600",
+                            "term": "ECTOPIA LENTIS 1, ISOLATED, AUTOSOMAL DOMINANT",
+                            "description": None,
+                            "source": "OMIM"
+                        }
+                    ],
+                    "synonyms": []
+                },
+                "confidence": "limited",
+                "publications": [
+                    {
+                        "publication": {
+                            "pmid": 22539873,
+                            "title": "A novel FBN1 mutation in a Chinese family with isolated ectopia lentis.",
+                            "authors": "Yang G, Chu M, Zhai X, Zhao J.",
+                            "year": "2012",
+                            "comments": [],
+                            "families": []
+                        }
+                    },
+                    {
+                        "publication": {
+                            "pmid": 8136837,
+                            "title": "Mutations in the fibrillin gene responsible for dominant ectopia lentis and neonatal Marfan syndrome.",
+                            "authors": "Kainulainen K, Karttunen L, Puhakka L, Sakai L, Peltonen L.",
+                            "year": "1994",
+                            "comments": [],
+                            "families": []
+                        }
+                    },
+                    {
+                        "publication": {
+                            "pmid": 7802039,
+                            "title": "Clinical and linkage study of a large family with simple ectopia lentis linked to FBN1.",
+                            "authors": "Edwards MJ, Challinor CJ, Colley PW, Roberts J, Partington MW, Hollway GE, Kozman HM, Mulley JC.",
+                            "year": "1994",
+                            "comments": [],
+                            "families": []
+                        }
+                    }
+                ],
+                "panels": [
+                    {
+                        "name": "Eye",
+                        "description": "Eye disorders"
+                    },
+                    {
+                        "name": "Skin",
+                        "description": "Skin disorders"
+                    }
+                ],
+                "cross_cutting_modifier": [
+                    {
+                        "term": "restricted mutation set"
+                    }
+                ],
+                "variant_type": [
+                    {
+                        "term": "missense_variant",
+                        "accession": "SO:0001583",
+                        "inherited": False,
+                        "de_novo": False,
+                        "unknown_inheritance": False,
+                        "publications": [],
+                        "comments": []
+                    },
+                    {
+                        "term": "inframe_deletion",
+                        "accession": "SO:0001822",
+                        "inherited": False,
+                        "de_novo": False,
+                        "unknown_inheritance": False,
+                        "publications": [],
+                        "comments": []
+                    },
+                    {
+                        "term": "inframe_insertion",
+                        "accession": "SO:0001821",
+                        "inherited": False,
+                        "de_novo": False,
+                        "unknown_inheritance": False,
+                        "publications": [],
+                        "comments": []
+                    }
+                ],
+                "variant_description": [],
+                "phenotypes": [
+                    {
+                        "term": "Ectopia lentis",
+                        "accession": "HP:0001083",
+                        "publications": []
+                    },
+                    {
+                        "term": "Autosomal dominant inheritance",
+                        "accession": "HP:0000006",
+                        "publications": []
+                    }
+                ],
+                "phenotype_summary": [],
+                "last_updated": "2024-08-20",
+                "date_created": None,
+                "comments": [],
+                "curators": [
+                    "Elena Cibrian"
+                ],
+                "is_reviewed": 1
+            }
+        )
+    ]
 )
 class LocusGenotypeDiseaseDetail(APIView):
     """

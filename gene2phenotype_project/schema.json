@@ -10,7 +10,9 @@ paths:
       operationId: lgd_retrieve
       description: |2
 
-        Fetch information for a specific G2P record.
+        Fetch detailed information about a specific record using the G2P stable ID.
+
+        A record is a unique collection of Locus-Genotype-Mechanism-Disease-Evidence (LGMDE).
       parameters:
       - in: path
         name: stable_id
@@ -18,7 +20,7 @@ paths:
           type: string
         required: true
       tags:
-      - LocusGenotypeDiseaseMechanism
+      - G2P record
       security:
       - jwtAuth: []
       - {}
@@ -28,6 +30,121 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LocusGenotypeDisease'
+              examples:
+                Example1:
+                  value:
+                    locus:
+                      gene_symbol: FBN1
+                      sequence: '15'
+                      start: 48408313
+                      end: 48645721
+                      strand: -1
+                      reference: grch38
+                      ids:
+                        HGNC: HGNC:3603
+                        Ensembl: ENSG00000166147
+                        OMIM: '134797'
+                      synonyms:
+                      - FBN
+                      - MASS
+                      - MFS1
+                      - OCTD
+                      - SGS
+                      - WMS
+                    stable_id: G2P02104
+                    genotype: monoallelic_autosomal
+                    variant_consequence:
+                    - variant_consequence: altered gene product structure
+                      accession: SO:0002318
+                      support: inferred
+                      publication: null
+                    molecular_mechanism:
+                      mechanism: undetermined
+                      mechanism_support: inferred
+                      synopsis: []
+                      evidence: {}
+                    disease:
+                      name: FBN1-related isolated ectopia lentis
+                      ontology_terms:
+                      - accession: '129600'
+                        term: ECTOPIA LENTIS 1, ISOLATED, AUTOSOMAL DOMINANT
+                        description: null
+                        source: OMIM
+                      synonyms: []
+                    confidence: limited
+                    publications:
+                    - publication:
+                        pmid: 22539873
+                        title: A novel FBN1 mutation in a Chinese family with isolated
+                          ectopia lentis.
+                        authors: Yang G, Chu M, Zhai X, Zhao J.
+                        year: '2012'
+                        comments: []
+                        families: []
+                    - publication:
+                        pmid: 8136837
+                        title: Mutations in the fibrillin gene responsible for dominant
+                          ectopia lentis and neonatal Marfan syndrome.
+                        authors: Kainulainen K, Karttunen L, Puhakka L, Sakai L, Peltonen
+                          L.
+                        year: '1994'
+                        comments: []
+                        families: []
+                    - publication:
+                        pmid: 7802039
+                        title: Clinical and linkage study of a large family with simple
+                          ectopia lentis linked to FBN1.
+                        authors: Edwards MJ, Challinor CJ, Colley PW, Roberts J, Partington
+                          MW, Hollway GE, Kozman HM, Mulley JC.
+                        year: '1994'
+                        comments: []
+                        families: []
+                    panels:
+                    - name: Eye
+                      description: Eye disorders
+                    - name: Skin
+                      description: Skin disorders
+                    cross_cutting_modifier:
+                    - term: restricted mutation set
+                    variant_type:
+                    - term: missense_variant
+                      accession: SO:0001583
+                      inherited: false
+                      de_novo: false
+                      unknown_inheritance: false
+                      publications: []
+                      comments: []
+                    - term: inframe_deletion
+                      accession: SO:0001822
+                      inherited: false
+                      de_novo: false
+                      unknown_inheritance: false
+                      publications: []
+                      comments: []
+                    - term: inframe_insertion
+                      accession: SO:0001821
+                      inherited: false
+                      de_novo: false
+                      unknown_inheritance: false
+                      publications: []
+                      comments: []
+                    variant_description: []
+                    phenotypes:
+                    - term: Ectopia lentis
+                      accession: HP:0001083
+                      publications: []
+                    - term: Autosomal dominant inheritance
+                      accession: HP:0000006
+                      publications: []
+                    phenotype_summary: []
+                    last_updated: '2024-08-20'
+                    date_created: null
+                    comments: []
+                    curators:
+                    - Elena Cibrian
+                    is_reviewed: 1
+                  summary: Example 1
+                  description: Fetch detailed information for record 'G2P02104'
           description: ''
   /gene2phenotype/api/search/:
     get:
@@ -57,12 +174,13 @@ paths:
         name: panel
         schema:
           type: string
-        description: Search specific panel
+        description: Fetch only records associated with a specific panel
       - in: query
         name: query
         schema:
           type: string
         description: Search term
+        required: true
       - in: query
         name: type
         schema:
@@ -118,7 +236,7 @@ paths:
                         confidence:
                           type: string
               examples:
-                Example1:
+                SearchByPhenotype:
                   value:
                     count: 123
                     next: http://api.example.org/accounts/?page=4
@@ -133,9 +251,9 @@ paths:
                       - Eye
                       - Skin
                       confidence: definitive
-                  summary: Example 1
+                  summary: Search by phenotype
                   description: Search G2P records associated with phenotype HP:0003416
-                Example2:
+                SearchByGene:
                   value:
                     count: 123
                     next: http://api.example.org/accounts/?page=4
@@ -149,7 +267,7 @@ paths:
                       panel:
                       - Cancer
                       confidence: definitive
-                  summary: Example 2
+                  summary: Search by gene
                   description: Search G2P records associated with gene TP53
           description: Search response
   /gene2phenotype/api/panels/:
@@ -159,7 +277,7 @@ paths:
 
         Fetch all G2P panels information.
       tags:
-      - panels
+      - Fetch all panel disorders
       security:
       - jwtAuth: []
       - {}
@@ -203,13 +321,52 @@ paths:
                           type: string
                   count:
                     type: integer
+              examples:
+                Example:
+                  value:
+                    results:
+                    - name: Cancer
+                      description: Cancer disorders
+                      stats:
+                        total_records: 129
+                        total_genes: 116
+                        by_confidence:
+                          definitive: 97
+                          moderate: 14
+                          strong: 10
+                          limited: 8
+                      last_updated: '2025-04-23'
+                    - name: Cardiac
+                      description: Cardiac disorders
+                      stats:
+                        total_records: 80
+                        total_genes: 54
+                        by_confidence:
+                          strong: 6
+                          definitive: 66
+                          moderate: 8
+                      last_updated: '2025-03-07'
+                    - name: DD
+                      description: Developmental disorders
+                      stats:
+                        total_records: 2768
+                        total_genes: 2457
+                        by_confidence:
+                          definitive: 1482
+                          strong: 726
+                          limited: 374
+                          moderate: 185
+                          refuted: 1
+                      last_updated: '2025-04-11'
           description: Panels response
   /gene2phenotype/api/panel/{name}/:
     get:
       operationId: panel_retrieve
       description: |2
 
-        Fetch information for a specific panel.
+        Fetch information for a specific panel by using its short name as the parameter.
+
+        The response provides summary statistics about the records associated with it.
       parameters:
       - in: path
         name: name
@@ -217,7 +374,7 @@ paths:
           type: string
         required: true
       tags:
-      - panel
+      - Fetch individual panel disorder
       security:
       - jwtAuth: []
       - {}
@@ -254,13 +411,30 @@ paths:
                             type: integer
                           refuted:
                             type: integer
+              examples:
+                DDPanel:
+                  value:
+                    name: DD
+                    description: Developmental disorders
+                    last_updated: '2025-04-11'
+                    stats:
+                      total_records: 2768
+                      total_genes: 2457
+                      by_confidence:
+                        definitive: 1482
+                        strong: 726
+                        limited: 374
+                        moderate: 185
+                        refuted: 1
+                  summary: DD panel
+                  description: Fetch details for Developmental disorders (DD) panel
           description: Panel detail response
   /gene2phenotype/api/panel/{name}/summary/:
     get:
       operationId: panel_summary_retrieve
       description: |2
 
-        Fetch latest G2P entries associated with a specific panel.
+        Fetch latest records associated with a specific panel by using its short name as the parameter.
       parameters:
       - in: path
         name: name
@@ -268,7 +442,7 @@ paths:
           type: string
         required: true
       tags:
-      - panel
+      - Fetch individual panel disorder
       security:
       - jwtAuth: []
       - {}
@@ -306,13 +480,64 @@ paths:
                         type: string
                       stable_id:
                         type: string
+              examples:
+                DDPanel:
+                  value:
+                    panel_name: DD
+                    records_summary:
+                    - locus: WASF1
+                      disease: WASF1-related neurodevelopmental disorder
+                      genotype: monoallelic_autosomal
+                      confidence: limited
+                      variant_consequence:
+                      - decreased gene product level
+                      variant_type:
+                      - whole_partial_gene_deletion
+                      molecular_mechanism: loss of function
+                      last_updated: '2025-04-16'
+                      stable_id: G2P03736
+                    - locus: WASF1
+                      disease: WASF1-related intellectual disability with seizures
+                      genotype: monoallelic_autosomal
+                      confidence: moderate
+                      variant_consequence:
+                      - absent gene product
+                      - altered gene product structure
+                      variant_type:
+                      - missense_variant
+                      - stop_gained_NMD_escaping
+                      - frameshift_variant_NMD_escaping
+                      - whole_partial_gene_deletion
+                      molecular_mechanism: loss of function
+                      last_updated: '2025-04-16'
+                      stable_id: G2P02611
+                    - locus: UBR5
+                      disease: UBR5-related neurodevelopmental disorder
+                      genotype: monoallelic_autosomal
+                      confidence: moderate
+                      variant_consequence:
+                      - altered gene product structure
+                      - decreased gene product level
+                      variant_type:
+                      - frameshift_variant
+                      - stop_gained
+                      - missense_variant
+                      - inframe_deletion
+                      - inframe_insertion
+                      molecular_mechanism: loss of function
+                      last_updated: '2025-04-16'
+                      stable_id: G2P03734
+                  summary: DD panel
+                  description: Fetch latest records for DD panel
           description: Panel summary response
   /gene2phenotype/api/panel/{name}/download/:
     get:
       operationId: panel_download_retrieve
       description: |2
 
-        Download all the G2P records associated with a specific panel.
+        Download all records associated with a specific panel by using its short name as the parameter.
+
+        It returns an uncompressed csv file.
       parameters:
       - in: path
         name: name
@@ -320,7 +545,7 @@ paths:
           type: string
         required: true
       tags:
-      - panel
+      - Fetch individual panel disorder
       security:
       - jwtAuth: []
       - {}
@@ -332,7 +557,7 @@ paths:
       operationId: gene_retrieve
       description: |2
 
-        Fetch information for a specific gene.
+        Fetch information for a specific gene by using the gene symbol.
       parameters:
       - in: path
         name: name
@@ -340,7 +565,7 @@ paths:
           type: string
         required: true
       tags:
-      - gene
+      - Fetch gene information
       security:
       - jwtAuth: []
       - {}
@@ -350,13 +575,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LocusGene'
+              examples:
+                GeneFBN1:
+                  value:
+                    gene_symbol: FBN1
+                    sequence: '15'
+                    start: 48408313
+                    end: 48645721
+                    strand: -1
+                    reference: grch38
+                    ids:
+                      HGNC: HGNC:3603
+                      Ensembl: ENSG00000166147
+                      OMIM: '134797'
+                    synonyms:
+                    - FBN
+                    - MASS
+                    - MFS1
+                    - OCTD
+                    - SGS
+                    - WMS
+                    last_updated: '2025-03-24'
+                  summary: gene FBN1
+                  description: Fetch details for gene FBN1
           description: ''
   /gene2phenotype/api/gene/{name}/summary/:
     get:
       operationId: gene_summary_retrieve
       description: |2
 
-        Fetch latest G2P entries associated with a specific gene.
+        Fetch latest records associated with a specific gene by using the gene symbol.
       parameters:
       - in: path
         name: name
@@ -364,7 +612,7 @@ paths:
           type: string
         required: true
       tags:
-      - gene
+      - Fetch gene records summary
       security:
       - jwtAuth: []
       - {}
@@ -406,13 +654,87 @@ paths:
                           type: string
                         stable_id:
                           type: string
+              examples:
+                GeneFBN1:
+                  value:
+                    gene_symbol: FBN1
+                    records_summary:
+                    - disease: FBN1-related isolated ectopia lentis
+                      genotype: monoallelic_autosomal
+                      confidence: limited
+                      panels:
+                      - Eye
+                      - Skin
+                      variant_consequence:
+                      - altered gene product structure
+                      variant_type:
+                      - missense_variant
+                      - inframe_deletion
+                      - inframe_insertion
+                      molecular_mechanism: undetermined
+                      last_updated: '2024-08-20'
+                      stable_id: G2P02104
+                    - disease: FBN1-related Weill-Marchesani syndrome
+                      genotype: monoallelic_autosomal
+                      confidence: strong
+                      panels:
+                      - DD
+                      - Eye
+                      - Skin
+                      - Skeletal
+                      variant_consequence:
+                      - altered gene product structure
+                      variant_type:
+                      - missense_variant
+                      - inframe_deletion
+                      - inframe_insertion
+                      molecular_mechanism: undetermined
+                      last_updated: '2024-08-20'
+                      stable_id: G2P01563
+                    - disease: FBN1-related Marfan syndrome
+                      genotype: biallelic_autosomal
+                      confidence: definitive
+                      panels:
+                      - DD
+                      - Eye
+                      - Skin
+                      - Skeletal
+                      variant_consequence:
+                      - absent gene product
+                      - altered gene product structure
+                      variant_type:
+                      - splice_region_variant
+                      - frameshift_variant
+                      - missense_variant
+                      molecular_mechanism: loss of function
+                      last_updated: '2024-05-13'
+                      stable_id: G2P03125
+                    - disease: FBN1-related Marfan syndrome
+                      genotype: monoallelic_autosomal
+                      confidence: definitive
+                      panels:
+                      - DD
+                      - Eye
+                      - Skin
+                      - Skeletal
+                      variant_consequence:
+                      - absent gene product
+                      - altered gene product structure
+                      variant_type: []
+                      molecular_mechanism: loss of function
+                      last_updated: '2023-05-24'
+                      stable_id: G2P01013
+                  summary: gene FBN1
+                  description: Fetch latest records associated with gene FBN1
           description: Gene summary response
   /gene2phenotype/api/disease/{id}/summary/:
     get:
       operationId: disease_summary_retrieve
       description: |2
 
-        Fetch latest G2P entries associated with a specific disease.
+        Fetch latest records associated with a specific disease.
+
+        The disease input can be a disease name or ontology ID (e.g. Mondo or OMIM).
       parameters:
       - in: path
         name: id
@@ -420,7 +742,7 @@ paths:
           type: string
         required: true
       tags:
-      - disease
+      - Fetch disease records summary
       security:
       - jwtAuth: []
       - {}
@@ -460,6 +782,26 @@ paths:
                           type: string
                         stable_id:
                           type: string
+              examples:
+                MONDO:0008913:
+                  value:
+                    disease: MONDO:0008913
+                    records_summary:
+                    - locus: PLD1
+                      genotype: biallelic_autosomal
+                      confidence: definitive
+                      panels:
+                      - DD
+                      variant_consequence:
+                      - absent gene product
+                      variant_type:
+                      - splice_donor_variant
+                      - frameshift_variant
+                      - stop_gained
+                      - missense_variant
+                      molecular_mechanism: loss of function
+                      stable_id: G2P03704
+                  description: Fetch records linked to disease 'MONDO:0008913'
           description: Disease summary response
   /gene2phenotype/api/disease/{id}/:
     get:
@@ -467,7 +809,8 @@ paths:
       description: |2
 
         Fetch information for a specific disease.
-        The disease input can be a disease name or ontology ID from Mondo or OMIM
+
+        The disease input can be a disease name or ontology ID (e.g. Mondo or OMIM).
       parameters:
       - in: path
         name: id
@@ -475,7 +818,7 @@ paths:
           type: string
         required: true
       tags:
-      - disease
+      - Fetch disease information
       security:
       - jwtAuth: []
       - {}
@@ -485,6 +828,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DiseaseDetail'
+              examples:
+                MONDO:0008913:
+                  value:
+                    name: PLD1-related cardiac valvular dysplasia
+                    ontology_terms:
+                    - accession: '212093'
+                      term: CARDIAC VALVULAR DYSPLASIA 1
+                      description: CARDIAC VALVULAR DYSPLASIA 1
+                      source: OMIM
+                    - accession: MONDO:0008913
+                      term: cardiac valvular defect, developmental
+                      description: cardiac valvular defect, developmental
+                      source: Mondo
+                    synonyms: []
+                    last_updated: '2025-02-19'
+                  description: Fetch information for disease 'MONDO:0008913'
           description: ''
   /gene2phenotype/api/reference_data/:
     get:
@@ -493,7 +852,7 @@ paths:
 
         Fetch list of all reference data used in G2P with their respective versions.
       tags:
-      - reference_data
+      - Reference data
       security:
       - jwtAuth: []
       - {}

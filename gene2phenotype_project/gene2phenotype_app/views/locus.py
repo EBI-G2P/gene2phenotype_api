@@ -1,5 +1,5 @@
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
 import textwrap
 
 from gene2phenotype_app.models import (
@@ -15,9 +15,38 @@ from .base import BaseAPIView
 
 
 @extend_schema(
-description=textwrap.dedent("""
-    Fetch information for a specific gene.
-    """)
+    tags=["Fetch gene information"],
+    description=textwrap.dedent("""
+        Fetch information for a specific gene by using the gene symbol.
+        """),
+    examples=[
+        OpenApiExample(
+            'gene FBN1',
+            description='Fetch details for gene FBN1',
+            value={
+                "gene_symbol": "FBN1",
+                "sequence": "15",
+                "start": 48408313,
+                "end": 48645721,
+                "strand": -1,
+                "reference": "grch38",
+                "ids": {
+                    "HGNC": "HGNC:3603",
+                    "Ensembl": "ENSG00000166147",
+                    "OMIM": "134797"
+                },
+                "synonyms": [
+                    "FBN",
+                    "MASS",
+                    "MFS1",
+                    "OCTD",
+                    "SGS",
+                    "WMS"
+                ],
+                "last_updated": "2025-03-24"
+            }
+        )
+    ]
 )
 class LocusGene(BaseAPIView):
     """
@@ -66,9 +95,105 @@ class LocusGene(BaseAPIView):
 
 
 @extend_schema(
+    tags=["Fetch gene records summary"],
     description=textwrap.dedent("""
-        Fetch latest G2P entries associated with a specific gene.
+        Fetch latest records associated with a specific gene by using the gene symbol.
         """),
+    examples=[
+        OpenApiExample(
+            'gene FBN1',
+            description='Fetch latest records associated with gene FBN1',
+            value={
+                "gene_symbol": "FBN1",
+                "records_summary": [
+                    {
+                        "disease": "FBN1-related isolated ectopia lentis",
+                        "genotype": "monoallelic_autosomal",
+                        "confidence": "limited",
+                        "panels": [
+                            "Eye",
+                            "Skin"
+                        ],
+                        "variant_consequence": [
+                            "altered gene product structure"
+                        ],
+                        "variant_type": [
+                            "missense_variant",
+                            "inframe_deletion",
+                            "inframe_insertion"
+                        ],
+                        "molecular_mechanism": "undetermined",
+                        "last_updated": "2024-08-20",
+                        "stable_id": "G2P02104"
+                    },
+                    {
+                        "disease": "FBN1-related Weill-Marchesani syndrome",
+                        "genotype": "monoallelic_autosomal",
+                        "confidence": "strong",
+                        "panels": [
+                            "DD",
+                            "Eye",
+                            "Skin",
+                            "Skeletal"
+                        ],
+                        "variant_consequence": [
+                            "altered gene product structure"
+                        ],
+                        "variant_type": [
+                            "missense_variant",
+                            "inframe_deletion",
+                            "inframe_insertion"
+                        ],
+                        "molecular_mechanism": "undetermined",
+                        "last_updated": "2024-08-20",
+                        "stable_id": "G2P01563"
+                    },
+                    {
+                        "disease": "FBN1-related Marfan syndrome",
+                        "genotype": "biallelic_autosomal",
+                        "confidence": "definitive",
+                        "panels": [
+                            "DD",
+                            "Eye",
+                            "Skin",
+                            "Skeletal"
+                        ],
+                        "variant_consequence": [
+                            "absent gene product",
+                            "altered gene product structure"
+                        ],
+                        "variant_type": [
+                            "splice_region_variant",
+                            "frameshift_variant",
+                            "missense_variant"
+                        ],
+                        "molecular_mechanism": "loss of function",
+                        "last_updated": "2024-05-13",
+                        "stable_id": "G2P03125"
+                    },
+                    {
+                        "disease": "FBN1-related Marfan syndrome",
+                        "genotype": "monoallelic_autosomal",
+                        "confidence": "definitive",
+                        "panels": [
+                            "DD",
+                            "Eye",
+                            "Skin",
+                            "Skeletal"
+                        ],
+                        "variant_consequence": [
+                            "absent gene product",
+                            "altered gene product structure"
+                        ],
+                        "variant_type": [],
+                        "molecular_mechanism": "loss of function",
+                        "last_updated": "2023-05-24",
+                        "stable_id": "G2P01013"
+                    }
+                ]
+            }
+        )
+    ],
     responses={
         200: OpenApiResponse(
             description="Gene summary response",

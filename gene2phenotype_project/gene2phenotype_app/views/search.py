@@ -51,7 +51,8 @@ class CustomPagination(PageNumberPagination):
             name='query',
             type=str,
             location=OpenApiParameter.QUERY,
-            description='Search term'
+            description='Search term',
+            required=True
         ),
         OpenApiParameter(
             name='type',
@@ -63,12 +64,12 @@ class CustomPagination(PageNumberPagination):
             name='panel',
             type=str,
             location=OpenApiParameter.QUERY,
-            description='Search specific panel'
+            description='Fetch only records associated with a specific panel'
         ),
     ],
     examples=[
         OpenApiExample(
-            'Example 1',
+            'Search by phenotype',
             description='Search G2P records associated with phenotype HP:0003416',
             value={
                 "id": "G2P01947",
@@ -84,7 +85,7 @@ class CustomPagination(PageNumberPagination):
             }
         ),
         OpenApiExample(
-            'Example 2',
+            'Search by gene',
             description='Search G2P records associated with gene TP53',
             value={
                 "id": "G2P01830",

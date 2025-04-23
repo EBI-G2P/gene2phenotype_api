@@ -10,6 +10,7 @@ from gene2phenotype_app.serializers import MetaSerializer
 
 
 @extend_schema(
+    tags=["Reference data"],
     description=textwrap.dedent("""
     Fetch list of all reference data used in G2P with their respective versions.
     """),
