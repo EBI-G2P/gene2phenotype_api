@@ -3,7 +3,11 @@ from django.db.models import F
 from difflib import SequenceMatcher
 import re
 
-from gene2phenotype_app.models import DiseaseOntologyTerm
+from gene2phenotype_app.models import (
+    DiseaseOntologyTerm,
+    LocusGenotypeDisease
+)
+
 from gene2phenotype_app.utils import (
     clean_string,
     clean_omim_disease,
@@ -14,10 +18,19 @@ from gene2phenotype_app.utils import (
 def check_cross_references():
     errors = []
 
+    # Select disease with ontology terms that are linked to visible panels
     disease_ontology_list = (
-        DiseaseOntologyTerm.objects.all()
-        .select_related("disease", "ontology_term")
-        .annotate(disease_name=F("disease__name"), term=F("ontology_term__term"), accession=F("ontology_term__accession"))
+        DiseaseOntologyTerm.objects.select_related("disease", "ontology_term")
+        .annotate(
+            disease_name=F("disease__name"),
+            term=F("ontology_term__term"),
+            accession=F("ontology_term__accession")
+        )
+        .filter(
+            disease__id__in=LocusGenotypeDisease.objects.filter(
+                lgdpanel__panel__is_visible=1
+            ).values('disease')
+        )
     )
 
     for obj in disease_ontology_list:
