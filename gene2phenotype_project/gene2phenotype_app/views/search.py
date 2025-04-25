@@ -209,6 +209,17 @@ class SearchView(BaseView):
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         serializer = self.get_serializer_class()
+        search_query = request.query_params.get('query', None)
+        search_type = request.query_params.get('type', None)
+
+        if not search_type:
+            search_type = "results"
+        elif search_type != "g2p_id" and search_type != "draft":
+            search_type = search_type.capitalize()
+
+        # Check if queryset is empty, if so return appropriate message
+        if isinstance(queryset, list) and not queryset:
+            self.handle_no_permission(search_type, search_query)
 
         list_output = []
         if issubclass(serializer, LocusGenotypeDiseaseSerializer):

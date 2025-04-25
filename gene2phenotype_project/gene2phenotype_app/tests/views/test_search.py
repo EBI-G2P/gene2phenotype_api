@@ -157,3 +157,25 @@ class SearchTests(TestCase):
 
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.data["error"], "No matching Gene found for: STRA6")
+    
+    def test_search_not_found_3(self):
+        """
+            Test the response when not found because the record is private
+        """
+        base_url_search = reverse("search")
+        url_search_gene = f"{base_url_search}?query=BAAT"
+        response = self.client.get(url_search_gene)
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.data["error"], "No matching results found for: BAAT")
+
+    def test_search_not_found_4(self):
+        """
+            Test the response when gene not found because the record is private
+        """
+        base_url_search = reverse("search")
+        url_search_gene = f"{base_url_search}?type=gene&query=BAAT"
+        response = self.client.get(url_search_gene)
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.data["error"], "No matching Gene found for: BAAT")
