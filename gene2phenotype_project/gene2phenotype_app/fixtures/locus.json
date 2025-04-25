@@ -1,125 +1,125 @@
 [
-	{
-		"model": "gene2phenotype_app.locus", "pk": 1,
-		"fields": {"type": 46, "sequence": 1, "start": 88049016, "end": 88142099, "strand": -1, "name": "CEP290"}
-	},
-	{
-		"model": "gene2phenotype_app.locus", "pk": 2,
-		"fields": {"type": 46, "sequence": 2, "start": 55202966, "end": 55319113, "strand": -1, "name": "RAB27A"}
-	},
-	{
-		"model": "gene2phenotype_app.locus", "pk": 3,
-		"fields": {"type": 46, "sequence": 2, "start": 74179466, "end": 74212267, "strand": -1, "name": "STRA6"}
-	},
-	{
-		"model": "gene2phenotype_app.locus", "pk": 4,
-		"fields": {"type": 46, "sequence": 2, "start": 74890005, "end": 74902219, "strand": 1, "name": "MPI"}
-	},
-	{
-		"model": "gene2phenotype_app.locus", "pk": 5,
-		"fields": {"type": 46, "sequence": 3, "start": 26243170, "end": 26290465, "strand": 1, "name": "HADHB"}
-	},
-	{
-		"model": "gene2phenotype_app.locus", "pk": 6,
-		"fields": {"type": 46, "sequence": 4, "start": 6494319, "end": 6502848, "strand": -1, "name": "TUBB4A"}
-	},
-	{
-		"model": "gene2phenotype_app.locus", "pk": 7,
-		"fields": {"type": 46, "sequence": 5, "start": 101354182, "end": 101385400, "strand": -1, "name": "BAAT"}
-	},
+    {
+        "model": "gene2phenotype_app.locus", "pk": 1,
+        "fields": {"type": 46, "sequence": 1, "start": 88049016, "end": 88142099, "strand": -1, "name": "CEP290"}
+    },
+    {
+        "model": "gene2phenotype_app.locus", "pk": 2,
+        "fields": {"type": 46, "sequence": 2, "start": 55202966, "end": 55319113, "strand": -1, "name": "RAB27A"}
+    },
+    {
+        "model": "gene2phenotype_app.locus", "pk": 3,
+        "fields": {"type": 46, "sequence": 2, "start": 74179466, "end": 74212267, "strand": -1, "name": "STRA6"}
+    },
+    {
+        "model": "gene2phenotype_app.locus", "pk": 4,
+        "fields": {"type": 46, "sequence": 2, "start": 74890005, "end": 74902219, "strand": 1, "name": "MPI"}
+    },
+    {
+        "model": "gene2phenotype_app.locus", "pk": 5,
+        "fields": {"type": 46, "sequence": 3, "start": 26243170, "end": 26290465, "strand": 1, "name": "HADHB"}
+    },
+    {
+        "model": "gene2phenotype_app.locus", "pk": 6,
+        "fields": {"type": 46, "sequence": 4, "start": 6494319, "end": 6502848, "strand": -1, "name": "TUBB4A"}
+    },
+    {
+        "model": "gene2phenotype_app.locus", "pk": 7,
+        "fields": {"type": 46, "sequence": 5, "start": 101354182, "end": 101385400, "strand": -1, "name": "BAAT"}
+    },
 
-	{
-		"model": "gene2phenotype_app.locusattrib", "pk": 1,
-		"fields": {"locus": 1, "attrib_type": 10, "value": "BBS14", "source": 7, "is_deleted": 0}
-	}, 
-	{
-		"model": "gene2phenotype_app.locusattrib", "pk": 2,
-		"fields": {"locus": 1, "attrib_type": 10, "value": "CT87", "source": 7, "is_deleted": 0}
-	}, 
-	{
-		"model": "gene2phenotype_app.locusattrib", "pk": 3,
-		"fields": {"locus": 1, "attrib_type": 10, "value": "KIAA0373", "source": 7, "is_deleted": 1}
-	},
-	{
-		"model": "gene2phenotype_app.locusattrib", "pk": 4,
-		"fields": {"locus": 2, "attrib_type": 10, "value": "RAB27", "source": 7, "is_deleted": 0}
-	}, 
-	{
-		"model": "gene2phenotype_app.locusattrib", "pk": 5,
-		"fields": {"locus": 2, "attrib_type": 10, "value": "GS2", "source": 7, "is_deleted": 0}
-	},
-	{
-		"model": "gene2phenotype_app.locusattrib", "pk": 6,
-		"fields": {"locus": 3, "attrib_type": 10, "value": "FLJ12541", "source": 7, "is_deleted": 0}
-	},
-	{
-		"model": "gene2phenotype_app.locusattrib", "pk": 7,
-		"fields": {"locus": 5, "attrib_type": 10, "value": "MTPB", "source": 7, "is_deleted": 0}
-	},
-	{
-		"model": "gene2phenotype_app.locusattrib", "pk": 8,
-		"fields": {"locus": 6, "attrib_type": 10, "value": "BETA-5", "source": 7, "is_deleted": 0}
-	}, 
-	{
-		"model": "gene2phenotype_app.locusattrib", "pk": 9,
-		"fields": {"locus": 6, "attrib_type": 10, "value": "DYT4", "source": 7, "is_deleted": 0}
-	},
+    {
+        "model": "gene2phenotype_app.locusattrib", "pk": 1,
+        "fields": {"locus": 1, "attrib_type": 10, "value": "BBS14", "source": 7, "is_deleted": 0}
+    }, 
+    {
+        "model": "gene2phenotype_app.locusattrib", "pk": 2,
+        "fields": {"locus": 1, "attrib_type": 10, "value": "CT87", "source": 7, "is_deleted": 0}
+    }, 
+    {
+        "model": "gene2phenotype_app.locusattrib", "pk": 3,
+        "fields": {"locus": 1, "attrib_type": 10, "value": "KIAA0373", "source": 7, "is_deleted": 1}
+    },
+    {
+        "model": "gene2phenotype_app.locusattrib", "pk": 4,
+        "fields": {"locus": 2, "attrib_type": 10, "value": "RAB27", "source": 7, "is_deleted": 0}
+    }, 
+    {
+        "model": "gene2phenotype_app.locusattrib", "pk": 5,
+        "fields": {"locus": 2, "attrib_type": 10, "value": "GS2", "source": 7, "is_deleted": 0}
+    },
+    {
+        "model": "gene2phenotype_app.locusattrib", "pk": 6,
+        "fields": {"locus": 3, "attrib_type": 10, "value": "FLJ12541", "source": 7, "is_deleted": 0}
+    },
+    {
+        "model": "gene2phenotype_app.locusattrib", "pk": 7,
+        "fields": {"locus": 5, "attrib_type": 10, "value": "MTPB", "source": 7, "is_deleted": 0}
+    },
+    {
+        "model": "gene2phenotype_app.locusattrib", "pk": 8,
+        "fields": {"locus": 6, "attrib_type": 10, "value": "BETA-5", "source": 7, "is_deleted": 0}
+    }, 
+    {
+        "model": "gene2phenotype_app.locusattrib", "pk": 9,
+        "fields": {"locus": 6, "attrib_type": 10, "value": "DYT4", "source": 7, "is_deleted": 0}
+    },
 
-	{
-		"model": "gene2phenotype_app.locusidentifier", "pk": 1,
-		"fields": {"locus": 1, "identifier": "HGNC:29021", "description": null, "source": 6}
-	}, 
-	{
-		"model": "gene2phenotype_app.locusidentifier", "pk": 2,
-		"fields": {"locus": 1, "identifier": "ENSG00000198707", "description": null, "source": 7}
-	}, 
-	{
-		"model": "gene2phenotype_app.locusidentifier", "pk": 3,
-		"fields": {"locus": 2, "identifier": "HGNC:9766", "description": null, "source": 6}
-	}, 
-	{
-		"model": "gene2phenotype_app.locusidentifier", "pk": 4,
-		"fields": {"locus": 2, "identifier": "ENSG00000069974", "description": null, "source": 7}
-	}, 
-	{
-		"model": "gene2phenotype_app.locusidentifier", "pk": 5,
-		"fields": {"locus": 3, "identifier": "HGNC:30650", "description": null, "source": 6}
-	}, 
-	{
-		"model": "gene2phenotype_app.locusidentifier", "pk": 6,
-		"fields": {"locus": 3, "identifier": "ENSG00000137868", "description": null, "source": 7}
-	}, 
-	{
-		"model": "gene2phenotype_app.locusidentifier", "pk": 7,
-		"fields": {"locus": 4, "identifier": "HGNC:7216", "description": null, "source": 6}
-	}, 
-	{
-		"model": "gene2phenotype_app.locusidentifier", "pk": 8,
-		"fields": {"locus": 4, "identifier": "ENSG00000178802", "description": null, "source": 7}
-	},
-	{
-		"model": "gene2phenotype_app.locusidentifier", "pk": 9,
-		"fields": {"locus": 5, "identifier": "HGNC:4803", "description": null, "source": 6}
-	}, 
-	{
-		"model": "gene2phenotype_app.locusidentifier", "pk": 10,
-		"fields": {"locus": 5, "identifier": "ENSG00000138029",
-		"description": null, "source": 7}
-	}, 
-	{
-		"model": "gene2phenotype_app.locusidentifier", "pk": 11,
-		"fields": {"locus": 6, "identifier": "HGNC:20774", "description": null, "source": 6}
-	}, 
-	{
-		"model": "gene2phenotype_app.locusidentifier", "pk": 12,
-		"fields": {"locus": 6, "identifier": "ENSG00000104833", "description": null, "source": 7}
-	}, 
-	{
-		"model": "gene2phenotype_app.locusidentifier", "pk": 13,
-		"fields": {"locus": 7, "identifier": "HGNC:932", "description": null, "source": 6}
-	}, 
-	{
-		"model": "gene2phenotype_app.locusidentifier", "pk": 14,
-		"fields": {"locus": 7, "identifier": "ENSG00000136881", "description": null, "source": 7}
-	}
+    {
+        "model": "gene2phenotype_app.locusidentifier", "pk": 1,
+        "fields": {"locus": 1, "identifier": "HGNC:29021", "description": null, "source": 6}
+    }, 
+    {
+        "model": "gene2phenotype_app.locusidentifier", "pk": 2,
+        "fields": {"locus": 1, "identifier": "ENSG00000198707", "description": null, "source": 7}
+    }, 
+    {
+        "model": "gene2phenotype_app.locusidentifier", "pk": 3,
+        "fields": {"locus": 2, "identifier": "HGNC:9766", "description": null, "source": 6}
+    }, 
+    {
+        "model": "gene2phenotype_app.locusidentifier", "pk": 4,
+        "fields": {"locus": 2, "identifier": "ENSG00000069974", "description": null, "source": 7}
+    }, 
+    {
+        "model": "gene2phenotype_app.locusidentifier", "pk": 5,
+        "fields": {"locus": 3, "identifier": "HGNC:30650", "description": null, "source": 6}
+    }, 
+    {
+        "model": "gene2phenotype_app.locusidentifier", "pk": 6,
+        "fields": {"locus": 3, "identifier": "ENSG00000137868", "description": null, "source": 7}
+    }, 
+    {
+        "model": "gene2phenotype_app.locusidentifier", "pk": 7,
+        "fields": {"locus": 4, "identifier": "HGNC:7216", "description": null, "source": 6}
+    }, 
+    {
+        "model": "gene2phenotype_app.locusidentifier", "pk": 8,
+        "fields": {"locus": 4, "identifier": "ENSG00000178802", "description": null, "source": 7}
+    },
+    {
+        "model": "gene2phenotype_app.locusidentifier", "pk": 9,
+        "fields": {"locus": 5, "identifier": "HGNC:4803", "description": null, "source": 6}
+    }, 
+    {
+        "model": "gene2phenotype_app.locusidentifier", "pk": 10,
+        "fields": {"locus": 5, "identifier": "ENSG00000138029",
+        "description": null, "source": 7}
+    }, 
+    {
+        "model": "gene2phenotype_app.locusidentifier", "pk": 11,
+        "fields": {"locus": 6, "identifier": "HGNC:20774", "description": null, "source": 6}
+    }, 
+    {
+        "model": "gene2phenotype_app.locusidentifier", "pk": 12,
+        "fields": {"locus": 6, "identifier": "ENSG00000104833", "description": null, "source": 7}
+    }, 
+    {
+        "model": "gene2phenotype_app.locusidentifier", "pk": 13,
+        "fields": {"locus": 7, "identifier": "HGNC:932", "description": null, "source": 6}
+    }, 
+    {
+        "model": "gene2phenotype_app.locusidentifier", "pk": 14,
+        "fields": {"locus": 7, "identifier": "ENSG00000136881", "description": null, "source": 7}
+    }
 ]
