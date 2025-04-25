@@ -31,7 +31,9 @@ class Command(BaseCommand):
             for error in mc_errors:
                 logger.error(error)
 
+        # Run the disease cross references check
+        # This check is non critical: level = WARNING
         disease_cr_errors = check_cross_references()
         if disease_cr_errors:
             for error in disease_cr_errors:
-                logger.error(error)
+                logger.warning(error)
