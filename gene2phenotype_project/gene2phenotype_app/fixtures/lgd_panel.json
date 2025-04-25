@@ -1,42 +1,52 @@
 [
-	{
-		"model": "gene2phenotype_app.lgdpanel",
-		"pk": 1,
-		"fields": {
-			"lgd": 1,
-			"panel": 1,
-			"relevance": 1,
-			"is_deleted": 0
-		}
-	},
-	{
-		"model": "gene2phenotype_app.lgdpanel",
-		"pk": 2,
-		"fields": {
-			"lgd": 1,
-			"panel": 3,
-			"relevance": 1,
-			"is_deleted": 0
-		}
-	},
-	{
-		"model": "gene2phenotype_app.lgdpanel",
-		"pk": 3,
-		"fields": {
-			"lgd": 2,
-			"panel": 4,
-			"relevance": 1,
-			"is_deleted": 0
-		}
-	},
-	{
-		"model": "gene2phenotype_app.lgdpanel",
-		"pk": 4,
-		"fields": {
-			"lgd": 3,
-			"panel": 4,
-			"relevance": 1,
-			"is_deleted": 1
-		}
-	}
+    {
+        "model": "gene2phenotype_app.lgdpanel",
+        "pk": 1,
+        "fields": {
+            "lgd": 1,
+            "panel": 1,
+            "relevance": 1,
+            "is_deleted": 0
+        }
+    },
+    {
+        "model": "gene2phenotype_app.lgdpanel",
+        "pk": 2,
+        "fields": {
+            "lgd": 1,
+            "panel": 3,
+            "relevance": 1,
+            "is_deleted": 0
+        }
+    },
+    {
+        "model": "gene2phenotype_app.lgdpanel",
+        "pk": 3,
+        "fields": {
+            "lgd": 2,
+            "panel": 4,
+            "relevance": 1,
+            "is_deleted": 0
+        }
+    },
+    {
+        "model": "gene2phenotype_app.lgdpanel",
+        "pk": 4,
+        "fields": {
+            "lgd": 3,
+            "panel": 4,
+            "relevance": 1,
+            "is_deleted": 1
+        }
+    },
+    {
+        "model": "gene2phenotype_app.lgdpanel",
+        "pk": 5,
+        "fields": {
+            "lgd": 4,
+            "panel": 2,
+            "relevance": 1,
+            "is_deleted": 0
+        }
+    }
 ]

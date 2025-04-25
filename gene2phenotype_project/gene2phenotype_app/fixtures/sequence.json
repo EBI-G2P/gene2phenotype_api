@@ -1,27 +1,202 @@
 [
-	{"model": "gene2phenotype_app.sequence", "pk": 1, "fields": {"name": "12", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 2, "fields": {"name": "15", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 3, "fields": {"name": "2", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 4, "fields": {"name": "19", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 5, "fields": {"name": "9", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 6, "fields": {"name": "16", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 7, "fields": {"name": "20", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 8, "fields": {"name": "7", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 9, "fields": {"name": "11", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 10, "fields": {"name": "3", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 11, "fields": {"name": "8", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 12, "fields": {"name": "18", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 13, "fields": {"name": "6", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 14, "fields": {"name": "17", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 15, "fields": {"name": "1", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 16, "fields": {"name": "4", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 17, "fields": {"name": "X", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 18, "fields": {"name": "10", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 19, "fields": {"name": "5", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 20, "fields": {"name": "22", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 21, "fields": {"name": "14", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 22, "fields": {"name": "21", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 23, "fields": {"name": "13", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 24, "fields": {"name": "Y", "reference": 49}},
-	{"model": "gene2phenotype_app.sequence", "pk": 25, "fields": {"name": "MT", "reference": 49}}
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 1,
+        "fields": {
+            "name": "12",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 2,
+        "fields": {
+            "name": "15",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 3,
+        "fields": {
+            "name": "2",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 4,
+        "fields": {
+            "name": "19",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 5,
+        "fields": {
+            "name": "9",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 6,
+        "fields": {
+            "name": "16",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 7,
+        "fields": {
+            "name": "20",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 8,
+        "fields": {
+            "name": "7",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 9,
+        "fields": {
+            "name": "11",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 10,
+        "fields": {
+            "name": "3",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 11,
+        "fields": {
+            "name": "8",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 12,
+        "fields": {
+            "name": "18",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 13,
+        "fields": {
+            "name": "6",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 14,
+        "fields": {
+            "name": "17",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 15,
+        "fields": {
+            "name": "1",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 16,
+        "fields": {
+            "name": "4",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 17,
+        "fields": {
+            "name": "X",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 18,
+        "fields": {
+            "name": "10",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 19,
+        "fields": {
+            "name": "5",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 20,
+        "fields": {
+            "name": "22",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 21,
+        "fields": {
+            "name": "14",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 22,
+        "fields": {
+            "name": "21",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 23,
+        "fields": {
+            "name": "13",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 24,
+        "fields": {
+            "name": "Y",
+            "reference": 49
+        }
+    },
+    {
+        "model": "gene2phenotype_app.sequence",
+        "pk": 25,
+        "fields": {
+            "name": "MT",
+            "reference": 49
+        }
+    }
 ]
