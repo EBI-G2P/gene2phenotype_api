@@ -549,3 +549,96 @@ class LGDUpdateDisease(BaseAdd):
             response_data["error"] = errors
 
         return Response(response_data, status=status.HTTP_200_OK if updated_records else status.HTTP_400_BAD_REQUEST)
+    
+
+class UpdateOntologyTerms(BaseAdd):
+    """
+    Method to update the term and/or description of Ontology Terms in bulk.
+    POST: updates the ontology terms
+    DELETE: deletes the ontology terms
+    """
+
+    http_method_names = ["post", "delete", "options"]
+    permission_classes = [IsSuperUser]
+
+    def post(self, request):
+        ontologies = request.data  # dictionary of ontologies to update {accession: {"term": ..., "description": ...}}
+
+        if not isinstance(ontologies, dict):
+            return Response(
+                {"error": "Request should be a dictionary"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        updated_ontologies = []
+        errors = []
+
+        for ontology_accession, ontology_data in ontologies.items():
+            ontology_term = ontology_data.get("term")
+            ontology_description = ontology_data.get("description")
+
+            if not ontology_term:
+                errors.append({"error": f"Missing ontology term for '{ontology_accession}"})
+                continue
+
+            # Fetch ontology term or return 404 if not found
+            ontology_obj = get_object_or_404(OntologyTerm, accession=ontology_accession)
+            # Else update disease name and save
+            ontology_obj.term = ontology_term
+            if ontology_description:
+                ontology_obj.description = ontology_description
+            ontology_obj.save()
+            updated_ontologies.append({"accession": ontology_accession, "term": ontology_term})
+
+        response_data = {}
+        if updated_ontologies:
+            response_data["updated"] = updated_ontologies
+
+        if errors:
+            response_data["error"] = errors
+
+        return Response(response_data, status=status.HTTP_200_OK if updated_ontologies else status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request):
+        ontologies = request.data  # list of ontologies to delete
+
+        if not isinstance(ontologies, list):
+            return Response(
+                {"error": "Request should be a list"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        deleted_ontologies = []
+        errors = []
+
+        for ontology_accession in ontologies:
+            to_delete = 1
+            # Fetch ontology term or return 404 if not found
+            ontology_obj = get_object_or_404(OntologyTerm, accession=ontology_accession)
+            
+            # Check if ontology is linked to any disease
+            # If so, unlink the two
+            disease_ont_queryset = DiseaseOntologyTerm.objects.filter(ontology_term__accession=ontology_accession)
+            if disease_ont_queryset.exists():
+                for disease_ont_obj in disease_ont_queryset:
+                    try:
+                        disease_ont_obj.delete()
+                    except:
+                        errors.append({"error": f"Could not delete '{ontology_accession}' from disease '{disease_ont_obj.disease.name}'"})
+                    else:
+                        to_delete = 0
+
+            if to_delete:
+                ontology_obj.delete()
+                deleted_ontologies.append(ontology_accession)
+            else:
+                errors.append({"error": f"Could not delete '{ontology_accession}'"})
+
+        response_data = {}
+        if deleted_ontologies:
+            response_data["deleted"] = deleted_ontologies
+
+        if errors:
+            response_data["error"] = errors
+
+        return Response(response_data, status=status.HTTP_200_OK if deleted_ontologies else status.HTTP_400_BAD_REQUEST)

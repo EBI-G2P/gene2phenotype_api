@@ -255,6 +255,13 @@ urlpatterns = [
         name="update_diseases"
     ),
 
+    # Update ontology terms in bulk
+    path(
+        "update/ontology_terms/",
+        views.UpdateOntologyTerms.as_view(),
+        name="update_ontology_terms"
+    ),
+
     ### Curation endpoints ###
     path(
         "add/curation/",
