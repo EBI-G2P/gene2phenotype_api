@@ -10,7 +10,7 @@ djangorestframework==3.16.0
 djangorestframework-simplejwt==5.5.0
 idna==3.10
 jsonschema==4.23.0
-jsonschema-specifications==2024.10.1
+jsonschema-specifications==2025.4.1
 mysqlclient==2.1.1
 ordered-set==4.1.0
 pytz==2025.2
