@@ -257,8 +257,8 @@ urlpatterns = [
 
     # Update ontology terms in bulk
     path(
-        "update/ontology_terms/",
-        views.UpdateOntologyTerms.as_view(),
+        "update/disease_ontology_terms/",
+        views.UpdateDiseaseOntologyTerms.as_view(),
         name="update_ontology_terms"
     ),
 
