@@ -474,7 +474,7 @@ class LGDUpdateDisease(BaseAdd):
         return Response(response_data, status=status.HTTP_200_OK if updated_records else status.HTTP_400_BAD_REQUEST)
     
 
-class UpdateOntologyTerms(BaseAdd):
+class UpdateDiseaseOntologyTerms(BaseAdd):
     """
     Method to update the term and/or description of Ontology Terms in bulk.
     Valid ontology terms are from Mondo or OMIM.
