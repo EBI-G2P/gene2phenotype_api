@@ -554,6 +554,8 @@ class LGDUpdateDisease(BaseAdd):
 class UpdateOntologyTerms(BaseAdd):
     """
     Method to update the term and/or description of Ontology Terms in bulk.
+    Valid ontology terms are from Mondo or OMIM.
+
     POST: updates the ontology terms
     DELETE: deletes the ontology terms
     """
@@ -583,11 +585,14 @@ class UpdateOntologyTerms(BaseAdd):
 
             # Fetch ontology term or return 404 if not found
             ontology_obj = get_object_or_404(OntologyTerm, accession=ontology_accession)
-            # Else update disease name and save
+            # Update the ontology object for the new term
             ontology_obj.term = ontology_term
+            # If available, also update the description
             if ontology_description:
                 ontology_obj.description = ontology_description
+            # Save updates
             ontology_obj.save()
+            # Add the updated ontology to the list to be returned in the endpoint message
             updated_ontologies.append({"accession": ontology_accession, "term": ontology_term})
 
         response_data = {}
@@ -622,6 +627,7 @@ class UpdateOntologyTerms(BaseAdd):
             if disease_ont_queryset.exists():
                 for disease_ont_obj in disease_ont_queryset:
                     try:
+                        # Delete the DiseaseOntologyTerm obj
                         disease_ont_obj.delete()
                     except:
                         errors.append({"error": f"Could not delete '{ontology_accession}' from disease '{disease_ont_obj.disease.name}'"})
@@ -629,7 +635,9 @@ class UpdateOntologyTerms(BaseAdd):
                         to_delete = 0
 
             if to_delete:
+                # Only if the DiseaseOntologyTerm obj was deleted successfully, delete the Ontology obj
                 ontology_obj.delete()
+                # Add the deleted accession to the list to be returned by the endpoint
                 deleted_ontologies.append(ontology_accession)
             else:
                 errors.append({"error": f"Could not delete '{ontology_accession}'"})
