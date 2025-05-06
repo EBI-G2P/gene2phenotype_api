@@ -62,4 +62,14 @@ class MetaView(APIView):
         """
         queryset = self.get_queryset()
         serializer = MetaSerializer(queryset, many=True)
+
+        # Format the OMIM and Mondo versions
+        for query_data in queryset:
+            if query_data.key == "import_gene_disease_omim":
+                query_data.source.name = "Added by curators"
+                query_data.version = "" # we don't have a specific version
+            elif query_data.key == "import_gene_disease_mondo":
+                query_data.source.name = "Added by curators"
+                query_data.version = f"Checked against version {query_data.version}"
+
         return Response(serializer.data)
