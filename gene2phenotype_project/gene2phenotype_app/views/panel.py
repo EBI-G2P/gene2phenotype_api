@@ -51,7 +51,7 @@ class PanelCreateView(generics.CreateAPIView):
 @extend_schema(
     tags=["Fetch all panel disorders"],
     description=textwrap.dedent("""
-    Fetch all G2P panels information.
+    Fetch summary counts for all G2P panels.
     """),
     examples=[
         OpenApiExample(
@@ -188,8 +188,8 @@ class PanelList(APIView):
 @extend_schema(
     tags=["Fetch individual panel disorder"],
     description=textwrap.dedent("""
-    Fetch information for a specific panel by using its short name as the parameter.
-                                
+    Fetch counts for a specific panel by using a panel short name as the parameter.
+
     The response provides summary statistics about the records associated with it.
     """),
     examples=[

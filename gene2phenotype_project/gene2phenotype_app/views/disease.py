@@ -90,39 +90,7 @@ class GeneDiseaseView(BaseAPIView):
         return Response({'results': results, 'count': len(results)})
 
 
-@extend_schema(
-    tags=["Fetch disease information"],
-    description=textwrap.dedent("""
-        Fetch information for a specific disease.
-        
-        The disease input can be a disease name or ontology ID (e.g. Mondo or OMIM).
-        """),
-        examples=[
-        OpenApiExample(
-            "MONDO:0008913",
-            description="Fetch information for disease 'MONDO:0008913'",
-            value={
-                "name": "PLD1-related cardiac valvular dysplasia",
-                "ontology_terms": [
-                    {
-                    "accession": "212093",
-                    "term": "CARDIAC VALVULAR DYSPLASIA 1",
-                    "description": "CARDIAC VALVULAR DYSPLASIA 1",
-                    "source": "OMIM"
-                    },
-                    {
-                    "accession": "MONDO:0008913",
-                    "term": "cardiac valvular defect, developmental",
-                    "description": "cardiac valvular defect, developmental",
-                    "source": "Mondo"
-                    }
-                ],
-                "synonyms": [],
-                "last_updated": "2025-02-19"
-            }
-        )
-    ]
-)
+@extend_schema(exclude=True)
 class DiseaseDetail(BaseAPIView):
     """
         Fetch information for a specific disease.
@@ -168,6 +136,7 @@ class DiseaseDetail(BaseAPIView):
 
 
 @extend_schema(
+    exclude=False,
     tags=["Fetch disease records summary"],
     description=textwrap.dedent("""
         Fetch latest records associated with a specific disease.
