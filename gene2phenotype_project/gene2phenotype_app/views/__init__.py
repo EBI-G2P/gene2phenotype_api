@@ -7,7 +7,7 @@ from .locus import LocusGene, LocusGeneSummary, GeneFunction
 
 from .disease import (GeneDiseaseView, DiseaseDetail, DiseaseSummary, AddDisease,
                       UpdateDisease, LGDUpdateDisease, ExternalDisease,
-                      DiseaseUpdateReferences)
+                      DiseaseUpdateReferences, UpdateDiseaseOntologyTerms)
 
 from .curation import (AddCurationData, ListCurationEntries, CurationDataDetail,
                        UpdateCurationData, PublishRecord, DeleteCurationData)
