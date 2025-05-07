@@ -568,7 +568,7 @@ class UpdateDiseaseOntologyTerms(BaseAdd):
 
         if not isinstance(ontologies, dict):
             return Response(
-                {"error": "Request should be a dictionary"},
+                {"error": "Expected format is a dictionary"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -609,7 +609,7 @@ class UpdateDiseaseOntologyTerms(BaseAdd):
 
         if not isinstance(ontologies, list):
             return Response(
-                {"error": "Request should be a list"},
+                {"error": "Expected format is a list"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
