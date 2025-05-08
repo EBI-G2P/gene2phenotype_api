@@ -275,7 +275,7 @@ paths:
       operationId: panels_retrieve
       description: |2
 
-        Fetch all G2P panels information.
+        Fetch summary counts for all G2P panels.
       tags:
       - Fetch all panel disorders
       security:
@@ -364,7 +364,7 @@ paths:
       operationId: panel_retrieve
       description: |2
 
-        Fetch information for a specific panel by using its short name as the parameter.
+        Fetch counts for a specific panel by using a panel short name as the parameter.
 
         The response provides summary statistics about the records associated with it.
       parameters:
@@ -803,48 +803,6 @@ paths:
                       stable_id: G2P03704
                   description: Fetch records linked to disease 'MONDO:0008913'
           description: Disease summary response
-  /gene2phenotype/api/disease/{id}/:
-    get:
-      operationId: disease_retrieve
-      description: |2
-
-        Fetch information for a specific disease.
-
-        The disease input can be a disease name or ontology ID (e.g. Mondo or OMIM).
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      tags:
-      - Fetch disease information
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DiseaseDetail'
-              examples:
-                MONDO:0008913:
-                  value:
-                    name: PLD1-related cardiac valvular dysplasia
-                    ontology_terms:
-                    - accession: '212093'
-                      term: CARDIAC VALVULAR DYSPLASIA 1
-                      description: CARDIAC VALVULAR DYSPLASIA 1
-                      source: OMIM
-                    - accession: MONDO:0008913
-                      term: cardiac valvular defect, developmental
-                      description: cardiac valvular defect, developmental
-                      source: Mondo
-                    synonyms: []
-                    last_updated: '2025-02-19'
-                  description: Fetch information for disease 'MONDO:0008913'
-          description: ''
   /gene2phenotype/api/reference_data/:
     get:
       operationId: reference_data_retrieve
@@ -874,36 +832,6 @@ paths:
           description: Reference data response
 components:
   schemas:
-    DiseaseDetail:
-      type: object
-      description: Serializer for the Disease model - extra fields.
-      properties:
-        name:
-          type: string
-        ontology_terms:
-          type: array
-          items:
-            type: object
-            additionalProperties: {}
-          description: Returns the ontology terms associated with the disease.
-          readOnly: true
-        synonyms:
-          type: array
-          items:
-            type: string
-          description: Returns disease synonyms used in other sources.
-          readOnly: true
-        last_updated:
-          type: string
-          format: date
-          nullable: true
-          description: Returns the date an entry linked to the disease has been updated.
-          readOnly: true
-      required:
-      - last_updated
-      - name
-      - ontology_terms
-      - synonyms
     LocusGene:
       type: object
       description: |-
