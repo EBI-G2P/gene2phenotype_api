@@ -1,8 +1,6 @@
 from rest_framework import serializers
 from django.db import connection, IntegrityError
 from django.db.models import Prefetch
-from typing import Any, Optional
-from datetime import date
 from django.conf import settings
 from typing import Any, Optional
 from datetime import date
