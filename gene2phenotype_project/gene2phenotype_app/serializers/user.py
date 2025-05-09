@@ -1,9 +1,8 @@
 from rest_framework import serializers
-from django.core.exceptions import ValidationError
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.contrib.auth import authenticate
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeError
+from django.utils.encoding import smart_str, force_bytes
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework.validators import UniqueValidator
@@ -143,7 +142,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
             Validate the dictionary being passed to the CreateUserSerializer
 
             Args:
-                attrs (_type_): Dictionary 
+                attrs (dict): Dictionary 
 
             Raises:
                 serializers.ValidationError: If Email is not being passed
@@ -153,8 +152,8 @@ class CreateUserSerializer(serializers.ModelSerializer):
                 serializers.ValidationError: If Account with that same email already exists
 
             Returns:
-                _type_: A validated dictionary that will be used in the create
-        """        
+                dict: A validated dictionary that will be used in the create
+        """
         email = attrs.get('email')
         if email is None:
             raise serializers.ValidationError({"message": "Email is needed to create a user"})
@@ -222,24 +221,26 @@ class CreateUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['username', 'email', 'first_name', 'last_name', 'password', 'password2', 'is_superuser', 'is_staff', 'panels', 'user_panels']
-        extra_kwargs = {'password': {'write_only': True, 'min_length': 6, 'max_length': 20}, 
-                        'email': {
-                            'validators': [
-                                UniqueValidator(
-                                    queryset=User.objects.all(),
-                                    message="This email is already registered"
-                                )
-                            ]
-                        }
-                        }
-        
+        extra_kwargs = {
+            'password': {'write_only': True, 'min_length': 6, 'max_length': 20}, 
+            'email': {
+                'validators': [
+                    UniqueValidator(
+                        queryset=User.objects.all(),
+                        message="This email is already registered"
+                    )
+                ]
+            }
+        }
+
+
 class AddUserToPanelSerializer(serializers.ModelSerializer):
     """
-        Adds User to a Panel serializer 
+        Serializer for adding a user to a panel or updating the user-panel association.
+
         Args:
-            serializers (_type_): 
-                user : Serializers CharField
-                panel : Serializers ListField that only accepts CharField and can not be empty
+            user (str): Serializers CharField
+            panel (list): Serializers ListField that only accepts CharField and can not be empty
 
         Raises:
             serializers.ValidationError: If UserEmail is not sent in the request
@@ -248,8 +249,8 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
             serializers.ValidationError: If UserPanel already exists
 
         Returns:
-            _type_: Created UserPanel or Updated UserPanel
-    """    
+            UserPanel: created or updated UserPanel object
+    """
     user = serializers.CharField(write_only=True)
     panel = serializers.ListField(child=serializers.CharField(), allow_empty=False, write_only=True)
 
@@ -258,7 +259,7 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
             Validation step for the AddUserPanelSerializer
 
             Args:
-                attrs (_type_): The request data that will be validated
+                attrs (dict): The request data that will be validated
 
             Raises:
                 serializers.ValidationError: If UserEmail is not sent in the request
@@ -266,8 +267,8 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
                 serializers.ValidationError: If Panel does not exists
 
             Returns:
-                _type_: Validated data
-        """        
+                dict: Validated data
+        """
         user = attrs.get('user', '')
         if user is None:
             raise serializers.ValidationError({'message': 'user email is required to add user to panel'})
@@ -282,7 +283,6 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError({'message': "Panel does not exists, Please check panel"})
         
         return attrs
-    
 
     def create(self, validated_data):
         """
@@ -290,13 +290,13 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
             Also calls the update function if UserPanel already exists
 
             Args:
-                validated_data (_type_): A dictionary object containing a list of panels and user_email
+                validated_data (dict): A dictionary object containing a list of panels and user_email
 
             Raises:
                 serializers.ValidationError: If UserPanel already exists and it is not deleted 
 
             Returns:
-                _type_: Created UserPanel
+                UserPanel: Created UserPanel object
         """        
         user_email = validated_data.get('user')
         panels = validated_data.get('panel')
@@ -321,12 +321,12 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
             Changes from is_deleted = 1 to is_deleted = 0
 
             Args:
-                user (_type_): user object 
-                panel (_type_): Panel object
+                user (User): user object 
+                panel (Panel): Panel object
 
-        Returns:
-            _type_: The updated user panel
-        """       
+            Returns:
+                dict: The updated user panel
+        """
         try: 
             user_panel = UserPanel.objects.get(user=user, panel=panel, is_deleted=1)
             user_panel.is_deleted = 0
@@ -346,17 +346,16 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserPanel
         fields = ['user', 'panel']
-        
+
+
 class ChangePasswordSerializer(serializers.ModelSerializer): 
     """
-        Serializer class for Change Password
+        Serializer for changing a user's password.
 
         Args:
-            serializers (_type_): 
-                Fields:
-                    old_password : current password 
-                    password : new password
-                    password2 : confirm new password
+            old_password (str): current password 
+            password (str): new password
+            password2 (str): confirm new password
 
         Raises:
             serializers.ValidationError: Raises if old password is not correct
@@ -364,8 +363,8 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
             serializers.ValidationError: Raises if new and old password are the same 
 
         Returns:
-            _type_: user email
-    """ 
+            str: user email
+    """
 
     old_password = serializers.CharField(max_length=20, min_length=6, style={'input_type' : 'password'}, write_only=True)
     password = serializers.CharField(max_length=20, min_length=6, style={'input_type': 'password'}, write_only=True)
@@ -376,14 +375,14 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
             Validation method for Change password method
 
             Args:
-                attrs (_type_): Dictionary
+                attrs (dict): Dictionary
 
             Raises:
                 serializers.ValidationError: Raises if old password is not correct
                 serializers.ValidationError: Raises if new password and confirm new password do not match 
 
             Returns:
-                _type_: Validated dictionary attrs 
+                dict: Validated dictionary attrs 
         """        
         user = self.context.get('user')
         old_password = attrs.get('old_password')
@@ -401,13 +400,13 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
             Save method for changing password 
 
             Args:
-                user (_type_): user object
+                user (User): user object
 
             Raises:
                 serializers.ValidationError: Raises if new and old password are the same 
 
             Returns:
-                _type_: user email
+                str: user email
         """        
         password = self.validated_data.get('password')
 
@@ -426,24 +425,16 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
 
 class VerifyEmailSerializer(serializers.ModelSerializer):
     """
-        Serializer class for Verify Email
-
-        Args:
-            serializers (_type_): 
-                Fields: 
-                    Email 
-
-        Returns:
-            _type_: user information
-    """    
+        Serializer class for verifying email addresses.
+    """
     email = serializers.EmailField(write_only=True)
 
     def get_user_and_send_email(self, **validated_data):
         """
-            Get user and sends email to the user containing password reset link
+            Get user and sends email to the user containing the password reset link
 
             Returns:
-                _type_: User information 
+                dict: a dictionary containg the user information
         """        
         email = self.validated_data.get('email')
         user = User.objects.get(email=email, is_deleted=0)
@@ -468,23 +459,22 @@ class VerifyEmailSerializer(serializers.ModelSerializer):
         model = User
         fields = ['email']
 
+
 class PasswordResetSerializer(serializers.ModelSerializer):
     """
         Serializer class for password reset
 
         Args:
-            serializers (_type_): 
-                Fields:
-                    Password - New password
-                    Password2 - confirm password 
+            Password : new password
+            Password2 : confirm password
 
         Raises:
             serializers.ValidationError: If password and confirm password do not match 
             serializers.ValidationError: If user not associated with the Token 
 
         Returns:
-            _type_: a user with a new reset password 
-    """    
+            str: a user with a new reset password 
+    """
     password = serializers.CharField(max_length=20, min_length=6, style={'input_type': 'password'}, write_only=True)
     password2 = serializers.CharField(max_length=20, min_length=6, style={'input_type': 'password'}, write_only=True)
 
@@ -493,14 +483,14 @@ class PasswordResetSerializer(serializers.ModelSerializer):
             Validation step for the Password reset
 
             Args:
-                attrs (_type_): Dictionary, used in validating the data passed in request
+                attrs (dict): Dictionary, used in validating the data passed in request
 
             Raises:
                 serializers.ValidationError: If password and confirm password do not match 
                 serializers.ValidationError: If user not associated with the Token 
 
             Returns:
-                _type_: validated dictionary attrs
+                dict: validated dictionary attrs
         """        
         password = attrs.get('password')
         password2 = attrs.pop('password2', None)
@@ -526,14 +516,14 @@ class PasswordResetSerializer(serializers.ModelSerializer):
             Reset method for the Serializer class 
 
             Args:
-                password (_type_): Validated password
-                user (_type_): Validated user id 
+                password (str): Validated password
+                user (User): Validated user id 
             
             Method:
                 Sets a new password and saves the user updated information 
 
             Returns:
-                _type_: user email
+                str: user email
         """        
         password = self.validated_data.get('password')
         user = User.objects.get(id=self.validated_data.get('id'))
@@ -542,11 +532,10 @@ class PasswordResetSerializer(serializers.ModelSerializer):
 
         return user.email
 
-        
-
     class Meta:
         model = User
         fields = ['password', 'password2']
+
 
 class LoginSerializer(serializers.ModelSerializer):
     """
@@ -741,9 +730,3 @@ class LogoutSerializer(serializers.Serializer):
            token.blacklist()
         except TokenError as e:
             raise serializers.ValidationError({"message": str(e)})
-
-        
-
-    
-
-

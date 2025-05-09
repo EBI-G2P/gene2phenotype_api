@@ -1,26 +1,43 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db.models import Max
+from drf_spectacular.utils import extend_schema, OpenApiResponse
+import textwrap
 
 from gene2phenotype_app.models import Meta
 
 from gene2phenotype_app.serializers import MetaSerializer
 
 
+@extend_schema(
+    tags=["Reference data"],
+    description=textwrap.dedent("""
+    Fetch list of all reference data used in G2P with their respective versions.
+    """),
+    responses={
+        200: OpenApiResponse(
+            description="Reference data response",
+            response={
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "key": {"type": "string"},
+                            "source": {"type": "string"},
+                            "version": {"type": "string"}
+                        }
+                    }
+            }
+        )
+    }
+)
 class MetaView(APIView):
-    """
-    The View for Meta record
-
-    Args:
-        APIView (_type_): APIView
-    """
-
     def get_queryset(self):
         """
-        Method to get latest records using the key to group it
+        Method to get a queryset containing the latest records for each unique key
 
         Returns:
-            _type_: queryset containing the unique keys with the latest records an
+            QuerySet: a queryset containing the latest records
         """
         # to group by key to create a queryset containing the key and the latest date
         latest_records = Meta.objects.values("key").annotate(
@@ -30,18 +47,14 @@ class MetaView(APIView):
         # then we use a list comprehension to check using the new column latest date 
         queryset = Meta.objects.filter(date_update__in=[record["latest_date"] for record in latest_records])
 
-
         return queryset
 
     def get(self, request):
         """
-        Get method to get the reference data
-
-        Args:
-            request (_type_): A get request
+        Return a list of the reference data used in G2P with their respective versions.
 
         Returns:
-            _type_: Response object [key, source, version]
+            Response: A serialized list of the latest meta records.
         """
         queryset = self.get_queryset()
         serializer = MetaSerializer(queryset, many=True)

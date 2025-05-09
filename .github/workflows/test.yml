@@ -61,6 +61,8 @@ jobs:
           echo "AUTH_COOKIE_SECURE=False" >> /home/runner/work/config.ini
           echo "STATIC_ROOT=" >> /home/runner/work/config.ini
           echo "STATIC_URL=static/" >> /home/runner/work/config.ini
+          echo "[g2p]" >> /home/runner/work/config.ini
+          echo "version=3.0.0" >> /home/runner/work/config.ini
 
       - name: Run Tests
         run: |

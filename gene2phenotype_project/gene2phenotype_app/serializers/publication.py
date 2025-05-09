@@ -16,6 +16,7 @@ from ..utils import (
 
 from ..utils import get_date_now, clean_title
 
+
 class PublicationCommentSerializer(serializers.ModelSerializer):
     """
         Serializer for the PublicationComment model.
@@ -67,6 +68,7 @@ class PublicationCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = PublicationComment
         fields = ["comment", "date", "user"]
+
 
 class PublicationFamiliesSerializer(serializers.ModelSerializer):
     """
@@ -141,6 +143,7 @@ class PublicationFamiliesSerializer(serializers.ModelSerializer):
     class Meta:
         model = PublicationFamilies
         fields = ["families", "affected_individuals", "ancestries", "consanguinity"]
+
 
 class PublicationSerializer(serializers.ModelSerializer):
     """
@@ -296,6 +299,7 @@ class PublicationSerializer(serializers.ModelSerializer):
         model = Publication
         fields = ['pmid', 'title', 'authors', 'year', 'comments', 'families']
 
+
 ### G2P record (LGD) - publication ###
 class LGDPublicationSerializer(serializers.ModelSerializer):
     """
@@ -411,6 +415,7 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = LGDPublication
         fields = ['publication', 'comment', 'families']
+
 
 class LGDPublicationListSerializer(serializers.Serializer):
     """

@@ -1,22 +1,26 @@
-from rest_framework import generics, status
+from rest_framework import status
+from rest_framework.views import APIView
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema, OpenApiResponse
+import textwrap
 
 from gene2phenotype_app.serializers import AttribTypeSerializer, AttribSerializer
 from gene2phenotype_app.models import AttribType, Attrib
 
 
-class AttribTypeList(generics.ListAPIView):
-    """
-        Display all available attribs by type.
-        Some attribs can be deprecated.
+@extend_schema(exclude=True)
+class AttribTypeList(APIView):
+    serializer_class = AttribTypeSerializer
 
-        Returns:
-                (dict) response: list of attribs for each attrib type.
-    """
-    queryset = AttribType.objects.filter(is_deleted=0)
+    def get(self, request, *args, **kwargs):
+        """
+        Fetch all available attributes grouped by type.
 
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
+        Returns: A dictionary where the keys represent attribute types,
+                and the values are lists of their respective attributes.
+        """
+        queryset = AttribType.objects.filter(is_deleted=0)
+
         result = {}
         for attrib_type in queryset:
             serializer = AttribTypeSerializer(attrib_type)
@@ -25,27 +29,17 @@ class AttribTypeList(generics.ListAPIView):
 
         return Response(result)
 
-class AttribTypeDescriptionList(generics.ListAPIView):
-    """
-        API view to list all attribute types with their associated attribute descriptions.
 
-        This view inherits from Django REST Framework's `ListAPIView` and is responsible
-        for retrieving and returning a dictionary where each key corresponds to an 
-        attribute type code, and each value is a list of dictionaries. Each dictionary 
-        in the list contains a mapping of an attribute's value to its description.
+@extend_schema(exclude=True)
+class AttribTypeDescriptionList(APIView):
+    serializer_class = AttribTypeSerializer
 
-        Attributes:
-            queryset (QuerySet): The base queryset of `AttribType` objects.
-
-        Methods:
-            list(request, *args, **kwargs):
-                Customizes the default list method to return a dictionary where each key 
-                is an attribute type code and each value is a list of attribute descriptions.
+    def get(self, request, *args, **kwargs):
+        """
+        Fetch all attributes with their corresponding descriptions
+        grouped by attribute type.
 
         Example:
-            Suppose the `AttribType` model has entries with `code = "type1"` and an `id` of `1`.
-            If `Attrib` objects related to this type have values and descriptions, the 
-            response might look like this:
 
             {
                 "type1": [
@@ -55,17 +49,13 @@ class AttribTypeDescriptionList(generics.ListAPIView):
                 ],
                 "type2": [
                     {"limited": "This category is based on limited evidence."},
-                        {"strong": "This category is strongly supported by evidence."},
+                    {"strong": "This category is strongly supported by evidence."},
                     ...
                 ]
             }
-    """
-    
-
-    queryset = AttribType.objects.filter(is_deleted=0)
-    
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
+        """
+        # Fetch attrib types that are not deleted
+        queryset = AttribType.objects.filter(is_deleted=0)
         result = {}
         for attrib_type in queryset:
             serializer = AttribTypeSerializer(attrib_type)
@@ -74,17 +64,32 @@ class AttribTypeDescriptionList(generics.ListAPIView):
 
         return Response(result)
 
-class AttribList(generics.ListAPIView):
-    """
-        Display the attribs for a specific attrib type.
+
+@extend_schema(exclude=True)
+class AttribList(APIView):
+    lookup_field = 'type'
+    serializer_class = AttribSerializer
+
+    def get_queryset(self):
+        attrib_type = self.kwargs['attrib_type']
+
+        try:
+            attrib_type_obj = AttribType.objects.get(code=attrib_type)
+        except AttribType.DoesNotExist:
+            return None
+        else:
+            return Attrib.objects.filter(type=attrib_type_obj)
+
+    def get(self, request, *args, **kwargs):
+        """
+        Fetch all attribute values for a specific attribute type.
 
         Args:
-            (string) code: type of attrib
+            attrib_type (string): attribute type
 
-        Returns:
-                Response object includes:
-                    (list) results: list of attribs
-                    (int) count: number of attribs
+        Returns: list of attributes with the following format
+                    results (list): list of attributes
+                    count (int): number of attributes
 
         Example:
                 {
@@ -98,26 +103,21 @@ class AttribList(generics.ListAPIView):
                     ],
                     "count": 6
                 }
-    """
+        """
+        attrib_type = self.kwargs['attrib_type']
+        queryset = self.get_queryset()
 
-    lookup_field = 'type'
-    serializer_class = AttribSerializer
-
-    def get_queryset(self):
-        # 'code' is the type of attrib
-        code = self.kwargs['code']
-
-        try:
-            attrib_type_obj = AttribType.objects.get(code=code)
-        except AttribType.DoesNotExist:
+        if not queryset:
             return Response(
-                {"error": f"Attrib type {code} not found"},
+                {"error": f"Attrib type '{attrib_type}' not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        return Attrib.objects.filter(type=attrib_type_obj)
+        attrib_type_list = [attrib.value for attrib in queryset]
 
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        code_list = [attrib.value for attrib in queryset]
-        return Response({'results':code_list, 'count':len(code_list)})
+        return Response(
+            {
+                "results": attrib_type_list,
+                "count": len(attrib_type_list)
+            }
+        )

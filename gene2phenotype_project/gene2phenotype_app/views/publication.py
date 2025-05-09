@@ -1,48 +1,56 @@
 from rest_framework import permissions, status
-from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema, OpenApiResponse
+import textwrap
 
-from gene2phenotype_app.serializers import (PublicationSerializer, LGDPublicationSerializer,
-                                            LGDPublicationListSerializer, LGDPhenotypeSerializer,
-                                            LGDVariantTypeSerializer, LGDVariantTypeDescriptionSerializer,
-                                            LocusGenotypeDiseaseSerializer, LGDPhenotypeSummarySerializer)
 
-from gene2phenotype_app.models import (Publication, LocusGenotypeDisease, LGDPublication,
-                                       LGDPhenotype, LGDPhenotypeSummary, LGDVariantType,
-                                       LGDVariantTypeDescription, LGDMolecularMechanismEvidence)
+from gene2phenotype_app.serializers import (
+    PublicationSerializer,
+    LGDPublicationSerializer,
+    LGDPublicationListSerializer,
+    LGDPhenotypeSerializer,
+    LGDVariantTypeSerializer,
+    LGDVariantTypeDescriptionSerializer,
+    LocusGenotypeDiseaseSerializer,
+    LGDPhenotypeSummarySerializer
+)
+
+from gene2phenotype_app.models import (
+    Publication,
+    LocusGenotypeDisease,
+    LGDPublication,
+    LGDPhenotype,
+    LGDPhenotypeSummary,
+    LGDVariantType,
+    LGDVariantTypeDescription,
+    LGDMolecularMechanismEvidence
+)
 
 from .base import BaseAdd, BaseUpdate, IsSuperUser
 
 from ..utils import get_publication, get_authors, clean_title
 
 
-"""
-    Retrieve publication data for a list of PMIDs.
-    If PMID is found in G2P then return details from G2P.
-    If PMID not found in G2P then returns info from EuropePMC.
-
-    Args:
-            (HttpRequest) request: HTTP request
-            (str) pmids: A comma-separated string of PMIDs
-
-    Returns:
-            Response object includes:
-                (list) results: contains publication data for each publication
-                                    - pmid
-                                    - title
-                                    - authors
-                                    - year
-                                    - source (possible values: 'G2P', 'EuropePMC')
-                (int) count: number of PMIDs
-    
-    Raises:
-            Invalid PMID
-"""
+@extend_schema(exclude=True)
 @api_view(['GET'])
 def PublicationDetail(request, pmids):
+    """
+    Return the publication data for a list of PMIDs.
+    If PMID is found in G2P then return details from G2P.
+    If PMID not found in G2P then returns data from EuropePMC.
+
+    Args:
+        pmids (str): A comma-separated string of PMIDs
+
+    Returns a dictionary with the following format:
+        results (list): a list of the publication data for each PMID
+        count (int): number of PMIDs in the response
+    
+    Raises: Invalid PMID
+    """
     id_list = pmids.split(',')
     data = []
     invalid_pmids = []
@@ -98,54 +106,43 @@ def PublicationDetail(request, pmids):
 
 
 ### Add publication ###
+@extend_schema(exclude=True)
 class AddPublication(BaseAdd):
     """
-        Add new publication.
-        The create method is in the PublicationSerializer.
+    Add new publication.
+    The create method is in the PublicationSerializer.
     """
     serializer_class = PublicationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+
 ### LGD-publication ###
 # Add or delete data
+@extend_schema(exclude=True)
 class LGDEditPublications(BaseUpdate):
-    """
-        Add or delete lgd-publication.
-
-        Add data (action: POST)
-            Add a list of publications to an existing G2P record (LGD).
-            When adding a publication it can also add:
-                - comment
-                - family info as reported in the publication
-        
-        Delete data (action: UPDATE)
-            Delete a publication associated with the LGD.
-            The deletion does not remove the entry from the database, instead
-            it sets the flag 'is_deleted' to 1.
-    """
-    http_method_names = ['post', 'update', 'options']
+    http_method_names = ['post', 'patch', 'options']
 
     def get_permissions(self):
         """
-            Instantiates and returns the list of permissions for this view.
-            post(): updates data - available to all authenticated users
-            update(): deletes data - only available to authenticated super users
+        Instantiates and returns the list of permissions for this view.
+        post(): updates data - available to all authenticated users
+        patch(): deletes data - only available to authenticated super users
         """
-        if self.request.method.lower() == "update":
+        if self.request.method.lower() == "patch":
             return [permissions.IsAuthenticated(), IsSuperUser()]
         return [permissions.IsAuthenticated()]
 
     def get_serializer_class(self, action):
         """
-            Returns the appropriate serializer class based on the action.
-            To add data use LGDPublicationListSerializer: it accepts a list of publications.
-            To delete data use LGDPublicationSerializer: it accepts one publication.
+        Returns the appropriate serializer class based on the action.
+        To add data use LGDPublicationListSerializer: it accepts a list of publications.
+        To delete data use LGDPublicationSerializer: it accepts one publication.
         """
         action = action.lower()
 
         if action == "post":
             return LGDPublicationListSerializer
-        elif action == "update":
+        elif action == "patch":
             return LGDPublicationSerializer
         else:
             return None
@@ -153,64 +150,66 @@ class LGDEditPublications(BaseUpdate):
     @transaction.atomic
     def post(self, request, stable_id):
         """
-            The post method creates an association between the current LGD record and a list of publications.
-            It also allows to add or updated data linked to the publication.
+        The post method adds a list of publications to an existing G2P record (LGD).
+        It also allows to add or updated data linked to the publication:
+            - comment
+            - family info as reported in the publication
 
-            When a publication is linked to a LGD record, other types of data can be associated to the record
-            and the publication:
-                - phenotypes
-                - variant types
-                - variant descriptions
-                - molecular mechanism value (if 'undetermined') + support
-                - molecular mechanism synopsis/categorisation
-                - molecular mechanism evidence
+        When a publication is linked to a LGD record, other types of data can be associated to the record
+        and the publication:
+            - phenotypes
+            - variant types
+            - variant descriptions
+            - molecular mechanism value (if 'undetermined') + support
+            - molecular mechanism synopsis/categorisation
+            - molecular mechanism evidence
 
-            Args:
-                (dict) request data
+        Args:
+                request data (dict)
 
-                Example for a record already linked to pmid '41':
-                { "publications":[
-                        {
-                            "publication": { "pmid": "1234" },
-                            "comment": { "comment": "this is a comment", "is_public": 1 },
-                            "families": { "families": 2, "consanguinity": "unknown", "ancestries": "african", "affected_individuals": 1 },
+            Example for a record already linked to pmid '41':
+            { "publications":[
+                    {
+                        "publication": { "pmid": "1234" },
+                        "comment": { "comment": "this is a comment", "is_public": 1 },
+                        "families": { "families": 2, "consanguinity": "unknown", "ancestries": "african", "affected_individuals": 1 },
+                    }],
+            "phenotypes": [{
+                                "pmid": "41",
+                                "summary": "",
+                                "hpo_terms": [{ "term": "Orofacial dyskinesia",
+                                                "accession": "HP:0002310",
+                                                "description": "" }]
                         }],
-                "phenotypes": [{
-                                    "pmid": "41",
-                                    "summary": "",
-                                    "hpo_terms": [{ "term": "Orofacial dyskinesia",
-                                                    "accession": "HP:0002310",
-                                                    "description": "" }]
-                            }],
-                "variant_types": [{
-                            "comment": "",
-                            "de_novo": false,
-                            "inherited": false,
-                            "nmd_escape": false,
-                            "primary_type": "protein_changing",
-                            "secondary_type": "inframe_insertion",
-                            "supporting_papers": ["41"],
-                            "unknown_inheritance": true
-                        }],
-                "variant_descriptions": [{
-                            "description": "HGVS:c.9Pro",
-                            "publication": "41"
-                        }],
-                "molecular_mechanism": {
-                    "name": "gain of function",
-                    "support": "evidence"
-                },
-                "mechanism_synopsis": [{
-                    "name": "",
-                    "support": ""
-                }],
-                "mechanism_evidence": [{
-                            "pmid": "1234",
-                            "description": "This is new evidence for the existing mechanism evidence.",
-                            "evidence_types": [ { "primary_type": "Function",
-                                                    "secondary_type": [ "Biochemical" ]}
-                            ]}]
-            }
+            "variant_types": [{
+                        "comment": "",
+                        "de_novo": false,
+                        "inherited": false,
+                        "nmd_escape": false,
+                        "primary_type": "protein_changing",
+                        "secondary_type": "inframe_insertion",
+                        "supporting_papers": ["41"],
+                        "unknown_inheritance": true
+                    }],
+            "variant_descriptions": [{
+                        "description": "HGVS:c.9Pro",
+                        "publication": "41"
+                    }],
+            "molecular_mechanism": {
+                "name": "gain of function",
+                "support": "evidence"
+            },
+            "mechanism_synopsis": [{
+                "name": "",
+                "support": ""
+            }],
+            "mechanism_evidence": [{
+                        "pmid": "1234",
+                        "description": "This is new evidence for the existing mechanism evidence.",
+                        "evidence_types": [ { "primary_type": "Function",
+                                                "secondary_type": [ "Biochemical" ]}
+                        ]}]
+        }
         """
         user = self.request.user
 
@@ -360,12 +359,14 @@ class LGDEditPublications(BaseUpdate):
         return response
 
     @transaction.atomic
-    def update(self, request, stable_id):
+    def patch(self, request, stable_id):
         """
-            This method deletes the LGD-publication.
+        This method deletes the LGD-publication.
+        The deletion does not remove the entry from the database, instead
+        it sets the flag 'is_deleted' to 1.
 
-            Args:
-                { "pmid": 1234 }
+        Args:
+            { "pmid": 1234 }
         """
         pmid = request.data.get("pmid", None)
         user = request.user # TODO check if user has permission
@@ -477,4 +478,3 @@ class LGDEditPublications(BaseUpdate):
             {"message": f"Publication '{pmid}' successfully deleted for ID '{stable_id}'"},
             status=status.HTTP_200_OK
         )
-
