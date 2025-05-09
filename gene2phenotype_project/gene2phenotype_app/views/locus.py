@@ -49,24 +49,6 @@ from .base import BaseAPIView
     ]
 )
 class LocusGene(BaseAPIView):
-    """
-        Fetch information for a specific gene.
-
-        Args:
-            (str) `name`: gene symbol or the synonym symbol
-
-        Returns a dictionary with the following values:
-                            (str) gene_symbol;
-                            (str) sequence;
-                            (integer) start;
-                            (integer) end;
-                            (integer) strand;
-                            (str) reference;
-                            (list) ids;
-                            (list) list of synonyms: gene symbols;
-                            (str) last_updated: date of the last update;
-    """
-
     lookup_field = 'name'
     serializer_class = LocusGeneSerializer
 
@@ -89,6 +71,23 @@ class LocusGene(BaseAPIView):
         return queryset
 
     def get(self, request, *args, **kwargs):
+        """
+        Fetch information for a specific gene.
+
+        Args:
+            name (str): gene symbol or the synonym symbol
+
+        Returns a dictionary with the following values:
+                            gene_symbol (str)
+                            sequence (str)
+                            start (integer)
+                            end (integer)
+                            strand (integer)
+                            reference (str)
+                            ids (list)
+                            list of synonyms (list): gene symbols
+                            last_updated (str): date of the last update
+        """
         queryset = self.get_queryset().first()
         serializer = LocusGeneSerializer(queryset)
         return Response(serializer.data)
@@ -224,19 +223,19 @@ class LocusGene(BaseAPIView):
     }
 )
 class LocusGeneSummary(BaseAPIView):
-    """
-        Return a summary of the latest G2P entries associated with the gene.
-
-        Args:
-            (str) `name`: gene symbol or the synonym symbol
-
-        Returns a dictionary with the following values:
-                (string) `gene_symbol`
-                (list) `records_summary`
-    """
     serializer_class = LocusGeneSerializer
 
     def get(self, request, name, *args, **kwargs):
+        """
+        Return a summary of the latest G2P entries associated with the gene.
+
+        Args:
+            name (str): gene symbol or the synonym symbol
+
+        Returns a dictionary with the following values:
+                gene_symbol (string)
+                records_summary (list)
+        """
         attrib_type = AttribType.objects.filter(code='locus_type')
         attrib = Attrib.objects.filter(type=attrib_type.first().id, value='gene')
         queryset = Locus.objects.filter(name=name, type=attrib.first().id)
@@ -263,20 +262,20 @@ class LocusGeneSummary(BaseAPIView):
 
 @extend_schema(exclude=True)
 class GeneFunction(BaseAPIView):
-    """
-        Return the gene product function imported from UniProt.
-
-        Args:
-            (str) `name`: gene symbol or the synonym symbol
-
-        Returns a dictionary with the following:
-                (string) `gene_symbol`;
-                (dict) `function`: gene product function from UniProt;
-                (dict) `gene_stats`: gene scores from the Badonyi probabilities
-    """
     serializer_class = LocusGeneSerializer
 
     def get(self, request, name, *args, **kwargs):
+        """
+        Return the gene product function imported from UniProt.
+
+        Args:
+            name (str): gene symbol or the synonym symbol
+
+        Returns a dictionary with the following:
+                gene_symbol (string);
+                function (dict): gene product function from UniProt;
+                gene_stats (dict): gene scores from the Badonyi probabilities
+        """
         attrib_type = AttribType.objects.filter(code='locus_type')
         attrib = Attrib.objects.filter(type=attrib_type.first().id, value='gene')
         queryset = Locus.objects.filter(name=name, type=attrib.first().id)

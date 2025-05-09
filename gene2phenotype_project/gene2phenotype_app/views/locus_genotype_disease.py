@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.db import transaction, IntegrityError
-from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
+from drf_spectacular.utils import extend_schema, OpenApiExample
 import textwrap
 
 
@@ -53,13 +53,11 @@ from .base import (
 
 @extend_schema(exclude=True)
 class ListMolecularMechanisms(APIView):
-    """
-        Return the molecular mechanisms terms by type and subtype (if applicable).
-
-        Returns a dictionary where the key is the type the value is a list.
-    """
-
     def get(self, request, *args, **kwargs):
+        """
+        Return the molecular mechanisms terms by type and subtype (if applicable).
+        Returns a dictionary where the key is the type the value is a list.
+        """
         queryset = CVMolecularMechanism.objects.all().values(
             'type', 'subtype', 'value', 'description'
             ).order_by('type')
@@ -91,17 +89,15 @@ class ListMolecularMechanisms(APIView):
 
 @extend_schema(exclude=True)
 class VariantTypesList(APIView):
-    """
-        Return all variant types by group.
-
-        Returns a dictionary where the key is the variant group and the value is a list of terms
-    """
-
     def get_queryset(self):
         group = Attrib.objects.filter(value="variant_type", type__code="ontology_term_group")
         return OntologyTerm.objects.filter(group_type=group.first().id)
 
     def get(self, request, *args, **kwargs):
+        """
+        Return all variant types by group.
+        Returns a dictionary where the key is the variant group and the value is a list of terms.
+        """
         queryset = self.get_queryset()
         list_nmd = []
         list_splice = []
@@ -296,22 +292,6 @@ class VariantTypesList(APIView):
     ]
 )
 class LocusGenotypeDiseaseDetail(APIView):
-    """
-        Return all data for a G2P record.
-
-        Args:
-            (string) `stable_id`: G2P stable ID
-
-        Returns a LocusGenotypeDisease object:
-            (dict) locus;
-            (str) stable_id;
-            (str) genotype;
-            (dict) disease;
-            (dict) molecular_mechanism;
-            (list) phenotypes;
-            (list) publications;
-            ...
-    """
     serializer_class = LocusGenotypeDiseaseSerializer
 
     def get_queryset(self):
@@ -334,6 +314,22 @@ class LocusGenotypeDiseaseDetail(APIView):
             return queryset
 
     def get(self, request, *args, **kwargs):
+        """
+        Return all data for a G2P record.
+
+        Args:
+            stable_id (string): G2P stable ID
+
+        Returns a LocusGenotypeDisease object:
+            locus (dict)
+            stable_id (str)
+            genotype (str)
+            disease (dict)
+            molecular_mechanism (dict)
+            phenotypes (list)
+            publications (list)
+            ...
+        """
         queryset = self.get_queryset().first()
         serializer = LocusGenotypeDiseaseSerializer(queryset, context={'user': self.request.user})
         return Response(serializer.data)
@@ -360,24 +356,24 @@ class LGDUpdateConfidence(BaseUpdate):
 
     def update(self, request, stable_id):
         """
-            This method updates the LGD confidence.
+        This method updates the LGD confidence.
 
-            Mandatory fields to update confidence:
-                            - confidence value
-                            - confidence_support
+        Mandatory fields to update confidence:
+                        - confidence value
+                        - confidence_support
 
-            Input example:
-                    {
-                        'confidence': 'definitive',
-                        'confidence_support': '',
-                        'is_reviewed': None
-                    }
+        Input example:
+                {
+                    'confidence': 'definitive',
+                    'confidence_support': '',
+                    'is_reviewed': None
+                }
 
-            Raises:
-                No permission to update record
-                Invalid confidence value
-                G2P record already has same confidence value
-                Cannot update confidence value without supporting evidence.
+        Raises:
+            No permission to update record
+            Invalid confidence value
+            G2P record already has same confidence value
+            Cannot update confidence value without supporting evidence.
         """
         user = request.user
 
@@ -424,22 +420,22 @@ class LGDUpdateMechanism(BaseUpdate):
 
     def get_queryset(self):
         """
-            Retrieves a queryset of LocusGenotypeDisease objects associated with a stable ID
-            for the authenticated user.
+        Retrieves a queryset of LocusGenotypeDisease objects associated with a stable ID
+        for the authenticated user.
 
-            Authenticated users can update the mechanism value, support and evidence
-            only if mechanism is 'undetermined' or support is 'inferred'. The check is
-            done in LocusGenotypeDiseaseSerializer.
+        Authenticated users can update the mechanism value, support and evidence
+        only if mechanism is 'undetermined' or support is 'inferred'. The check is
+        done in LocusGenotypeDiseaseSerializer.
 
-            Args:
-                stable_id (str): The stable ID from the URL kwargs.
+        Args:
+            stable_id (str): The stable ID from the URL kwargs.
 
-            Returns:
-                QuerySet: A queryset of LocusGenotypeDisease objects.
+        Returns:
+            QuerySet: A queryset of LocusGenotypeDisease objects.
 
-            Raises:
-                Http404: If the stable ID does not exist.
-                PermissionDenied: If update is not allowed.
+        Raises:
+            Http404: If the stable ID does not exist.
+            PermissionDenied: If update is not allowed.
         """
         stable_id = self.kwargs['stable_id']
 
@@ -454,30 +450,29 @@ class LGDUpdateMechanism(BaseUpdate):
 
     def patch(self, request, stable_id):
         """
-            Partially updates the LGD record with a new molecular mechanism.
-            It only allows to update mechanisms with value 'undetermined'
-            or support 'inferred'.
+        Partially updates the LGD record with a new molecular mechanism.
+        It only allows to update mechanisms with value 'undetermined'
+        or support 'inferred'.
 
-            Supporting pmids have to already be linked to the LGD record.
+        Supporting pmids have to already be linked to the LGD record.
 
-            Args:
-                request: new molecular mechanism data
-                stable_id (str): The stable ID to update.
+        Args:
+            request: new molecular mechanism data
+            stable_id (str): The stable ID to update.
 
-            Request example:
-                    {
-                        "molecular_mechanism": {
-                            "name": "gain of function",
-                            "support": "evidence"
-                        },
-                        "mechanism_synopsis": [{
-                            "name": "destabilising LOF",
-                            "support": "evidence"
-                        }],
-                        "mechanism_evidence": [{'pmid': '25099252', 'description': 'text', 'evidence_types': 
-                                            [{'primary_type': 'Rescue', 'secondary_type': ['Patient Cells']}]}]
-                    }
-
+        Request example:
+                {
+                    "molecular_mechanism": {
+                        "name": "gain of function",
+                        "support": "evidence"
+                    },
+                    "mechanism_synopsis": [{
+                        "name": "destabilising LOF",
+                        "support": "evidence"
+                    }],
+                    "mechanism_evidence": [{'pmid': '25099252', 'description': 'text', 'evidence_types': 
+                                        [{'primary_type': 'Rescue', 'secondary_type': ['Patient Cells']}]}]
+                }
         """
         user = request.user
         mechanism_data = request.data
@@ -545,15 +540,7 @@ class LGDUpdateMechanism(BaseUpdate):
 @extend_schema(exclude=True)
 class LGDEditVariantConsequences(CustomPermissionAPIView):
     """
-        Add or delete lgd-variant consequence(s).
-
-        Add data (action: POST)
-            Add a list of variant GenCC consequences to an existing G2P record (LGD).
-
-        Delete data (action: UPDATE)
-            Delete a variant GenCC consequence associated with the LGD.
-            The deletion does not remove the entry from the database, instead
-            it sets the flag 'is_deleted' to 1.
+    Add or delete lgd-variant consequence(s).
     """
     http_method_names = ['post', 'patch', 'options']
 
@@ -581,19 +568,19 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
     @transaction.atomic
     def post(self, request, stable_id):
         """
-            The post method creates an association between the current LGD record and a list of variant consequences.
-            We want to whole process to be done in one db transaction.
+        The post method adds a list of variant GenCC consequences to an existing G2P record (LGD).
+        We want to whole process to be done in one db transaction.
 
-            Args:
-                (dict) request
+        Args:
+            request (dict)
 
-                Example:
-                    {
-                        "variant_consequences": [{
-                            "variant_consequence": "altered_gene_product_level",
-                            "support": "inferred"
-                        }]
-                    }
+            Example:
+                {
+                    "variant_consequences": [{
+                        "variant_consequence": "altered_gene_product_level",
+                        "support": "inferred"
+                    }]
+                }
         """
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
 
@@ -652,9 +639,11 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
     @transaction.atomic
     def patch(self, request, stable_id):
         """
-            This method deletes the LGD-variant gencc consequence.
+        This method deletes a variant GenCC consequence from the LGD record.
+        The deletion does not remove the entry from the database, instead
+        it sets the flag 'is_deleted' to 1.
 
-            Example: {"variant_consequence": "altered_gene_product_level"}
+        Example: {"variant_consequence": "altered_gene_product_level"}
         """
         # Check if input has the expected value
         if "variant_consequence" not in request.data or request.data.get('variant_consequence') == "":
@@ -710,15 +699,7 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
 @extend_schema(exclude=True)
 class LGDEditCCM(CustomPermissionAPIView):
     """
-        Add or delete LGD-cross cutting modifier(s).
-
-        Add data (action: POST)
-            Add a list of cross cutting modifiers to an existing G2P record (LGD).
-
-        Delete data (action: UPDATE)
-            Delete a cross cutting modifier associated with the LGD.
-            The deletion does not remove the entry from the database, instead
-            it sets the flag 'is_deleted' to 1.
+    Add or delete LGD-cross cutting modifier(s).
     """
     http_method_names = ['post', 'patch', 'options']
 
@@ -730,9 +711,9 @@ class LGDEditCCM(CustomPermissionAPIView):
 
     def get_serializer_class(self, action):
         """
-            Returns the appropriate serializer class based on the action.
-            To add data use LGDCrossCuttingModifierListSerializer: it accepts a list of ccm.
-            To delete data use LGDCrossCuttingModifierSerializer: it accepts one ccm.
+        Returns the appropriate serializer class based on the action.
+        To add data use LGDCrossCuttingModifierListSerializer: it accepts a list of ccm.
+        To delete data use LGDCrossCuttingModifierSerializer: it accepts one ccm.
         """
         action = action.lower()
 
@@ -746,16 +727,16 @@ class LGDEditCCM(CustomPermissionAPIView):
     @transaction.atomic
     def post(self, request, stable_id):
         """
-            The post method creates an association between the current LGD record and a list of cross cutting modifiers.
-            We want to whole process to be done in one db transaction.
+        The post method adds a list of cross cutting modifiers to an existing G2P record (LGD).
+        We want to whole process to be done in one db transaction.
 
-            Args:
-                (dict) request
+        Args:
+            request (dict)
 
-                Example:
-                    {
-                        "cross_cutting_modifiers": [{"term": "typically mosaic"}]
-                    }
+            Example:
+                {
+                    "cross_cutting_modifiers": [{"term": "typically mosaic"}]
+                }
         """
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
 
@@ -814,9 +795,12 @@ class LGDEditCCM(CustomPermissionAPIView):
     @transaction.atomic
     def patch(self, request, stable_id):
         """
-            This method deletes the LGD-cross cutting modifier.
-            Example:
-                    { "term": "typically mosaic" }
+        This method deletes a cross cutting modifier from the LGD record.
+        The deletion does not remove the entry from the database, instead
+        it sets the flag 'is_deleted' to 1.
+
+        Example:
+                { "term": "typically mosaic" }
         """
         if "term" not in request.data or request.data.get('term') == "":
             return Response({"error": f"Empty cross cutting modifier. Please provide the 'term'."}, status=status.HTTP_400_BAD_REQUEST)
@@ -863,15 +847,7 @@ class LGDEditCCM(CustomPermissionAPIView):
 @extend_schema(exclude=True)
 class LGDEditVariantTypes(CustomPermissionAPIView):
     """
-        Add or delete LGD-variant type(s).
-
-        Add data (action: POST)
-            Add a list of variant types to an existing G2P record (LGD).
-
-        Delete data (action: UPDATE)
-            Delete a variant type associated with the LGD.
-            The deletion does not remove the entry from the database, instead
-            it sets the flag 'is_deleted' to 1.
+    Add or delete LGD-variant type(s).
     """
     http_method_names = ['post', 'patch', 'options']
 
@@ -899,26 +875,25 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
     @transaction.atomic
     def post(self, request, stable_id):
         """
-            The post method creates an association between the current LGD record and a list of
-            variant types.
-            We want to whole process to be done in one db transaction.
+        The post method adds a list of variant types to an existing G2P record (LGD).
+        We want to whole process to be done in one db transaction.
 
-            Args:
-                (dict) request
+        Args:
+            request (dict)
 
-                Example:
-                    {
-                        "variant_types": [{
-                                "comment": "this is a comment",
-                                "de_novo": false,
-                                "inherited": true,
-                                "nmd_escape": false,
-                                "primary_type": "protein_changing",
-                                "secondary_type": "stop_gained",
-                                "supporting_papers": ["1"],
-                                "unknown_inheritance": true
-                            }]
-                    }
+            Example:
+                {
+                    "variant_types": [{
+                            "comment": "this is a comment",
+                            "de_novo": false,
+                            "inherited": true,
+                            "nmd_escape": false,
+                            "primary_type": "protein_changing",
+                            "secondary_type": "stop_gained",
+                            "supporting_papers": ["1"],
+                            "unknown_inheritance": true
+                        }]
+                }
         """
         user = self.request.user # email
 
@@ -977,9 +952,11 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
     @transaction.atomic
     def patch(self, request, stable_id):
         """
-            This method deletes the LGD-variant type.
+        This method deletes the LGD-variant type.
+        The deletion does not remove the entry from the database, instead
+        it sets the flag 'is_deleted' to 1.
 
-            Example: { "secondary_type": "stop_gained" }
+        Example: { "secondary_type": "stop_gained" }
         """
         # Check if the input has the expected data
         if "secondary_type" not in request.data or request.data.get('secondary_type') == "":
@@ -1047,15 +1024,7 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
 @extend_schema(exclude=True)
 class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
     """
-        Add or delete LGD-variant type(s)
-
-        Add data (action: POST)
-            Add a list of variant description (HGVS) to an existing G2P record (LGD).
-
-        Delete data (action: UPDATE)
-            Delete a variant type description associated with the LGD.
-            The deletion does not remove the entry from the database, instead
-            it sets the flag 'is_deleted' to 1.
+    Add or delete LGD-variant type(s)
     """
     http_method_names = ['post', 'patch', 'options']
 
@@ -1067,9 +1036,9 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
 
     def get_serializer_class(self, action):
         """
-            Returns the appropriate serializer class based on the action.
-            To add data use LGDVariantTypeDescriptionListSerializer: it accepts a list of variant type descriptions.
-            To delete data use LGDVariantTypeDescriptionSerializer: it accepts one variant type description.
+        Returns the appropriate serializer class based on the action.
+        To add data use LGDVariantTypeDescriptionListSerializer: it accepts a list of variant type descriptions.
+        To delete data use LGDVariantTypeDescriptionSerializer: it accepts one variant type description.
         """
         action = action.lower()
 
@@ -1083,20 +1052,19 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
     @transaction.atomic
     def post(self, request, stable_id):
         """
-            The post method creates an association between the current LGD record and a list of 
-            variant type descriptions (HGVS).
-            We want to whole process to be done in one db transaction.
+        The post method adds a list of variant description (HGVS) to an existing G2P record (LGD).
+        We want to whole process to be done in one db transaction.
 
-            Args:
-                (dict) request
+        Args:
+            request (dict)
 
-                Example:
-                    {
-                        "variant_descriptions": [{
-                                "publications": [1, 1234],
-                                "description": "NM_000546.6:c.794T>C (p.Leu265Pro)"
-                        }]
-                    }
+            Example:
+                {
+                    "variant_descriptions": [{
+                            "publications": [1, 1234],
+                            "description": "NM_000546.6:c.794T>C (p.Leu265Pro)"
+                    }]
+                }
         """
         user = self.request.user
 
@@ -1153,9 +1121,11 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
     @transaction.atomic
     def patch(self, request, stable_id):
         """
-            This method deletes the LGD-variant type descriptions.
+        This method deletes the LGD-variant type descriptions.
+        The deletion does not remove the entry from the database, instead
+        it sets the flag 'is_deleted' to 1.
 
-            Example: { "description": "NM_000546.6:c.794T>C (p.Leu265Pro)" }
+        Example: { "description": "NM_000546.6:c.794T>C (p.Leu265Pro)" }
         """
         # Check if the input has the expected data
         if "description" not in request.data or request.data.get('description') == "":
@@ -1192,7 +1162,7 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
 @extend_schema(exclude=True)
 class LGDEditComment(CustomPermissionAPIView):
     """
-        Add or delete a comment to a G2P record (LGD).
+    Add or delete a comment to a G2P record (LGD).
     """
     http_method_names = ['post', 'patch', 'options']
     serializer_class = LGDCommentSerializer
@@ -1205,9 +1175,9 @@ class LGDEditComment(CustomPermissionAPIView):
 
     def get_serializer_class(self, action):
         """
-            Returns the appropriate serializer class based on the action.
-            To add data use LGDCommentListSerializer: it accepts a list of comments.
-            To delete data use LGDCommentSerializer: it accepts one comment.
+        Returns the appropriate serializer class based on the action.
+        To add data use LGDCommentListSerializer: it accepts a list of comments.
+        To delete data use LGDCommentSerializer: it accepts one comment.
         """
         action = action.lower()
 
@@ -1219,23 +1189,23 @@ class LGDEditComment(CustomPermissionAPIView):
     @transaction.atomic
     def post(self, request, stable_id):
         """
-            The post method adds a list of comments.
-            It links the current LGD record to the new comment(s).
-            We want to whole process to be done in one db transaction.
+        The post method adds a list of comments.
+        It links the current LGD record to the new comment(s).
+        We want to whole process to be done in one db transaction.
 
-            Example:
-                {
-                    "comments": [
-                        {
-                            "comment": "This is a comment",
-                            "is_public": 1
-                        },
-                        {
-                            "comment": "This is another comment",
-                            "is_public": 0
-                        }
-                    ]
-                }
+        Example:
+            {
+                "comments": [
+                    {
+                        "comment": "This is a comment",
+                        "is_public": 1
+                    },
+                    {
+                        "comment": "This is another comment",
+                        "is_public": 0
+                    }
+                ]
+            }
         """
         user = self.request.user
 
@@ -1306,9 +1276,9 @@ class LGDEditComment(CustomPermissionAPIView):
     @transaction.atomic
     def patch(self, request, stable_id):
         """
-            This method deletes the LGD-comment.
+        This method deletes the LGD-comment.
 
-            Example: { "comment": "This is a comment" }
+        Example: { "comment": "This is a comment" }
         """
         comment = request.data.get('comment')
         user = request.user
@@ -1343,7 +1313,7 @@ class LGDEditComment(CustomPermissionAPIView):
 @extend_schema(exclude=True)
 class LocusGenotypeDiseaseDelete(APIView):
     """
-        Delete a LGD record
+    Delete a LGD record
     """
     http_method_names = ['patch', 'options']
     serializer_class = LocusGenotypeDiseaseSerializer
@@ -1352,9 +1322,9 @@ class LocusGenotypeDiseaseDelete(APIView):
     @transaction.atomic
     def patch(self, request, stable_id):
         """
-            This method deletes the LGD record.
-            The deletion does not remove the entry from the database, instead
-            it sets the flag 'is_deleted' to 1.
+        This method deletes the LGD record.
+        The deletion does not remove the entry from the database, instead
+        it sets the flag 'is_deleted' to 1.
         """
         user = request.user
 

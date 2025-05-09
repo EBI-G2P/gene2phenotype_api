@@ -4,8 +4,7 @@ from rest_framework.decorators import api_view
 from django.http import Http404
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema, OpenApiResponse
-import textwrap
+from drf_spectacular.utils import extend_schema
 import re
 
 from gene2phenotype_app.serializers import (
@@ -36,17 +35,17 @@ from ..utils import validate_phenotype
 @api_view(['GET'])
 def PhenotypeDetail(request, hpo_list):
     """
-        Retrieve phenotypes for a list of HPO IDs.
-        The phenotype info is fetched from the HPO API.
+    Retrieve phenotypes for a list of HPO IDs.
+    The phenotype info is fetched from the HPO API.
 
-        Args:
-            (str) `hpo_list`: A comma-separated string of HPO IDs
+    Args:
+        hpo_list (str): A comma-separated string of HPO IDs
 
-        Returns a dictionary with the following format:
-            (list) `results`: list of the phenotype data
-            (int) `count`: number of HPO IDs in the response
+    Returns a dictionary with the following format:
+        results (list): list of the phenotype data
+        count (int): number of HPO IDs in the response
 
-        Raises: Invalid HPO
+    Raises: Invalid HPO
     """
     id_list = hpo_list.split(',')
     data = []
@@ -91,17 +90,6 @@ def PhenotypeDetail(request, hpo_list):
 # Add or delete data
 @extend_schema(exclude=True)
 class LGDEditPhenotypes(CustomPermissionAPIView):
-    """
-        Add or delete lgd-phenotype.
-
-        Add data (action: POST)
-            Add a list of phenotypes to an existing G2P record (LGD).
-
-        Delete data (action: PATCH)
-            Delete a phenotype associated with the LGD.
-            The deletion does not remove the entry from the database, instead
-            it sets the flag 'is_deleted' to 1.
-    """
     http_method_names = ['post', 'patch', 'options']
 
     # Define specific permissions
@@ -112,9 +100,9 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
 
     def get_serializer_class(self, action):
         """
-            Returns the appropriate serializer class based on the action.
-            To add data use LGDPhenotypeListSerializer: it accepts a list of phenotypes.
-            To delete data use LGDPhenotypeSerializer: it accepts one phenotype.
+        Returns the appropriate serializer class based on the action.
+        To add data use LGDPhenotypeListSerializer: it accepts a list of phenotypes.
+        To delete data use LGDPhenotypeSerializer: it accepts one phenotype.
         """
         action = action.lower()
 
@@ -128,26 +116,26 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
     @transaction.atomic
     def post(self, request, stable_id):
         """
-            The post method creates an association between the current LGD record and a list of phenotypes.
-            It also adds phenotype summaries.
-            We want to whole process to be done in one db transaction.
+        The post method adds a list of phenotypes to an existing G2P record (LGD).
+        It also adds phenotype summaries.
+        We want to whole process to be done in one db transaction.
 
-            Args:
-                (dict) request:
-                            - hpo_terms: list of phenotypes (optional)
-                            - summaries: list of phenotype summaries (optional)
+        Args:
+            request (dict):
+                - hpo_terms: list of phenotypes (optional)
+                - summaries: list of phenotype summaries (optional)
 
-                Example:
-                    {
-                        "hpo_terms": [{
-                            "accession": "HP:0003974",
-                            "publication": 1
-                        }],
-                        "summaries": [{
-                            "summary": "This is a summary",
-                            "publication": [1, 12345]
-                        }]
-                    }
+            Example:
+                {
+                    "hpo_terms": [{
+                        "accession": "HP:0003974",
+                        "publication": 1
+                    }],
+                    "summaries": [{
+                        "summary": "This is a summary",
+                        "publication": [1, 12345]
+                    }]
+                }
         """
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
 
@@ -251,7 +239,9 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
     @transaction.atomic
     def patch(self, request, stable_id):
         """
-            This method deletes the LGD-phenotypes
+        Delete a phenotype from a LGD record.
+        The deletion does not remove the entry from the database, instead
+        it sets the flag 'is_deleted' to 1.
         """
         accession = request.data.get('accession')
         user = self.request.user # TODO check if user has permission
@@ -280,17 +270,6 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
 
 @extend_schema(exclude=True)
 class LGDEditPhenotypeSummary(CustomPermissionAPIView):
-    """
-        Add or delete a LGD-phenotype summary
-
-        Add data (action: POST)
-            Add a list of phenotype summaries to an existing G2P record (LGD).
-
-        Delete data (action: UPDATE)
-            Delete the phenotype summary associated with the LGD.
-            The deletion does not remove the entry from the database, instead
-            it sets the flag 'is_deleted' to 1.
-    """
     http_method_names = ['post', 'patch', 'options']
 
     # Define specific permissions
@@ -301,9 +280,9 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
 
     def get_serializer_class(self, action):
         """
-            Returns the appropriate serializer class based on the action.
-            To add data use LGDPhenotypeSummaryListSerializer: it accepts a list of phenotype summaries.
-            To delete data use LGDPhenotypeSummarySerializer: it accepts one phenotype summary.
+        Returns the appropriate serializer class based on the action.
+        To add data use LGDPhenotypeSummaryListSerializer: it accepts a list of phenotype summaries.
+        To delete data use LGDPhenotypeSummarySerializer: it accepts one phenotype summary.
         """
         action = action.lower()
 
@@ -317,21 +296,21 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
     @transaction.atomic
     def post(self, request, stable_id):
         """
-            The post method creates an association between the current LGD record and a summary of phenotypes.
-            A summary can be linked to one or more publications.
+        The post method adds a list of phenotype summaries to an existing G2P record (LGD).
+        A summary can be linked to one or more publications.
 
-            We want to whole process to be done in one db transaction.
+        We want to whole process to be done in one db transaction.
 
-            Args:
-                (list) request: list of phenotype summaries, each summaries has to following format
-                                - (string) summary: phenotype summary text (mandatory)
-                                - (list) publication: list of pmids (mandatory)
+        Args:
+            request (list): list of phenotype summaries, each summaries has to following format
+                summary (string): phenotype summary text (mandatory)
+                publication (list): list of pmids (mandatory)
 
-                Example:
-                    [{
-                        "summary": "This is a summary",
-                        "publication": [1, 12345]
-                    }]
+            Example:
+                [{
+                    "summary": "This is a summary",
+                    "publication": [1, 12345]
+                }]
         """
         user = self.request.user
 
@@ -379,7 +358,9 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
     @transaction.atomic
     def patch(self, request, stable_id):
         """
-            This method deletes the LGD-phenotype summary
+        This method deletes the LGD-phenotype summary.
+        The deletion does not remove the entry from the database, instead
+        it sets the flag 'is_deleted' to 1.
         """
         summary = request.data.get('summary')
 

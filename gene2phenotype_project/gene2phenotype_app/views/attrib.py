@@ -10,15 +10,15 @@ from gene2phenotype_app.models import AttribType, Attrib
 
 @extend_schema(exclude=True)
 class AttribTypeList(APIView):
-    """
-        Fetch all available attributes grouped by type.
-
-        Returns: A dictionary where the keys represent attribute types,
-                 and the values are lists of their respective attributes.
-    """
     serializer_class = AttribTypeSerializer
 
     def get(self, request, *args, **kwargs):
+        """
+        Fetch all available attributes grouped by type.
+
+        Returns: A dictionary where the keys represent attribute types,
+                and the values are lists of their respective attributes.
+        """
         queryset = AttribType.objects.filter(is_deleted=0)
 
         result = {}
@@ -32,7 +32,10 @@ class AttribTypeList(APIView):
 
 @extend_schema(exclude=True)
 class AttribTypeDescriptionList(APIView):
-    """
+    serializer_class = AttribTypeSerializer
+
+    def get(self, request, *args, **kwargs):
+        """
         Fetch all attributes with their corresponding descriptions
         grouped by attribute type.
 
@@ -50,10 +53,7 @@ class AttribTypeDescriptionList(APIView):
                     ...
                 ]
             }
-    """
-    serializer_class = AttribTypeSerializer
-
-    def get(self, request, *args, **kwargs):
+        """
         # Fetch attrib types that are not deleted
         queryset = AttribType.objects.filter(is_deleted=0)
         result = {}
@@ -67,30 +67,6 @@ class AttribTypeDescriptionList(APIView):
 
 @extend_schema(exclude=True)
 class AttribList(APIView):
-    """
-        Fetch all attribute values for a specific attribute type.
-
-        Args:
-            (string) `attrib_type`: attribute type
-
-        Returns: list of attributes with the following format
-                    (list) `results`: list of attributes
-                    (int) `count`: number of attributes
-
-        Example:
-
-                {
-                    "results": [
-                        "definitive",
-                        "disputed",
-                        "limited",
-                        "moderate",
-                        "refuted",
-                        "strong"
-                    ],
-                    "count": 6
-                }
-    """
     lookup_field = 'type'
     serializer_class = AttribSerializer
 
@@ -105,6 +81,29 @@ class AttribList(APIView):
             return Attrib.objects.filter(type=attrib_type_obj)
 
     def get(self, request, *args, **kwargs):
+        """
+        Fetch all attribute values for a specific attribute type.
+
+        Args:
+            attrib_type (string): attribute type
+
+        Returns: list of attributes with the following format
+                    results (list): list of attributes
+                    count (int): number of attributes
+
+        Example:
+                {
+                    "results": [
+                        "definitive",
+                        "disputed",
+                        "limited",
+                        "moderate",
+                        "refuted",
+                        "strong"
+                    ],
+                    "count": 6
+                }
+        """
         attrib_type = self.kwargs['attrib_type']
         queryset = self.get_queryset()
 

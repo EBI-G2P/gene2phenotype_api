@@ -25,7 +25,7 @@ from .base import BaseView
 
 class CustomPagination(PageNumberPagination):
     """
-        Custom method to define the number of results per page
+    Custom method to define the number of results per page
     """
     page_size = 20
 
@@ -119,19 +119,6 @@ class CustomPagination(PageNumberPagination):
     }
 )
 class SearchView(BaseView):
-    """
-        Search G2P records. Supported search types are:
-
-            - gene
-            - disease
-            - phenotype
-            - G2P ID
-            - draft (only available for authenticated users)
-
-        If no search type is specified then it performs a generic search.
-        The search can be specific to one panel if using parameter 'panel'.
-    """
-
     pagination_class = CustomPagination
 
     def get_serializer_class(self):
@@ -322,6 +309,17 @@ class SearchView(BaseView):
         return new_queryset
 
     def list(self, request, *args, **kwargs):
+        """
+        Search G2P records. Supported search types are:
+            - gene
+            - disease
+            - phenotype
+            - G2P ID
+            - draft (only available for authenticated users)
+
+        If no search type is specified then it performs a generic search.
+        The search can be specific to one panel if using parameter 'panel'.
+        """
         queryset = self.get_queryset()
         serializer = self.get_serializer_class()
         search_query = request.query_params.get('query', None)

@@ -41,9 +41,6 @@ from .base import (
 
 @extend_schema(exclude=True)
 class PanelCreateView(generics.CreateAPIView):
-    """ 
-        Panel Creation View 
-    """    
     serializer_class = PanelCreateSerializer
     permission_classes = [permissions.IsAdminUser]
 
@@ -148,7 +145,10 @@ class PanelCreateView(generics.CreateAPIView):
     }
 )
 class PanelList(APIView):
-    """
+    serializer_class = PanelDetailSerializer
+
+    def get(self, request, *args, **kwargs):
+        """
         Return all panels info.
         The information includes some stats: 
             - total number of records linked to panel
@@ -156,13 +156,9 @@ class PanelList(APIView):
             - total number of records by confidence
 
         Returns a dictionary with the following values:
-            (list) `results`: list of panels and respective data;
-            (int) `count`: number of panels in the response
-    """
-
-    serializer_class = PanelDetailSerializer
-
-    def get(self, request, *args, **kwargs):
+            results (list): list of panels and respective data
+            count (int): number of panels in the response
+        """
         user = self.request.user
 
         queryset = Panel.objects.all()
@@ -246,21 +242,21 @@ class PanelList(APIView):
     }
 )
 class PanelDetail(BaseAPIView):
-    """
-        Return information for a specific panel.
-
-        Args:
-            (str) `name`: the panel short name
-
-        Returns a dictionary with the following values:
-            (string) panel name;
-            (string) panel description: the panel long name;
-            (string) last_updated;
-            (dict) stats;
-    """
     serializer_class = PanelDetailSerializer
 
     def get(self, request, name, *args, **kwargs):
+        """
+        Return information for a specific panel.
+
+        Args:
+            name (str): the panel short name
+
+        Returns a dictionary with the following values:
+            panel name (string)
+            panel description (string): the panel long name
+            last_updated (string)
+            stats (dict)
+        """
         user = self.request.user
         queryset = Panel.objects.filter(name=name)
 
@@ -384,20 +380,20 @@ class PanelDetail(BaseAPIView):
     }
 )
 class PanelRecordsSummary(BaseAPIView):
-    """
-        Display a summary of the latest G2P entries associated with panel.
-
-        Args:
-            (str) panel: the panel short name
-
-        Returns:
-            Response object includes:
-                            (string) panel name
-                            (list) records_summary: summary of entries linked to panel
-    """
     serializer_class = PanelDetailSerializer
 
     def get(self, request, name, *args, **kwargs):
+        """
+        Display a summary of the latest G2P entries associated with panel.
+
+        Args:
+            panel (str): the panel short name
+
+        Returns:
+            Response object includes:
+                panel name (string)
+                records_summary (list): summary of entries linked to panel
+        """
         user = self.request.user
         queryset = Panel.objects.filter(name=name)
 
@@ -439,11 +435,11 @@ class LGDEditPanel(CustomPermissionAPIView):
     @transaction.atomic
     def post(self, request, stable_id):
         """
-            The post method links the current LGD record to the panel.
-            We want to whole process to be done in one db transaction.
+        The post method links the current LGD record to the panel.
+        We want to whole process to be done in one db transaction.
 
-            Input example:
-                        { "name": "DD" }
+        Input example:
+                    { "name": "DD" }
         """
         user = self.request.user
 
@@ -490,7 +486,7 @@ class LGDEditPanel(CustomPermissionAPIView):
     @transaction.atomic
     def patch(self, request, stable_id):
         """
-            This method deletes the LGD-panel
+        This method deletes the LGD-panel
         """
         panel = request.data.get("name", None)
         user = request.user # TODO check if user has permission to edit the panel and the record
@@ -527,15 +523,15 @@ class LGDEditPanel(CustomPermissionAPIView):
 @api_view(['GET'])
 def PanelDownload(request, name):
     """
-        Method to download the panel data.
-        Authenticated users can download data for all panels.
+    Method to download the panel data.
+    Authenticated users can download data for all panels.
 
-        Args:
-            (str) `name`: the short name of the panel to download
+    Args:
+        name (str): the short name of the panel to download
 
-        Returns: Uncompressed csv file
+    Returns: Uncompressed csv file
 
-        Raises: Invalid panel
+    Raises: Invalid panel
     """
 
     user_email = request.user
@@ -871,9 +867,9 @@ def PanelDownload(request, name):
 
 def extract_locus_id(locus_ids):
     """
-        Method to extract the gene MIM ID and the
-        HGNC ID from a list of locus IDs.
-        Called by: PanelDownload()
+    Method to extract the gene MIM ID and the
+    HGNC ID from a list of locus IDs.
+    Called by: PanelDownload()
     """
     gene_mim = ""
     hgnc_id = ""

@@ -32,10 +32,6 @@ from gene2phenotype_app.serializers import MetaSerializer
     }
 )
 class MetaView(APIView):
-    """
-    API view for retrieving the reference data.
-    """
-
     def get_queryset(self):
         """
         Method to get a queryset containing the latest records for each unique key

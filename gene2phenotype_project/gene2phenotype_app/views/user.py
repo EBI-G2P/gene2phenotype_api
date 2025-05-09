@@ -33,13 +33,6 @@ from gene2phenotype_app.models import (
 
 @extend_schema(exclude=True)
 class UserPanels(BaseView):
-    """
-        Returns the list of panels the current user can edit
-
-        Returns:
-                (dict) list of panels
-
-    """
     lookup_field = 'name'
     serializer_class = User
     permission_classes = [permissions.IsAuthenticated]
@@ -55,6 +48,12 @@ class UserPanels(BaseView):
         return queryset
 
     def list(self, request, *args, **kwargs):
+        """
+        Returns the list of panels the current user can edit.
+
+        Returns:
+            list of panels (dict)
+        """
         user_obj = self.get_queryset().first()
 
         queryset_user_panels = UserPanel.objects.filter(
@@ -70,16 +69,6 @@ class UserPanels(BaseView):
 
 @extend_schema(exclude=True)
 class UserList(generics.ListAPIView):
-    """
-        Display a list of active users and their info.
-        The info includes a list of panels the user has permission to edit.
-
-        Returns:
-            Response object includes:
-                            (list) results: list of users
-                            (int) count: number of users
-    """
-
     serializer_class = UserSerializer
 
     def get_serializer_context(self):
@@ -97,6 +86,14 @@ class UserList(generics.ListAPIView):
         return queryset
 
     def list(self, request, *args, **kwargs):
+        """
+        Returns a list of active users and their info.
+        The info includes a list of panels the user has permission to edit.
+
+        Returns: the Response object includes:
+                    results (list): list of users
+                    count (int): number of users
+        """
         queryset = self.get_queryset()
         serializer = UserSerializer(queryset, many=True, context={'user': self.request.user})
 
@@ -106,17 +103,16 @@ class UserList(generics.ListAPIView):
 @extend_schema(exclude=True)
 class CreateUserView(generics.CreateAPIView):
     """
-        View for creating a new user.
+    View for creating a new user.
 
-        This view handles POST requests to create a new user using the `CreateUserSerializer`. 
-        It is based on Django's `CreateAPIView` which provides the default implementation 
-        for handling object creation.
+    This view handles POST requests to create a new user using the `CreateUserSerializer`. 
+    It is based on Django's `CreateAPIView` which provides the default implementation 
+    for handling object creation.
 
-        Usage:
-            Send a POST request with the required user details (username, email, 
-            password, first_name, last_name, panels) to this API to create a new user account.
+    Usage:
+        Send a POST request with the required user details (username, email, 
+        password, first_name, last_name, panels) to this API to create a new user account.
     """
-
     serializer_class = CreateUserSerializer
     permission_classes = [permissions.IsAdminUser]
 
@@ -124,8 +120,8 @@ class CreateUserView(generics.CreateAPIView):
 @extend_schema(exclude=True)
 class AddUserToPanelView(generics.CreateAPIView):
     """
-        API view to add a user to a panel.
-        Only available to admin users, as enforced by the IsAdminUser permission class.
+    API view to add a user to a panel.
+    Only available to admin users, as enforced by the IsAdminUser permission class.
     """    
     serializer_class = AddUserToPanelSerializer
     permission_classes = [permissions.IsAdminUser]
@@ -133,44 +129,27 @@ class AddUserToPanelView(generics.CreateAPIView):
 
 @extend_schema(exclude=True)
 class LoginView(generics.GenericAPIView):
-    """
-        LoginView: Handles user authentication and login.
-
-        This view allows users to authenticate using their credentials (e.g., email/username and password).
-        Upon successful authentication, the view generates a JSON Web Token (JWT) for the user and 
-        sets it as a secure cookie in the HTTP response. 
-
-        Attributes:
-            - serializer_class: Specifies the serializer used for validating user credentials, 
-            which is `LoginSerializer`.
-            - permission_classes: Allows any user (authenticated or not) to access this endpoint 
-            by using the `AllowAny` permission.
-
-        Methods:
-            - post(request, *args, **kwargs): Handles the user login process, generates the 
-            access token, and sets it in a cookie.
-    """
-
     serializer_class = LoginSerializer
     permission_classes = (permissions.AllowAny,)
+
     def post(self, request, *args, **kwargs):
         """
-            Handles the POST request for user login.
+        Handles the POST request for user login.
 
-            This method authenticates a user based on the provided credentials, generates an access 
-            token, and sets it in a secure cookie for client-side use. It also returns the user 
-            details and token information in the response body.
-            Parameters:
-                - request: The HTTP request containing user credentials in the request body (e.g., 
-                `username` and `password`).
-            Returns:
-                - Response: An HTTP response object with the user data and tokens in the body. 
-                The access token is also stored as a secure cookie.
-                The refresh token is also stored as a secure cookie
+        This method authenticates a user based on the provided credentials, generates an access 
+        token, and sets it in a secure cookie for client-side use. It also returns the user 
+        details and token information in the response body.
+        Parameters:
+            - request: The HTTP request containing user credentials in the request body (e.g., 
+            `username` and `password`).
+        Returns:
+            - Response: An HTTP response object with the user data and tokens in the body. 
+            The access token is also stored as a secure cookie.
+            The refresh token is also stored as a secure cookie
 
-            Raises:
-                - ValidationError: Raised if the provided credentials are invalid.
-                - ValueError: Raised if the cookie cannot be set due to a response error.
+        Raises:
+            - ValidationError: Raised if the provided credentials are invalid.
+            - ValueError: Raised if the cookie cannot be set due to a response error.
         """
         serializer = LoginSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
@@ -224,55 +203,29 @@ class LoginView(generics.GenericAPIView):
 
 @extend_schema(exclude=True)
 class LogOutView(generics.GenericAPIView):
-    """
-        API view for user logout.
-
-        This view allows authenticated users to log out by blacklisting their refresh tokens. 
-        It requires the user to provide a valid refresh token in the request. Once the token is 
-        blacklisted, it becomes invalid for further use, effectively logging the user out.
-
-        Attributes:
-            - serializer_class: Specifies the serializer used for this view, which is `LogoutSerializer`.
-            - permission_classes: Requires the user to be authenticated to access this endpoint.
-
-        Methods:
-            - post(request):
-                Handles the POST request to log out a user. Validates the refresh token using 
-                the `LogoutSerializer` and blacklists it to prevent further use.
-
-                Parameters:
-                    - request: The HTTP request containing the refresh token to be blacklisted.
-
-                Returns:
-                    A response with HTTP 204 NO CONTENT status if the logout is successful.
-
-        Raises:
-            - ValidationError: Raised if the refresh token is invalid or cannot be blacklisted.
-            - PermissionDenied: Raised if the user is not authenticated.
-    """
     serializer_class = LogoutSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request):
         """
-            Handles the POST request for logging out a user.
+        Handles the POST request for logging out a user.
 
-            This method validates the provided refresh token and blacklists it to prevent further 
-            use. It ensures that only authenticated users can access this endpoint.
-            Parameters:
-                - request: The HTTP request containing the refresh token in the request body.
-            Returns:
-                - A Response object with HTTP 204 NO CONTENT status to indicate a successful logout.
+        This method validates the provided refresh token and blacklists it to prevent further 
+        use. It ensures that only authenticated users can access this endpoint.
+        Parameters:
+            - request: The HTTP request containing the refresh token in the request body.
+        Returns:
+            - A Response object with HTTP 204 NO CONTENT status to indicate a successful logout.
 
-            Raises:
-                - ValidationError: Raised if the refresh token is invalid or missing.
-                - AuthenticationFailed: Raised if the user is not authenticated.
+        Raises:
+            - ValidationError: Raised if the refresh token is invalid or missing.
+            - AuthenticationFailed: Raised if the user is not authenticated.
         """
         refresh_token = request.COOKIES.get(getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_COOKIE", "refresh_token"))
 
         if not refresh_token:
             return Response({"error": "Refresh token missing"}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         data = {
             'refresh': refresh_token
         }
@@ -299,35 +252,15 @@ class LogOutView(generics.GenericAPIView):
 
 @extend_schema(exclude=True)
 class ManageUserView(generics.RetrieveUpdateAPIView):
-    """
-        View for managing the authenticated user.
-
-        This view allows the authenticated user to retrieve and update their own information. 
-        It extends `RetrieveUpdateAPIView`, providing GET and PUT/PATCH methods for 
-        retrieving and updating user data.
-
-        Attributes:
-            - serializer_class: Specifies the `UserSerializer` to serialize and validate 
-            the user data.
-            - permission_classes: Ensures that only authenticated users can access 
-            this view, using `IsAuthenticated` permission.
-
-        Methods:
-            - get_object():
-                Retrieves and returns the authenticated user object. This method overrides 
-                the default to ensure the user data being accessed belongs to the currently 
-                logged-in user.
-
-        Usage:
-            - GET: Retrieve the authenticated user's details.
-    """
-
     serializer_class = UserSerializer
     permission_classes = (permissions.IsAuthenticated,)
-    
 
     def get(self, request):
-        """Retrieve and return authenticated user"""
+        """
+        Retrieve and return the authenticated user information.
+        This method overrides the default to ensure the user data being
+        accessed belongs to the currently logged-in user.
+        """
         serializer = UserSerializer(request.user)
         result = serializer.data
         refresh_token_value = request.COOKIES.get('refresh_token_lifetime')
@@ -337,22 +270,18 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
 
 @extend_schema(exclude=True)
 class ChangePasswordView(generics.GenericAPIView):
-    """
-    API view for authenticated users to change their password.
-    Only accessible to authenticated users. 
-    """
     serializer_class = ChangePasswordSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
         """
-            Post method for ChangePasswordView
+        Post method for authenticated users to change their password.
 
-            Args:
-                request (Request): the HTTP request object
+        Args:
+            request (Request): the HTTP request object
 
-            Returns:
-                Response: a response containing the user information and a success status
+        Returns:
+            Response: a response containing the user information and a success status
         """        
         serializer = self.serializer_class(data=request.data, context={'user':request.user})
         serializer.is_valid(raise_exception=True)
@@ -362,16 +291,12 @@ class ChangePasswordView(generics.GenericAPIView):
 
 @extend_schema(exclude=True)  
 class VerifyEmailView(generics.GenericAPIView):
-    """
-        View for Verification of Email for Password Reset
-    """    
-
     serializer_class = VerifyEmailSerializer
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request, *args, **kwargs):
         """
-        Post method for Verify Email View - Unauthenticated view 
+        Post method for V]verification of email for password reset.
 
         Args:
             request (Request): the HTTP request object
@@ -387,24 +312,21 @@ class VerifyEmailView(generics.GenericAPIView):
 
 
 @extend_schema(exclude=True)
-class ResetPasswordView(generics.GenericAPIView):
-    """
-        View for Password Reset - UnAuthenticated View 
-    """    
+class ResetPasswordView(generics.GenericAPIView): 
     serializer_class = PasswordResetSerializer
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request, uid, token):
         """
-            Post method for Password reset
+        Post method for Password reset
 
-            Args:
-                request (Request): Django HttpRequest Object
-                uid (str): encrypted user id 
-                token (str): tine restricted configured password reset token 
+        Args:
+            request (Request): Django HttpRequest Object
+            uid (str): encrypted user id 
+            token (str): tine restricted configured password reset token 
 
-            Returns:
-                Response: a response containing the email of the user
+        Returns:
+            Response: a response containing the email of the user
         """        
         serializer = self.serializer_class(data=request.data, context={'uid':uid, 'token':token})
         serializer.is_valid(raise_exception=True)
@@ -414,26 +336,22 @@ class ResetPasswordView(generics.GenericAPIView):
 
 @extend_schema(exclude=True)
 class CustomTokenRefreshView(TokenRefreshView):
-    """
-        Custom view for TokenRefresh, inheriting from BaseClass TokenRefreshView
-        Unauthenticated View 
-    """    
     serializer_class = TokenRefreshSerializer
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request, *args, **kwargs):
         """
-            Handles the Post method to refresh token and generate a new access and refresh token
+        Handles the Post method to refresh token and generate a new access and refresh token
 
-            Args:
-                request (Request): instance of Django's HttpRequest object
+        Args:
+            request (Request): instance of Django's HttpRequest object
 
-            Raises:
-                AuthenticationFailed : If the refresh token has been blacklisted (logged out)
-                ParseError : If the request is bad for other reasons 
+        Raises:
+            AuthenticationFailed : If the refresh token has been blacklisted (logged out)
+            ParseError : If the request is bad for other reasons 
 
-            Returns:
-                Response: the response
+        Returns:
+            Response: the response
         """
 
         #fetch refresh_token from the cookies 

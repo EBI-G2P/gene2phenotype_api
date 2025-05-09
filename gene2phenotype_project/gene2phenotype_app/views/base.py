@@ -10,8 +10,8 @@ from rest_framework.views import APIView
 
 class BaseView(generics.ListAPIView):
     """
-        Generic methods to handle expection and permissions for classes
-        using generics.ListAPIView.
+    Generic methods to handle expection and permissions for classes
+    using generics.ListAPIView.
     """
     def handle_no_permission(self, name_type, name):
         if name is None:
@@ -28,8 +28,8 @@ class BaseView(generics.ListAPIView):
 
 class BaseAPIView(APIView):
     """
-        Generic methods to handle expection and permissions for classes
-        using APIView.
+    Generic methods to handle expection and permissions for classes
+    using APIView.
     """
     def handle_no_permission(self, name_type, name):
         if name is None:
@@ -51,9 +51,7 @@ class BaseAPIView(APIView):
 
 
 class BaseAdd(generics.CreateAPIView):
-    """
-        Generic method to add data
-    """
+    """Generic method to add data"""
     http_method_names = ['post', 'head']
 
     @transaction.atomic
@@ -66,9 +64,7 @@ class BaseAdd(generics.CreateAPIView):
 
 
 class BaseUpdate(generics.UpdateAPIView):
-    """
-        Generic methods to handle expection and permissions.
-    """
+    """Generic methods to handle expection and permissions."""
     def handle_no_permission(self, data, stable_id):
         if data is None:
             raise Http404(f"{data}")
@@ -95,9 +91,9 @@ class BaseUpdate(generics.UpdateAPIView):
 
 class CustomPermissionAPIView(APIView):
     """
-        Base API view with reusable get_permissions logic.
-        This view is used by endpoints that can update or delete data.
-        Usually the method post() updates data while update() deletes data.
+    Base API view with reusable get_permissions logic.
+    This view is used by endpoints that can update or delete data.
+    Usually the method post() updates data while update() deletes data.
     """
 
     method_permissions = {
@@ -107,9 +103,9 @@ class CustomPermissionAPIView(APIView):
 
     def get_permissions(self):
         """
-            Instantiates and returns the list of permissions for this view.
-            post(): updates data - available to all authenticated users
-            update(): deletes data - only available to authenticated super users
+        Instantiates and returns the list of permissions for this view.
+        post(): updates data - available to all authenticated users
+        update(): deletes data - only available to authenticated super users
         """
         if self.request.method.lower() == "update":
             return [permissions.IsAuthenticated(), IsSuperUser()]
@@ -117,9 +113,7 @@ class CustomPermissionAPIView(APIView):
 
 
 class IsSuperUser(BasePermission):
-    """
-        Allows access only to superusers.
-    """
+    """Allows access only to superusers."""
     def has_permission(self, request, view):
         if not (request.user and request.user.is_superuser):
             raise PermissionDenied({"error": "You do not have permission to perform this action."})
