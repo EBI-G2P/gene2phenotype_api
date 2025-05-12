@@ -133,37 +133,38 @@ class VariantTypesList(APIView):
     description=textwrap.dedent("""
     Fetch detailed information about a specific record using the G2P stable ID.
     
-    A record is a unique collection of Locus-Genotype-Mechanism-Disease-Evidence (LGMDE).
+    A record is a unique Locus-Genotype-Mechanism-Disease-Evidence (LGMDE) thread.
     """),
     examples=[
         OpenApiExample(
             "Example 1",
-            description="Fetch detailed information for record 'G2P02104'",
+            description="Fetch detailed information for record with stable_id G2P03507",
             value={
                 "locus": {
-                    "gene_symbol": "FBN1",
+                    "gene_symbol": "MTFMT",
                     "sequence": "15",
-                    "start": 48408313,
-                    "end": 48645721,
+                    "start": 65001512,
+                    "end": 65029639,
                     "strand": -1,
                     "reference": "grch38",
                     "ids": {
-                        "HGNC": "HGNC:3603",
-                        "Ensembl": "ENSG00000166147",
-                        "OMIM": "134797"
+                        "HGNC": "HGNC:29666",
+                        "Ensembl": "ENSG00000103707",
+                        "OMIM": "611766"
                     },
                     "synonyms": [
-                        "FBN",
-                        "MASS",
-                        "MFS1",
-                        "OCTD",
-                        "SGS",
-                        "WMS"
+                        "FMT1"
                     ]
                 },
-                "stable_id": "G2P02104",
-                "genotype": "monoallelic_autosomal",
+                "stable_id": "G2P03507",
+                "genotype": "biallelic_autosomal",
                 "variant_consequence": [
+                    {
+                        "variant_consequence": "absent gene product",
+                        "accession": "SO:0002317",
+                        "support": "inferred",
+                        "publication": None
+                    },
                     {
                         "variant_consequence": "altered gene product structure",
                         "accession": "SO:0002318",
@@ -172,51 +173,99 @@ class VariantTypesList(APIView):
                     }
                 ],
                 "molecular_mechanism": {
-                    "mechanism": "undetermined",
-                    "mechanism_support": "inferred",
+                    "mechanism": "loss of function",
+                    "mechanism_support": "evidence",
                     "synopsis": [],
-                    "evidence": {}
+                    "evidence": {
+                        "30911575": {
+                            "Function": [
+                                "Biochemical",
+                                "Protein Expression"
+                            ],
+                            "Functional Alteration": [
+                                "Patient Cells"
+                            ]
+                        },
+                        "21907147": {
+                            "Function": [
+                                "Biochemical"
+                            ],
+                            "Functional Alteration": [
+                                "Patient Cells"
+                            ],
+                            "Rescue": [
+                                "Patient Cells"
+                            ]
+                        },
+                        "24461907": {
+                            "Function": [
+                                "Biochemical",
+                                "Protein Expression"
+                            ]
+                        },
+                        "23499752": {
+                            "Function": [
+                                "Protein Expression"
+                            ],
+                            "Functional Alteration": [
+                                "Patient Cells"
+                            ]
+                        }
+                    }
                 },
                 "disease": {
-                    "name": "FBN1-related isolated ectopia lentis",
-                    "ontology_terms": [
-                        {
-                            "accession": "129600",
-                            "term": "ECTOPIA LENTIS 1, ISOLATED, AUTOSOMAL DOMINANT",
-                            "description": None,
-                            "source": "OMIM"
-                        }
-                    ],
+                    "name": "MTFMT-related mitochondrial disease with regression and lactic acidosis",
+                    "ontology_terms": [],
                     "synonyms": []
                 },
-                "confidence": "limited",
+                "confidence": "definitive",
                 "publications": [
                     {
                         "publication": {
-                            "pmid": 22539873,
-                            "title": "A novel FBN1 mutation in a Chinese family with isolated ectopia lentis.",
-                            "authors": "Yang G, Chu M, Zhai X, Zhao J.",
-                            "year": "2012",
+                            "pmid": 30911575,
+                            "title": "Leigh syndrome caused by mutations in MTFMT is associated with a better prognosis.",
+                            "authors": "Hayhurst H et al.",
+                            "year": "2019",
                             "comments": [],
                             "families": []
                         }
                     },
                     {
                         "publication": {
-                            "pmid": 8136837,
-                            "title": "Mutations in the fibrillin gene responsible for dominant ectopia lentis and neonatal Marfan syndrome.",
-                            "authors": "Kainulainen K, Karttunen L, Puhakka L, Sakai L, Peltonen L.",
-                            "year": "1994",
+                            "pmid": 21907147,
+                            "title": "Mutations in MTFMT underlie a human disorder of formylation causing impaired mitochondrial translation.",
+                            "authors": "Tucker EJ, Hershman SG, Köhrer C, Belcher-Timme CA, Patel J, Goldberger OA, Christodoulou J, Silberstein JM, McKenzie M, Ryan MT, Compton AG, Jaffe JD, Carr SA, Calvo SE, RajBhandary UL, Thorburn DR, Mootha VK.",
+                            "year": "2011",
                             "comments": [],
                             "families": []
                         }
                     },
                     {
                         "publication": {
-                            "pmid": 7802039,
-                            "title": "Clinical and linkage study of a large family with simple ectopia lentis linked to FBN1.",
-                            "authors": "Edwards MJ, Challinor CJ, Colley PW, Roberts J, Partington MW, Hollway GE, Kozman HM, Mulley JC.",
-                            "year": "1994",
+                            "pmid": 24461907,
+                            "title": "Phenotypic spectrum of eleven patients and five novel MTFMT mutations identified by exome sequencing and candidate gene screening.",
+                            "authors": "Haack TB et al.",
+                            "year": "2014",
+                            "comments": [],
+                            "families": []
+                        }
+                    },
+                    {
+                        "publication": {
+                            "pmid": 32133637,
+                            "title": "First report of childhood progressive cerebellar atrophy due to compound heterozygous MTFMT variants.",
+                            "authors": "Bai R, Haude K, Yang E, Goldstein A, Anselm I.",
+                            "year": "2020",
+                            "comments": [],
+                            "families": []
+                        }
+                    },
+                    {
+                        "publication": {
+                            "pmid": 23499752,
+                            "title": "Clinical and functional characterisation of the combined respiratory chain defect in two sisters due to autosomal recessive mutations in MTFMT.",
+                            "authors": "Neeve VC, Pyle A, Boczonadi V, Gomez-Duran A, Griffin H, Santibanez-Koref M, Gaiser U, Bauer P, Tzschach A, Chinnery PF, Horvath R.",
+                            "year": "2013",
                             "comments": [],
                             "families": []
                         }
@@ -224,20 +273,39 @@ class VariantTypesList(APIView):
                 ],
                 "panels": [
                     {
-                        "name": "Eye",
-                        "description": "Eye disorders"
+                        "name": "DD",
+                        "description": "Developmental disorders"
+                    }
+                ],
+                "cross_cutting_modifier": [],
+                "variant_type": [
+                    {
+                        "term": "splice_region_variant",
+                        "accession": "SO:0001630",
+                        "inherited": False,
+                        "de_novo": False,
+                        "unknown_inheritance": False,
+                        "publications": [],
+                        "comments": []
                     },
                     {
-                        "name": "Skin",
-                        "description": "Skin disorders"
-                    }
-                ],
-                "cross_cutting_modifier": [
+                        "term": "frameshift_variant",
+                        "accession": "SO:0001589",
+                        "inherited": False,
+                        "de_novo": False,
+                        "unknown_inheritance": False,
+                        "publications": [],
+                        "comments": []
+                    },
                     {
-                        "term": "restricted mutation set"
-                    }
-                ],
-                "variant_type": [
+                        "term": "stop_gained",
+                        "accession": "SO:0001587",
+                        "inherited": False,
+                        "de_novo": False,
+                        "unknown_inheritance": False,
+                        "publications": [],
+                        "comments": []
+                    },
                     {
                         "term": "missense_variant",
                         "accession": "SO:0001583",
@@ -246,44 +314,16 @@ class VariantTypesList(APIView):
                         "unknown_inheritance": False,
                         "publications": [],
                         "comments": []
-                    },
-                    {
-                        "term": "inframe_deletion",
-                        "accession": "SO:0001822",
-                        "inherited": False,
-                        "de_novo": False,
-                        "unknown_inheritance": False,
-                        "publications": [],
-                        "comments": []
-                    },
-                    {
-                        "term": "inframe_insertion",
-                        "accession": "SO:0001821",
-                        "inherited": False,
-                        "de_novo": False,
-                        "unknown_inheritance": False,
-                        "publications": [],
-                        "comments": []
                     }
                 ],
                 "variant_description": [],
-                "phenotypes": [
-                    {
-                        "term": "Ectopia lentis",
-                        "accession": "HP:0001083",
-                        "publications": []
-                    },
-                    {
-                        "term": "Autosomal dominant inheritance",
-                        "accession": "HP:0000006",
-                        "publications": []
-                    }
-                ],
+                "phenotypes": [],
                 "phenotype_summary": [],
-                "last_updated": "2024-08-20",
-                "date_created": None,
+                "last_updated": "2025-03-06",
+                "date_created": "2024-03-06",
                 "comments": [],
                 "curators": [
+                    "Louise Thompson",
                     "Elena Cibrian"
                 ],
                 "is_reviewed": 1

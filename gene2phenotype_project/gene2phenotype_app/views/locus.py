@@ -14,40 +14,7 @@ from gene2phenotype_app.serializers import LocusGeneSerializer
 from .base import BaseAPIView
 
 
-@extend_schema(
-    tags=["Fetch gene information"],
-    description=textwrap.dedent("""
-        Fetch information for a specific gene by using the gene symbol.
-        """),
-    examples=[
-        OpenApiExample(
-            'gene FBN1',
-            description='Fetch details for gene FBN1',
-            value={
-                "gene_symbol": "FBN1",
-                "sequence": "15",
-                "start": 48408313,
-                "end": 48645721,
-                "strand": -1,
-                "reference": "grch38",
-                "ids": {
-                    "HGNC": "HGNC:3603",
-                    "Ensembl": "ENSG00000166147",
-                    "OMIM": "134797"
-                },
-                "synonyms": [
-                    "FBN",
-                    "MASS",
-                    "MFS1",
-                    "OCTD",
-                    "SGS",
-                    "WMS"
-                ],
-                "last_updated": "2025-03-24"
-            }
-        )
-    ]
-)
+@extend_schema(exclude=True)
 class LocusGene(BaseAPIView):
     lookup_field = 'name'
     serializer_class = LocusGeneSerializer
@@ -94,7 +61,7 @@ class LocusGene(BaseAPIView):
 
 
 @extend_schema(
-    tags=["Fetch gene records summary"],
+    tags=["Fetch G2P summary records by gene"],
     description=textwrap.dedent("""
         Fetch latest records associated with a specific gene by using the gene symbol.
         """),
@@ -227,7 +194,7 @@ class LocusGeneSummary(BaseAPIView):
 
     def get(self, request, name, *args, **kwargs):
         """
-        Return a summary of the latest G2P entries associated with the gene.
+        Return a summary of the G2P entries associated with the gene.
 
         Args:
             name (str): gene symbol or the synonym symbol

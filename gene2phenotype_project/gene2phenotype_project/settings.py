@@ -91,7 +91,11 @@ REST_FRAMEWORK = {
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Gene2Phenotype (G2P)",
-    "DESCRIPTION": "Accelerating genomic medicine with high confidence evidence based gene disease models",
+    "DESCRIPTION": (
+        "This API enables access to gene disease models held in the G2P database. "
+        "See [https://www.ebi.ac.uk/gene2phenotype/](https://www.ebi.ac.uk/gene2phenotype/) for more details.<br><br>"
+        "Contact us by submitting an issue via [https://github.com/EBI-G2P/gene2phenotype_api/issues](https://github.com/EBI-G2P/gene2phenotype_api/issues)."
+    ),
     "VERSION": config.get("g2p", "version"),
     "SERVE_INCLUDE_SCHEMA": False,
     "DISABLE_FORMAT_SUFFIX": True,

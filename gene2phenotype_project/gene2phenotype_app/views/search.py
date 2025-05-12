@@ -33,13 +33,17 @@ class CustomPagination(PageNumberPagination):
 @extend_schema(
     tags=["Search records"],
     description=textwrap.dedent("""
-    Search G2P records.
+    Search G2P records and return summaries of LGMDE records.
+    Stable G2P IDs are returned to enable extraction of full details.
+
     Supported search types are:
 
-        gene
-        disease
-        phenotype
-        g2p_id
+        gene      : by gene symbol
+        disease   : by text string (e.g. Cowden syndrome), Mondo or OMIM identifier
+        phenotype : by description (e.g. Goiter) or accession (e.g.  HP:0000853)
+        g2p_id    : by the stable G2P ID
+
+    When more than 20 records are available, results are paginated.
 
     If no search type is specified then it performs a generic search.
     The search can be specific to one panel if using parameter 'panel'.
@@ -72,7 +76,7 @@ class CustomPagination(PageNumberPagination):
             'Search by phenotype',
             description='Search G2P records associated with phenotype HP:0003416',
             value={
-                "id": "G2P01947",
+                "stable_id": "G2P01947",
                 "gene": "ADAMTS10",
                 "genotype": "biallelic_autosomal",
                 "disease": "ADAMTS10-related Weill-Marchesani syndrome",
@@ -88,7 +92,7 @@ class CustomPagination(PageNumberPagination):
             'Search by gene',
             description='Search G2P records associated with gene TP53',
             value={
-                "id": "G2P01830",
+                "stable_id": "G2P01830",
                 "gene": "TP53",
                 "genotype": "monoallelic_autosomal",
                 "disease": "TP53-related Li-Fraumeni syndrome",
@@ -106,7 +110,7 @@ class CustomPagination(PageNumberPagination):
             response={
                 "type": "object",
                 "properties": {
-                    "id": {"type": "string"},
+                    "stable_id": {"type": "string"},
                     "gene": {"type": "string"},
                     "genotype": {"type": "string"},
                     "disease": {"type": "string"},
@@ -337,19 +341,20 @@ class SearchView(BaseView):
         list_output = []
         if issubclass(serializer, LocusGenotypeDiseaseSerializer):
             for lgd in queryset:
-                data = { 'id':lgd.stable_id.stable_id,
-                        'gene':lgd.locus.name,
-                        'genotype':lgd.genotype.value,
-                        'disease':lgd.disease.name,
-                        'mechanism':lgd.mechanism.value,
-                        'panel':lgd.panels,
-                        'confidence': lgd.confidence.value
-                    }
+                data = {
+                    'stable_id':lgd.stable_id.stable_id,
+                    'gene':lgd.locus.name,
+                    'genotype':lgd.genotype.value,
+                    'disease':lgd.disease.name,
+                    'mechanism':lgd.mechanism.value,
+                    'panel':lgd.panels,
+                    'confidence': lgd.confidence.value
+                }
                 list_output.append(data)
         else:
             for c_data in queryset:
                 data = {
-                    "id" : c_data.stable_id.stable_id,
+                    "stable_id" : c_data.stable_id.stable_id,
                     "gene": c_data.gene_symbol,
                     "date_created": c_data.date_created,
                     "date_last_updated": c_data.date_last_update,

@@ -137,9 +137,9 @@ class DiseaseDetail(BaseAPIView):
 
 @extend_schema(
     exclude=False,
-    tags=["Fetch disease records summary"],
+    tags=["Fetch G2P summary records by disease"],
     description=textwrap.dedent("""
-        Fetch latest records associated with a specific disease.
+        Return a summary of the G2P records associated with the disease.
         
         The disease input can be a disease name or ontology ID (e.g. Mondo or OMIM).
         """),

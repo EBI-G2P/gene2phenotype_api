@@ -46,7 +46,7 @@ class PanelCreateView(generics.CreateAPIView):
 
 
 @extend_schema(
-    tags=["Fetch all panel disorders"],
+    tags=["Fetch counts by panel"],
     description=textwrap.dedent("""
     Fetch summary counts for all G2P panels.
     """),
@@ -182,7 +182,7 @@ class PanelList(APIView):
 
 
 @extend_schema(
-    tags=["Fetch individual panel disorder"],
+    tags=["Fetch information by panel"],
     description=textwrap.dedent("""
     Fetch counts for a specific panel by using a panel short name as the parameter.
 
@@ -283,102 +283,7 @@ class PanelDetail(BaseAPIView):
             self.handle_no_permission('Panel', name)
 
 
-@extend_schema(
-    tags=["Fetch individual panel disorder"],
-    description=textwrap.dedent("""
-    Fetch latest records associated with a specific panel by using its short name as the parameter.
-    """),
-    examples=[
-        OpenApiExample(
-            'DD panel',
-            description='Fetch latest records for DD panel',
-            value={
-                "panel_name": "DD",
-                "records_summary": [
-                    {
-                        "locus": "WASF1",
-                        "disease": "WASF1-related neurodevelopmental disorder",
-                        "genotype": "monoallelic_autosomal",
-                        "confidence": "limited",
-                        "variant_consequence": [
-                            "decreased gene product level"
-                        ],
-                        "variant_type": [
-                            "whole_partial_gene_deletion"
-                        ],
-                        "molecular_mechanism": "loss of function",
-                        "last_updated": "2025-04-16",
-                        "stable_id": "G2P03736"
-                    },
-                    {
-                        "locus": "WASF1",
-                        "disease": "WASF1-related intellectual disability with seizures",
-                        "genotype": "monoallelic_autosomal",
-                        "confidence": "moderate",
-                        "variant_consequence": [
-                            "absent gene product",
-                            "altered gene product structure"
-                        ],
-                        "variant_type": [
-                            "missense_variant",
-                            "stop_gained_NMD_escaping",
-                            "frameshift_variant_NMD_escaping",
-                            "whole_partial_gene_deletion"
-                        ],
-                        "molecular_mechanism": "loss of function",
-                        "last_updated": "2025-04-16",
-                        "stable_id": "G2P02611"
-                    },
-                    {
-                        "locus": "UBR5",
-                        "disease": "UBR5-related neurodevelopmental disorder",
-                        "genotype": "monoallelic_autosomal",
-                        "confidence": "moderate",
-                        "variant_consequence": [
-                            "altered gene product structure",
-                            "decreased gene product level"
-                        ],
-                        "variant_type": [
-                            "frameshift_variant",
-                            "stop_gained",
-                            "missense_variant",
-                            "inframe_deletion",
-                            "inframe_insertion"
-                        ],
-                        "molecular_mechanism": "loss of function",
-                        "last_updated": "2025-04-16",
-                        "stable_id": "G2P03734"
-                    }
-                ]
-            }
-        )
-    ],
-    responses={
-        200: OpenApiResponse(
-            description="Panel summary response",
-            response={
-                "type": "object",
-                "properties": {
-                    "panel_name": {"type": "string"},
-                    "records_summary": {
-                        "type": "object",
-                        "properties": {
-                            "locus": {"type": "string"},
-                            "disease": {"type": "string"},
-                            "genotype": {"type": "string"},
-                            "confidence": {"type": "string"},
-                            "variant_consequence": {"type": "array", "items": {"type": "string"}},
-                            "variant_type": {"type": "array", "items": {"type": "string"}},
-                            "molecular_mechanism": {"type": "string"},
-                            "last_updated": {"type": "string"},
-                            "stable_id": {"type": "string"},
-                        }
-                    }
-                }
-            }
-        )
-    }
-)
+@extend_schema(exclude=True)
 class PanelRecordsSummary(BaseAPIView):
     serializer_class = PanelDetailSerializer
 
@@ -513,11 +418,13 @@ class LGDEditPanel(CustomPermissionAPIView):
 
 
 @extend_schema(
-    tags=["Fetch individual panel disorder"],
+    tags=["Fetch information by panel"],
     description=textwrap.dedent("""
     Download all records associated with a specific panel by using its short name as the parameter.
                                 
     It returns an uncompressed csv file.
+    
+    Example: `panel/DD/download`
     """)
 )
 @api_view(['GET'])
