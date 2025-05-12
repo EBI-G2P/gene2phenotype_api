@@ -2,8 +2,7 @@ from django.urls import path
 from gene2phenotype_app import views
 from drf_spectacular.views import (
     SpectacularAPIView,
-    SpectacularSwaggerView,
-    SpectacularRedocView
+    SpectacularSwaggerView
 )
 
 
@@ -23,17 +22,6 @@ urlpatterns = [
             template_name="swagger-ui.html", url_name="schema"
         ),
         name="swagger-ui",
-    ),
-    path("schema/",
-         SpectacularAPIView.as_view(),
-         name="schema"
-    ),
-    path(
-        'schema/redoc/',
-        SpectacularRedocView.as_view(
-            url_name='schema'
-        ),
-        name='redoc'
     ),
     path(
         "lgd/<str:stable_id>/",
@@ -81,7 +69,7 @@ urlpatterns = [
         name="list_attrib_type"
     ),
     path(
-        "attribs/description",
+        "attribs/description/",
         views.AttribTypeDescriptionList.as_view(),
         name="description_attrib_type"
     ),
@@ -347,7 +335,7 @@ urlpatterns = [
         name="token_refresh"
     ),
 
-    ### Panels management
+    ### Panels management ###
     path(
         "create/panel/",
         views.PanelCreateView.as_view(),
