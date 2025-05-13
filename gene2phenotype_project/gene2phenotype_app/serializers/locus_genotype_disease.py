@@ -40,8 +40,8 @@ from ..utils import get_date_now, ConfidenceCustomMail
 
 class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     """
-        Serializer for the LocusGenotypeDisease model.
-        LocusGenotypeDisease represents a G2P record.
+    Serializer for the LocusGenotypeDisease model.
+    LocusGenotypeDisease represents a unique Locus-Genotype-Mechanism-Disease-Evidence (LGMDE) record.
     """
 
     locus = serializers.SerializerMethodField() # part of the unique entry
@@ -62,26 +62,25 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     date_created = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField(allow_null=True)
     curators = serializers.SerializerMethodField(allow_null=True)
-    is_reviewed = serializers.IntegerField(allow_null=True, required=False)
+    is_reviewed = serializers.IntegerField(allow_null=True, required=False, help_text="If set to 0 the record is awaiting review")
 
     def get_locus(self, id: int) -> dict[str, Any]:
         """
-            Locus linked to the LGD record.
-            It can be a gene, variant or region.
+        Gene associated with the LGMDE record
         """
         locus = LocusSerializer(id.locus).data
         return locus
 
     def get_disease(self, id: int) -> dict[str, Any]:
         """
-            Disease associated with the LGD record.
+        Disease associated with the LGMDE record
         """
         disease = DiseaseSerializer(id.disease).data
         return disease
 
     def get_last_updated(self, obj) -> Optional[str]:
         """
-            Date last time the LGD record was updated by a curator.
+        Date last time the LGMDE record was updated by a curator
         """
         if obj.date_review is not None:
             return obj.date_review.strftime("%Y-%m-%d")
@@ -90,16 +89,16 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
     def get_variant_consequence(self, id: int) -> list[dict[str, Any]]:
         """
-            Variant consequences linked to the LGD record.
-            This is the GenCC level of variant consequence: altered_gene_product_level, etc.
+        Variant consequences linked to the LGMDE record.
+        This is the GenCC level of variant consequence: altered_gene_product_level, etc.
         """
         queryset = LGDVariantGenccConsequence.objects.filter(lgd_id=id, is_deleted=0)
         return LGDVariantGenCCConsequenceSerializer(queryset, many=True).data
 
     def get_molecular_mechanism(self, id: int) -> dict[str, Any]:
         """
-            Molecular mechanism associated with the LGD record.
-            If available, also returns the evidence.
+        Molecular mechanism associated with the LGMDE record.
+        If available, also returns the evidence.
         """
         mechanism = id.mechanism.value
         mechanism_support = id.mechanism_support.value
@@ -141,14 +140,14 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
     def get_cross_cutting_modifier(self, id: int) -> list[dict[str, str]]:
         """
-            Cross cutting modifier terms associated with the LGD record.
+        Cross cutting modifier terms associated with the LGMDE record.
         """
         queryset = LGDCrossCuttingModifier.objects.filter(lgd_id=id, is_deleted=0)
         return LGDCrossCuttingModifierSerializer(queryset, many=True).data
 
     def get_publications(self, id: int) -> list[dict[str, dict[str, Any]]]:
         """
-            Publications associated with the LGD record.
+        Publications associated with the LGMDE record.
         """
         queryset = LGDPublication.objects.filter(lgd_id=id, is_deleted=0)
         # It is necessary to send the user to return public/private comments
@@ -156,8 +155,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
     def get_phenotypes(self, id: int) -> list[dict[str, Any]]:
         """
-            Phenotypes associated with the LGD record.
-            The response includes the list of publications associated with the phenotype.
+        Phenotypes associated with the LGMDE record.
+        The response includes the list of publications associated with the phenotype.
         """
         queryset = LGDPhenotype.objects.filter(lgd_id=id, is_deleted=0).prefetch_related()
         data = {}
@@ -181,8 +180,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
     def get_phenotype_summary(self, id: int) -> list[dict[str, Any]]:
         """
-            A summary about the phenotypes associated with the LGD record.
-            The response includes the publication associated with the summary.
+        A summary about the phenotypes associated with the LGMDE record.
+        The response includes the publication associated with the summary.
         """
         # The LGD record is supposed to have one summary
         # but one summary can be linked to several publications
@@ -198,9 +197,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
     def get_variant_type(self, id: int) -> list[dict[str, Any]]:
         """
-            Variant types associated with the LGD record.
-            The variant type can be linked to several publications therefore response 
-            includes the list of publications associated with the variant type.
+        Variant types associated with the LGMDE record.
+        The variant type can be linked to several publications therefore response 
+        includes the list of publications associated with the variant type.
         """
         # Check if user is authenticated
         user = self.context.get("user")
@@ -288,8 +287,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
     def get_variant_description(self, id: int) -> list[dict[str, Any]]:
         """
-            Variant HGVS description linked to the LGD record and publication(s).
-            The response includes a list of publications associated with the HGVS description.
+        Variant HGVS description linked to the LGMDE record and publication(s).
+        The response includes a list of publications associated with the HGVS description.
         """
         queryset = LGDVariantTypeDescription.objects.filter(lgd_id=id, is_deleted=0).prefetch_related()
         data = {}
@@ -308,16 +307,16 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         return data.values()
 
-    def get_panels(self, id: int) -> list[dict[str, str]]:
+    def get_panels(self, id):
         """
-            Panel(s) associated with the LGD record.
+            Panel(s) associated with the LGMDE record.
         """
         queryset = LGDPanel.objects.filter(lgd_id=id, is_deleted=0)
         return LGDPanelSerializer(queryset, many=True).data
 
     def get_comments(self, id: int) -> list[dict[str, Any]]:
         """
-            LGD record comments.
+            Comments associated with the LGMDE record.
             Comments can be public or private. Private comments can only be
             seen by curators.
         """
@@ -359,9 +358,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
     def get_date_created(self, id) -> Optional[date]:
         """
-            Date the LGD record was created.
+            Date the LGMDE record was created.
             Dependency: this method depends on the history table.
-            
             Note: entries that were migrated from the old db don't have the date when they were created.
         """
         date = None
@@ -377,9 +375,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
     def get_curators(self, id) -> list[str]:
         """
-            List of curators who worked on the LGD record.
+            List of curators who worked on the LGMDE record.
             Dependency: this method depends on the history table.
-
             Note: entries that were migrated from the old db have limited info details.
         """
         list_curators = set()

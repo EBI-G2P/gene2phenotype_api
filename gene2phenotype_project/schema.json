@@ -734,14 +734,12 @@ components:
       type: object
       description: |-
         Serializer for the LocusGenotypeDisease model.
-        LocusGenotypeDisease represents a G2P record.
+        LocusGenotypeDisease represents a unique Locus-Genotype-Mechanism-Disease-Evidence (LGMDE) record.
       properties:
         locus:
           type: object
           additionalProperties: {}
-          description: |-
-            Locus linked to the LGD record.
-            It can be a gene, variant or region.
+          description: Gene associated with the LGMDE record
           readOnly: true
         stable_id:
           type: string
@@ -755,7 +753,7 @@ components:
             type: object
             additionalProperties: {}
           description: |-
-            Variant consequences linked to the LGD record.
+            Variant consequences linked to the LGMDE record.
             This is the GenCC level of variant consequence: altered_gene_product_level, etc.
           readOnly: true
           nullable: true
@@ -763,14 +761,14 @@ components:
           type: object
           additionalProperties: {}
           description: |-
-            Molecular mechanism associated with the LGD record.
+            Molecular mechanism associated with the LGMDE record.
             If available, also returns the evidence.
           readOnly: true
           nullable: true
         disease:
           type: object
           additionalProperties: {}
-          description: Disease associated with the LGD record.
+          description: Disease associated with the LGMDE record
           readOnly: true
         confidence:
           type: string
@@ -781,15 +779,10 @@ components:
             additionalProperties:
               type: object
               additionalProperties: {}
-          description: Publications associated with the LGD record.
+          description: Publications associated with the LGMDE record.
           readOnly: true
         panels:
-          type: array
-          items:
-            type: object
-            additionalProperties:
-              type: string
-          description: Panel(s) associated with the LGD record.
+          type: string
           readOnly: true
         cross_cutting_modifier:
           type: array
@@ -797,7 +790,7 @@ components:
             type: object
             additionalProperties:
               type: string
-          description: Cross cutting modifier terms associated with the LGD record.
+          description: Cross cutting modifier terms associated with the LGMDE record.
           readOnly: true
           nullable: true
         variant_type:
@@ -806,7 +799,7 @@ components:
             type: object
             additionalProperties: {}
           description: |-
-            Variant types associated with the LGD record.
+            Variant types associated with the LGMDE record.
             The variant type can be linked to several publications therefore response
             includes the list of publications associated with the variant type.
           readOnly: true
@@ -817,7 +810,7 @@ components:
             type: object
             additionalProperties: {}
           description: |-
-            Variant HGVS description linked to the LGD record and publication(s).
+            Variant HGVS description linked to the LGMDE record and publication(s).
             The response includes a list of publications associated with the HGVS description.
           readOnly: true
           nullable: true
@@ -827,7 +820,7 @@ components:
             type: object
             additionalProperties: {}
           description: |-
-            Phenotypes associated with the LGD record.
+            Phenotypes associated with the LGMDE record.
             The response includes the list of publications associated with the phenotype.
           readOnly: true
           nullable: true
@@ -837,23 +830,22 @@ components:
             type: object
             additionalProperties: {}
           description: |-
-            A summary about the phenotypes associated with the LGD record.
+            A summary about the phenotypes associated with the LGMDE record.
             The response includes the publication associated with the summary.
           readOnly: true
           nullable: true
         last_updated:
           type: string
           nullable: true
-          description: Date last time the LGD record was updated by a curator.
+          description: Date last time the LGMDE record was updated by a curator
           readOnly: true
         date_created:
           type: string
           format: date
           nullable: true
           description: |-
-            Date the LGD record was created.
+            Date the LGMDE record was created.
             Dependency: this method depends on the history table.
-
             Note: entries that were migrated from the old db don't have the date when they were created.
           readOnly: true
         comments:
@@ -862,7 +854,7 @@ components:
             type: object
             additionalProperties: {}
           description: |-
-            LGD record comments.
+            Comments associated with the LGMDE record.
             Comments can be public or private. Private comments can only be
             seen by curators.
           readOnly: true
@@ -872,15 +864,15 @@ components:
           items:
             type: string
           description: |-
-            List of curators who worked on the LGD record.
+            List of curators who worked on the LGMDE record.
             Dependency: this method depends on the history table.
-
             Note: entries that were migrated from the old db have limited info details.
           readOnly: true
           nullable: true
         is_reviewed:
           type: integer
           nullable: true
+          description: If set to 0 the record is awaiting review
       required:
       - comments
       - confidence
