@@ -1,6 +1,9 @@
-from django.urls import path, include
-from rest_framework.urlpatterns import format_suffix_patterns
+from django.urls import path
 from gene2phenotype_app import views
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularSwaggerView
+)
 
 
 def perform_create(self, serializer):
@@ -9,10 +12,26 @@ def perform_create(self, serializer):
 
 # specify URL Path for rest_framework
 urlpatterns = [
+    path("schema/",
+         SpectacularAPIView.as_view(),
+         name="schema"
+    ),
     path(
         "",
-        views.ListEndpoints,
-        name="list_endpoints"
+        SpectacularSwaggerView.as_view(
+            template_name="swagger-ui.html", url_name="schema"
+        ),
+        name="swagger-ui",
+    ),
+    path(
+        "lgd/<str:stable_id>/",
+        views.LocusGenotypeDiseaseDetail.as_view(),
+        name="lgd"
+    ),
+    path(
+        "search/",
+        views.SearchView.as_view(),
+        name="search"
     ),
     path(
         "panels/",
@@ -50,12 +69,12 @@ urlpatterns = [
         name="list_attrib_type"
     ),
     path(
-        "attribs/description",
+        "attribs/description/",
         views.AttribTypeDescriptionList.as_view(),
         name="description_attrib_type"
     ),
     path(
-        "attrib/<str:code>/",
+        "attrib/<str:attrib_type>/",
         views.AttribList.as_view(),
         name="list_attribs_by_type"
     ),
@@ -116,16 +135,6 @@ urlpatterns = [
         views.PhenotypeDetail,
         name="phenotype_details"
     ),
-    path(
-        "lgd/<str:stable_id>/",
-        views.LocusGenotypeDiseaseDetail.as_view(),
-        name="lgd"
-    ),
-    path(
-        "search/",
-        views.SearchView.as_view(),
-        name="search"
-    ),
 
     # Endpoint to fetch disease from external sources (OMIM/Mondo)
     path(
@@ -163,61 +172,61 @@ urlpatterns = [
         views.LGDUpdateMechanism.as_view(),
         name="lgd_update_mechanism"
     ),
-    # Add or delete panel from LGD record. Actions: UPDATE (to delete one panel), POST (to add one panel)
+    # Add or delete panel from LGD record. Actions: PATCH (to delete one panel), POST (to add one panel)
     path(
         "lgd/<str:stable_id>/panel/",
         views.LGDEditPanel.as_view(),
         name="lgd_panel"
     ),
-    # Add or delete publication(s) from LGD record. Actions: UPDATE (to delete one publication), POST (to add multiple publications)
+    # Add or delete publication(s) from LGD record. Actions: PATCH (to delete one publication), POST (to add multiple publications)
     path(
         "lgd/<str:stable_id>/publication/",
         views.LGDEditPublications.as_view(),
         name="lgd_publication"
     ),
-    # Add or delete phenotype(s) from LGD record. Actions: UPDATE (to delete one phenotype), POST (to add multiple phenotypes)
+    # Add or delete phenotype(s) from LGD record. Actions: PATCH (to delete one phenotype), POST (to add multiple phenotypes)
     path(
         "lgd/<str:stable_id>/phenotype/",
         views.LGDEditPhenotypes.as_view(),
         name="lgd_phenotype"
     ),
-    # Add or delete a phenotype summary from LGD record. Actions: UPDATE (to delete data), POST (to add data)
+    # Add or delete a phenotype summary from LGD record. Actions: PATCH (to delete data), POST (to add data)
     path(
         "lgd/<str:stable_id>/phenotype_summary/",
         views.LGDEditPhenotypeSummary.as_view(),
         name="lgd_phenotype_summary"
     ),
-    # Add or delete variant consequence(s) from LGD record. Actions: UPDATE (to delete one consequence), POST (to add multiple consequences)
+    # Add or delete variant consequence(s) from LGD record. Actions: PATCH (to delete one consequence), POST (to add multiple consequences)
     path(
         "lgd/<str:stable_id>/variant_consequence/",
         views.LGDEditVariantConsequences.as_view(),
         name="lgd_var_consequence"
     ),
-    # Add or delete cross cutting modifier(s) from LGD record. Actions: UPDATE (to delete one ccm), POST (to add multiple ccm)
+    # Add or delete cross cutting modifier(s) from LGD record. Actions: PATCH (to delete one ccm), POST (to add multiple ccm)
     path(
         "lgd/<str:stable_id>/cross_cutting_modifier/",
         views.LGDEditCCM.as_view(),
         name="lgd_cross_cutting_modifier"
     ),
-    # Add or delete variant type(s) from LGD record. Actions: UPDATE (to delete one variant type), POST (to add multiple variant types)
+    # Add or delete variant type(s) from LGD record. Actions: PATCH (to delete one variant type), POST (to add multiple variant types)
     path(
         "lgd/<str:stable_id>/variant_type/",
         views.LGDEditVariantTypes.as_view(),
         name="lgd_variant_type"
     ),
-    # Add or delete variant description(s) from LGD record. Actions: UPDATE (to delete one variant description), POST (to add multiple variant descriptions)
+    # Add or delete variant description(s) from LGD record. Actions: PATCH (to delete one variant description), POST (to add multiple variant descriptions)
     path(
         "lgd/<str:stable_id>/variant_description/",
         views.LGDEditVariantTypeDescriptions.as_view(),
         name="lgd_variant_description"
     ),
-    # Add or delete comment(s) from LGD record. Actions: UPDATE (to delete comment), POST (to add comment)
+    # Add or delete comment(s) from LGD record. Actions: PATCH (to delete comment), POST (to add comment)
     path(
         "lgd/<str:stable_id>/comment/",
         views.LGDEditComment.as_view(),
         name="lgd_comment"
     ),
-    # Delete LGD record. Action: UPDATE
+    # Delete LGD record. Action: PATCH
     path(
         "lgd/<str:stable_id>/delete/",
         views.LocusGenotypeDiseaseDelete.as_view(),
@@ -326,7 +335,7 @@ urlpatterns = [
         name="token_refresh"
     ),
 
-    ### Panels management
+    ### Panels management ###
     path(
         "create/panel/",
         views.PanelCreateView.as_view(),
@@ -340,4 +349,3 @@ urlpatterns = [
         name="get_reference_data"
     )
 ]
-urlpatterns = format_suffix_patterns(urlpatterns)

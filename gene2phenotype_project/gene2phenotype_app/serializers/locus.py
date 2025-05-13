@@ -1,9 +1,16 @@
 from rest_framework import serializers
-from django.db.models import Q
+from typing import Optional
+from datetime import date
 
-from ..models import (Locus, LocusIdentifier, LocusAttrib,
-                      AttribType, UniprotAnnotation, GeneStats,
-                      LocusGenotypeDisease)
+from ..models import (
+    Locus,
+    LocusIdentifier,
+    LocusAttrib,
+    AttribType,
+    UniprotAnnotation,
+    GeneStats,
+    LocusGenotypeDisease
+)
 
 from ..utils import validate_gene
 
@@ -24,7 +31,7 @@ class LocusSerializer(serializers.ModelSerializer):
     ids = serializers.SerializerMethodField()
     synonyms = serializers.SerializerMethodField()
 
-    def get_ids(self, id):
+    def get_ids(self, id: int) -> dict[str, str]:
         """
             Locus IDs from external sources.
             It can be the HGNC ID for a gene.
@@ -36,7 +43,7 @@ class LocusSerializer(serializers.ModelSerializer):
 
         return data
 
-    def get_synonyms(self, id):
+    def get_synonyms(self, id: int) -> list[str]:
         """
             Returns the locus synonyms.
             The locus synonym can be an old gene symbol.
@@ -53,6 +60,7 @@ class LocusSerializer(serializers.ModelSerializer):
         model = Locus
         fields = ['gene_symbol', 'sequence', 'start', 'end', 'strand', 'reference', 'ids', 'synonyms']
 
+
 class LocusGeneSerializer(LocusSerializer):
     """
         Serializer for the LocusSerializer model extra data.
@@ -64,7 +72,7 @@ class LocusGeneSerializer(LocusSerializer):
 
     last_updated = serializers.SerializerMethodField()
 
-    def get_last_updated(self, id):
+    def get_last_updated(self, id: int) -> Optional[date]:
         """
             Returns the date last time the locus was updated.
         """

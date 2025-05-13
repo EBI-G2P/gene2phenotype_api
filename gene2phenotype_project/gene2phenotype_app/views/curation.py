@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404
 from jsonschema import validate, exceptions
 from django.conf import settings
 from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema
 
 from gene2phenotype_app.serializers import CurationDataSerializer
 
@@ -14,24 +15,20 @@ from .base import BaseView, BaseAdd
 
 
 ### Curation data
+@extend_schema(exclude=True)
 class AddCurationData(BaseAdd):
-    """
-        Add a new curation entry.
-        It is only available for authenticated users.
-    """
-
     serializer_class = CurationDataSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
         """
-            Handle POST requests.
+        Handle POST requests.
 
-            Args:
-                request: The HTTP request object.
+        Args:
+            request: The HTTP request object.
 
-            Returns:
-                A Response object with appropriate status and message.
+        Returns:
+            A Response object with appropriate status and message.
         """
         user = self.request.user
 
@@ -78,25 +75,18 @@ class AddCurationData(BaseAdd):
         else:
             return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+
+@extend_schema(exclude=True)
 class ListCurationEntries(BaseView):
-    """
-        List all the curation entries being curated by the user.
-        It is only available for authenticated users.
-
-        Returns:
-                list of entries under 'curation'
-                number of entries under 'count'
-    """
-
     serializer_class = CurationDataSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         """
-            Retrieve the queryset of CurationData objects.
+        Retrieve the queryset of CurationData objects for the specific user.
 
-            Returns:
-                Queryset of CurationData objects.
+        Returns:
+            Queryset of CurationData objects.
         """
         user = self.request.user
 
@@ -106,15 +96,15 @@ class ListCurationEntries(BaseView):
 
     def list(self, request, *args, **kwargs):
         """
-            List the CurationData objects.
+        List the CurationData objects.
 
-            Args:
-                request: The HTTP request object.
-                *args: Additional positional arguments.
-                **kwargs: Additional keyword arguments.
+        Args:
+            request: The HTTP request object.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
 
-            Returns:
-                Response containing the list of CurationData objects with specified fields.
+        Returns:
+            Response containing the list of CurationData objects with specified fields.
         """
         queryset = self.get_queryset()
         list_data = []
@@ -131,23 +121,9 @@ class ListCurationEntries(BaseView):
 
         return Response({'results':list_data, 'count':len(list_data)})
 
+
+@extend_schema(exclude=True)
 class CurationDataDetail(BaseView):
-    """
-        Returns all data for a specific curation entry.
-        It is only available for authenticated users.
-
-        Args:
-            (string) stable_id
-
-        Returns:
-                Response containing the CurationData object
-                    - session_name
-                    - stable_id
-                    - created_on
-                    - last_updated_on
-                    - data (json data under curation)
-    """
-
     serializer_class = CurationDataSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -165,6 +141,20 @@ class CurationDataDetail(BaseView):
             return queryset
 
     def list(self, request, *args, **kwargs):
+        """
+        Returns a specific curation entry.
+
+        Args:
+        stable_id (string)
+
+        Returns:
+                Response containing the CurationData object
+                    - session_name
+                    - stable_id
+                    - created_on
+                    - last_updated_on
+                    - data (json data under curation)
+        """
         curation_data_obj = self.get_queryset().first()
 
         response_data = {
@@ -176,19 +166,9 @@ class CurationDataDetail(BaseView):
             }
         return Response(response_data)
 
+
+@extend_schema(exclude=True)
 class UpdateCurationData(generics.UpdateAPIView):
-    """
-        Update the JSON data for the specific G2P ID.
-        It replaces the existing json with the new data.
-
-        Args:
-            (string) stable_id
-            (json) new data to save
-
-        Returns:
-                Response message
-    """
-
     http_method_names = ['put', 'options']
     serializer_class = CurationDataSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -207,6 +187,14 @@ class UpdateCurationData(generics.UpdateAPIView):
             return queryset
 
     def update(self, request, *args, **kwargs):
+        """
+        Update the JSON data for the specific G2P ID.
+        It replaces the existing json with the new data.
+
+        Args:
+            stable_id (string)
+            new data to save (json)
+        """
         user = self.request.user
  
         # Get curation entry to be updated
@@ -256,24 +244,25 @@ class UpdateCurationData(generics.UpdateAPIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+
+@extend_schema(exclude=True)
 class PublishRecord(APIView):
-    """
-        Publish the data.
-        If data is published succesfully, it deletes entry from curation data list and
-        updates the G2P ID status to live.
-
-        Args:
-            (string) stable_id
-
-        Returns:
-                Response message
-    """
-
     http_method_names = ['post', 'head']
     serializer_class = CurationDataSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, stable_id):
+        """
+        Publish the curation record.
+        If data is published succesfully, it deletes entry from curation list and
+        updates the G2P ID status to live.
+
+        Args:
+            stable_id (string)
+
+        Returns:
+                Response message
+        """
         user = self.request.user
 
         try:
@@ -310,18 +299,9 @@ class PublishRecord(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+
+@extend_schema(exclude=True)
 class DeleteCurationData(generics.DestroyAPIView):
-    """
-        Deletes a curation record.
-        Removes entry from curation table, it also deletes the G2P ID (set 'is_deleted' to 1).
-
-        Args:
-            (string) stable_id : G2P ID associated with entry to be deleted
-
-        Returns:
-                Response message
-    """
-
     http_method_names = ['delete', 'head']
     serializer_class = CurationDataSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -341,9 +321,9 @@ class DeleteCurationData(generics.DestroyAPIView):
 
     def perform_destroy(self, instance, stable_id):
         """
-            Overwrite method perform_destroy()
-            This method deletes the G2P ID (set 'is_deleted' to 1) and calls the delete() method
-            to remove the record from the curation table.
+        Overwrite method perform_destroy()
+        This method deletes the G2P ID (set 'is_deleted' to 1) and calls the delete() method
+        to remove the record from the curation table.
         """
         # Delete the G2P ID linked to this instance
         # to delete we set the flag 'is_deleted' to 1
@@ -356,7 +336,14 @@ class DeleteCurationData(generics.DestroyAPIView):
 
     def destroy(self, request, *args, **kwargs):
         """
-            Delete a curation instance.
+        Deletes a curation record.
+        Removes entry from curation table, it also deletes the G2P ID (set 'is_deleted' to 1).
+
+        Args:
+            stable_id (string): G2P ID associated with entry to be deleted
+
+        Returns:
+            Response message
         """
         # Get curation entry to be deleted
         curation_obj = self.get_queryset()

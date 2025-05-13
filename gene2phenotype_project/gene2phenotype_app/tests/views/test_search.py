@@ -36,7 +36,7 @@ class SearchTests(TestCase):
 
         expected_data = [
             {
-                "id": "G2P00001",
+                "stable_id": "G2P00001",
                 "gene": "CEP290",
                 "genotype": "biallelic_autosomal",
                 "disease": "CEP290-related JOUBERT SYNDROME TYPE 5",
@@ -62,7 +62,7 @@ class SearchTests(TestCase):
 
         expected_data = [
             {
-                "id": "G2P00001",
+                "stable_id": "G2P00001",
                 "gene": "CEP290",
                 "genotype": "biallelic_autosomal",
                 "disease": "CEP290-related JOUBERT SYNDROME TYPE 5",
@@ -88,7 +88,7 @@ class SearchTests(TestCase):
 
         expected_data = [
             {
-                "id": "G2P00001",
+                "stable_id": "G2P00001",
                 "gene": "CEP290",
                 "genotype": "biallelic_autosomal",
                 "disease": "CEP290-related JOUBERT SYNDROME TYPE 5",
@@ -125,7 +125,7 @@ class SearchTests(TestCase):
 
         expected_data = [
             {
-                "id": "G2P00001",
+                "stable_id": "G2P00001",
                 "gene": "CEP290",
                 "genotype": "biallelic_autosomal",
                 "disease": "CEP290-related JOUBERT SYNDROME TYPE 5",

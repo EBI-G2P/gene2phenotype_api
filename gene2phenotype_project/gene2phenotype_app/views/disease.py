@@ -5,6 +5,9 @@ from django.db.models import Q
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.http import Http404
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
+import textwrap
+
 
 from gene2phenotype_app.serializers import (
     GeneDiseaseSerializer,
@@ -27,25 +30,11 @@ from gene2phenotype_app.models import (
 )
 
 from ..utils import clean_omim_disease
-from .base import BaseView, BaseAdd, IsSuperUser
+from .base import BaseAPIView, BaseAdd, IsSuperUser
 
-class GeneDiseaseView(BaseView):
-    """
-        Retrieves all diseases associated with a specific gene.
 
-        Args:
-            (str) gene_name: gene symbol or the synonym symbol
-
-        Returns:
-            Response object includes:
-                    (list) results: disease data
-                                    - original_disease_name
-                                    - disease_name
-                                    - identifier
-                                    - source name
-                    (int) count: number of diseases associated with the gene
-    """
-
+@extend_schema(exclude=True)
+class GeneDiseaseView(BaseAPIView):
     serializer_class = GeneDiseaseSerializer
 
     def get_queryset(self):
@@ -70,6 +59,20 @@ class GeneDiseaseView(BaseView):
         return queryset
 
     def get(self, request, name, *args, **kwargs):
+        """
+        Return gene-disease associations imported from Mondo and OMIM.
+
+        Args:
+            name (str): gene symbol or the synonym symbol
+
+        Returns a list of objects where each object has
+            results (list):
+                    original_disease_name (str)
+                    disease_name (str)
+                    identifier (str)
+                    source name (str)
+            count (int): number of diseases associated with the gene
+        """
         queryset = self.get_queryset()
         results = []
         for gene_disease_obj in queryset:
@@ -85,17 +88,9 @@ class GeneDiseaseView(BaseView):
 
         return Response({'results': results, 'count': len(results)})
 
-class DiseaseDetail(BaseView):
-    """
-        Display information for a specific disease.
 
-        Args:
-            (str) disease id: disease name or ontology ID (Mondo, OMIM)
-
-        Returns:
-            Disease object
-    """
-
+@extend_schema(exclude=True)
+class DiseaseDetail(BaseAPIView):
     serializer_class = DiseaseDetailSerializer
 
     def get_queryset(self):
@@ -124,25 +119,100 @@ class DiseaseDetail(BaseView):
 
         return queryset
 
-    def list(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
+        """
+        Fetch the ontology terms and synonyms linked to a specific disease.
+        The ontology terms are added manually by curators and the synonyms
+        are old G2P disease names previously used.
+
+        Args:
+            id (str): disease name or ontology ID (example: MONDO:0006411)
+
+        Returns a Disease object
+        """
         disease_obj = self.get_queryset().first()
         serializer = DiseaseDetailSerializer(disease_obj)
         return Response(serializer.data)
 
-class DiseaseSummary(DiseaseDetail):
-    """
-        Display a summary of the latest G2P entries associated with disease.
+
+@extend_schema(
+    exclude=False,
+    tags=["Fetch G2P summary records by disease"],
+    description=textwrap.dedent("""
+        Return a summary of the G2P records associated with the disease.
+        
+        The disease input can be a disease name or ontology ID (e.g. Mondo or OMIM).
+        """),
+    examples=[
+        OpenApiExample(
+            "MONDO:0008913",
+            description="Fetch records linked to disease 'MONDO:0008913'",
+            value={
+                "disease": "MONDO:0008913",
+                "records_summary": [
+                    {
+                    "locus": "PLD1",
+                    "genotype": "biallelic_autosomal",
+                    "confidence": "definitive",
+                    "panels": [
+                        "DD"
+                    ],
+                    "variant_consequence": [
+                        "absent gene product"
+                    ],
+                    "variant_type": [
+                        "splice_donor_variant",
+                        "frameshift_variant",
+                        "stop_gained",
+                        "missense_variant"
+                    ],
+                    "molecular_mechanism": "loss of function",
+                    "stable_id": "G2P03704"
+                    }
+                ]
+            }
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="Disease summary response",
+            response={
+                "type": "object",
+                "properties": {
+                    "disease": {"type": "string"},
+                    "records_summary": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "locus": {"type": "string"},
+                                "genotype": {"type": "string"},
+                                "confidence": {"type": "string"},
+                                "panels": {"type": "array", "items": {"type": "string"}},
+                                "variant_consequence": {"type": "array", "items": {"type": "string"}},
+                                "variant_type": {"type": "array", "items": {"type": "string"}},
+                                "molecular_mechanism": {"type": "string"},
+                                "stable_id": {"type": "string"}
+                            }
+                        }
+                    }
+                }
+            }
+        )
+    }
+)
+class DiseaseSummary(DiseaseDetail):    
+    def get(self, request, *args, **kwargs):
+        """
+        Fetch a summary of the G2P entries associated with the disease.
 
         Args:
-            (str) disease id: disease name or ontology ID (Mondo)
+            id (str): disease name or ontology ID (example: 251450)
 
-        Returns:
-            Response object includes:
-                    (string) disease: disease data
-                    (list) records_summary: summary of records linked to disease
-    """
-
-    def list(self, request, *args, **kwargs):
+        Returns a dictionary with the following format:
+            disease (string): input disease
+            records_summary (list): G2P records linked to the disease
+        """
         disease = kwargs.get('id')
         disease_obj = self.get_queryset().first()
         serializer = DiseaseDetailSerializer(disease_obj)
@@ -154,23 +224,20 @@ class DiseaseSummary(DiseaseDetail):
 
         return Response(response_data)
 
+
+@extend_schema(exclude=True)
 @api_view(['GET'])
 def ExternalDisease(request, ext_ids):
     """
-        Returns the disease for a list of external disease IDs.
-        External sources can be OMIM or Mondo.
+    Returns the disease information for a list of external disease IDs.
+    External sources can be OMIM or Mondo.
 
-        Args:
-            (str) external disease ids: the list if disease IDs of the external source (OMIM/Mondo)
+    Args:
+        ext_ids (str): the list if disease IDs of the external source (OMIM/Mondo)
 
-        Returns:
-            Response object includes:
-                (list) results: contains publication data for each publication
-                                disease: the disease name as represented in the source
-                                identifier: disease ID
-                                source: source name
-                (int) count: number of IDs
-
+    Returns a dictionary with the following format:
+        results (list): contains the disease name, identifier ID and the source name
+        count (int): number of diseases in the response
     """
     disease_id_list = ext_ids.split(",")
     data = []
@@ -212,17 +279,21 @@ def ExternalDisease(request, ext_ids):
 
     return response
 
+
 ### Add data
+@extend_schema(exclude=True)
 class AddDisease(BaseAdd):
     """
-        Add new disease.
-        This view is called by the endpoint that directly adds a disease (add/disease/).
-        The create method is in the CreateDiseaseSerializer.
+    Add new disease.
+    This view is called by the endpoint that directly adds a disease (add/disease/).
+    The create method is in the CreateDiseaseSerializer.
     """
     serializer_class = CreateDiseaseSerializer
     permission_classes = [IsSuperUser]
 
+
 ### Update data
+@extend_schema(exclude=True)
 class UpdateDisease(BaseAdd):
     http_method_names = ['post', 'options']
     permission_classes = [IsSuperUser]
@@ -275,14 +346,16 @@ class UpdateDisease(BaseAdd):
 
         return Response(response_data, status=status.HTTP_200_OK if updated_diseases else status.HTTP_400_BAD_REQUEST)
 
+
+@extend_schema(exclude=True)
 class DiseaseUpdateReferences(BaseAdd):
     http_method_names = ["post", "delete", "options"]
 
     def get_serializer_class(self, action):
         """
-            Returns the appropriate serializer class based on the action.
-            To add data use DiseaseOntologyTermListSerializer: it accepts a list of disease IDs.
-            To delete data use DiseaseOntologyTermSerializer: it accepts one disease ID.
+        Returns the appropriate serializer class based on the action.
+        To add data use DiseaseOntologyTermListSerializer: it accepts a list of disease IDs.
+        To delete data use DiseaseOntologyTermSerializer: it accepts one disease ID.
         """
         action = action.lower()
 
@@ -295,9 +368,9 @@ class DiseaseUpdateReferences(BaseAdd):
 
     def get_permissions(self):
         """
-            Instantiates and returns the list of permissions for this view.
-            post(): adds/updates data - available to all authenticated users
-            delete(): deletes data - only available to authenticated super users
+        Instantiates and returns the list of permissions for this view.
+        post(): adds/updates data - available to all authenticated users
+        delete(): deletes data - only available to authenticated super users
         """
         if self.request.method.lower() == "delete":
             return [permissions.IsAuthenticated(), IsSuperUser()]
@@ -306,33 +379,33 @@ class DiseaseUpdateReferences(BaseAdd):
     @transaction.atomic
     def post(self, request, name):
         """
-            The post method creates an association between the disease and a list of cross references (external disease IDs).
-            We want to whole process to be done in one db transaction.
+        The post method creates an association between the disease and a list of cross references (external disease IDs).
+        We want to whole process to be done in one db transaction.
 
-            Args:
-                (dict) request: dictionary with the following keys
-                                - accession (mandatory)
-                                - term (mandatory)
-                                - description (optional)
-                                - source (mandatory)
+        Args:
+            request (dict): dictionary with the following keys
+                            - accession (mandatory)
+                            - term (mandatory)
+                            - description (optional)
+                            - source (mandatory)
 
-                Example:
-                { 
-                    "disease_ontologies": [
-                        {
-                            "accession": "610445",
-                            "term": "NIGHT BLINDNESS, CONGENITAL STATIONARY, AUTOSOMAL DOMINANT 1",
-                            "description": "NIGHT BLINDNESS, CONGENITAL STATIONARY, RHODOPSIN-RELATED",
-                            "source": "OMIM"
-                        },
-                        {
-                            "accession": "MONDO:0012490",
-                            "term": "cone-rod synaptic disorder, congenital nonprogressive",
-                            "description": "cone-rod synaptic disorder, congenital nonprogressive",
-                            "source": "Mondo"
-                        }
-                    ]
-                }
+            Example:
+            { 
+                "disease_ontologies": [
+                    {
+                        "accession": "610445",
+                        "term": "NIGHT BLINDNESS, CONGENITAL STATIONARY, AUTOSOMAL DOMINANT 1",
+                        "description": "NIGHT BLINDNESS, CONGENITAL STATIONARY, RHODOPSIN-RELATED",
+                        "source": "OMIM"
+                    },
+                    {
+                        "accession": "MONDO:0012490",
+                        "term": "cone-rod synaptic disorder, congenital nonprogressive",
+                        "description": "cone-rod synaptic disorder, congenital nonprogressive",
+                        "source": "Mondo"
+                    }
+                ]
+            }
         """
         disease_obj = get_object_or_404(Disease, name=name)
 
@@ -383,12 +456,12 @@ class DiseaseUpdateReferences(BaseAdd):
 
     def delete(self, request, name):
         """
-            This method deletes the disease cross reference
+        This method deletes the disease cross reference
 
-            Input data example:
-                {
-                    "accession": "MONDO:0008693"
-                }
+        Input data example:
+            {
+                "accession": "MONDO:0008693"
+            }
         """
         disease_obj = get_object_or_404(Disease, name=name)
 
@@ -421,6 +494,8 @@ class DiseaseUpdateReferences(BaseAdd):
 
         return response
 
+
+@extend_schema(exclude=True)
 class LGDUpdateDisease(BaseAdd):
     http_method_names = ['post', 'options']
     permission_classes = [IsSuperUser]
@@ -474,19 +549,17 @@ class LGDUpdateDisease(BaseAdd):
         return Response(response_data, status=status.HTTP_200_OK if updated_records else status.HTTP_400_BAD_REQUEST)
     
 
+@extend_schema(exclude=True)
 class UpdateDiseaseOntologyTerms(BaseAdd):
-    """
-    Method to update the term and/or description of Ontology Terms in bulk.
-    Valid ontology terms are from Mondo or OMIM.
-
-    POST: updates the ontology terms
-    DELETE: deletes the ontology terms
-    """
-
     http_method_names = ["post", "delete", "options"]
     permission_classes = [IsSuperUser]
 
     def post(self, request):
+        """
+        Method to update the term and/or the description of disease ontology terms in bulk.
+        Valid ontology terms are from Mondo or OMIM.
+        The input data is a dictionary.
+        """
         ontologies = request.data  # dictionary of ontologies to update {accession: {"term": ..., "description": ...}}
 
         if not isinstance(ontologies, dict):
@@ -528,6 +601,10 @@ class UpdateDiseaseOntologyTerms(BaseAdd):
         return Response(response_data, status=status.HTTP_200_OK if updated_ontologies else status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request):
+        """
+        Method to delete the disease ontology terms in bulk.
+        The input data is a list of accession IDs.
+        """
         ontologies = request.data  # list of ontologies to delete
 
         if not isinstance(ontologies, list):

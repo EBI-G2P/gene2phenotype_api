@@ -1,8 +1,13 @@
 from rest_framework import serializers
 import re
 
-from ..models import (OntologyTerm, Source, LGDPhenotype, Publication,
-                      LGDPhenotypeSummary)
+from ..models import (
+    OntologyTerm,
+    Source,
+    LGDPhenotype,
+    Publication,
+    LGDPhenotypeSummary
+)
 
 from ..utils import validate_phenotype
 
@@ -13,8 +18,8 @@ class PhenotypeOntologyTermSerializer(serializers.ModelSerializer):
         The phenotypes are represented in OntologyTerm model.
 
         Called by:
-                - AddPhenotype()
-                - LGDPhenotypeSerializer()
+            - AddPhenotype()
+            - LGDPhenotypeSerializer()
     """
 
     name = serializers.CharField(source="term", read_only=True)
@@ -67,6 +72,7 @@ class PhenotypeOntologyTermSerializer(serializers.ModelSerializer):
         model = OntologyTerm
         fields = ['name', 'accession', 'description']
 
+
 ### G2P record (LGD) - phenotype ###
 class LGDPhenotypeSerializer(serializers.ModelSerializer):
     """
@@ -86,7 +92,7 @@ class LGDPhenotypeSerializer(serializers.ModelSerializer):
                 (dict) validated_data
 
             Returns:
-                    LGDPhenotype object
+                LGDPhenotype object
         """
         lgd = self.context['lgd']
         accession = validated_data.get("phenotype")["accession"] # HPO term
@@ -128,6 +134,7 @@ class LGDPhenotypeSerializer(serializers.ModelSerializer):
         model = LGDPhenotype
         fields = ['name', 'accession', 'publication']
 
+
 class LGDPhenotypeListSerializer(serializers.Serializer):
     """
         Serializer to accept a list of phenotypes.
@@ -135,13 +142,12 @@ class LGDPhenotypeListSerializer(serializers.Serializer):
     """
     phenotypes = LGDPhenotypeSerializer(many=True)
 
+
 class LGDPhenotypeSummarySerializer(serializers.ModelSerializer):
     """
         Serializer for the LGDPhenotypeSummary model.
         It represents the summary of the phenotypes reported in a publication 
         for a G2P record.
-
-        Called by:
     """
 
     summary = serializers.CharField()
@@ -207,6 +213,7 @@ class LGDPhenotypeSummarySerializer(serializers.ModelSerializer):
     class Meta:
         model = LGDPhenotypeSummary
         fields = ['summary', 'publication']
+
 
 class LGDPhenotypeSummaryListSerializer(serializers.Serializer):
     """

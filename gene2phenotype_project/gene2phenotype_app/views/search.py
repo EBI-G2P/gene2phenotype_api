@@ -1,27 +1,129 @@
 from rest_framework.response import Response
-from django.db.models import Q, F
 from rest_framework.pagination import PageNumberPagination
+from django.db.models import Q, F
+import textwrap
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiResponse,
+    OpenApiParameter,
+    OpenApiExample
+)
 
-from gene2phenotype_app.serializers import LocusGenotypeDiseaseSerializer, CurationDataSerializer
+from gene2phenotype_app.serializers import (
+    LocusGenotypeDiseaseSerializer,
+    CurationDataSerializer
+)
 
-from gene2phenotype_app.models import LGDPanel, LocusGenotypeDisease, CurationData
+from gene2phenotype_app.models import (
+    LGDPanel,
+    LocusGenotypeDisease,
+    CurationData
+)
 
 from .base import BaseView
 
 
-class SearchView(BaseView):
+class CustomPagination(PageNumberPagination):
     """
-        Search G2P entries by different types:
-                                            - gene
-                                            - disease
-                                            - phenotype
-                                            - G2P ID
-                                            - draft (only available for authenticated users)
-        If no search type is specified then it performs a generic search.
-        The search can be specific to one panel if using parameter 'panel'.
+    Custom method to define the number of results per page
     """
+    page_size = 20
 
-    pagination_class = PageNumberPagination
+
+@extend_schema(
+    tags=["Search records"],
+    description=textwrap.dedent("""
+    Search G2P records and return summaries of LGMDE records.
+    Stable G2P IDs are returned to enable extraction of full details.
+
+    Supported search types are:
+
+        gene      : by gene symbol
+        disease   : by text string (e.g. Cowden syndrome), Mondo or OMIM identifier
+        phenotype : by description (e.g. Goiter) or accession (e.g.  HP:0000853)
+        g2p_id    : by the stable G2P ID
+
+    When more than 20 records are available, results are paginated.
+
+    If no search type is specified then it performs a generic search.
+    The search can be specific to one panel if using parameter 'panel'.
+
+    Example: `search/?type=gene&query=RHO&panel=Cancer`
+    """),
+    parameters=[
+        OpenApiParameter(
+            name='query',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='Search term',
+            required=True
+        ),
+        OpenApiParameter(
+            name='type',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='Type of search can be: gene, disease, phenotype or g2p_id'
+        ),
+        OpenApiParameter(
+            name='panel',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='Fetch only records associated with a specific panel'
+        ),
+    ],
+    examples=[
+        OpenApiExample(
+            'Search by phenotype',
+            description='Search G2P records associated with phenotype HP:0003416',
+            value={
+                "stable_id": "G2P01947",
+                "gene": "ADAMTS10",
+                "genotype": "biallelic_autosomal",
+                "disease": "ADAMTS10-related Weill-Marchesani syndrome",
+                "mechanism": "loss of function",
+                "panel": [
+                    "Eye",
+                    "Skin"
+                ],
+                "confidence": "definitive"
+            }
+        ),
+        OpenApiExample(
+            'Search by gene',
+            description='Search G2P records associated with gene TP53',
+            value={
+                "stable_id": "G2P01830",
+                "gene": "TP53",
+                "genotype": "monoallelic_autosomal",
+                "disease": "TP53-related Li-Fraumeni syndrome",
+                "mechanism": "loss of function",
+                "panel": [
+                    "Cancer"
+                ],
+                "confidence": "definitive"
+            }
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="Search response",
+            response={
+                "type": "object",
+                "properties": {
+                    "stable_id": {"type": "string"},
+                    "gene": {"type": "string"},
+                    "genotype": {"type": "string"},
+                    "disease": {"type": "string"},
+                    "mechanism": {"type": "string"},
+                    "panel": {"type": "array", "items": {"type": "string"}},
+                    "confidence": {"type": "string"}
+                }
+            }
+        )
+    }
+)
+class SearchView(BaseView):
+    pagination_class = CustomPagination
 
     def get_serializer_class(self):
         if self.request.query_params.get('type', None) == 'draft':
@@ -171,7 +273,11 @@ class SearchView(BaseView):
             # to extend the queryset being annotated when it is draft,
             # want to return username so curator can see who is curating
             # adding the curator email, incase of the notification.
-            queryset = queryset.annotate(first_name=F('user_id__first_name'), last_name=F('user_id__last_name'), user_email=F('user__email'))
+            queryset = queryset.annotate(
+                first_name=F('user_id__first_name'),
+                last_name=F('user_id__last_name'),
+                user_email=F('user__email')
+            )
 
             for obj in queryset:
                 obj.json_data_info = CurationDataSerializer.get_entry_info_from_json_data(self, obj.json_data)
@@ -207,6 +313,17 @@ class SearchView(BaseView):
         return new_queryset
 
     def list(self, request, *args, **kwargs):
+        """
+        Search G2P records. Supported search types are:
+            - gene
+            - disease
+            - phenotype
+            - G2P ID
+            - draft (only available for authenticated users)
+
+        If no search type is specified then it performs a generic search.
+        The search can be specific to one panel if using parameter 'panel'.
+        """
         queryset = self.get_queryset()
         serializer = self.get_serializer_class()
         search_query = request.query_params.get('query', None)
@@ -224,19 +341,20 @@ class SearchView(BaseView):
         list_output = []
         if issubclass(serializer, LocusGenotypeDiseaseSerializer):
             for lgd in queryset:
-                data = { 'id':lgd.stable_id.stable_id,
-                        'gene':lgd.locus.name,
-                        'genotype':lgd.genotype.value,
-                        'disease':lgd.disease.name,
-                        'mechanism':lgd.mechanism.value,
-                        'panel':lgd.panels,
-                        'confidence': lgd.confidence.value
-                    }
+                data = {
+                    'stable_id':lgd.stable_id.stable_id,
+                    'gene':lgd.locus.name,
+                    'genotype':lgd.genotype.value,
+                    'disease':lgd.disease.name,
+                    'mechanism':lgd.mechanism.value,
+                    'panel':lgd.panels,
+                    'confidence': lgd.confidence.value
+                }
                 list_output.append(data)
         else:
             for c_data in queryset:
                 data = {
-                    "id" : c_data.stable_id.stable_id,
+                    "stable_id" : c_data.stable_id.stable_id,
                     "gene": c_data.gene_symbol,
                     "date_created": c_data.date_created,
                     "date_last_updated": c_data.date_last_update,

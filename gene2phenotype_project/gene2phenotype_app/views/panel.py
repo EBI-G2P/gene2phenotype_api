@@ -3,50 +3,165 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import Http404, HttpResponse
 from rest_framework.decorators import api_view
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from django.db.models import Q
-import csv, gzip, tempfile, os
 from datetime import datetime
+import textwrap
+import csv
 import re
 
-from gene2phenotype_app.models import (Panel, User, LocusGenotypeDisease,
-                                       LGDVariantType, LGDVariantGenccConsequence,
-                                       LGDMolecularMechanismEvidence, LGDPhenotype,
-                                       LGDPublication, LGDCrossCuttingModifier,
-                                       LGDPanel, LGDComment)
+from gene2phenotype_app.models import (
+    Panel,
+    User,
+    LocusGenotypeDisease,
+    LGDVariantType,
+    LGDVariantGenccConsequence,
+    LGDMolecularMechanismEvidence,
+    LGDPhenotype,
+    LGDPublication,
+    LGDCrossCuttingModifier,
+    LGDPanel,
+    LGDComment
+)
 
-from gene2phenotype_app.serializers import PanelCreateSerializer, PanelDetailSerializer, LGDPanelSerializer, UserSerializer
+from gene2phenotype_app.serializers import (
+    PanelCreateSerializer,
+    PanelDetailSerializer,
+    LGDPanelSerializer,
+    UserSerializer
+)
 
-from .base import BaseView, IsSuperUser, CustomPermissionAPIView
+from .base import (
+    BaseAPIView,
+    IsSuperUser,
+    CustomPermissionAPIView
+)
 
+
+@extend_schema(exclude=True)
 class PanelCreateView(generics.CreateAPIView):
-    """ 
-        Panel Creation View 
-    """    
     serializer_class = PanelCreateSerializer
     permission_classes = [permissions.IsAdminUser]
 
-class PanelList(generics.ListAPIView):
-    """
-        Display all panels info.
+
+@extend_schema(
+    tags=["Fetch counts by panel"],
+    description=textwrap.dedent("""
+    Fetch summary counts for all G2P panels.
+    """),
+    examples=[
+        OpenApiExample(
+            'Example',
+            value={
+                "results": [
+                    {
+                        "name": "Cancer",
+                        "description": "Cancer disorders",
+                        "stats": {
+                            "total_records": 129,
+                            "total_genes": 116,
+                            "by_confidence": {
+                            "definitive": 97,
+                            "moderate": 14,
+                            "strong": 10,
+                            "limited": 8
+                            }
+                        },
+                        "last_updated": "2025-04-23"
+                    },
+                    {
+                        "name": "Cardiac",
+                        "description": "Cardiac disorders",
+                        "stats": {
+                            "total_records": 80,
+                            "total_genes": 54,
+                            "by_confidence": {
+                            "strong": 6,
+                            "definitive": 66,
+                            "moderate": 8
+                            }
+                        },
+                        "last_updated": "2025-03-07"
+                    },
+                    {
+                        "name": "DD",
+                        "description": "Developmental disorders",
+                        "stats": {
+                            "total_records": 2768,
+                            "total_genes": 2457,
+                            "by_confidence": {
+                            "definitive": 1482,
+                            "strong": 726,
+                            "limited": 374,
+                            "moderate": 185,
+                            "refuted": 1
+                            }
+                        },
+                        "last_updated": "2025-04-11"
+                    }
+                ]
+            }
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="Panels response",
+            response={
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "description": {"type": "string"},
+                                "stats": {
+                                    "type": "object",
+                                    "properties": {
+                                        "total_records": {"type": "integer"},
+                                        "total_genes": {"type": "integer"},
+                                        "by_confidence": {
+                                            "type": "object",
+                                            "properties": {
+                                                "definitive": {"type": "integer"},
+                                                "strong": {"type": "integer"},
+                                                "limited": {"type": "integer"},
+                                                "moderate": {"type": "integer"},
+                                                "refuted": {"type": "integer"}
+                                            }
+                                        }
+                                    }
+                                },
+                                "last_updated": {"type": "string"}
+                            }
+                        }
+                    },
+                    "count": {"type": "integer"}
+                }
+            }
+        )
+    }
+)
+class PanelList(APIView):
+    serializer_class = PanelDetailSerializer
+
+    def get(self, request, *args, **kwargs):
+        """
+        Return all panels info.
         The information includes some stats: 
             - total number of records linked to panel
             - total number of genes linked to panel
             - total number of records by confidence
 
-        Returns:
-            Response object includes:
-                            (list) results: list of panels info
-                            (int) count: number of panels
-    """
-
-    queryset = Panel.objects.all()
-    serializer_class = PanelDetailSerializer
-
-    def list(self, request, *args, **kwargs):
+        Returns a dictionary with the following values:
+            results (list): list of panels and respective data
+            count (int): number of panels in the response
+        """
         user = self.request.user
-        queryset = self.get_queryset()
+
+        queryset = Panel.objects.all()
         serializer = PanelDetailSerializer()
         panel_list = []
 
@@ -65,22 +180,83 @@ class PanelList(generics.ListAPIView):
 
         return Response({'results':sorted_panels, 'count':len(sorted_panels)})
 
-class PanelDetail(BaseView):
-    """
-        Display the panel info.
 
-        Args:
-            (str) panel: the panel short name
+@extend_schema(
+    tags=["Fetch information by panel"],
+    description=textwrap.dedent("""
+    Fetch counts for a specific panel by using a panel short name as the parameter.
 
-        Returns:
-            Response object includes:
-                            (string) panel name
-                            (string) panel description: long name
-                            (string) last_updated
-                            (dict) stats
-    """
+    The response provides summary statistics about the records associated with it.
+    """),
+    examples=[
+        OpenApiExample(
+            'DD panel',
+            description='Fetch details for Developmental disorders (DD) panel',
+            value={
+                "name": "DD",
+                "description": "Developmental disorders",
+                "last_updated": "2025-04-11",
+                "stats": {
+                    "total_records": 2768,
+                    "total_genes": 2457,
+                    "by_confidence": {
+                    "definitive": 1482,
+                    "strong": 726,
+                    "limited": 374,
+                    "moderate": 185,
+                    "refuted": 1
+                    }
+                }
+            }
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="Panel detail response",
+            response={
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "description": {"type": "string"},
+                    "last_updated": {"type": "string"},
+                    "stats": {
+                        "type": "object",
+                        "properties": {
+                            "total_records": {"type": "integer"},
+                            "total_genes": {"type": "integer"},
+                            "by_confidence": {
+                                "type": "object",
+                                "properties": {
+                                    "definitive": {"type": "integer"},
+                                    "strong": {"type": "integer"},
+                                    "limited": {"type": "integer"},
+                                    "moderate": {"type": "integer"},
+                                    "refuted": {"type": "integer"}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        )
+    }
+)
+class PanelDetail(BaseAPIView):
+    serializer_class = PanelDetailSerializer
 
     def get(self, request, name, *args, **kwargs):
+        """
+        Return information for a specific panel.
+
+        Args:
+            name (str): the panel short name
+
+        Returns a dictionary with the following values:
+            panel name (string)
+            panel description (string): the panel long name
+            last_updated (string)
+            stats (dict)
+        """
         user = self.request.user
         queryset = Panel.objects.filter(name=name)
 
@@ -106,20 +282,23 @@ class PanelDetail(BaseView):
         else:
             self.handle_no_permission('Panel', name)
 
-class PanelRecordsSummary(BaseView):
-    """
+
+@extend_schema(exclude=True)
+class PanelRecordsSummary(BaseAPIView):
+    serializer_class = PanelDetailSerializer
+
+    def get(self, request, name, *args, **kwargs):
+        """
         Display a summary of the latest G2P entries associated with panel.
 
         Args:
-            (str) panel: the panel short name
+            panel (str): the panel short name
 
         Returns:
             Response object includes:
-                            (string) panel name
-                            (list) records_summary: summary of entries linked to panel
-    """
-
-    def get(self, request, name, *args, **kwargs):
+                panel name (string)
+                records_summary (list): summary of entries linked to panel
+        """
         user = self.request.user
         queryset = Panel.objects.filter(name=name)
 
@@ -142,28 +321,30 @@ class PanelRecordsSummary(BaseView):
         else:
             self.handle_no_permission('Panel', name)
 
+
 ### Edit data ###
+@extend_schema(exclude=True)
 class LGDEditPanel(CustomPermissionAPIView):
     """
         Method to add or delete LGD-panel association.
     """
-    http_method_names = ['post', 'update', 'options']
+    http_method_names = ['post', 'patch', 'options']
     serializer_class = LGDPanelSerializer
 
     # Define specific permissions
     method_permissions = {
         "post": [permissions.IsAuthenticated],
-        "update": [IsSuperUser],
+        "patch": [IsSuperUser],
     }
 
     @transaction.atomic
     def post(self, request, stable_id):
         """
-            The post method links the current LGD record to the panel.
-            We want to whole process to be done in one db transaction.
+        The post method links the current LGD record to the panel.
+        We want to whole process to be done in one db transaction.
 
-            Input example:
-                        { "name": "DD" }
+        Input example:
+                    { "name": "DD" }
         """
         user = self.request.user
 
@@ -208,9 +389,9 @@ class LGDEditPanel(CustomPermissionAPIView):
         return response
 
     @transaction.atomic
-    def update(self, request, stable_id):
+    def patch(self, request, stable_id):
         """
-            This method deletes the LGD-panel
+        This method deletes the LGD-panel
         """
         panel = request.data.get("name", None)
         user = request.user # TODO check if user has permission to edit the panel and the record
@@ -235,23 +416,29 @@ class LGDEditPanel(CustomPermissionAPIView):
                 {"message": f"Panel '{panel}' successfully deleted for ID '{stable_id}'"},
                  status=status.HTTP_200_OK)
 
+
+@extend_schema(
+    tags=["Fetch information by panel"],
+    description=textwrap.dedent("""
+    Download all records associated with a specific panel by using its short name as the parameter.
+                                
+    It returns an uncompressed csv file.
+    
+    Example: `panel/DD/download`
+    """)
+)
 @api_view(['GET'])
-# TODO: fix
 def PanelDownload(request, name):
     """
-        Method to download the panel data.
-        Authenticated users can download data for all panels.
-        Note: the file format is still work in progress.
+    Method to download the panel data.
+    Authenticated users can download data for all panels.
 
-        Args:
-                (HttpRequest) request: HTTP request
-                (str) name: the name of the panel to download
+    Args:
+        name (str): the short name of the panel to download
 
-        Returns:
-                uncompressed csv file
+    Returns: Uncompressed csv file
 
-        Raises:
-                Invalid panel
+    Raises: Invalid panel
     """
 
     user_email = request.user
@@ -584,11 +771,12 @@ def PanelDownload(request, name):
 
     return response
 
+
 def extract_locus_id(locus_ids):
     """
-        Method to extract the gene MIM ID and the
-        HGNC ID from a list of locus IDs.
-        Called by: PanelDownload()
+    Method to extract the gene MIM ID and the
+    HGNC ID from a list of locus IDs.
+    Called by: PanelDownload()
     """
     gene_mim = ""
     hgnc_id = ""
@@ -600,6 +788,7 @@ def extract_locus_id(locus_ids):
             gene_mim = gene
     
     return gene_mim, hgnc_id
+
 
 def extract_disease_id(disease_ids):
     disease_mim = ""

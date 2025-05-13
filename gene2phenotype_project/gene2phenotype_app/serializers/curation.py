@@ -4,23 +4,44 @@ from django.db import transaction
 from collections import OrderedDict
 import copy
 
-from ..models import (CurationData, Disease, User, LocusGenotypeDisease,
-                      Locus, DiseaseOntologyTerm, CVMolecularMechanism,
-                      Publication)
+from ..models import (
+    CurationData,
+    Disease,
+    User,
+    LocusGenotypeDisease,
+    Locus,
+    DiseaseOntologyTerm,
+    CVMolecularMechanism,
+    Publication
+)
+
+from .disease import (
+    CreateDiseaseSerializer,
+    DiseaseOntologyTermSerializer
+)
+
+from .locus_genotype_disease import (
+    LocusGenotypeDiseaseSerializer,
+    LGDCrossCuttingModifierSerializer,
+    LGDVariantGenCCConsequenceSerializer,
+    LGDVariantTypeSerializer,
+    LGDVariantTypeDescriptionSerializer,
+    LGDMechanismSynopsisSerializer,
+    LGDMechanismEvidenceSerializer,
+    LGDCommentSerializer
+)
+
+from .phenotype import (
+    LGDPhenotypeSerializer,
+    LGDPhenotypeSummarySerializer
+)
 
 from .user import UserSerializer
-from .disease import CreateDiseaseSerializer, DiseaseOntologyTermSerializer
-from .locus_genotype_disease import (LocusGenotypeDiseaseSerializer,
-                                     LGDCrossCuttingModifierSerializer,
-                                     LGDVariantGenCCConsequenceSerializer,
-                                     LGDVariantTypeSerializer, LGDVariantTypeDescriptionSerializer,
-                                     LGDMechanismSynopsisSerializer, LGDMechanismEvidenceSerializer,
-                                     LGDCommentSerializer)
 from .stable_id import G2PStableIDSerializer
-from .phenotype import LGDPhenotypeSerializer, LGDPhenotypeSummarySerializer
 from .publication import PublicationSerializer
 
 from ..utils import get_date_now
+
 
 class CurationDataSerializer(serializers.ModelSerializer):
     """
@@ -193,12 +214,12 @@ class CurationDataSerializer(serializers.ModelSerializer):
             Only compares the first layer of JSON objects.
 
             Args:
-                    input_json_data: JSON data to compare against.
-                    user_obj: User object whose associated CurationData instances are to be checked.
+                input_json_data: JSON data to compare against.
+                user_obj: User object whose associated CurationData instances are to be checked.
 
             Returns:
-                    If a match is found, returns the corresponding CurationData instance.
-                    If no match is found, returns None.
+                If a match is found, returns the corresponding CurationData instance.
+                If no match is found, returns None.
         """
 
        user_sessions_queryset = CurationData.objects.filter(user=user_obj)
@@ -244,12 +265,18 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
             if len(lgd_obj) > 0:
                 if lgd_obj.first().is_deleted == 0:
-                    raise serializers.ValidationError({"message": f"Data already submited to G2P '{lgd_obj.stable_id.stable_id}'"})
+                    raise serializers.ValidationError(
+                        {"message": f"Data already submited to G2P '{lgd_obj.stable_id.stable_id}'"}
+                    )
                 else:
-                    raise serializers.ValidationError({"message": f"This is an old G2P record '{lgd_obj.stable_id.stable_id}'"})
+                    raise serializers.ValidationError(
+                        {"message": f"This is an old G2P record '{lgd_obj.stable_id.stable_id}'"}
+                    )
 
         else:
-            raise serializers.ValidationError({"message" : "To publish a curated record, locus, allelic requirement, disease and molecular mechanism are necessary"})
+            raise serializers.ValidationError(
+                {"message" : "To publish a curated record, locus, allelic requirement, disease and molecular mechanism are necessary"}
+            )
 
     def get_entry_info_from_json_data(self, json_data):
         """
