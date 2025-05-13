@@ -307,11 +307,25 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         return data.values()
 
-    def get_panels(self, id):
+    def get_panels(self, id: int) -> list[dict[str, str]]:
         """
             Panel(s) associated with the LGMDE record.
         """
-        queryset = LGDPanel.objects.filter(lgd_id=id, is_deleted=0)
+        # Check if user is authenticated
+        user = self.context.get("user")
+        try:
+            User.objects.get(email=user)
+            authenticated_user = 1
+        except User.DoesNotExist:
+            authenticated_user = 0
+
+        # If user is autenticated return all panels
+        # otherwise return only the visible panels
+        if authenticated_user == 1:
+            queryset = LGDPanel.objects.filter(lgd_id=id, is_deleted=0)
+        else:
+            queryset = LGDPanel.objects.filter(lgd_id=id, is_deleted=0, panel__is_visible=1)
+
         return LGDPanelSerializer(queryset, many=True).data
 
     def get_comments(self, id: int) -> list[dict[str, Any]]:
