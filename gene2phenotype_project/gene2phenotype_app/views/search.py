@@ -1,5 +1,4 @@
 from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q, F
 import textwrap
 from drf_spectacular.utils import (
@@ -20,14 +19,7 @@ from gene2phenotype_app.models import (
     CurationData
 )
 
-from .base import BaseView
-
-
-class CustomPagination(PageNumberPagination):
-    """
-    Custom method to define the number of results per page
-    """
-    page_size = 20
+from .base import BaseView, CustomPagination
 
 
 @extend_schema(
