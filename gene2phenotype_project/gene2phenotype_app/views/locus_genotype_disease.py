@@ -50,6 +50,8 @@ from .base import (
     IsSuperUser
 )
 
+from ..utils import get_date_now
+
 
 @extend_schema(exclude=True)
 class ListMolecularMechanisms(APIView):
@@ -623,6 +625,7 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
                 }
         """
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+        success_flag = 0
 
         # Check if user has permission to update panel
         user = self.request.user
@@ -660,6 +663,7 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
 
                 if serializer_class.is_valid():
                     serializer_class.save()
+                    success_flag = 1
                     response = Response(
                         {"message": "Variant consequence added to the G2P entry successfully."},
                         status=status.HTTP_201_CREATED
@@ -673,6 +677,10 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
             response = Response(
                 {"error": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST
             )
+
+        if success_flag:
+            lgd.date_review = get_date_now()
+            lgd.save()
 
         return response
 
@@ -731,6 +739,8 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         else:
+            lgd_obj.date_review = get_date_now()
+            lgd_obj.save()
             return Response(
                 {"message": f"Variant consequence '{consequence}' successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK)
@@ -936,6 +946,7 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
                 }
         """
         user = self.request.user # email
+        success_flag = 0
 
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
 
@@ -973,6 +984,7 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
 
                 if serializer_class.is_valid():
                     serializer_class.save()
+                    success_flag = 1
                     response = Response(
                         {"message": "Variant type added to the G2P entry successfully."},
                         status=status.HTTP_201_CREATED
@@ -986,6 +998,10 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
             response = Response(
                 {"error": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST
             )
+
+        # Update the record date_review, if at least one variant type was added successfully
+        lgd.date_review = get_date_now()
+        lgd.save()
 
         return response
 
@@ -1054,6 +1070,10 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
                     {"error": f"Could not delete variant type '{variant_type}' for ID '{stable_id}'"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
+
+        # Update the date_review of the record
+        lgd_obj.date_review = get_date_now()
+        lgd_obj.save()
 
         return Response(
                 {"message": f"Variant type '{variant_type}' successfully deleted for ID '{stable_id}'"},
@@ -1251,6 +1271,7 @@ class LGDEditComment(CustomPermissionAPIView):
 
         # Check if G2P ID exists
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+        success_flag = 0
 
         # Check if user can edit this LGD entry
         lgd_serializer = LocusGenotypeDiseaseSerializer(lgd)
@@ -1300,6 +1321,7 @@ class LGDEditComment(CustomPermissionAPIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
+            success_flag = 1
             response = Response(
                 {"message": f"Comments added to the G2P entry successfully."},
                 status=status.HTTP_201_CREATED
@@ -1310,6 +1332,11 @@ class LGDEditComment(CustomPermissionAPIView):
                 {"error": serializer_list.errors},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        # At least one comment was added successfully - update record date of the last review
+        if success_flag:
+            lgd.date_review = get_date_now()
+            lgd.save()
 
         return response
 
@@ -1344,6 +1371,8 @@ class LGDEditComment(CustomPermissionAPIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         else:
+            lgd_obj.date_review = get_date_now()
+            lgd_obj.save()
             return Response(
                 {"message": f"Comment successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK

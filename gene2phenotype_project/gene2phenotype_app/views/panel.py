@@ -38,6 +38,8 @@ from .base import (
     CustomPermissionAPIView
 )
 
+from ..utils import get_date_now
+
 
 @extend_schema(exclude=True)
 class PanelCreateView(generics.CreateAPIView):
@@ -326,7 +328,7 @@ class PanelRecordsSummary(BaseAPIView):
 @extend_schema(exclude=True)
 class LGDEditPanel(CustomPermissionAPIView):
     """
-        Method to add or delete LGD-panel association.
+    Method to add or delete LGD-panel association.
     """
     http_method_names = ['post', 'patch', 'options']
     serializer_class = LGDPanelSerializer
@@ -376,6 +378,9 @@ class LGDEditPanel(CustomPermissionAPIView):
 
         if serializer_class.is_valid():
             serializer_class.save()
+            # Update the 'date_review' of the LocusGenotypeDisease obj
+            lgd.date_review = get_date_now()
+            lgd.save()
             response = Response(
                 {"message": "Panel added to the G2P entry successfully."},
                 status=status.HTTP_201_CREATED
@@ -412,6 +417,9 @@ class LGDEditPanel(CustomPermissionAPIView):
                 {"error": f"Could not delete panel '{panel}' for ID '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST)
         else:
+            # The panel was deleted successfully - update the date of last update in the record table
+            lgd_obj.date_review = get_date_now()
+            lgd_obj.save()
             return Response(
                 {"message": f"Panel '{panel}' successfully deleted for ID '{stable_id}'"},
                  status=status.HTTP_200_OK)

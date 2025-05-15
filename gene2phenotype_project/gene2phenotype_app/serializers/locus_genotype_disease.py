@@ -579,8 +579,6 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         
         return False
 
-            
-
     def update(self, instance, validated_data):
         """
             Method to update the record confidence.
@@ -816,9 +814,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                             mechanism_evidence_obj.is_deleted = 0
                             mechanism_evidence_obj.save()
 
-                    # Update LGD date_review
-                    lgd_obj.date_review = get_date_now()
-                    lgd_obj.save()
+        # Update LGD date_review
+        lgd_obj.date_review = get_date_now()
+        lgd_obj.save()
 
     class Meta:
         model = LocusGenotypeDisease
