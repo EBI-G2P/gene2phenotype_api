@@ -321,7 +321,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         # If user is autenticated return all panels
         # otherwise return only the visible panels
-        if authenticated_user == 1:
+        if authenticated_user:
             queryset = LGDPanel.objects.filter(lgd_id=id, is_deleted=0)
         else:
             queryset = LGDPanel.objects.filter(lgd_id=id, is_deleted=0, panel__is_visible=1)
