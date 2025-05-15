@@ -34,7 +34,7 @@ def check_cross_references():
     )
 
     for obj in disease_ontology_list:
-        new_disease_name = re.sub(".*\-related\s*", "", obj.disease_name).strip()
+        new_disease_name = re.sub(r".*\-related\s*", "", obj.disease_name).strip()
         clean_disease_name = clean_string(new_disease_name)
         term_without_type = clean_omim_disease(obj.term)
         clean_term = clean_string(term_without_type)
