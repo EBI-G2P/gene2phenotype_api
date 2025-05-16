@@ -6,19 +6,15 @@ from drf_spectacular.utils import (
     extend_schema,
     OpenApiResponse,
     OpenApiParameter,
-    OpenApiExample
+    OpenApiExample,
 )
 
 from gene2phenotype_app.serializers import (
     LocusGenotypeDiseaseSerializer,
-    CurationDataSerializer
+    CurationDataSerializer,
 )
 
-from gene2phenotype_app.models import (
-    LGDPanel,
-    LocusGenotypeDisease,
-    CurationData
-)
+from gene2phenotype_app.models import LGDPanel, LocusGenotypeDisease, CurationData
 
 from .base import BaseView
 
@@ -27,6 +23,7 @@ class CustomPagination(PageNumberPagination):
     """
     Custom method to define the number of results per page
     """
+
     page_size = 20
 
 
@@ -88,57 +85,52 @@ class CustomPagination(PageNumberPagination):
     """),
     parameters=[
         OpenApiParameter(
-            name='query',
+            name="query",
             type=str,
             location=OpenApiParameter.QUERY,
-            description='The term you wish to search for',
-            required=True
+            description="The term you wish to search for",
+            required=True,
         ),
         OpenApiParameter(
-            name='type',
+            name="type",
             type=str,
             location=OpenApiParameter.QUERY,
-            description='Type of search can be: gene symbol, disease name, phenotype (e.g. HP:0000853) or a stable G2P ID'
+            description="Type of search can be: gene symbol, disease name, phenotype (e.g. HP:0000853) or a stable G2P ID",
         ),
         OpenApiParameter(
-            name='panel',
+            name="panel",
             type=str,
             location=OpenApiParameter.QUERY,
-            description='Fetch only records associated with a specific panel'
+            description="Fetch only records associated with a specific panel",
         ),
     ],
     examples=[
         OpenApiExample(
-            'Search by phenotype',
-            description='Search G2P records associated with phenotype HP:0003416',
+            "Search by phenotype",
+            description="Search G2P records associated with phenotype HP:0003416",
             value={
                 "stable_id": "G2P01947",
                 "gene": "ADAMTS10",
                 "genotype": "biallelic_autosomal",
                 "disease": "ADAMTS10-related Weill-Marchesani syndrome",
                 "mechanism": "loss of function",
-                "panel": [
-                    "Eye",
-                    "Skin"
-                ],
-                "confidence": "definitive"
-            }
+                "panel": ["Eye", "Skin"],
+                "confidence": "definitive",
+            },
         ),
         OpenApiExample(
-            'Search by gene',
-            description='Search G2P records associated with gene TP53',
+            "Search by gene",
+            description="Search G2P records associated with gene TP53",
             value={
                 "stable_id": "G2P01830",
                 "gene": "TP53",
                 "genotype": "monoallelic_autosomal",
                 "disease": "TP53-related Li-Fraumeni syndrome",
                 "mechanism": "loss of function",
-                "panel": [
-                    "Cancer"
-                ],
-                "confidence": "definitive"
-            }
-        )
+                "panel": ["Cancer"],
+                "confidence": "definitive",
+            },
+        ),
     ],
     responses={
         200: OpenApiResponse(
@@ -152,26 +144,26 @@ class CustomPagination(PageNumberPagination):
                     "disease": {"type": "string"},
                     "mechanism": {"type": "string"},
                     "panel": {"type": "array", "items": {"type": "string"}},
-                    "confidence": {"type": "string"}
-                }
-            }
+                    "confidence": {"type": "string"},
+                },
+            },
         )
-    }
+    },
 )
 class SearchView(BaseView):
     pagination_class = CustomPagination
 
     def get_serializer_class(self):
-        if self.request.query_params.get('type', None) == 'draft':
+        if self.request.query_params.get("type", None) == "draft":
             return CurationDataSerializer
 
         return LocusGenotypeDiseaseSerializer
 
     def get_queryset(self):
         user = self.request.user
-        search_type = self.request.query_params.get('type', None)
-        search_query = self.request.query_params.get('query', None)
-        search_panel = self.request.query_params.get('panel', None)
+        search_type = self.request.query_params.get("type", None)
+        search_query = self.request.query_params.get("query", None)
+        search_panel = self.request.query_params.get("panel", None)
 
         if not search_query:
             return LocusGenotypeDisease.objects.none()
@@ -185,13 +177,37 @@ class SearchView(BaseView):
         search_query = search_query.lstrip().rstrip()
 
         base_locus = Q(locus__name=search_query, is_deleted=0)
-        base_locus_2 = Q(locus__locusidentifier__isnull=False, locus__locusidentifier__identifier=search_query, is_deleted=0)
-        base_locus_3 = Q(locus__locusattrib__isnull=False, locus__locusattrib__value=search_query, locus__locusattrib__is_deleted=0)
-        base_disease = Q(disease__name__regex=fr"(?i)(?<![\w]){search_query}(?![\w])", is_deleted=0)
-        base_disease_2 = Q(disease__diseasesynonym__synonym__regex=fr"(?i)(?<![\w]){search_query}(?![\w])", is_deleted=0)
-        base_disease_3 = Q(disease__diseaseontologyterm__ontology_term__accession=search_query, is_deleted=0)
-        base_phenotype = Q(lgdphenotype__phenotype__term__regex=fr"(?i)(?<![\w]){search_query}(?![\w])", lgdphenotype__isnull=False, is_deleted=0)
-        base_phenotype_2 = Q(lgdphenotype__phenotype__accession=search_query, lgdphenotype__isnull=False, is_deleted=0)
+        base_locus_2 = Q(
+            locus__locusidentifier__isnull=False,
+            locus__locusidentifier__identifier=search_query,
+            is_deleted=0,
+        )
+        base_locus_3 = Q(
+            locus__locusattrib__isnull=False,
+            locus__locusattrib__value=search_query,
+            locus__locusattrib__is_deleted=0,
+        )
+        base_disease = Q(
+            disease__name__regex=rf"(?i)(?<![\w]){search_query}(?![\w])", is_deleted=0
+        )
+        base_disease_2 = Q(
+            disease__diseasesynonym__synonym__regex=rf"(?i)(?<![\w]){search_query}(?![\w])",
+            is_deleted=0,
+        )
+        base_disease_3 = Q(
+            disease__diseaseontologyterm__ontology_term__accession=search_query,
+            is_deleted=0,
+        )
+        base_phenotype = Q(
+            lgdphenotype__phenotype__term__regex=rf"(?i)(?<![\w]){search_query}(?![\w])",
+            lgdphenotype__isnull=False,
+            is_deleted=0,
+        )
+        base_phenotype_2 = Q(
+            lgdphenotype__phenotype__accession=search_query,
+            lgdphenotype__isnull=False,
+            is_deleted=0,
+        )
         base_g2p_id = Q(stable_id__stable_id=search_query, is_deleted=0)
 
         queryset = LocusGenotypeDisease.objects.none()
@@ -200,138 +216,184 @@ class SearchView(BaseView):
         if not search_type:
             if search_panel:
                 # First search by gene
-                queryset = LocusGenotypeDisease.objects.filter(
-                    base_locus & Q(lgdpanel__panel__name=search_panel) |
-                    base_locus_2 & Q(lgdpanel__panel__name=search_panel) |
-                    base_locus_3 & Q(lgdpanel__panel__name=search_panel)
-                ).order_by('locus__name', 'disease__name').distinct()
+                queryset = (
+                    LocusGenotypeDisease.objects.filter(
+                        base_locus & Q(lgdpanel__panel__name=search_panel)
+                        | base_locus_2 & Q(lgdpanel__panel__name=search_panel)
+                        | base_locus_3 & Q(lgdpanel__panel__name=search_panel)
+                    )
+                    .order_by("locus__name", "disease__name")
+                    .distinct()
+                )
 
                 # If the search by gene didn't return results, try the other types
                 if not queryset.exists():
-                    queryset = LocusGenotypeDisease.objects.filter(
-                        base_disease & Q(lgdpanel__panel__name=search_panel) |
-                        base_disease_2 & Q(lgdpanel__panel__name=search_panel) |
-                        base_disease_3 & Q(lgdpanel__panel__name=search_panel) |
-                        base_phenotype & Q(lgdpanel__panel__name=search_panel) |
-                        base_phenotype_2 & Q(lgdpanel__panel__name=search_panel) |
-                        base_g2p_id & Q(lgdpanel__panel__name=search_panel)
-                    ).order_by('locus__name', 'disease__name').distinct()
+                    queryset = (
+                        LocusGenotypeDisease.objects.filter(
+                            base_disease & Q(lgdpanel__panel__name=search_panel)
+                            | base_disease_2 & Q(lgdpanel__panel__name=search_panel)
+                            | base_disease_3 & Q(lgdpanel__panel__name=search_panel)
+                            | base_phenotype & Q(lgdpanel__panel__name=search_panel)
+                            | base_phenotype_2 & Q(lgdpanel__panel__name=search_panel)
+                            | base_g2p_id & Q(lgdpanel__panel__name=search_panel)
+                        )
+                        .order_by("locus__name", "disease__name")
+                        .distinct()
+                    )
             else:
                 # Searching all panels
                 # First search by gene
-                queryset = LocusGenotypeDisease.objects.filter(
-                    base_locus |
-                    base_locus_2 |
-                    base_locus_3
-                ).order_by('locus__name', 'disease__name').distinct()
+                queryset = (
+                    LocusGenotypeDisease.objects.filter(
+                        base_locus | base_locus_2 | base_locus_3
+                    )
+                    .order_by("locus__name", "disease__name")
+                    .distinct()
+                )
 
                 # If the search by gene didn't return results, try the other types
                 if not queryset.exists():
-                    queryset = LocusGenotypeDisease.objects.filter(
-                        base_disease |
-                        base_disease_2 |
-                        base_disease_3 |
-                        base_phenotype |
-                        base_phenotype_2 |
-                        base_g2p_id
-                    ).order_by('locus__name', 'disease__name').distinct()
+                    queryset = (
+                        LocusGenotypeDisease.objects.filter(
+                            base_disease
+                            | base_disease_2
+                            | base_disease_3
+                            | base_phenotype
+                            | base_phenotype_2
+                            | base_g2p_id
+                        )
+                        .order_by("locus__name", "disease__name")
+                        .distinct()
+                    )
 
             if not queryset.exists():
-                self.handle_no_permission('results', search_query)
+                self.handle_no_permission("results", search_query)
 
-        elif search_type == 'gene':
+        elif search_type == "gene":
             if search_panel:
-                queryset = LocusGenotypeDisease.objects.filter(
-                    base_locus & Q(lgdpanel__panel__name=search_panel) |
-                    base_locus_2 & Q(lgdpanel__panel__name=search_panel) |
-                    base_locus_3 & Q(lgdpanel__panel__name=search_panel)
-                ).order_by('locus__name', 'disease__name').distinct()
+                queryset = (
+                    LocusGenotypeDisease.objects.filter(
+                        base_locus & Q(lgdpanel__panel__name=search_panel)
+                        | base_locus_2 & Q(lgdpanel__panel__name=search_panel)
+                        | base_locus_3 & Q(lgdpanel__panel__name=search_panel)
+                    )
+                    .order_by("locus__name", "disease__name")
+                    .distinct()
+                )
             else:
-                queryset = LocusGenotypeDisease.objects.filter(
-                    base_locus |
-                    base_locus_2 |
-                    base_locus_3
-                ).order_by('locus__name', 'disease__name').distinct()
+                queryset = (
+                    LocusGenotypeDisease.objects.filter(
+                        base_locus | base_locus_2 | base_locus_3
+                    )
+                    .order_by("locus__name", "disease__name")
+                    .distinct()
+                )
 
             if not queryset.exists():
-                self.handle_no_permission('Gene', search_query)
+                self.handle_no_permission("Gene", search_query)
 
-        elif search_type == 'disease':
+        elif search_type == "disease":
             if search_panel:
-                queryset = LocusGenotypeDisease.objects.filter(
-                    base_disease & Q(lgdpanel__panel__name=search_panel) |
-                    base_disease_2 & Q(lgdpanel__panel__name=search_panel) |
-                    base_disease_3 & Q(lgdpanel__panel__name=search_panel)
-                ).order_by('locus__name', 'disease__name').distinct()
+                queryset = (
+                    LocusGenotypeDisease.objects.filter(
+                        base_disease & Q(lgdpanel__panel__name=search_panel)
+                        | base_disease_2 & Q(lgdpanel__panel__name=search_panel)
+                        | base_disease_3 & Q(lgdpanel__panel__name=search_panel)
+                    )
+                    .order_by("locus__name", "disease__name")
+                    .distinct()
+                )
             else:
-                queryset = LocusGenotypeDisease.objects.filter(
-                    base_disease |
-                    base_disease_2 |
-                    base_disease_3
-                ).order_by('locus__name', 'disease__name').distinct()
+                queryset = (
+                    LocusGenotypeDisease.objects.filter(
+                        base_disease | base_disease_2 | base_disease_3
+                    )
+                    .order_by("locus__name", "disease__name")
+                    .distinct()
+                )
 
             if not queryset.exists():
-                self.handle_no_permission('Disease', search_query)
+                self.handle_no_permission("Disease", search_query)
 
-        elif search_type == 'phenotype':
+        elif search_type == "phenotype":
             if search_panel:
-                queryset = LocusGenotypeDisease.objects.filter(
-                    base_phenotype & Q(lgdpanel__panel__name=search_panel) |
-                    base_phenotype_2 & Q(lgdpanel__panel__name=search_panel)
-                ).order_by('locus__name', 'disease__name').distinct()
+                queryset = (
+                    LocusGenotypeDisease.objects.filter(
+                        base_phenotype & Q(lgdpanel__panel__name=search_panel)
+                        | base_phenotype_2 & Q(lgdpanel__panel__name=search_panel)
+                    )
+                    .order_by("locus__name", "disease__name")
+                    .distinct()
+                )
             else:
-                queryset = LocusGenotypeDisease.objects.filter(
-                    base_phenotype |
-                    base_phenotype_2
-                ).order_by('locus__name', 'disease__name').distinct()
+                queryset = (
+                    LocusGenotypeDisease.objects.filter(
+                        base_phenotype | base_phenotype_2
+                    )
+                    .order_by("locus__name", "disease__name")
+                    .distinct()
+                )
 
             if not queryset.exists():
-                self.handle_no_permission('Phenotype', search_query)
+                self.handle_no_permission("Phenotype", search_query)
 
-        elif search_type == 'g2p_id':
+        elif search_type == "g2p_id":
             if search_panel:
-                queryset = LocusGenotypeDisease.objects.filter(
-                    base_g2p_id & Q(lgdpanel__panel__name=search_panel)
-                ).order_by('locus__name', 'disease__name').distinct()
+                queryset = (
+                    LocusGenotypeDisease.objects.filter(
+                        base_g2p_id & Q(lgdpanel__panel__name=search_panel)
+                    )
+                    .order_by("locus__name", "disease__name")
+                    .distinct()
+                )
             else:
-                queryset = LocusGenotypeDisease.objects.filter(
-                    base_g2p_id
-                ).order_by('locus__name', 'disease__name').distinct()
+                queryset = (
+                    LocusGenotypeDisease.objects.filter(base_g2p_id)
+                    .order_by("locus__name", "disease__name")
+                    .distinct()
+                )
 
             if not queryset.exists():
-                self.handle_no_permission('g2p_id', search_query)
+                self.handle_no_permission("g2p_id", search_query)
 
-        elif search_type == 'draft' and user.is_authenticated:
-            queryset = CurationData.objects.filter(
-                gene_symbol=search_query
-                ).order_by('stable_id__stable_id').distinct()
+        elif search_type == "draft" and user.is_authenticated:
+            queryset = (
+                CurationData.objects.filter(gene_symbol=search_query)
+                .order_by("stable_id__stable_id")
+                .distinct()
+            )
 
             # to extend the queryset being annotated when it is draft,
             # want to return username so curator can see who is curating
             # adding the curator email, incase of the notification.
             queryset = queryset.annotate(
-                first_name=F('user_id__first_name'),
-                last_name=F('user_id__last_name'),
-                user_email=F('user__email')
+                first_name=F("user_id__first_name"),
+                last_name=F("user_id__last_name"),
+                user_email=F("user__email"),
             )
 
             for obj in queryset:
-                obj.json_data_info = CurationDataSerializer.get_entry_info_from_json_data(self, obj.json_data)
+                obj.json_data_info = (
+                    CurationDataSerializer.get_entry_info_from_json_data(
+                        self, obj.json_data
+                    )
+                )
 
             if not queryset.exists():
                 self.handle_no_permission("draft", search_query)
 
         else:
-            self.handle_no_permission('Search type is not valid', None)
+            self.handle_no_permission("Search type is not valid", None)
 
         new_queryset = []
         if queryset.exists():
-            if search_type != 'draft':
+            if search_type != "draft":
                 for lgd in queryset:
-                # If the user is not logged in, only show visible panels
+                    # If the user is not logged in, only show visible panels
                     if user.is_authenticated is False:
                         lgdpanel_select = LGDPanel.objects.filter(
-                            Q(lgd=lgd, panel__is_visible=1, is_deleted=0))
+                            Q(lgd=lgd, panel__is_visible=1, is_deleted=0)
+                        )
                     else:
                         lgdpanel_select = LGDPanel.objects.filter(lgd=lgd, is_deleted=0)
 
@@ -362,8 +424,8 @@ class SearchView(BaseView):
         """
         queryset = self.get_queryset()
         serializer = self.get_serializer_class()
-        search_query = request.query_params.get('query', None)
-        search_type = request.query_params.get('type', None)
+        search_query = request.query_params.get("query", None)
+        search_type = request.query_params.get("type", None)
 
         if not search_type:
             search_type = "results"
@@ -378,29 +440,29 @@ class SearchView(BaseView):
         if issubclass(serializer, LocusGenotypeDiseaseSerializer):
             for lgd in queryset:
                 data = {
-                    'stable_id':lgd.stable_id.stable_id,
-                    'gene':lgd.locus.name,
-                    'genotype':lgd.genotype.value,
-                    'disease':lgd.disease.name,
-                    'mechanism':lgd.mechanism.value,
-                    'panel':lgd.panels,
-                    'confidence': lgd.confidence.value
+                    "stable_id": lgd.stable_id.stable_id,
+                    "gene": lgd.locus.name,
+                    "genotype": lgd.genotype.value,
+                    "disease": lgd.disease.name,
+                    "mechanism": lgd.mechanism.value,
+                    "panel": lgd.panels,
+                    "confidence": lgd.confidence.value,
                 }
                 list_output.append(data)
         else:
             for c_data in queryset:
                 data = {
-                    "stable_id" : c_data.stable_id.stable_id,
+                    "stable_id": c_data.stable_id.stable_id,
                     "gene": c_data.gene_symbol,
                     "date_created": c_data.date_created,
                     "date_last_updated": c_data.date_last_update,
                     "curator_first": c_data.first_name,
                     "curator_last_name": c_data.last_name,
                     "genotype": c_data.json_data_info["genotype"],
-                    "disease_name" : c_data.json_data_info["disease"],
-                    "panels" : c_data.json_data_info["panel"],
-                    "confidence" : c_data.json_data_info["confidence"],
-                    "curator_email": c_data.user_email
+                    "disease_name": c_data.json_data_info["disease"],
+                    "panels": c_data.json_data_info["panel"],
+                    "confidence": c_data.json_data_info["confidence"],
+                    "curator_email": c_data.user_email,
                 }
                 list_output.append(data)
 
