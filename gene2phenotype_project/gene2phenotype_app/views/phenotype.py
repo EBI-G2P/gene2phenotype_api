@@ -28,7 +28,7 @@ from .base import (
     IsSuperUser
 )
 
-from ..utils import validate_phenotype
+from ..utils import validate_phenotype, get_date_now
 
 
 @extend_schema(exclude=True)
@@ -154,6 +154,7 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
         # Check and prepare data structure the send to the serializer
         # LGDPhenotypeListSerializer accepts the phenotypes in a specific struture
         if "hpo_terms" in request.data:
+            success_flag = 0 # flag if at least one phenotype is updated successfully
             # LGDPhenotypeListSerializer accepts a list of phenotypes
             serializer_list = LGDPhenotypeListSerializer(data={"phenotypes":request.data["hpo_terms"]})
 
@@ -179,6 +180,7 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
 
                     if serializer_class.is_valid():
                         serializer_class.save()
+                        success_flag = 1
                         response = Response(
                             {"message": "Phenotype added to the G2P entry successfully."},
                             status=status.HTTP_201_CREATED
@@ -189,6 +191,11 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
                             status=status.HTTP_400_BAD_REQUEST
                         )
 
+                # Update the date of the last update in the record table
+                if success_flag:
+                    lgd.date_review = get_date_now()
+                    lgd.save()
+
             else:
                 response = Response(
                     {"error": serializer_list.errors},
@@ -198,6 +205,7 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
         # Add extra functionality to the endpoint
         # Also adds phenotype summary - phenotypes and phenotype summary are edited on the website at the same time
         if "summaries" in request.data:
+            success_flag = 0 # flag if at least one phenotype is updated successfully
             serializer_summary_list = LGDPhenotypeSummaryListSerializer(data={"summaries":request.data["summaries"]})
 
             if serializer_summary_list.is_valid():
@@ -218,6 +226,7 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
 
                     if serializer_class.is_valid():
                         serializer_class.save()
+                        success_flag = 1
                         response = Response(
                             {"message": "Phenotype summary added to the G2P entry successfully."},
                             status=status.HTTP_201_CREATED
@@ -227,6 +236,11 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
                             {"error": serializer_class.errors},
                             status=status.HTTP_400_BAD_REQUEST
                         )
+
+                # Update the date of the last update in the record table
+                if success_flag:
+                    lgd.date_review = get_date_now()
+                    lgd.save()
 
             else:
                 response = Response(
@@ -263,6 +277,9 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
                 {"error": f"Could not delete phenotype '{accession}' for ID '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST)
         else:
+            # The phenotype was deleted successfully - update the date of last update in the record table
+            lgd_obj.date_review = get_date_now()
+            lgd_obj.save()
             return Response(
                 {"message": f"Phenotype '{accession}' successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK)
@@ -313,6 +330,7 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
                 }]
         """
         user = self.request.user
+        success_flag = 0 # flag if at least one phenotype is updated successfully
 
         lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
 
@@ -337,6 +355,7 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
 
                 if serializer_class.is_valid():
                     serializer_class.save()
+                    success_flag = 1
                     response = Response(
                         {"message": "Phenotype summary added to the G2P entry successfully."},
                         status=status.HTTP_201_CREATED
@@ -346,6 +365,11 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
                         {"error": serializer_class.errors},
                         status=status.HTTP_400_BAD_REQUEST
                     )
+
+            # Update the date of the last update in the record table
+            if success_flag:
+                lgd.date_review = get_date_now()
+                lgd.save()
 
         else:
             response = Response(
@@ -378,6 +402,9 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         else:
+            # The phenotype was deleted successfully - update the date of last update in the record table
+            lgd_obj.date_review = get_date_now()
+            lgd_obj.save()
             return Response(
                 {"message": f"Phenotype summary successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK
