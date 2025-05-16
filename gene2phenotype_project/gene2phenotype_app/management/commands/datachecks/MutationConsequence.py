@@ -32,7 +32,7 @@ def mutation_consequence_constraint():
                 id="gene2phenotype_app.E008",
             )
         )
-    
+
     loss_of_function_check = LGDMolecularMechanismSynopsis.objects.filter(
         lgd__mechanism__value="loss of function"
     ).exclude(synopsis__value__icontains="LOF")
@@ -41,12 +41,12 @@ def mutation_consequence_constraint():
             continue
         errors.append(
             Error(
-                f"{obj.lgd.stable_id.stable_id} mechanism value is loss of function and mechanism categorization is {obj.synopis.value}",
+                f"{obj.lgd.stable_id.stable_id} mechanism value is loss of function and mechanism categorization is {obj.synopsis.value}",
                 hint="Loss of function mechanism should have a loss of function related categorization",
                 id="gene2phenotype_app.E009",
             )
         )
-    
+
     dominant_negative_check = LGDMolecularMechanismSynopsis.objects.filter(
                                 lgd__mechanism__value="dominant negative"
                             ).exclude(synopsis__value__icontains="dominant")
@@ -60,7 +60,7 @@ def mutation_consequence_constraint():
                 id="gene2phenotype_app.E0010"
             )
         )
-    
+
     gain_of_function_check = LGDMolecularMechanismSynopsis.objects.filter(
                                 lgd__mechanism__value="gain of function"
                             ).exclude(
@@ -95,6 +95,4 @@ def mutation_consequence_constraint():
             )
         )
 
-    
-    
     return errors
