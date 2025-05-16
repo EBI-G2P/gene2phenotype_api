@@ -36,33 +36,69 @@ class CustomPagination(PageNumberPagination):
     Search G2P records and return summaries of LGMDE records.
     Stable G2P IDs are returned to enable extraction of full details.
 
-    Supported search types are:
+    You can tailor your search using the following query parameters:
+
+    **Required Parameter**
+    - `query`
+      The term you wish to search for.
+      This could be a gene symbol, disease name, phenotype (e.g. HP:0000853) or a stable G2P ID.
+
+    **Optional Parameters**
+    - `type`
+      Specifies the type of your search. If omitted, the endpoint performs a generic search across all types.
+
+      Accepted values include:
+
 
         gene      : by gene symbol
         disease   : by text string (e.g. Cowden syndrome), Mondo or OMIM identifier
         phenotype : by description (e.g. Goiter) or accession (e.g.  HP:0000853)
         g2p_id    : by the stable G2P ID
 
+
+    - `panel`
+      Filters results to a specific panel by name.
+
+      Accepted names include:
+
+
+        Cancer
+        Cardiac
+        DD
+        Ear
+        Eye
+        Skeletal
+        Skin
+
+
     When more than 20 records are available, results are paginated.
 
-    If no search type is specified then it performs a generic search.
-    The search can be specific to one panel if using parameter 'panel'.
+    **Example Requests**
+    - Search by gene:
+        `/search/?query=TP53&type=gene`
 
-    Example: `search/?type=gene&query=RHO&panel=Cancer`
+    - Search by phenotype:
+        `/search/?query=HP:0003416&type=phenotype`
+
+    - Generic search across all categories:
+        `/search/?query=Weill-Marchesani syndrome`
+
+    - Search gene within a specific panel:
+        `/search/?type=gene&query=FBN1&panel=DD`
     """),
     parameters=[
         OpenApiParameter(
             name='query',
             type=str,
             location=OpenApiParameter.QUERY,
-            description='Search term',
+            description='The term you wish to search for',
             required=True
         ),
         OpenApiParameter(
             name='type',
             type=str,
             location=OpenApiParameter.QUERY,
-            description='Type of search can be: gene, disease, phenotype or g2p_id'
+            description='Type of search can be: gene symbol, disease name, phenotype (e.g. HP:0000853) or a stable G2P ID'
         ),
         OpenApiParameter(
             name='panel',
