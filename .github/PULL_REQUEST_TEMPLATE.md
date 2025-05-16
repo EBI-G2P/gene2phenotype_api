@@ -1,8 +1,8 @@
 ### Description ###
-<!-- Brief description of the code changes -->
+__Brief description of the code changes__
 
 ### JIRA Ticket ###
-<!-- Link to the JIRA ticket -->
+__Link to the JIRA ticket__
 
 ### Contributor Checklist ###
 - [ ] The code compiles and runs as expected
