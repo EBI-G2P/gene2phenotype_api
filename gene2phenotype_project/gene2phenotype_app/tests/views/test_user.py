@@ -44,25 +44,6 @@ class UserPanelEndpointTests(TestCase):
         self.assertEqual(len(response.data), 3)
 
 
-class UserListEndpointTest(TestCase):
-    fixtures = ["gene2phenotype_app/fixtures/user_panels.json"]
-
-    def setUp(self):
-        self.url_user_list = reverse('list_users')
-
-        user = User.objects.get(email="user5@test.ac.uk")
-
-        access_token = login(user)
-        self.client.cookies[settings.SIMPLE_JWT['AUTH_COOKIE']] = access_token
-    
-    def test_get_user_list(self):
-        response = self.client.get(self.url_user_list)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 2)
-        self.assertEqual(len(response.data['results']), 5)
-
-
 class CreateUserEndpointTest(TestCase):
     fixtures = ['gene2phenotype_app/fixtures/user_panels.json']
 

@@ -54,11 +54,6 @@ urlpatterns = [
         name="panel_download"
         ),
     path(
-        "users/",
-        views.UserList.as_view(),
-        name="list_users"
-    ),
-    path(
         "user/panels/",
         views.UserPanels.as_view(),
         name="user_panels"

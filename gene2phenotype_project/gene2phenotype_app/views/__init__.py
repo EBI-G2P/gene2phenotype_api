@@ -16,7 +16,7 @@ from .search import SearchView
 
 from .attrib import AttribTypeList, AttribTypeDescriptionList, AttribList
 
-from .user import (UserList, CreateUserView, AddUserToPanelView, LoginView, ManageUserView,
+from .user import (CreateUserView, AddUserToPanelView, LoginView, ManageUserView,
                    UserPanels, LogOutView, CustomTokenRefreshView, ChangePasswordView, VerifyEmailView, ResetPasswordView)
 
 from .publication import PublicationDetail, AddPublication, LGDEditPublications
