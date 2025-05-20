@@ -18,5 +18,5 @@
 ---
 
 ### Reviewer Checklist ###
-Please **follow the following rules** when reviewing this PR: [Code Review Guidelines](https://embl.atlassian.net/wiki/spaces/EBIMedical/pages/51937503/Code+Review+Guidelines)
+Please **follow the [Code Review Guidelines](https://embl.atlassian.net/wiki/spaces/EBIMedical/pages/51937503/Code+Review+Guidelines)** when reviewing this PR.
 - [ ] I have followed all review guidelines
