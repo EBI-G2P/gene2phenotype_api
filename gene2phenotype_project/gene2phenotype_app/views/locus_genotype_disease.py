@@ -131,7 +131,7 @@ class VariantTypesList(APIView):
 @extend_schema(
     tags=["G2P record"],
     description=textwrap.dedent("""
-    Fetch detailed information about a specific record using the G2P stable ID.
+    Fetch detailed information about a specific record using the G2P stable ID (stable_id).
     
     A record is a unique Locus-Genotype-Mechanism-Disease-Evidence (LGMDE) thread.
     """),

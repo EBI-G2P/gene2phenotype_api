@@ -185,6 +185,18 @@ class PanelList(APIView):
     tags=["Fetch information by panel"],
     description=textwrap.dedent("""
     Fetch counts for a specific panel by using a panel short name as the parameter.
+    
+    Accepted names include:
+
+
+        Cancer
+        Cardiac
+        DD
+        Ear
+        Eye
+        Skeletal
+        Skin
+
 
     The response provides summary statistics about the records associated with it.
     """),
@@ -421,10 +433,25 @@ class LGDEditPanel(CustomPermissionAPIView):
     tags=["Fetch information by panel"],
     description=textwrap.dedent("""
     Download all records associated with a specific panel by using its short name as the parameter.
-                                
+
+
+    Accepted names include:
+
+
+        Cancer
+        Cardiac
+        DD
+        Ear
+        Eye
+        Skeletal
+        Skin
+
+
     It returns an uncompressed csv file.
     
-    Example: `panel/DD/download`
+    **Example Requests**
+    - Download DD records:
+        `/panel/DD/download`
     """)
 )
 @api_view(['GET'])

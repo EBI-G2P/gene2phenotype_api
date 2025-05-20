@@ -31,14 +31,14 @@ class CustomPagination(PageNumberPagination):
     tags=["Search records"],
     description=textwrap.dedent("""
     Search G2P records and return summaries of LGMDE records.
-    Stable G2P IDs are returned to enable extraction of full details.
+    G2P stable IDs (stable_id) are returned to enable extraction of full details.
 
     You can tailor your search using the following query parameters:
 
     **Required Parameter**
     - `query`
       The term you wish to search for.
-      This could be a gene symbol, disease name, phenotype (e.g. HP:0000853) or a stable G2P ID.
+      This could be a gene symbol, disease name, phenotype (e.g. HP:0000853) or a G2P stable ID.
 
     **Optional Parameters**
     - `type`
@@ -50,7 +50,7 @@ class CustomPagination(PageNumberPagination):
         gene      : by gene symbol
         disease   : by text string (e.g. Cowden syndrome), Mondo or OMIM identifier
         phenotype : by description (e.g. Goiter) or accession (e.g.  HP:0000853)
-        g2p_id    : by the stable G2P ID
+        stable_id : by the G2P stable ID
 
 
     - `panel`
@@ -95,7 +95,7 @@ class CustomPagination(PageNumberPagination):
             name="type",
             type=str,
             location=OpenApiParameter.QUERY,
-            description="Type of search can be: gene symbol, disease name, phenotype (e.g. HP:0000853) or a stable G2P ID",
+            description="Type of search can be: gene symbol, disease name, phenotype (e.g. HP:0000853) or a G2P stable ID",
         ),
         OpenApiParameter(
             name="panel",
@@ -337,7 +337,7 @@ class SearchView(BaseView):
             if not queryset.exists():
                 self.handle_no_permission("Phenotype", search_query)
 
-        elif search_type == "g2p_id":
+        elif search_type == "stable_id":
             if search_panel:
                 queryset = (
                     LocusGenotypeDisease.objects.filter(
@@ -354,7 +354,7 @@ class SearchView(BaseView):
                 )
 
             if not queryset.exists():
-                self.handle_no_permission("g2p_id", search_query)
+                self.handle_no_permission("stable_id", search_query)
 
         elif search_type == "draft" and user.is_authenticated:
             queryset = (
@@ -429,7 +429,7 @@ class SearchView(BaseView):
 
         if not search_type:
             search_type = "results"
-        elif search_type != "g2p_id" and search_type != "draft":
+        elif search_type != "stable_id" and search_type != "draft":
             search_type = search_type.capitalize()
 
         # Check if queryset is empty, if so return appropriate message
