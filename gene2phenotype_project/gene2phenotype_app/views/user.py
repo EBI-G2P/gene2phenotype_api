@@ -68,39 +68,6 @@ class UserPanels(BaseView):
 
 
 @extend_schema(exclude=True)
-class UserList(generics.ListAPIView):
-    serializer_class = UserSerializer
-
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        context.update({'user_login':self.request.user})
-        return context
-
-    def get_queryset(self):
-        user = self.request.user
-        if user and user.is_authenticated:
-            queryset = User.objects.filter(is_active=1)
-        else:
-            queryset = User.objects.filter(is_active=1, is_staff=0)
-
-        return queryset
-
-    def list(self, request, *args, **kwargs):
-        """
-        Returns a list of active users and their info.
-        The info includes a list of panels the user has permission to edit.
-
-        Returns: the Response object includes:
-                    results (list): list of users
-                    count (int): number of users
-        """
-        queryset = self.get_queryset()
-        serializer = UserSerializer(queryset, many=True, context={'user': self.request.user})
-
-        return Response({'results': serializer.data, 'count':len(serializer.data)})
-
-
-@extend_schema(exclude=True)
 class CreateUserView(generics.CreateAPIView):
     """
     View for creating a new user.
