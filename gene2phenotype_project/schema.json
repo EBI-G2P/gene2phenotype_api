@@ -11,7 +11,7 @@ paths:
       operationId: lgd_retrieve
       description: |2
 
-        Fetch detailed information about a specific record using the G2P stable ID.
+        Fetch detailed information about a specific record using the G2P stable ID (stable_id).
 
         A record is a unique Locus-Genotype-Mechanism-Disease-Evidence (LGMDE) thread.
       parameters:
@@ -189,21 +189,57 @@ paths:
       description: |2
 
         Search G2P records and return summaries of LGMDE records.
-        Stable G2P IDs are returned to enable extraction of full details.
+        G2P stable IDs (stable_id) are returned to enable extraction of full details.
 
-        Supported search types are:
+        You can tailor your search using the following query parameters:
+
+        **Required Parameter**
+        - `query`
+          The term you wish to search for.
+          This could be a gene symbol, disease name, phenotype (e.g. HP:0000853) or a G2P stable ID.
+
+        **Optional Parameters**
+        - `type`
+          Specifies the type of your search. If omitted, the endpoint performs a generic search across all types.
+
+          Accepted values include:
+
 
             gene      : by gene symbol
             disease   : by text string (e.g. Cowden syndrome), Mondo or OMIM identifier
             phenotype : by description (e.g. Goiter) or accession (e.g.  HP:0000853)
-            g2p_id    : by the stable G2P ID
+            stable_id : by the G2P stable ID
+
+
+        - `panel`
+          Filters results to a specific panel by name.
+
+          Accepted names include:
+
+
+            Cancer
+            Cardiac
+            DD
+            Ear
+            Eye
+            Skeletal
+            Skin
+
 
         When more than 20 records are available, results are paginated.
 
-        If no search type is specified then it performs a generic search.
-        The search can be specific to one panel if using parameter 'panel'.
+        **Example Requests**
+        - Search by gene:
+            `/search/?query=TP53&type=gene`
 
-        Example: `search/?type=gene&query=RHO&panel=Cancer`
+        - Search by phenotype:
+            `/search/?query=HP:0003416&type=phenotype`
+
+        - Generic search across all categories:
+            `/search/?query=Weill-Marchesani syndrome`
+
+        - Search gene within a specific panel:
+            `/search/?type=gene&query=FBN1&panel=DD`
       parameters:
       - name: page
         required: false
@@ -220,13 +256,14 @@ paths:
         name: query
         schema:
           type: string
-        description: Search term
+        description: The term you wish to search for
         required: true
       - in: query
         name: type
         schema:
           type: string
-        description: 'Type of search can be: gene, disease, phenotype or g2p_id'
+        description: 'Type of search can be: gene symbol, disease name, phenotype
+          (e.g. HP:0000853) or a G2P stable ID'
       tags:
       - Search records
       security:
@@ -407,6 +444,18 @@ paths:
 
         Fetch counts for a specific panel by using a panel short name as the parameter.
 
+        Accepted names include:
+
+
+            Cancer
+            Cardiac
+            DD
+            Ear
+            Eye
+            Skeletal
+            Skin
+
+
         The response provides summary statistics about the records associated with it.
       parameters:
       - in: path
@@ -477,9 +526,24 @@ paths:
 
         Download all records associated with a specific panel by using its short name as the parameter.
 
+
+        Accepted names include:
+
+
+            Cancer
+            Cardiac
+            DD
+            Ear
+            Eye
+            Skeletal
+            Skin
+
+
         It returns an uncompressed csv file.
 
-        Example: `panel/DD/download`
+        **Example Requests**
+        - Download DD records:
+            `/panel/DD/download`
       parameters:
       - in: path
         name: name
@@ -779,7 +843,12 @@ components:
           description: Publications associated with the LGMDE record.
           readOnly: true
         panels:
-          type: string
+          type: array
+          items:
+            type: object
+            additionalProperties:
+              type: string
+          description: Panel(s) associated with the LGMDE record.
           readOnly: true
         cross_cutting_modifier:
           type: array

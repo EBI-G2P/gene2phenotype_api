@@ -78,7 +78,7 @@ class SearchTests(TestCase):
             Test the response when searching by G2P stable ID
         """
         base_url_search = reverse("search")
-        url_search_id = f"{base_url_search}?type=g2p_id&query=G2P00001"
+        url_search_id = f"{base_url_search}?type=stable_id&query=G2P00001"
         response = self.client.get(url_search_id)
 
         self.assertEqual(response.status_code, 200)
@@ -104,11 +104,11 @@ class SearchTests(TestCase):
             Test the response when searching by G2P stable ID that has been deleted
         """
         base_url_search = reverse("search")
-        url_search_id = f"{base_url_search}?type=g2p_id&query=G2P00003"
+        url_search_id = f"{base_url_search}?type=stable_id&query=G2P00003"
         response = self.client.get(url_search_id)
 
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.data["error"], "No matching g2p_id found for: G2P00003")
+        self.assertEqual(response.data["error"], "No matching stable_id found for: G2P00003")
 
     def test_search_all(self):
         """
