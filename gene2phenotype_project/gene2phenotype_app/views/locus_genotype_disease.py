@@ -324,10 +324,6 @@ class VariantTypesList(APIView):
                 "last_updated": "2025-03-06",
                 "date_created": "2024-03-06",
                 "comments": [],
-                "curators": [
-                    "Louise Thompson",
-                    "Elena Cibrian"
-                ],
                 "is_reviewed": 1
             }
         )
