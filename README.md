@@ -8,7 +8,7 @@ API documentation is available at [Gene2Phenotype API Documentation](https://www
 ### Installation and requirements
 The G2P requires:
 
-    * **Python 5.10**
+    * **Python 3.10**
     * **MySQL 8**
 
 ```bash
