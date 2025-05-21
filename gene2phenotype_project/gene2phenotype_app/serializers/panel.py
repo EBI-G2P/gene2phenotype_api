@@ -282,10 +282,6 @@ class LGDPanelSerializer(serializers.ModelSerializer):
                 # If deleted then update to not deleted
                 lgd_panel_obj.is_deleted = 0
                 lgd_panel_obj.save()
-        
-        # Update the 'date_review' of the LocusGenotypeDisease obj
-        lgd.date_review = get_date_now()
-        lgd.save()
 
         return lgd_panel_obj
 

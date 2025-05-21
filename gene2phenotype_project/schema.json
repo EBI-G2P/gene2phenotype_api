@@ -178,9 +178,6 @@ paths:
                     last_updated: '2025-03-06'
                     date_created: '2024-03-06'
                     comments: []
-                    curators:
-                    - Louise Thompson
-                    - Elena Cibrian
                     is_reviewed: 1
                   summary: Example 1
                   description: Fetch detailed information for record with stable_id
@@ -859,16 +856,6 @@ components:
             seen by curators.
           readOnly: true
           nullable: true
-        curators:
-          type: array
-          items:
-            type: string
-          description: |-
-            List of curators who worked on the LGMDE record.
-            Dependency: this method depends on the history table.
-            Note: entries that were migrated from the old db have limited info details.
-          readOnly: true
-          nullable: true
         is_reviewed:
           type: integer
           nullable: true
@@ -877,7 +864,6 @@ components:
       - comments
       - confidence
       - cross_cutting_modifier
-      - curators
       - date_created
       - disease
       - genotype

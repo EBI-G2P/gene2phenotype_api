@@ -61,7 +61,6 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     last_updated = serializers.SerializerMethodField()
     date_created = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField(allow_null=True)
-    curators = serializers.SerializerMethodField(allow_null=True)
     is_reviewed = serializers.IntegerField(allow_null=True, required=False, help_text="If set to 0 the record is awaiting review")
 
     def get_locus(self, id: int) -> dict[str, Any]:
@@ -387,48 +386,6 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         return date
 
-    def get_curators(self, id) -> list[str]:
-        """
-            List of curators who worked on the LGMDE record.
-            Dependency: this method depends on the history table.
-            Note: entries that were migrated from the old db have limited info details.
-        """
-        list_curators = set()
-        lgd_obj = self.instance
-        # Check LGD record history
-        history_records = lgd_obj.history.all().values('history_user__first_name', 'history_user__last_name')
-        # Check LGD cross cutting modifier history
-        history_records_ccm = LGDCrossCuttingModifier.history.filter(id=lgd_obj.id).values(
-                                    'history_user__first_name', 'history_user__last_name')
-        # Check LGD panel history
-        history_records_lgdpanel = LGDPanel.history.filter(id=lgd_obj.id).values(
-                                    'history_user__first_name', 'history_user__last_name')
-        # Check LGD phenotype history
-        history_records_lgdpheno = LGDPhenotype.history.filter(id=lgd_obj.id).values(
-                                    'history_user__first_name', 'history_user__last_name')
-        # Check LGD publication history
-        history_records_lgdpublication = LGDPublication.history.filter(id=lgd_obj.id).values(
-                                    'history_user__first_name', 'history_user__last_name')
-        # Check LGD variation GenCC consequence history
-        history_records_lgdvarcons = LGDVariantGenccConsequence.history.filter(id=lgd_obj.id).values(
-                                    'history_user__first_name', 'history_user__last_name')
-        # Check LGD variation type history
-        history_records_lgdvartype = LGDVariantType.history.filter(id=lgd_obj.id).values(
-                                    'history_user__first_name', 'history_user__last_name')
-        # Check LGD variation type description history
-        history_records_lgdvartype_desc = LGDVariantTypeDescription.history.filter(id=lgd_obj.id).values(
-                                    'history_user__first_name', 'history_user__last_name')
-
-        for record in itertools.chain(history_records, history_records_ccm, history_records_lgdpanel, 
-                                      history_records_lgdpheno, history_records_lgdpublication,
-                                      history_records_lgdvarcons, history_records_lgdvartype,
-                                      history_records_lgdvartype_desc):
-            first_name = record.get('history_user__first_name')
-            last_name = record.get('history_user__last_name')
-            list_curators.add(f"{first_name} {last_name}")
-
-        return list_curators
-
     def check_user_permission(self, id, user_panels):
         """
             Check if user has permission to update this G2P record.
@@ -592,8 +549,6 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     return True
         
         return False
-
-            
 
     def update(self, instance, validated_data):
         """
@@ -830,9 +785,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                             mechanism_evidence_obj.is_deleted = 0
                             mechanism_evidence_obj.save()
 
-                    # Update LGD date_review
-                    lgd_obj.date_review = get_date_now()
-                    lgd_obj.save()
+        # Update LGD date_review
+        lgd_obj.date_review = get_date_now()
+        lgd_obj.save()
 
     class Meta:
         model = LocusGenotypeDisease

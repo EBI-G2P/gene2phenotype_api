@@ -36,7 +36,6 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         self.assertEqual(response.data["cross_cutting_modifier"], []),
         self.assertEqual(response.data["last_updated"], "2017-04-24")
         self.assertEqual(response.data["date_created"], None)
-        self.assertEqual(response.data["curators"], set())
 
         expected_data_comments = [
             {
