@@ -2,6 +2,7 @@ from rest_framework import generics, status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import Http404, HttpResponse
+from django.db.models import Q
 from rest_framework.decorators import api_view
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
 from django.db import transaction
@@ -455,6 +456,8 @@ class LGDEditPanel(CustomPermissionAPIView):
         Skin
 
 
+    To download records from all panels input `all` as the short name.
+
     It returns an uncompressed csv file.
     
     **Example Requests**
@@ -469,7 +472,7 @@ def PanelDownload(request, name):
     Authenticated users can download data for all panels.
 
     Args:
-        name (str): the short name of the panel to download
+        name (str): the short name of the panel to download or 'all' to download all panels
 
     Returns: Uncompressed csv file
 
@@ -477,6 +480,7 @@ def PanelDownload(request, name):
     """
 
     user_email = request.user
+    panel = None
 
     # Get user
     try:
@@ -484,11 +488,20 @@ def PanelDownload(request, name):
     except User.DoesNotExist:
         user_obj = None
 
-    # Check if panel is valid
-    try:
-        panel = Panel.objects.get(name=name)
-    except Panel.DoesNotExist:
-        raise Http404(f"No matching panel found for: {name}")
+    # If name = "all" the view downloads all panels
+    all_panels = False  # By default, we don't download all panels
+    only_visible_panels = True
+    if name.lower() == "all":
+        all_panels = True
+        if user_obj and user_obj.is_authenticated:
+            # Authenticated users can access non-visible panels
+            only_visible_panels = False
+    else:
+        # Check if panel is valid
+        try:
+            panel = Panel.objects.get(name=name)
+        except Panel.DoesNotExist:
+            raise Http404(f"No matching panel found for: {name}")
 
     # Get date to attach to filename
     date_now = datetime.today().strftime('%Y-%m-%d')
@@ -585,11 +598,13 @@ def PanelDownload(request, name):
 
     # Preload panels
     lgd_panel_data = {}
-    # Return all visible panels
-    queryset_lgd_panel = LGDPanel.objects.filter(
-        is_deleted=0,
-        panel__is_visible=1
-    ).select_related('lgd__id', 'panel__name').values('lgd__id', 'panel__name')
+    # For authenticated users pre-load all available panels
+    if user_obj and user_obj.is_authenticated:
+        filter_panels = Q(is_deleted=0)
+    else:
+        # Non authenticated users only get visible panels
+        filter_panels = Q(is_deleted=0, panel__is_visible=1)
+    queryset_lgd_panel = LGDPanel.objects.filter(filter_panels).select_related('lgd__id', 'panel__name').values('lgd__id', 'panel__name')
 
     for data in queryset_lgd_panel:
         if data['lgd__id'] not in lgd_panel_data:
@@ -640,13 +655,25 @@ def PanelDownload(request, name):
 
     # Authenticated users can download all panels
     # Non authenticated users can only download visible panels
-    if panel.is_visible == 1 or (user_obj and user_obj.is_authenticated and panel.is_visible == 0):
+    if (
+        panel
+        and (
+            panel.is_visible == 1
+            or (user_obj and user_obj.is_authenticated and panel.is_visible == 0)
+        )
+    ) or all_panels:
+        if panel:
+            # Download specific panel
+            filter_query = Q(is_deleted=0, is_reviewed=1, lgdpanel__panel=panel, lgdpanel__is_deleted=0)
+        elif all_panels and only_visible_panels:
+            # Download all visible panels
+            filter_query = Q(is_deleted=0, is_reviewed=1, lgdpanel__panel__is_visible=1, lgdpanel__is_deleted=0)
+        elif all_panels and not only_visible_panels:
+            # Download all visible and non-visible panels excluding Demo panel
+            filter_query = Q(is_deleted=0, is_reviewed=1, lgdpanel__is_deleted=0) & ~Q(lgdpanel__panel__name="Demo")
+
         # Download reviewed entries
-        queryset_list = LocusGenotypeDisease.objects.filter(
-            is_deleted = 0,
-            is_reviewed = 1,
-            lgdpanel__panel = panel
-        ).distinct().select_related('stable_id', 'locus', 'disease', 'genotype', 'confidence', 'mechanism', 'mechanism_support'
+        queryset_list = LocusGenotypeDisease.objects.filter(filter_query).distinct().select_related('stable_id', 'locus', 'disease', 'genotype', 'confidence', 'mechanism', 'mechanism_support'
                                     ).prefetch_related('disease', 'locus')
 
         # Get extra info for the disease and the locus:
