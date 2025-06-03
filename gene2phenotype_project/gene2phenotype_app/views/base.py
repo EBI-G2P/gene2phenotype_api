@@ -6,6 +6,7 @@ from django.db import transaction
 from rest_framework.permissions import BasePermission
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
 
 
 class BaseView(generics.ListAPIView):
@@ -24,6 +25,12 @@ class BaseView(generics.ListAPIView):
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         return super().handle_exception(exc)
+
+    def handle_missing_input(self, name_type, name):
+        if name is None:
+            raise Http404(f"Missing {name_type}")
+        else:
+            raise Http404(f"Missing {name_type} {name}")
 
 
 class BaseAPIView(APIView):
@@ -118,3 +125,10 @@ class IsSuperUser(BasePermission):
         if not (request.user and request.user.is_superuser):
             raise PermissionDenied({"error": "You do not have permission to perform this action."})
         return True
+
+
+class CustomPagination(PageNumberPagination):
+    """
+    Custom method to define the number of results per page
+    """
+    page_size = 20
