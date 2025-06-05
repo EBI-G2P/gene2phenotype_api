@@ -136,7 +136,7 @@ SIMPLE_JWT = {
   "AUTH_COOKIE_PATH": "/",
   "AUTH_COOKIE_SAMESITE": "Lax",
   "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
-  "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+  "REFRESH_TOKEN_LIFETIME": timedelta(hours=12),
   "BLACKLIST_AFTER_ROTATION": True,
   'TOKEN_BACKEND': 'rest_framework_simplejwt.token_blacklist.backends.BlacklistBackend',
   'BLACKLIST_TOKEN_CHECKS': [ 'rest_framework_simplejwt.token_blacklist.check_blacklisted_token', ],
