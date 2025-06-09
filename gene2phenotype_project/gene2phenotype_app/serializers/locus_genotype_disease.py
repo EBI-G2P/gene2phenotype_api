@@ -36,6 +36,7 @@ from .disease import DiseaseSerializer
 from .panel import LGDPanelSerializer
 
 from ..utils import get_date_now, ConfidenceCustomMail
+from ..utils import validate_mechanism_synopsis
 
 
 class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
@@ -386,7 +387,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         return date
 
-    def check_user_permission(self, id, user_panels):
+    def check_user_permission(self, lgd_obj, user_panels):
         """
             Check if user has permission to update this G2P record.
 
@@ -398,7 +399,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     True: if user has permission
                     False: if user has no permission
         """
-        lgd_panels = [panel.get('name') for panel in self.get_panels(id)]
+        lgd_panels = [panel.get('name') for panel in self.get_panels(lgd_obj.id)]
         has_common = any(item in list(lgd_panels) for item in user_panels)
 
         return has_common
@@ -635,7 +636,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     type = "mechanism"
                 )
             except CVMolecularMechanism.DoesNotExist:
-                raise serializers.ValidationError({"message": f"Invalid mechanism value '{molecular_mechanism_value}'"})
+                raise serializers.ValidationError({"error": f"Invalid mechanism value '{molecular_mechanism_value}'"})
 
         # Get the mechanism support
         # "support" = "" means the mechanism support does not need to be updated
@@ -648,7 +649,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     type = "support"
                 )
             except CVMolecularMechanism.DoesNotExist:
-                raise serializers.ValidationError({"message": f"Invalid mechanism support '{molecular_mechanism_support}'"})
+                raise serializers.ValidationError({"error": f"Invalid mechanism support '{molecular_mechanism_support}'"})
 
         # Update LGD instance with new mechanism value only if mechanism value is "undetermined"
         if cv_mechanism_obj and lgd_instance.mechanism.value == "undetermined":
@@ -676,7 +677,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                         type = "mechanism_synopsis"
                     )
                 except CVMolecularMechanism.DoesNotExist:
-                    raise serializers.ValidationError({"message": f"Invalid mechanism synopsis value '{mechanism_synopsis_value}'"})
+                    raise serializers.ValidationError({"error": f"Invalid mechanism synopsis value '{mechanism_synopsis_value}'"})
 
                 try:
                     cv_synopsis_support_obj = CVMolecularMechanism.objects.get(
@@ -684,7 +685,12 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                         type = "support"
                     )
                 except CVMolecularMechanism.DoesNotExist:
-                    raise serializers.ValidationError({"message": f"Invalid mechanism synopsis support '{mechanism_synopsis_support}'"})
+                    raise serializers.ValidationError({"error": f"Invalid mechanism synopsis support '{mechanism_synopsis_support}'"})
+
+                # Validate synopsis
+                mechanism_value = lgd_instance.mechanism.value
+                if not validate_mechanism_synopsis(mechanism_value, mechanism_synopsis_value):
+                    raise serializers.ValidationError({"error": f"Invalid mechanism synopsis '{mechanism_synopsis_value}' for mechanism '{mechanism_value}"})
 
                 # Check if synopsis already exists
                 try:
@@ -948,33 +954,49 @@ class LGDMechanismSynopsisSerializer(serializers.ModelSerializer):
     synopsis = serializers.CharField(source="synopsis.value")
     synopsis_support = serializers.CharField(source="synopsis_support.value")
 
+    def validate(self, data):
+        lgd_instance = self.context["lgd"]
+        synopsis_name = data["synopsis"]["value"]
+        synopsis_support = data["synopsis_support"]["value"]
+        mechanism_value = lgd_instance.mechanism.value
+
+        # Get mechanism synopsis value from controlled vocabulary table for molecular mechanism
+        try:
+            data["synopsis"]["value"] = CVMolecularMechanism.objects.get(
+                value=synopsis_name,
+                type="mechanism_synopsis"
+            )
+        except CVMolecularMechanism.DoesNotExist:
+            raise serializers.ValidationError({
+                "error": f"Invalid mechanism synopsis value '{synopsis_name}'"
+            })
+
+        # Get mechanism synopsis support from controlled vocabulary table for molecular mechanism
+        try:
+            data["synopsis_support"]["value"] = CVMolecularMechanism.objects.get(
+                value=synopsis_support,
+                type="support"
+            )
+        except CVMolecularMechanism.DoesNotExist:
+            raise serializers.ValidationError({
+                "error": f"Invalid mechanism synopsis support value '{synopsis_support}'"
+            })
+
+        # Validate the synopsis
+        if not validate_mechanism_synopsis(mechanism_value, synopsis_name):
+            raise serializers.ValidationError({
+                "error": f"Invalid mechanism synopsis '{synopsis_name}' for mechanism '{mechanism_value}"
+            })
+
+        return data
+
     def create(self, validate_data):
         """
             Create LGDMolecularMechanismSynopsis object
         """
-        lgd_instance = self.context['lgd']
-        synopsis_name = validate_data["synopsis"]["value"]
-        synopsis_support = validate_data["synopsis_support"]["value"]
-        synopsis_obj = None
-        synopsis_support_obj = None
-
-        # Get mechanism synopsis value from controlled vocabulary table for molecular mechanism
-        try:
-            synopsis_obj = CVMolecularMechanism.objects.get(
-                value = synopsis_name,
-                type = "mechanism_synopsis"
-            )
-        except CVMolecularMechanism.DoesNotExist:
-            raise serializers.ValidationError({"message": f"Invalid mechanism synopsis value '{synopsis_name}'"})
-
-        # Get mechanism synopsis support from controlled vocabulary table for molecular mechanism
-        try:
-            synopsis_support_obj = CVMolecularMechanism.objects.get(
-                value = synopsis_support,
-                type = "support"
-            )
-        except CVMolecularMechanism.DoesNotExist:
-            raise serializers.ValidationError({"message": f"Invalid mechanism synopsis support value '{synopsis_support}'"})
+        lgd_instance = self.context["lgd"]
+        synopsis_obj = validate_data["synopsis"]["value"]
+        synopsis_support_obj = validate_data["synopsis_support"]["value"]
 
         # Create new molecular mechanism
         mechanism_synopsis_obj = LGDMolecularMechanismSynopsis.objects.create(
@@ -988,7 +1010,7 @@ class LGDMechanismSynopsisSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LGDMolecularMechanismSynopsis
-        fields = ['synopsis', 'synopsis_support']
+        fields = ["synopsis", "synopsis_support"]
 
 
 class EvidenceSerializer(serializers.Serializer):
@@ -1001,7 +1023,7 @@ class EvidenceSerializer(serializers.Serializer):
 class LGDMechanismEvidenceSerializer(serializers.ModelSerializer):
     """
         Serializer for the LGDMolecularMechanismEvidence model.
-        A molecular mechanism can have multiple synopsis.
+        A molecular mechanism can have multiple evidence.
     """
     description = serializers.CharField(allow_blank=True)
     evidence = EvidenceSerializer()
@@ -1022,7 +1044,7 @@ class LGDMechanismEvidenceSerializer(serializers.ModelSerializer):
         secondary_type = evidence_data["secondary_type"] # list of strings
 
         for evidence_value in secondary_type:
-            # Get mechanism synopsis value from controlled vocabulary table for molecular mechanism
+            # Get mechanism evidence value from the mechanism controlled vocabulary table
             try:
                 evidence_obj = CVMolecularMechanism.objects.get(
                     value = evidence_value.lower(),
@@ -1033,7 +1055,7 @@ class LGDMechanismEvidenceSerializer(serializers.ModelSerializer):
             except CVMolecularMechanism.DoesNotExist:
                 raise serializers.ValidationError({"message": f"Invalid mechanism evidence value '{evidence_value}'"})
 
-            # Create new molecular mechanism
+            # Create new molecular mechanism evidence
             mechanism_evidence_obj = LGDMolecularMechanismEvidence.objects.create(
                 lgd = lgd_instance,
                 evidence = evidence_obj,
