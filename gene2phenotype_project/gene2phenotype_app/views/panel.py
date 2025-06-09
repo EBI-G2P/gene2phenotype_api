@@ -508,9 +508,9 @@ def PanelDownload(request, name):
     except User.DoesNotExist:
         user_obj = None
 
-    # If name = "all" the view downloads all panels
     all_panels = False  # By default, we don't download all panels
     only_visible_panels = True
+    # If name = "all" download all panels taking into account authentication
     if name.lower() == "all":
         all_panels = True
         if user_obj and user_obj.is_authenticated:
