@@ -710,27 +710,28 @@ def PanelDownload(request, name):
             or (user_obj and user_obj.is_authenticated and panel.is_visible == 0)
         )
     ) or all_panels:
-        if panel:
-            # Download specific panel
-            filter_query = Q(
-                is_deleted=0,
-                is_reviewed=1,
-                lgdpanel__panel=panel,
-                lgdpanel__is_deleted=0,
-            )
-        elif all_panels and only_visible_panels:
-            # Download all visible panels
-            filter_query = Q(
-                is_deleted=0,
-                is_reviewed=1,
-                lgdpanel__panel__is_visible=1,
-                lgdpanel__is_deleted=0,
-            )
-        elif all_panels and not only_visible_panels:
-            # Download all visible and non-visible panels excluding Demo panel
-            filter_query = Q(is_deleted=0, is_reviewed=1, lgdpanel__is_deleted=0) & ~Q(
-                lgdpanel__panel__name="Demo"
-            )
+        # Download specific panel
+        filter_query = Q(
+            is_deleted=0,
+            is_reviewed=1,
+            lgdpanel__panel=panel,
+            lgdpanel__is_deleted=0,
+        )
+
+        if all_panels:
+            if only_visible_panels:
+                # Download all visible panels
+                filter_query = Q(
+                    is_deleted=0,
+                    is_reviewed=1,
+                    lgdpanel__panel__is_visible=1,
+                    lgdpanel__is_deleted=0,
+                )
+            else:
+                # Download all visible and non-visible panels excluding Demo panel
+                filter_query = Q(
+                    is_deleted=0, is_reviewed=1, lgdpanel__is_deleted=0
+                ) & ~Q(lgdpanel__panel__name="Demo")
 
         # Download reviewed entries
         queryset_list = (
