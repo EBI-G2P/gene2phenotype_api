@@ -180,10 +180,15 @@ class PublicationSerializer(serializers.ModelSerializer):
         data = []
 
         for publication_comment in queryset:
+            # Format the date
+            date = None
+            if publication_comment.date is not None:
+                date = publication_comment.date.strftime("%Y-%m-%d")
+
             comment = {
                 "comment": publication_comment.comment,
                 "user": publication_comment.user.username,
-                "date": publication_comment.date
+                "date": date
             }
             data.append(comment)
 

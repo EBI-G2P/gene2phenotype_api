@@ -1,0 +1,14 @@
+[
+    {
+        "model": "gene2phenotype_app.publicationcomment",
+        "pk": 1,
+        "fields": {
+            "publication": 1,
+            "comment": "See supplementary table 1. Homozygous.",
+            "is_public": 0,
+            "is_deleted": 0,
+            "user": 1,
+            "date": "2025-02-19T10:57:45Z"
+        }
+    }
+]
