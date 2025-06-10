@@ -138,7 +138,6 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
                     "title": "Acetyl coenzyme A: alpha-glucosaminide N-acetyltransferase. Evidence for a transmembrane acetylation mechanism.",
                     "authors": "Bame KJ, Rome LH.",
                     "year": "1985",
-                    "comments": [],
                     "families": [],
                     "comments": [
                         {
