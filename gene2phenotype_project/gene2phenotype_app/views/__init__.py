@@ -1,4 +1,4 @@
-from .base import BaseView, BaseAPIView, BaseAdd, BaseUpdate
+from .base import BaseView, BaseAPIView, BaseAdd, BaseUpdate, CustomPagination
 
 from .panel import (PanelCreateView, PanelList, PanelDetail, PanelRecordsSummary, 
                     PanelDownload, LGDEditPanel)
@@ -21,7 +21,7 @@ from .user import (CreateUserView, AddUserToPanelView, LoginView, ManageUserView
 
 from .publication import PublicationDetail, AddPublication, LGDEditPublications
 
-from .meta import MetaView
+from .meta import MetaView, ActivityLogs
 
 from .locus_genotype_disease import (ListMolecularMechanisms, VariantTypesList,
                                      LocusGenotypeDiseaseDetail, LGDEditCCM,

@@ -342,5 +342,11 @@ urlpatterns = [
         "reference_data/",
         views.MetaView.as_view(),
         name="get_reference_data"
+    ),
+
+    path(
+        "activity_logs/",
+        views.ActivityLogs.as_view(),
+        name="activity_logs"
     )
 ]
