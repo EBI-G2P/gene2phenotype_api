@@ -337,7 +337,6 @@ class LGDEditPublications(BaseUpdate):
 
             # If only the mechanism evidence is going to be updated, call method update_mechanism_evidence()
             # update_mechanism_evidence() updates the 'date_review' of the LGD record
-            # TODO: but before adding evidence we have to check/update the mechanism support to "evidence"
             elif mechanism_evidence_data:
                 lgd_serializer = LocusGenotypeDiseaseSerializer()
                 try:
