@@ -165,7 +165,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
         if (("autosomal" in json_data["allelic_requirement"] and not locus_chr.isdigit()) or
             (json_data["allelic_requirement"] == "mitochondrial" and locus_chr != "MT") or
             ("_PAR" in json_data["allelic_requirement"] and (locus_chr != "X" and locus_chr != "Y")) or
-            ("_X" in json_data["allelic_requirement"] and locus_chr != "X")):
+            ("_X" in json_data["allelic_requirement"] and locus_chr != "X") or
+            ("_Y" in json_data["allelic_requirement"] and locus_chr != "Y")):
             raise serializers.ValidationError({
                 "error": f"Invalid genotype '{json_data['allelic_requirement']}' for locus '{locus_obj.name}'"
             })
