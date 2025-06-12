@@ -1,4 +1,5 @@
 from rest_framework import status, permissions
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import Http404
@@ -1458,3 +1459,89 @@ class LocusGenotypeDiseaseDelete(APIView):
             {"message": f"ID '{stable_id}' successfully deleted"},
             status=status.HTTP_200_OK
         )
+
+
+### Merge/Split records ###
+@extend_schema(exclude=True)
+@api_view(['POST'])
+@permission_classes([IsSuperUser])
+def MergeRecords(request):
+    """
+
+
+    Args:
+        request (_type_): _description_
+    """
+    records_list = request.data
+
+    print("->", records_list)
+
+    if not records_list or not isinstance(records_list, list):
+        return Response(
+                {"error": "Request should be a list containing the records to merge"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    # Example:
+    # records_list = [ {"g2p_ids": ["G2P00004"], "final_g2p_id": "G2P00001"}, {"g2p_ids": ["G2P00005", "G2P00008"], "final_g2p_id": "G2P00006"} ]
+    for record in records_list:
+        print("---")
+        # record = {"g2p_ids": ["G2P00004"], "final_g2p_id": "G2P00001"}
+        try:
+            g2p_ids = record["g2p_ids"]
+        except KeyError:
+            print(f"ERROR: g2p_ids missing from input data {record}")
+        else:
+            # Check if the list of IDs to merge is empty
+            if len(g2p_ids) == 0:
+                print(f"ERROR: empty g2p_ids {record}")
+            else:
+                # Get which of the IDs is going to be kept
+                try:
+                    final_g2p_id = record["final_g2p_id"]
+                except KeyError:
+                    print(f"ERROR: final_g2p_id missing from input data {record}")
+                else:
+                    # Data to merge:
+                    # variant types, variant description, variant consequences, phenotypes,
+                    # phenotype summary, publications, comments, panels, cross cutting modifiers,
+                    # mechanism synopsis, mechanism evidence
+
+                    # Get the G2P record to keep
+                    try:
+                        lgd_obj_keep = LocusGenotypeDisease.objects.get(
+                            stable_id__stable_id = final_g2p_id,
+                            is_deleted = 0
+                        )
+                    except LocusGenotypeDisease.DoesNotExist:
+                        print(f"ERROR: invalid G2P record {final_g2p_id}")
+
+                    print("Genotype to keep:", lgd_obj_keep.genotype)
+                    lgd_phenos_keep = LGDPhenotype.objects.filter(lgd=lgd_obj_keep)
+
+                    for g2p_id in g2p_ids:
+                        try:
+                            lgd_obj = LocusGenotypeDisease.objects.get(
+                                stable_id__stable_id = g2p_id,
+                                is_deleted = 0
+                            )
+                        except LocusGenotypeDisease.DoesNotExist:
+                            print(f"ERROR: invalid G2P record {g2p_id}")
+                        
+                        # Run checks before the update
+                        # Check if the genotype is the same
+                        if lgd_obj_keep.genotype != lgd_obj.genotype:
+                            print(f"ERROR: cannot merge records as genotype is different {final_g2p_id} and {g2p_id}")
+                        
+                        # Merge phenotypes
+                        lgd_phenos = LGDPhenotype.objects.filter(lgd=lgd_obj, is_deleted=0)
+                        exclude_ids = list(lgd_phenos_keep.values_list('pk', flat=True))
+                        lgd_phenos_diff = lgd_phenos.exclude(pk__in=exclude_ids)
+                        # To update the history tables, run the update with method save()
+                        for lgd_pheno_obj in lgd_phenos_diff:
+                            lgd_pheno_obj.lgd = lgd_obj_keep
+                            lgd_pheno_obj.save()
+
+    response = Response({"results": 0, "count": 0})
+
+    return response

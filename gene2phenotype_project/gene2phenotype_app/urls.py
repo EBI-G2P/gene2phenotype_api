@@ -249,6 +249,13 @@ urlpatterns = [
         name="update_ontology_terms"
     ),
 
+    ### Endpoints to merge or split LGD records ###
+    path(
+        "merge_records/",
+        views.MergeRecords,
+        name="merge_records"
+    ),
+
     ### Curation endpoints ###
     path(
         "add/curation/",
