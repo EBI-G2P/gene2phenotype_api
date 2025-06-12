@@ -7,7 +7,7 @@ from gene2phenotype_app.models import User, CurationData
 
 class LGDAddCurationEndpoint(TestCase):
     """
-    Test endpoint to add curation
+    Test endpoint to publish a record
     """
 
     fixtures = [
@@ -20,10 +20,10 @@ class LGDAddCurationEndpoint(TestCase):
         "gene2phenotype_app/fixtures/attribs.json",
     ]
 
-    def test_add_curation_incorrect_genotype(self):
+    def test_publish_incorrect_genotype(self):
         """
-        Test the curation endpoint when the genotype is incorrect for the gene
-        First call the endpoint to add the curation data - it is possible to save the data
+        Test the curation endpoint when the genotype is incorrect for the gene.
+        First, call the endpoint to add the curation data - it is possible to save the data
         even when the genotype is incorrect.
         And finally try to publish the data - it is not possible to publish the data.
         """
