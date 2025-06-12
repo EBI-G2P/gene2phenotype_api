@@ -29,3 +29,5 @@ from .stable_id import G2PStableIDSerializer
 from .curation import CurationDataSerializer
 
 from .meta import MetaSerializer
+
+from .gencc_submission import GenCCSubmissionSerializer
