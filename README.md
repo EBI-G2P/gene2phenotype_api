@@ -33,6 +33,7 @@ from=<from>
 host=<host>
 port=<port>
 mailing_list=<your_mailing_list>
+send_to_mailing_list=True
 
 [g2p]
 version=<version>
