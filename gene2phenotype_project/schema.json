@@ -539,6 +539,8 @@ paths:
             Skin
 
 
+        To download records from all panels input `all` as the short name.
+
         It returns an uncompressed csv file.
 
         **Example Requests**
