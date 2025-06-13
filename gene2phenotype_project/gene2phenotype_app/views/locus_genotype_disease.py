@@ -1519,6 +1519,7 @@ def MergeRecords(request):
                     print("Genotype to keep:", lgd_obj_keep.genotype)
                     lgd_phenos_keep = LGDPhenotype.objects.filter(lgd=lgd_obj_keep)
 
+                    # Loop through the records to be merged into 'lgd_obj_keep'
                     for g2p_id in g2p_ids:
                         try:
                             lgd_obj = LocusGenotypeDisease.objects.get(
@@ -1532,11 +1533,13 @@ def MergeRecords(request):
                         # Check if the genotype is the same
                         if lgd_obj_keep.genotype != lgd_obj.genotype:
                             print(f"ERROR: cannot merge records as genotype is different {final_g2p_id} and {g2p_id}")
-                        
-                        # Merge phenotypes
+
+                        # Fetch the phenotypes linked to the record
                         lgd_phenos = LGDPhenotype.objects.filter(lgd=lgd_obj, is_deleted=0)
+                        # Check which phenotypes are already linked to the record to keep
                         exclude_ids = list(lgd_phenos_keep.values_list('pk', flat=True))
                         lgd_phenos_diff = lgd_phenos.exclude(pk__in=exclude_ids)
+                        # Associate the remaining phenotypes to the record to keep
                         # To update the history tables, run the update with method save()
                         for lgd_pheno_obj in lgd_phenos_diff:
                             lgd_pheno_obj.lgd = lgd_obj_keep
