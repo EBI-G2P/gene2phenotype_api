@@ -342,5 +342,12 @@ urlpatterns = [
         "reference_data/",
         views.MetaView.as_view(),
         name="get_reference_data"
-    )
+    ),
+
+    ### GenCC submission  ###
+    path('unsubmitted-stable-ids/', views.GenCCSubmissionView.as_view(), name='unsubmitted-stable-ids'),
+
+    path('later_review_date/', views.StableIDsWithLaterReviewDateView.as_view(), name="later-review-date")
+
+
 ]
