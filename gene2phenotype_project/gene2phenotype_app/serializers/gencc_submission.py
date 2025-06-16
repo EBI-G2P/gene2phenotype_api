@@ -3,22 +3,31 @@ from ..models import GenCCSubmission, G2PStableID, LocusGenotypeDisease
 from django.db.models import OuterRef, Exists, Subquery, DateField, ExpressionWrapper, F
 from typing import Any
 from django.db.models.query import QuerySet
+from django.core.exceptions import ObjectDoesNotExist
 
 
 
-class CreateGenCCSubmissionSerializer:
+class CreateGenCCSubmissionSerializer(serializers.ModelSerializer):
     """Serializer for the GenCCSubmission
-    """    
+    """   
+    g2p_stable_id = serializers.CharField()
+    
     def create(self, validated_data: dict[str, Any]) -> GenCCSubmission:
-        """Create for the GenCC submission
+        """Creates a GenCCSubmission object after resolving G2PStableID from stable_id"""
+        stable_id_value = validated_data.pop("g2p_stable_id")
 
-        Args:
-            validated_data (dict[str, Any]): Validated data dictionary
+        try:
+            g2p_stable = G2PStableID.objects.get(stable_id=stable_id_value)
+        except ObjectDoesNotExist:
+            raise serializers.ValidationError(f"G2PStableID with stable_id '{stable_id_value}' does not exist.")
 
-        Returns:
-            GenCCSubmission: A created GenCC submission object
-        """        
+        validated_data["g2p_stable_id"] = g2p_stable
         return GenCCSubmission.objects.create(**validated_data)
+    
+
+    class Meta:
+        model = GenCCSubmission
+        fields = ["submission_id", "date_of_submission", "type_of_submission", "g2p_stable_id"]
 
 class GenCCSubmissionSerializer(serializers.ModelSerializer):
 

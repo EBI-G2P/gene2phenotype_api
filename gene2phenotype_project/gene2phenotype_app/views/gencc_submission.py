@@ -7,7 +7,7 @@ from gene2phenotype_app.serializers import GenCCSubmissionSerializer, G2PStableI
 
 class GenCCSubmissionCreateView(generics.CreateAPIView):
     serializer_class = CreateGenCCSubmissionSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated]
 
 class GenCCSubmissionView(APIView):
     """GenCCSubmissionView 
