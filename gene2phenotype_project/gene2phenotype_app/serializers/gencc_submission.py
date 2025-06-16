@@ -6,12 +6,11 @@ from django.db.models.query import QuerySet
 from django.core.exceptions import ObjectDoesNotExist
 
 
-
 class CreateGenCCSubmissionSerializer(serializers.ModelSerializer):
-    """Serializer for the GenCCSubmission
-    """   
+    """Serializer for the GenCCSubmission"""
+
     g2p_stable_id = serializers.CharField()
-    
+
     def create(self, validated_data: dict[str, Any]) -> GenCCSubmission:
         """Creates a GenCCSubmission object after resolving G2PStableID from stable_id"""
         stable_id_value = validated_data.pop("g2p_stable_id")
@@ -19,54 +18,54 @@ class CreateGenCCSubmissionSerializer(serializers.ModelSerializer):
         try:
             g2p_stable = G2PStableID.objects.get(stable_id=stable_id_value)
         except ObjectDoesNotExist:
-            raise serializers.ValidationError(f"G2PStableID with stable_id '{stable_id_value}' does not exist.")
+            raise serializers.ValidationError(
+                f"G2PStableID with stable_id '{stable_id_value}' does not exist."
+            )
 
         validated_data["g2p_stable_id"] = g2p_stable
         return GenCCSubmission.objects.create(**validated_data)
-    
 
     class Meta:
         model = GenCCSubmission
-        fields = ["submission_id", "date_of_submission", "type_of_submission", "g2p_stable_id"]
+        fields = [
+            "submission_id",
+            "date_of_submission",
+            "type_of_submission",
+            "g2p_stable_id",
+        ]
+
 
 class GenCCSubmissionSerializer(serializers.ModelSerializer):
-
     @staticmethod
     def fetch_list_of_unsubmitted_stable_id() -> QuerySet:
         """Fetch List of unsubmitted stable id from the G2PStableID by comparing whats in the GenCCSubmission table
 
         Returns:
             QuerySet: A queryset
-        """           
+        """
         return G2PStableID.objects.annotate(
             has_submission=Exists(
-                GenCCSubmission.objects.filter(g2p_stable_id=OuterRef('id'))
+                GenCCSubmission.objects.filter(g2p_stable_id=OuterRef("id"))
             )
         ).filter(has_submission=False, is_live=1)
 
-  
-    
     @staticmethod
     def fetch_stable_ids_with_later_review_date() -> QuerySet:
         """Fetches Stable ID that has been updated since the last GenCC submission
 
         Returns:
             QuerySet: A queryset
-        """        
-        
+        """
+
         return G2PStableID.objects.filter(
             Exists(
                 LocusGenotypeDisease.objects.filter(
-                    stable_id=OuterRef('id'),
+                    stable_id=OuterRef("id"),
                     date_review__gt=Subquery(
                         GenCCSubmission.objects.filter(
-                            g2p_stable_id=OuterRef('id')
-                        ).values('date_of_submission')[:1]
-                    )
+                            g2p_stable_id=OuterRef("id")
+                        ).values("date_of_submission")[:1]
+                    ),
                 )
             )
-        ).values_list('stable_id', flat=True)
-
-    
-
-    
+        ).values_list("stable_id", flat=True)
