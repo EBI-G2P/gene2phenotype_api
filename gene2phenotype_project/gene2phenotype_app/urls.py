@@ -345,6 +345,8 @@ urlpatterns = [
     ),
 
     ### GenCC submission  ###
+    path('gencc_create/', views.GenCCSubmissionCreateView.as_view(), name="create_gencc"),
+    
     path('unsubmitted-stable-ids/', views.GenCCSubmissionView.as_view(), name='unsubmitted-stable-ids'),
 
     path('later_review_date/', views.StableIDsWithLaterReviewDateView.as_view(), name="later-review-date")

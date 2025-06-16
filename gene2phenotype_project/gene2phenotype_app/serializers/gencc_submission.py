@@ -6,7 +6,7 @@ from django.db.models.query import QuerySet
 
 
 
-class GenCCSubmissionSerializer(serializers.ModelSerializer):
+class CreateGenCCSubmissionSerializer:
     """Serializer for the GenCCSubmission
     """    
     def create(self, validated_data: dict[str, Any]) -> GenCCSubmission:
@@ -19,6 +19,8 @@ class GenCCSubmissionSerializer(serializers.ModelSerializer):
             GenCCSubmission: A created GenCC submission object
         """        
         return GenCCSubmission.objects.create(**validated_data)
+
+class GenCCSubmissionSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def fetch_list_of_unsubmitted_stable_id() -> QuerySet:

@@ -30,4 +30,4 @@ from .curation import CurationDataSerializer
 
 from .meta import MetaSerializer
 
-from .gencc_submission import GenCCSubmissionSerializer
+from .gencc_submission import CreateGenCCSubmissionSerializer, GenCCSubmissionSerializer

@@ -1,8 +1,13 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework import generics, permissions
 from rest_framework import status
 
-from gene2phenotype_app.serializers import GenCCSubmissionSerializer, G2PStableIDSerializer
+from gene2phenotype_app.serializers import GenCCSubmissionSerializer, G2PStableIDSerializer, CreateGenCCSubmissionSerializer
+
+class GenCCSubmissionCreateView(generics.CreateAPIView):
+    serializer_class = CreateGenCCSubmissionSerializer
+    permission_classes = [permissions.IsAdminUser]
 
 class GenCCSubmissionView(APIView):
     """GenCCSubmissionView 

@@ -23,7 +23,7 @@ from .publication import PublicationDetail, AddPublication, LGDEditPublications
 
 from .meta import MetaView
 
-from .gencc_submission import GenCCSubmissionView, StableIDsWithLaterReviewDateView
+from .gencc_submission import GenCCSubmissionCreateView, GenCCSubmissionView, StableIDsWithLaterReviewDateView
 
 from .locus_genotype_disease import (ListMolecularMechanisms, VariantTypesList,
                                      LocusGenotypeDiseaseDetail, LGDEditCCM,

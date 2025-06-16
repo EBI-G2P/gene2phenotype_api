@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 from django.contrib.auth.models import AbstractUser,BaseUserManager
 from simple_history.models import HistoricalRecords
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -727,15 +728,24 @@ class GenCCSubmission(models.Model):
             - date_of_submission: date when record was submitted to GenCC
             - type_of_submission: 'create' if we submitted a new G2P record to GenCC or 'update' if we updated an existing G2P record in GenCC
     """
+    SUBMISSION_CHOICES = [
+        ("create", "Create"),
+        ("update", "Update"),
+    ]
     id = models.AutoField(primary_key=True)
     submission_id = models.CharField(max_length=64)
     old_g2p_id = models.IntegerField(null=True, default=False)
     g2p_stable_id = models.ForeignKey("G2PStableID", on_delete=models.PROTECT, db_column="g2p_stable_id")
     date_of_submission = models.DateField(null=False)
-    type_of_submission = models.CharField(max_length=50, default="create")
+    type_of_submission = models.CharField(max_length=50, choices=SUBMISSION_CHOICES, default="create")
 
     class Meta:
         db_table = "gencc_submission"
+        constraints = [ models.UniqueConstraint(
+            fields=['submission_id', 'g2p_stable_id'],
+            condition=Q(type_of_submission="create"),
+            name="unique_create_only"
+        )]
 ###################
 
 
