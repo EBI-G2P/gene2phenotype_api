@@ -2,7 +2,8 @@ from gene2phenotype_app.models import LocusGenotypeDisease, LGDPanel
 from django.core.checks import Error
 from django.db.models import F
 
-#helper function 
+
+# helper function
 def should_process(obj):
     # to skip checks for anything in Demo
     lgd_panels = LGDPanel.objects.filter(lgd_id=obj)
@@ -12,11 +13,21 @@ def should_process(obj):
 
 def check_ar_constraint():
     errors = []
-    locus_genotype_check = LocusGenotypeDisease.objects.all().select_related('genotype', 'locus').annotate(genotype_value=F('genotype__value'), locus_sequence=F('locus__sequence__name'), g2p_id=F('stable_id__stable_id'))
+    locus_genotype_check = (
+        LocusGenotypeDisease.objects.all()
+        .select_related("genotype", "locus")
+        .annotate(
+            genotype_value=F("genotype__value"),
+            locus_sequence=F("locus__sequence__name"),
+            g2p_id=F("stable_id__stable_id"),
+        )
+    )
     for obj in locus_genotype_check:
         if not should_process(obj.id):
             continue
-        if "autosomal" in obj.genotype_value.lower() and not (1 <= int(obj.locus_sequence) <= 22):
+        if "autosomal" in obj.genotype_value.lower() and not (
+            1 <= int(obj.locus_sequence) <= 22
+        ):
             errors.append(
                 Error(
                     f"'{obj.g2p_id}' with autosomal genotype is not in chromosome 1-22",
@@ -24,7 +35,7 @@ def check_ar_constraint():
                     id="gene2phenotype_app.E002",
                 )
             )
-        
+
         if obj.genotype_value.lower() == "mitochondrial" and obj.locus_sequence != "MT":
             errors.append(
                 Error(
@@ -33,8 +44,10 @@ def check_ar_constraint():
                     id="gene2phenotype_app.E003",
                 )
             )
-        
-        if "par" in obj.genotype_value.lower() and (obj.locus_sequence != "X" or obj.locus_sequence != "Y"):
+
+        if "par" in obj.genotype_value.lower() and (
+            obj.locus_sequence != "X" or obj.locus_sequence != "Y"
+        ):
             errors.append(
                 Error(
                     f"'{obj.g2p_id}' PAR genotype not X or Y chromosome",
@@ -42,7 +55,7 @@ def check_ar_constraint():
                     id="gene2phenotype_app.E004",
                 )
             )
-        
+
         if "X" in obj.genotype_value and obj.locus_sequence != "X":
             errors.append(
                 Error(
@@ -51,14 +64,14 @@ def check_ar_constraint():
                     id="gene2phenotype_app.E005",
                 )
             )
-        
+
         if "Y" in obj.genotype_value and obj.locus_sequence != "Y":
             errors.append(
                 Error(
-                    f"'{obj.g2p_id}' Y genotype in a non Y chromsome",
+                    f"'{obj.g2p_id}' Y genotype in a non Y chromosome",
                     hint="Y-linked genotype should be linked to chromosome Y",
                     id="gene2phenotype_app.E006",
                 )
             )
-    
+
     return errors

@@ -84,6 +84,18 @@
         }
     },
     {
+        "model": "gene2phenotype_app.locus",
+        "pk": 8,
+        "fields": {
+            "type": 46,
+            "sequence": 24,
+            "start": 2786855,
+            "end": 2787682,
+            "strand": -1,
+            "name": "SRY"
+        }
+    },
+    {
         "model": "gene2phenotype_app.locusattrib",
         "pk": 1,
         "fields": {
@@ -178,6 +190,17 @@
             "locus": 6,
             "attrib_type": 10,
             "value": "DYT4",
+            "source": 7,
+            "is_deleted": 0
+        }
+    },
+    {
+        "model": "gene2phenotype_app.locusattrib",
+        "pk": 10,
+        "fields": {
+            "locus": 8,
+            "attrib_type": 10,
+            "value": "TDF",
             "source": 7,
             "is_deleted": 0
         }
@@ -320,6 +343,26 @@
             "identifier": "ENSG00000136881",
             "description": null,
             "source": 7
+        }
+    },
+    {
+        "model": "gene2phenotype_app.locusidentifier",
+        "pk": 15,
+        "fields": {
+            "locus": 8,
+            "identifier": "ENSG00000184895",
+            "description": null,
+            "source": 7
+        }
+    },
+    {
+        "model": "gene2phenotype_app.locusidentifier",
+        "pk": 16,
+        "fields": {
+            "locus": 8,
+            "identifier": "HGNC:11311",
+            "description": null,
+            "source": 6
         }
     }
 ]
