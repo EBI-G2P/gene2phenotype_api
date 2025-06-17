@@ -1461,7 +1461,7 @@ def MergeRecords(request):
         else:
             # Check if the list of IDs to merge is empty
             if len(g2p_ids) == 0:
-                errors.append({"error": f"empty g2p_ids '{record}'"})
+                errors.append({"error": f"Empty g2p_ids '{record}'"})
             else:
                 # Get which of the IDs is going to be kept
                 try:
@@ -1486,7 +1486,7 @@ def MergeRecords(request):
                             is_deleted = 0
                         )
                     except LocusGenotypeDisease.DoesNotExist:
-                        errors.append({"error": f"invalid G2P record {final_g2p_id}"})
+                        errors.append({"error": f"Invalid G2P record {final_g2p_id}"})
 
                     # Loop through the records to be merged into 'lgd_obj_keep'
                     with transaction.atomic():
@@ -1497,14 +1497,14 @@ def MergeRecords(request):
                                     is_deleted = 0
                                 )
                             except LocusGenotypeDisease.DoesNotExist:
-                                errors.append({"error": f"invalid G2P record {g2p_id}"})
+                                errors.append({"error": f"Invalid G2P record {g2p_id}"})
                             else:
                                 # Run checks before the update
                                 # Check if the gene and genotypes are the same
                                 if lgd_obj_keep.genotype != lgd_obj.genotype:
-                                    errors.append({"error": f"cannot merge records {final_g2p_id} and {g2p_id} with different genotypes"})
+                                    errors.append({"error": f"Cannot merge records {final_g2p_id} and {g2p_id} with different genotypes"})
                                 elif lgd_obj_keep.locus != lgd_obj.locus:
-                                    errors.append({"error": f"cannot merge records {final_g2p_id} and {g2p_id} with different genes"})
+                                    errors.append({"error": f"Cannot merge records {final_g2p_id} and {g2p_id} with different genes"})
                                 else:
                                     move_related_objects(LGDPhenotype, lgd_obj, lgd_obj_keep, ["phenotype", "publication"])
                                     move_related_objects(LGDPhenotypeSummary, lgd_obj, lgd_obj_keep)
@@ -1527,7 +1527,7 @@ def MergeRecords(request):
                                     try:
                                         stable_id_obj = G2PStableID.objects.get(id=lgd_obj.stable_id.id)
                                     except G2PStableID.DoesNotExist:
-                                        errors.append({"error": f"invalid G2P record {g2p_id}"})
+                                        errors.append({"error": f"Invalid G2P record {g2p_id}"})
                                     else:
                                         stable_id_obj.is_deleted = 1
                                         stable_id_obj.is_live = 0
