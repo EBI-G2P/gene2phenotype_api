@@ -12,12 +12,17 @@ from gene2phenotype_app.serializers import (
 
 @extend_schema(exclude=True)
 class GenCCSubmissionCreateView(generics.CreateAPIView):
+    """Creates the GenCC submission record
+
+    Args:
+        generics (CreateAPIView): Create API view
+    """    
     serializer_class = CreateGenCCSubmissionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
 @extend_schema(exclude=True)
 class GenCCSubmissionView(APIView):
-    """GenCCSubmissionView"""
+    """Fetches unsubmitted stable ids"""
 
     def get(self, request) -> Response:
         """Gets the unsubmitted stable ids
@@ -27,11 +32,12 @@ class GenCCSubmissionView(APIView):
         """
         unused_ids = GenCCSubmissionSerializer.fetch_list_of_unsubmitted_stable_id()
         serializer = G2PStableIDSerializer(unused_ids, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        stable_ids = [entry["stable_id"] for entry in serializer.data]
+        return Response(stable_ids, status=status.HTTP_200_OK)
 
 @extend_schema(exclude=True)
 class StableIDsWithLaterReviewDateView(APIView):
-    """StableIDs with laterReview date"""
+    """Fetches Stable IDs that has been updated since the last GenCC submission"""
 
     def get(self, request) -> Response:
         """Gets the Stable IDs that were reviewed later

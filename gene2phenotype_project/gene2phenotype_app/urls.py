@@ -232,11 +232,11 @@ urlpatterns = [
     path(
         "unsubmitted-stable-ids/",
         views.GenCCSubmissionView.as_view(),
-        name="unsubmitted-stable-ids",
+        name="unsubmitted_stable_ids",
     ),
     path(
         "later_review_date/",
         views.StableIDsWithLaterReviewDateView.as_view(),
-        name="later-review-date",
+        name="later_review_date",
     ),
 ]

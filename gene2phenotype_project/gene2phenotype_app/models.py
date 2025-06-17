@@ -741,11 +741,7 @@ class GenCCSubmission(models.Model):
 
     class Meta:
         db_table = "gencc_submission"
-        constraints = [ models.UniqueConstraint(
-            fields=['submission_id', 'g2p_stable_id'],
-            condition=Q(type_of_submission="create"),
-            name="unique_create_only"
-        )]
+        unique_together = ['submission_id', 'g2p_stable_id']
 ###################
 
 
