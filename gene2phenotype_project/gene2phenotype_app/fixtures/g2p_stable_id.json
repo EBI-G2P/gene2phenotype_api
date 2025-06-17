@@ -5,7 +5,8 @@
     "fields": {
       "stable_id": "G2P00001",
       "is_live": true,
-      "is_deleted": 0
+      "is_deleted": 0,
+      "comment": null
     }
   },
   {
@@ -14,7 +15,8 @@
     "fields": {
       "stable_id": "G2P00002",
       "is_live": true,
-      "is_deleted": 0
+      "is_deleted": 0,
+      "comment": null
     }
   },
   {
@@ -23,7 +25,8 @@
     "fields": {
       "stable_id": "G2P00003",
       "is_live": false,
-      "is_deleted": 1
+      "is_deleted": 1,
+      "comment": null
     }
   },
   {
@@ -32,7 +35,8 @@
     "fields": {
       "stable_id": "G2P00004",
       "is_live": false,
-      "is_deleted": 0
+      "is_deleted": 0,
+      "comment": null
     }
   },
   {
@@ -41,7 +45,8 @@
     "fields": {
       "stable_id": "G2P00005",
       "is_live": true,
-      "is_deleted": 0
+      "is_deleted": 0,
+      "comment": null
     }
   }
 ]
