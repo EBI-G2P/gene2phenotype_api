@@ -1506,19 +1506,20 @@ def MergeRecords(request):
                                 elif lgd_obj_keep.locus != lgd_obj.locus:
                                     errors.append({"error": f"cannot merge records {final_g2p_id} and {g2p_id} with different genes"})
                                 else:
-                                    move_related_objects(LGDPhenotype, lgd_obj, lgd_obj_keep)
+                                    move_related_objects(LGDPhenotype, lgd_obj, lgd_obj_keep, ["phenotype", "publication"])
                                     move_related_objects(LGDPhenotypeSummary, lgd_obj, lgd_obj_keep)
                                     move_related_objects(LGDVariantTypeDescription, lgd_obj, lgd_obj_keep)
-                                    move_related_objects(LGDPublication, lgd_obj, lgd_obj_keep)
                                     move_related_objects(LGDComment, lgd_obj, lgd_obj_keep)
                                     move_related_objects(LGDMolecularMechanismSynopsis, lgd_obj, lgd_obj_keep)
+                                    move_related_objects(LGDPublication, lgd_obj, lgd_obj_keep, ["publication"])
                                     move_related_objects(LGDCrossCuttingModifier, lgd_obj, lgd_obj_keep, ["ccm"])
                                     move_related_objects(LGDVariantType, lgd_obj, lgd_obj_keep, ["variant_type_ot", "publication"])
                                     move_related_objects(LGDMolecularMechanismEvidence, lgd_obj, lgd_obj_keep, ["evidence", "publication"])
                                     move_related_objects(LGDPanel, lgd_obj, lgd_obj_keep, ["panel"])
                                     # Variant gencc consequence has support
                                     # How do we merge when the consequence is the same but not the support
-                                    move_related_objects(LGDVariantGenccConsequence, lgd_obj, lgd_obj_keep, ["variant_consequence", "support"])
+                                    # Do not include the support in the check
+                                    move_related_objects(LGDVariantGenccConsequence, lgd_obj, lgd_obj_keep, ["variant_consequence"])
 
                                     delete_lgd_record(lgd_obj)
 
@@ -1530,6 +1531,7 @@ def MergeRecords(request):
                                     else:
                                         stable_id_obj.is_deleted = 1
                                         stable_id_obj.is_live = 0
+                                        stable_id_obj.comment = f"Merged into {final_g2p_id}"
                                         stable_id_obj.save()
                                     
                                     merged_records.append({f"{g2p_id} merged into {final_g2p_id}"})
