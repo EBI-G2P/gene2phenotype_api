@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('gene2phenotype_app', '0006_alter_genccsubmission_type_of_submission_and_more'),
+        ('gene2phenotype_app',  "0004_diseaseexternal"),
     ]
 
     operations = [
