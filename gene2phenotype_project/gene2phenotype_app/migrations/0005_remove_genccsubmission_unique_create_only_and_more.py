@@ -10,10 +10,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveConstraint(
-            model_name='genccsubmission',
-            name='unique_create_only',
-        ),
         migrations.AlterUniqueTogether(
             name='genccsubmission',
             unique_together={('submission_id', 'g2p_stable_id')},
