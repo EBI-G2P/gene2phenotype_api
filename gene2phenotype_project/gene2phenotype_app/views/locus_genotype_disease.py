@@ -1544,6 +1544,7 @@ def MergeRecords(request):
     return Response(response_data, status=status.HTTP_200_OK if merged_records else status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(exclude=True)
 def delete_lgd_record(lgd_obj: Model) -> None:
     """
     Method to delete the record from the main table and the data linked to it.
@@ -1619,6 +1620,7 @@ def delete_lgd_record(lgd_obj: Model) -> None:
     lgd_obj.save()
 
 
+@extend_schema(exclude=True)
 def move_related_objects(model_class: Type[Model], lgd_obj: Model, lgd_obj_keep: Model, unique_fields: List[str] = None) -> None:
     """
     Method to reassign related objects from a source LGD record to a target LGD record, 
