@@ -741,7 +741,6 @@ class GenCCSubmission(models.Model):
 
     class Meta:
         db_table = "gencc_submission"
-        unique_together = ['submission_id', 'g2p_stable_id']
 ###################
 
 

@@ -56,15 +56,16 @@ class GenCCSubmissionSerializer(serializers.ModelSerializer):
         Returns:
             QuerySet: A queryset
         """
-
         return GenCCSubmission.objects.filter(
             Exists(
                 LocusGenotypeDisease.objects.filter(
-                    stable_id=OuterRef("g2p_stable_id_id"),  # FK from LocusGenotypeDisease to G2PStableID
+                    stable_id=OuterRef("g2p_stable_id_id"),
                     date_review__gt=OuterRef("date_of_submission"),
                 )
-            )
+            ),
+            g2p_stable_id__is_live=1
         ).values_list("submission_id", flat=True)
+    
 
     @staticmethod
     def get_stable_ids(submission_id: str) -> QuerySet[G2PStableID]:
