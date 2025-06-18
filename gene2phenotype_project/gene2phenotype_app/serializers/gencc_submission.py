@@ -37,7 +37,7 @@ class CreateGenCCSubmissionSerializer(serializers.ModelSerializer):
 
 class GenCCSubmissionSerializer(serializers.ModelSerializer):
     @staticmethod
-    def fetch_list_of_unsubmitted_stable_id() -> QuerySet:
+    def fetch_list_of_unsubmitted_stable_id() -> QuerySet[G2PStableID]:
         """Fetch List of unsubmitted stable id from the G2PStableID by comparing whats in the GenCCSubmission table
 
         Returns:
@@ -50,7 +50,7 @@ class GenCCSubmissionSerializer(serializers.ModelSerializer):
         ).filter(has_submission=False, is_live=1)
 
     @staticmethod
-    def fetch_stable_ids_with_later_review_date() -> QuerySet:
+    def fetch_stable_ids_with_later_review_date() -> QuerySet[G2PStableID]:
         """Fetches Stable ID that has been updated since the last GenCC submission
 
         Returns:
@@ -69,3 +69,17 @@ class GenCCSubmissionSerializer(serializers.ModelSerializer):
                 )
             )
         ).values_list("stable_id", flat=True)
+
+    @staticmethod
+    def get_stable_ids(submission_id: str) -> QuerySet[G2PStableID]:
+        """Get stable ids associated with the submission id
+
+        Args:
+            submission_id (str): Submission id
+
+        Returns:
+            QuerySet: Returns G2P stable id objects
+        """
+        return GenCCSubmission.objects.filter(submission_id=submission_id).values_list(
+            "g2p_stable_id__stable_id", flat=True
+        )

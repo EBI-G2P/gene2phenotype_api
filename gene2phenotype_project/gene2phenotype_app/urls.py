@@ -239,4 +239,9 @@ urlpatterns = [
         views.StableIDsWithLaterReviewDateView.as_view(),
         name="later_review_date",
     ),
+    path(
+        "submissions/<str:submission_id>/",
+        views.RetrieveStableIDsWithSubmissionID.as_view(),
+        name="get_gencc_sub",
+    ),
 ]
