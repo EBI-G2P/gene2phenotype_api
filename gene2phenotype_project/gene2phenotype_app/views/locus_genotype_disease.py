@@ -1430,7 +1430,7 @@ class LocusGenotypeDiseaseDelete(APIView):
 @permission_classes([IsSuperUser])
 def MergeRecords(request):
     """
-    Merges one or more LGD records into a target record.
+    Merges one or more LGD records ("g2p_ids") into a target record ("final_g2p_id").
 
     Args:
         request (Request): HTTP request containing a list of records to merge
@@ -1463,7 +1463,7 @@ def MergeRecords(request):
             if len(g2p_ids) == 0:
                 errors.append({"error": f"Empty g2p_ids '{record}'"})
             else:
-                # Get which of the IDs is going to be kept
+                # Get which of the IDs is going to be kept - save it in "final_g2p_id"
                 try:
                     final_g2p_id = record["final_g2p_id"]
                 except KeyError:
@@ -1506,6 +1506,7 @@ def MergeRecords(request):
                                 elif lgd_obj_keep.locus != lgd_obj.locus:
                                     errors.append({"error": f"Cannot merge records {final_g2p_id} and {g2p_id} with different genes"})
                                 else:
+                                    # Proceed with merge
                                     move_related_objects(LGDPhenotype, lgd_obj, lgd_obj_keep, ["phenotype", "publication"])
                                     move_related_objects(LGDPhenotypeSummary, lgd_obj, lgd_obj_keep)
                                     move_related_objects(LGDVariantTypeDescription, lgd_obj, lgd_obj_keep)
@@ -1516,9 +1517,7 @@ def MergeRecords(request):
                                     move_related_objects(LGDVariantType, lgd_obj, lgd_obj_keep, ["variant_type_ot", "publication"])
                                     move_related_objects(LGDMolecularMechanismEvidence, lgd_obj, lgd_obj_keep, ["evidence", "publication"])
                                     move_related_objects(LGDPanel, lgd_obj, lgd_obj_keep, ["panel"])
-                                    # Variant gencc consequence has support
-                                    # How do we merge when the consequence is the same but not the support
-                                    # Do not include the support in the check
+                                    # Variant gencc consequence has support - do not include the support in the check
                                     move_related_objects(LGDVariantGenccConsequence, lgd_obj, lgd_obj_keep, ["variant_consequence"])
 
                                     delete_lgd_record(lgd_obj)
