@@ -25,10 +25,10 @@ def validate_mechanism_synopsis(mechanism: str, synopsis: str) -> bool:
     elif mechanism == "loss of function" and "LOF" not in synopsis:
         valid = False
     # mechanism dominant negative implies the synopsis is also DN
-    elif mechanism == "dominant negative" and re.search(r"dominant[-\s]+negative", synopsis):
+    elif mechanism == "dominant negative" and not re.search(r"dominant[-\s]+negative", synopsis):
         valid = False
     # mechanism gain of function implies the synopsis is also GOF
-    elif mechanism == "gain of function" and "GOF" not in synopsis:
+    elif mechanism == "gain of function" and "GOF" not in synopsis and "aggregation" not in synopsis:
         valid = False
 
     return valid

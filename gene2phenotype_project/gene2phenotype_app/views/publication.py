@@ -1,4 +1,4 @@
-from rest_framework import permissions, status
+from rest_framework import permissions, status, serializers
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.db import transaction
@@ -332,6 +332,9 @@ class LGDEditPublications(BaseUpdate):
                 try:
                     # update_mechanism() updates the 'date_review' of the LGD record
                     lgd_serializer.update_mechanism(lgd, mechanism_data_input)
+                except serializers.ValidationError as e:
+                    error_message = e.detail["error"]
+                    return self.handle_update_exception(e, f"Error while updating molecular mechanism: {error_message}")
                 except Exception as e:
                     return self.handle_update_exception(e, "Error while updating molecular mechanism")
 
@@ -342,6 +345,9 @@ class LGDEditPublications(BaseUpdate):
                 lgd_serializer = LocusGenotypeDiseaseSerializer()
                 try:
                     lgd_serializer.update_mechanism_evidence(lgd, mechanism_evidence_data)
+                except serializers.ValidationError as e:
+                    error_message = e.detail["error"]
+                    return self.handle_update_exception(e, f"Error while updating molecular mechanism evidence: {error_message}")
                 except Exception as e:
                     return self.handle_update_exception(e, "Error while updating molecular mechanism evidence")
 

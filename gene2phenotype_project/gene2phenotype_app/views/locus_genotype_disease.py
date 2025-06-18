@@ -558,9 +558,9 @@ class LGDUpdateMechanism(BaseUpdate):
         try:
             serializer.update_mechanism(lgd_obj, mechanism_data)
         except Exception as e:
-            if hasattr(e, "detail") and "message" in e.detail:
+            if hasattr(e, "detail") and "error" in e.detail:
                 return Response(
-                {"error": f"Error while updating molecular mechanism: {e.detail['message']}"},
+                {"error": f"Error while updating molecular mechanism: {e.detail['error']}"},
                 status=status.HTTP_400_BAD_REQUEST
             )
             else:
