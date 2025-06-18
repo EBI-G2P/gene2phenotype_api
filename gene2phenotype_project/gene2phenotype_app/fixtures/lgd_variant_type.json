@@ -24,5 +24,18 @@
             "publication": 2,
             "is_deleted": 0
         }
+    },
+    {
+        "model": "gene2phenotype_app.lgdvarianttype",
+        "pk": 3,
+        "fields": {
+            "lgd": 5,
+            "variant_type_ot": 18,
+            "inherited": false,
+            "de_novo": false,
+            "unknown_inheritance": false,
+            "publication": 1,
+            "is_deleted": 0
+        }
     }
 ]

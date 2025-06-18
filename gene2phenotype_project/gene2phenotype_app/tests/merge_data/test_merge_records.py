@@ -2,7 +2,14 @@ from django.test import TestCase
 from django.urls import reverse
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
-from gene2phenotype_app.models import (User, G2PStableID)
+from gene2phenotype_app.models import (
+    User,
+    G2PStableID,
+    LocusGenotypeDisease,
+    LGDVariantType,
+    LGDVariantTypeComment,
+    LGDPublication,
+)
 
 
 class LGDEditPublicationsEndpoint(TestCase):
@@ -27,6 +34,10 @@ class LGDEditPublicationsEndpoint(TestCase):
         "gene2phenotype_app/fixtures/ontology_term.json",
         "gene2phenotype_app/fixtures/source.json",
         "gene2phenotype_app/fixtures/lgd_publication.json",
+        "gene2phenotype_app/fixtures/lgd_phenotype.json",
+        "gene2phenotype_app/fixtures/lgd_variant_consequence.json",
+        "gene2phenotype_app/fixtures/lgd_variant_type.json",
+        "gene2phenotype_app/fixtures/lgd_variant_type_comment.json",
     ]
 
     def test_merge_invalid_ids(self):
@@ -154,7 +165,9 @@ class LGDEditPublicationsEndpoint(TestCase):
         self.assertEqual(response.status_code, 200)
 
         response_data = response.json()
-        self.assertEqual(response_data["merged_records"], [['G2P00002 merged into G2P00006']])
+        self.assertEqual(
+            response_data["merged_records"], [["G2P00002 merged into G2P00006"]]
+        )
 
         # Test merged records
         deleted_stable_id_obj = G2PStableID.objects.get(stable_id="G2P00002")
@@ -163,3 +176,24 @@ class LGDEditPublicationsEndpoint(TestCase):
         self.assertEqual(deleted_stable_id_obj.comment, "Merged into G2P00006")
         stable_id_obj = G2PStableID.objects.get(stable_id="G2P00006")
         self.assertEqual(stable_id_obj.is_live, True)
+        lgd_obj = LocusGenotypeDisease.objects.get(
+            stable_id=stable_id_obj.id, is_deleted=0
+        )
+        # Check if all variant types were merged correctly
+        lgd_variant_type_list = LGDVariantType.objects.filter(lgd=lgd_obj.id)
+        self.assertEqual(len(lgd_variant_type_list), 3)
+        for variant_type in lgd_variant_type_list:
+            if (
+                variant_type.publication.id == 1
+                and variant_type.variant_type_ot.term == "intron_variant"
+            ):
+                variant_type_comment_list = LGDVariantTypeComment.objects.filter(
+                    lgd_variant_type=variant_type.id
+                )
+                self.assertEqual(
+                    variant_type_comment_list[0].comment,
+                    "Recurrent c.340C>T; other variant",
+                )
+        # Count the number of publications
+        lgd_publication_list = LGDPublication.objects.filter(lgd=lgd_obj.id)
+        self.assertEqual(len(lgd_publication_list), 4)

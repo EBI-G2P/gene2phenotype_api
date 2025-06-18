@@ -28,5 +28,35 @@
             "publication": 1,
             "is_deleted": 0
         }
+    },
+    {
+        "model": "gene2phenotype_app.lgdphenotype",
+        "pk": 4,
+        "fields": {
+            "lgd": 5,
+            "phenotype": 38,
+            "publication": 1,
+            "is_deleted": 0
+        }
+    },
+    {
+        "model": "gene2phenotype_app.lgdphenotype",
+        "pk": 5,
+        "fields": {
+            "lgd": 5,
+            "phenotype": 39,
+            "publication": 1,
+            "is_deleted": 0
+        }
+    },
+    {
+        "model": "gene2phenotype_app.lgdphenotype",
+        "pk": 6,
+        "fields": {
+            "lgd": 2,
+            "phenotype": 39,
+            "publication": 2,
+            "is_deleted": 0
+        }
     }
 ]
