@@ -55,7 +55,7 @@ class StableIDsWithLaterReviewDateView(APIView):
         """
         stable_ids = GenCCSubmissionSerializer.fetch_stable_ids_with_later_review_date()
         return Response(
-            {"stable_ids": list(stable_ids), "count": len(list(stable_ids))},
+            {"ids": list(stable_ids), "count": len(list(stable_ids))},
             status=status.HTTP_200_OK,
         )
 
