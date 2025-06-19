@@ -8,5 +8,15 @@
             "support": 44,
             "is_deleted": 0
         }
+    },
+    {
+        "model": "gene2phenotype_app.lgdvariantgenccconsequence",
+        "pk": 2,
+        "fields": {
+            "lgd": 5,
+            "variant_consequence": 1,
+            "support": 45,
+            "is_deleted": 0
+        }
     }
 ]

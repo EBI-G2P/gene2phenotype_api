@@ -66,5 +66,22 @@
             "is_reviewed": 1,
             "is_deleted": 0
         }
+    },
+    {
+        "model": "gene2phenotype_app.locusgenotypedisease",
+        "pk": 5,
+        "fields": {
+            "stable_id": 6,
+            "locus": 2,
+            "genotype": 9,
+            "disease": 11,
+            "mechanism": 1,
+            "mechanism_support": 17,
+            "confidence": 3,
+            "confidence_support": null,
+            "date_review": "2025-05-12T08:00:00Z",
+            "is_reviewed": 1,
+            "is_deleted": 0
+        }
     }
 ]

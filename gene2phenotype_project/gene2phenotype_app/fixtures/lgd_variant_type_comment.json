@@ -10,5 +10,17 @@
             "user": 1,
             "date": "2025-02-19T11:31:34Z"
         }
+    },
+    {
+        "model": "gene2phenotype_app.lgdvarianttypecomment",
+        "pk": 2,
+        "fields": {
+            "lgd_variant_type": 3,
+            "comment": "Recurrent c.340C>T; other variant",
+            "is_public": 0,
+            "is_deleted": 0,
+            "user": 1,
+            "date": "2025-05-03T11:38:52Z"
+        }
     }
 ]

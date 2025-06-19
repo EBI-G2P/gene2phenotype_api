@@ -224,7 +224,7 @@ class PanelDownloadEndpointTests(TestCase):
         rows = list(csv_reader)
 
         # Check content of file
-        self.assertEqual(len(rows), 3)
+        self.assertEqual(len(rows), 4)
         self.assertIn("g2p id", rows[0])
 
         expected_data = [

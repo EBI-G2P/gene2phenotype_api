@@ -70,6 +70,13 @@
         }
     },
     {
+        "model": "gene2phenotype_app.disease",
+        "pk": 11,
+        "fields": {
+            "name": "RAB27A-related Griscelli syndrome biallelic"
+        }
+    },
+    {
         "model": "gene2phenotype_app.diseaseontologyterm",
         "pk": 1,
         "fields": {
