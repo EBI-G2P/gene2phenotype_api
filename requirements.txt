@@ -20,5 +20,5 @@ requests==2.32.4
 rpds-py==0.25.1
 setuptools==80.9.0
 sqlparse==0.5.3
-urllib3==2.4.0
+urllib3==2.5.0
 wheel==0.45.1
