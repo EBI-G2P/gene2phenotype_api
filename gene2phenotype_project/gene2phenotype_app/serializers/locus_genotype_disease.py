@@ -690,7 +690,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 # Validate synopsis
                 mechanism_value = lgd_instance.mechanism.value
                 if not validate_mechanism_synopsis(mechanism_value, mechanism_synopsis_value):
-                    raise serializers.ValidationError({"error": f"Invalid mechanism synopsis '{mechanism_synopsis_value}' for mechanism '{mechanism_value}'"})
+                    raise serializers.ValidationError({"error": f"The categorisation '{mechanism_synopsis_value}' is not compatible with the mechanism '{mechanism_value}'. Please choose a categorisation relevant to the selected mechanism."})
 
                 # Check if synopsis already exists
                 try:
@@ -985,7 +985,7 @@ class LGDMechanismSynopsisSerializer(serializers.ModelSerializer):
         # Validate the synopsis
         if not validate_mechanism_synopsis(mechanism_value, synopsis_name):
             raise serializers.ValidationError({
-                "error": f"Invalid mechanism synopsis '{synopsis_name}' for mechanism '{mechanism_value}'"
+                "error": f"The categorisation '{synopsis_name}' is not compatible with the mechanism '{mechanism_value}'. Please choose a categorisation relevant to the selected mechanism."
             })
 
         return data
