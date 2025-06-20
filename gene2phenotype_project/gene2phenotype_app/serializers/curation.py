@@ -623,7 +623,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
                         # save() is going to call create()
                         lgd_mechanism_synopsis_serializer.save()
                 except serializers.ValidationError as e:
-                    raise serializers.ValidationError({"error": str(e)})
+                    error_message = e.detail["error"]
+                    raise serializers.ValidationError({"error": error_message})
 
         for mechanism_evidence in data.json_data["mechanism_evidence"]:
             pmid = mechanism_evidence["pmid"]

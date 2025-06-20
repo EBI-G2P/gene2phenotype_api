@@ -334,7 +334,7 @@ class LGDEditPublications(BaseUpdate):
                     lgd_serializer.update_mechanism(lgd, mechanism_data_input)
                 except serializers.ValidationError as e:
                     error_message = e.detail["error"]
-                    return self.handle_update_exception(e, f"Error while updating molecular mechanism: {error_message}")
+                    return self.handle_update_exception(e, error_message)
                 except Exception as e:
                     return self.handle_update_exception(e, "Error while updating molecular mechanism")
 
@@ -346,7 +346,7 @@ class LGDEditPublications(BaseUpdate):
                     lgd_serializer.update_mechanism_evidence(lgd, mechanism_evidence_data)
                 except serializers.ValidationError as e:
                     error_message = e.detail["error"]
-                    return self.handle_update_exception(e, f"Error while updating molecular mechanism evidence: {error_message}")
+                    return self.handle_update_exception(e, error_message)
                 except Exception as e:
                     return self.handle_update_exception(e, "Error while updating molecular mechanism evidence")
 

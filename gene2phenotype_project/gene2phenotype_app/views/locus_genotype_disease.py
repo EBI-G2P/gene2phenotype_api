@@ -560,12 +560,12 @@ class LGDUpdateMechanism(BaseUpdate):
         except Exception as e:
             if hasattr(e, "detail") and "error" in e.detail:
                 return Response(
-                {"error": f"Error while updating molecular mechanism: {e.detail['error']}"},
+                {"error": e.detail["error"]},
                 status=status.HTTP_400_BAD_REQUEST
             )
             else:
                 return Response(
-                    {"error": f"Error while updating molecular mechanism {e}"},
+                    {"error": str(e)},
                     status=status.HTTP_400_BAD_REQUEST
                 )
         else:
