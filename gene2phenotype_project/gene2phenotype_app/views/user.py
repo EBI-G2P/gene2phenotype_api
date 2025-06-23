@@ -333,20 +333,13 @@ class CustomTokenRefreshView(TokenRefreshView):
         refresh_token = serializer.validated_data.get("refresh") # the validated results sent from the TokenRefreshSerializer
         access_token = serializer.validated_data.get('access') # the validated results sent from the TokenRefreshSerializer
   
-        try:
-            if getattr(settings, "SIMPLE_JWT", {}).get("ROTATE_REFRESH_TOKENS", True):
-               new_refresh_token = str(RefreshToken(refresh_token))
-            else:
-                new_refresh_token = refresh_token
-        except ParseError as e: 
-            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         response_data = serializer.data
         response = Response(response_data, status=status.HTTP_200_OK)
     
         if response.status_code == 200:
             refresh_token_lifetime = request.COOKIES.get('refresh_token_lifetime') # we are getting the refresh timeline from the cookie 
-            access_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("ACCESS_TOKEN_LIFETIME", timedelta(hours=1))
+            access_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("ACCESS_TOKEN_LIFETIME", timedelta(minutes=45))
             refresh_expires = datetime.fromisoformat(refresh_token_lifetime)  # Calculate refresh expiration time
             access_expires = datetime.utcnow() + access_token_lifetime # calculate access expiration time
             response_data['refresh_token_time'] = refresh_expires
