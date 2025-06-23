@@ -23,12 +23,15 @@ class GenCCSubmissionCreateView(generics.CreateAPIView):
     serializer_class = CreateGenCCSubmissionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request: Request):
-        """_summary_
+    def post(self, request: Request) -> Response:
+        """Post method to create GenCC submission
 
         Args:
-            request (Request): _description_
-        """        
+            request (Request): HttpRequest object
+
+        Returns:
+            Response: Response object confirming the bulk creation is completed
+        """            
         serializer = CreateGenCCSubmissionSerializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()

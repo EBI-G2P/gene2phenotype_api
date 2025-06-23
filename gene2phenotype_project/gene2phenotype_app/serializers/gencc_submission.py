@@ -7,22 +7,19 @@ from django.core.exceptions import ObjectDoesNotExist
 
 
 class GenCCSubmissionListSerializer(serializers.ListSerializer):
-    """_summary_
-
-    Args:
-        serializers (_type_): _description_
+    """GenCCSubmissionListSerializer
     """    
     def validate(self, data: list)-> list:
-        """_summary_
+        """Validation of the data
 
         Args:
-            data (list): _description_
+            data (list): The list data
 
         Raises:
-            serializers.ValidationError: _description_
+            serializers.ValidationError: If G2P stable id does not exist
 
         Returns:
-            list: _description_
+            list: Returns the validated list
         """        
         for item in data:
             stable_id_value = item.pop('g2p_stable_id')
@@ -36,6 +33,14 @@ class GenCCSubmissionListSerializer(serializers.ListSerializer):
         return data
     
     def create(self, validated_data: list) -> GenCCSubmission:
+        """For bulk creation
+
+        Args:
+            validated_data (list): list of validated data
+
+        Returns:
+            GenCCSubmission:  created GenCCSubmission object
+        """        
         instances = [GenCCSubmission(**item) for item in validated_data]
         return GenCCSubmission.objects.bulk_create(instances)
 
@@ -46,6 +51,14 @@ class CreateGenCCSubmissionSerializer(serializers.ModelSerializer):
     g2p_stable_id = serializers.CharField()
 
     def create(self, validated_data: dict[str, Any]) -> GenCCSubmission:
+        """Create the GenCCSubmission
+
+        Args:
+            validated_data (dict[str, Any]): Validated data
+
+        Returns:
+            GenCCSubmission: A created GenCCSubmission object
+        """        
         return GenCCSubmission.objects.create(**validated_data)
 
     class Meta:
