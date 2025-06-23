@@ -5,7 +5,7 @@ charset-normalizer==3.4.2
 deepdiff==8.5.0
 Django==5.1.10
 django-mail-templated==2.6.5
-django-simple-history==3.8.0
+django-simple-history==3.10.1
 djangorestframework==3.16.0
 djangorestframework-simplejwt==5.5.0
 drf-spectacular==0.28.0
