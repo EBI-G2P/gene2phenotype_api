@@ -23,6 +23,16 @@ class GenCCSubmissionCreateView(generics.CreateAPIView):
     serializer_class = CreateGenCCSubmissionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def post(self, request: Request):
+        """_summary_
+
+        Args:
+            request (Request): _description_
+        """        
+        serializer = CreateGenCCSubmissionSerializer(data=request.data, many=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 @extend_schema(exclude=True)
 class GenCCSubmissionView(APIView):

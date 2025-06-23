@@ -6,23 +6,46 @@ from django.db.models.query import QuerySet
 from django.core.exceptions import ObjectDoesNotExist
 
 
+class GenCCSubmissionListSerializer(serializers.ListSerializer):
+    """_summary_
+
+    Args:
+        serializers (_type_): _description_
+    """    
+    def validate(self, data: list)-> list:
+        """_summary_
+
+        Args:
+            data (list): _description_
+
+        Raises:
+            serializers.ValidationError: _description_
+
+        Returns:
+            list: _description_
+        """        
+        for item in data:
+            stable_id_value = item.pop('g2p_stable_id')
+            try:
+                g2p_stable = G2PStableID.objects.get(stable_id=stable_id_value)
+            except ObjectDoesNotExist:
+                raise serializers.ValidationError(
+                    f"G2PStableID with stable_id '{stable_id_value}' does not exist."
+                )
+            item['g2p_stable_id'] = g2p_stable
+        return data
+    
+    def create(self, validated_data: list) -> GenCCSubmission:
+        instances = [GenCCSubmission(**item) for item in validated_data]
+        return GenCCSubmission.objects.bulk_create(instances)
+
+
 class CreateGenCCSubmissionSerializer(serializers.ModelSerializer):
     """Serializer for the GenCCSubmission"""
 
     g2p_stable_id = serializers.CharField()
 
     def create(self, validated_data: dict[str, Any]) -> GenCCSubmission:
-        """Creates a GenCCSubmission object after resolving G2PStableID from stable_id"""
-        stable_id_value = validated_data.pop("g2p_stable_id")
-
-        try:
-            g2p_stable = G2PStableID.objects.get(stable_id=stable_id_value)
-        except ObjectDoesNotExist:
-            raise serializers.ValidationError(
-                f"G2PStableID with stable_id '{stable_id_value}' does not exist."
-            )
-
-        validated_data["g2p_stable_id"] = g2p_stable
         return GenCCSubmission.objects.create(**validated_data)
 
     class Meta:
@@ -33,8 +56,8 @@ class CreateGenCCSubmissionSerializer(serializers.ModelSerializer):
             "type_of_submission",
             "g2p_stable_id",
         ]
-
-
+        list_serializer_class = GenCCSubmissionListSerializer
+        
 class GenCCSubmissionSerializer(serializers.ModelSerializer):
     @staticmethod
     def fetch_list_of_unsubmitted_stable_id() -> QuerySet[G2PStableID]:
