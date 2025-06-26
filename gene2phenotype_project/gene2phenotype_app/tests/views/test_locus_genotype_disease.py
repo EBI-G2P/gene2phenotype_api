@@ -94,7 +94,14 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
             "mechanism": "loss of function",
             "mechanism_support": "evidence",
             "synopsis": [{"synopsis": "assembly-mediated GOF", "support": "inferred"}],
-            "evidence": {3897232: {"Function": ["Biochemical"]}},
+            "evidence": {
+                3897232: {
+                    "functional_studies": {
+                        "Function": ["Biochemical"]
+                    },
+                    "description": None
+                }
+            },
         }
         self.assertEqual(response.data["molecular_mechanism"], expected_data_mechanism)
 

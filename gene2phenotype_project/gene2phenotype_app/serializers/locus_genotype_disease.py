@@ -119,15 +119,26 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             evidence_type = evidence_data.evidence.subtype.replace("_", " ").title()
             evidence_value = evidence_data.evidence.value.title()
 
-            if pmid not in mechanism_evidence:
-                mechanism_evidence[pmid] = { evidence_type : [evidence_value] }
+            if evidence_data.description:
+                evidence_description = evidence_data.description
+            else:
+                evidence_description = None
 
+            if pmid not in mechanism_evidence:
+                mechanism_evidence[pmid] = {
+                    "functional_studies": {evidence_type : [evidence_value]},
+                    "description": evidence_description
+                }
             else:
                 existing_evidence = mechanism_evidence[pmid]
-                if evidence_type in existing_evidence:
-                    mechanism_evidence[pmid][evidence_type].append(evidence_value)
+                # Update functional studies list
+                if evidence_type in existing_evidence["functional_studies"]:
+                    mechanism_evidence[pmid]["functional_studies"][evidence_type].append(evidence_value)
                 else:
-                    mechanism_evidence[pmid][evidence_type] = [evidence_value]
+                    mechanism_evidence[pmid]["functional_studies"][evidence_type] = [evidence_value]
+                # Update description
+                if not existing_evidence["description"]:
+                    mechanism_evidence[pmid]["description"] = evidence_description
 
         mechanism_result = {
             "mechanism": mechanism,
@@ -1058,6 +1069,7 @@ class LGDMechanismEvidenceSerializer(serializers.ModelSerializer):
             # Create new molecular mechanism evidence
             mechanism_evidence_obj = LGDMolecularMechanismEvidence.objects.create(
                 lgd = lgd_instance,
+                description = validate_data["description"],
                 evidence = evidence_obj,
                 publication = publication_instance,
                 is_deleted = 0
