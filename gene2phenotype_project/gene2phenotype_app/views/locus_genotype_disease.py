@@ -1457,7 +1457,7 @@ def MergeRecords(request):
         try:
             g2p_ids = record["g2p_ids"]
         except KeyError:
-            errors.append({"error": f"g2p_ids missing from input data '{record}'"})
+            errors.append({"error": f"g2p_ids key missing from input data '{record}'"})
         else:
             # Check if the list of IDs to merge is empty
             if len(g2p_ids) == 0:
