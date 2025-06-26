@@ -1467,7 +1467,7 @@ def MergeRecords(request):
                 try:
                     final_g2p_id = record["final_g2p_id"]
                 except KeyError:
-                    errors.append({"error": f"final_g2p_id missing from input data '{record}'"})
+                    errors.append({"error": f"final_g2p_id key missing from input data '{record}'"})
                 else:
                     # Check the g2p id to keep is not in the list of g2p ids
                     # This avoids merging a record into itself
