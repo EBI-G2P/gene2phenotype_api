@@ -100,6 +100,13 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         Molecular mechanism associated with the LGMDE record.
         If available, also returns the evidence.
         """
+        user = self.context.get("user")
+        try:
+            User.objects.get(email=user)
+            authenticated_user = 1
+        except User.DoesNotExist:
+            authenticated_user = 0
+
         mechanism = id.mechanism.value
         mechanism_support = id.mechanism_support.value
         mechanism_synopsis = []
@@ -119,7 +126,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             evidence_type = evidence_data.evidence.subtype.replace("_", " ").title()
             evidence_value = evidence_data.evidence.value.title()
 
-            if evidence_data.description:
+            if evidence_data.description and authenticated_user == 1:
                 evidence_description = evidence_data.description
             else:
                 evidence_description = None
