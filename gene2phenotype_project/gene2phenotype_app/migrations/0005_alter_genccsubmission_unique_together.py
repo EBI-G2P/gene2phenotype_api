@@ -15,8 +15,4 @@ class Migration(migrations.Migration):
             name='type_of_submission',
             field=models.CharField(choices=[('create', 'Create'), ('update', 'Update')], default='create', max_length=50),
         ),
-        migrations.AlterUniqueTogether(
-            name='genccsubmission',
-            unique_together=set(),
-        ),
     ]
