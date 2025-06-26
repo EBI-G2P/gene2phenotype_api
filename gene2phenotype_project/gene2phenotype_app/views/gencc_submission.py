@@ -35,7 +35,7 @@ class GenCCSubmissionCreateView(generics.CreateAPIView):
         serializer = CreateGenCCSubmissionSerializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_201_CREATED)
 
 @extend_schema(exclude=True)
 class GenCCSubmissionView(APIView):
@@ -72,7 +72,7 @@ class StableIDsWithLaterReviewDateView(APIView):
             status=status.HTTP_200_OK,
         )
 
-
+@extend_schema(exclude=True)
 class RetrieveStableIDsWithSubmissionID(APIView):
     """Retrieve Stable ID with the Submission ID"""
 

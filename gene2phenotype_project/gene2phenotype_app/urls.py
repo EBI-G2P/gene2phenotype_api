@@ -230,7 +230,7 @@ urlpatterns = [
         "gencc_create/", views.GenCCSubmissionCreateView.as_view(), name="create_gencc"
     ),
     path(
-        "unsubmitted-stable-ids/",
+        "unsubmitted_stable_ids/",
         views.GenCCSubmissionView.as_view(),
         name="unsubmitted_stable_ids",
     ),
