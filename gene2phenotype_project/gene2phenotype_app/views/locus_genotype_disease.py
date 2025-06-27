@@ -23,7 +23,8 @@ from gene2phenotype_app.serializers import (
     LGDVariantTypeSerializer,
     LGDVariantTypeDescriptionListSerializer,
     LGDVariantTypeDescriptionSerializer,
-    LGDCommentListSerializer
+    LGDCommentListSerializer,
+    LGDReviewSerializer
 )
 
 from gene2phenotype_app.models import (
@@ -343,11 +344,10 @@ class LocusGenotypeDiseaseDetail(APIView):
 
         # Authenticated users (curators) can see all entries:
         #   - in visible and non-visible panels
-        #   - entries flagged as not reviewed (is_reviewed=0)
         if user.is_authenticated:
             queryset = LocusGenotypeDisease.objects.filter(stable_id=g2p_stable_id, is_deleted=0)
         else:
-            queryset = LocusGenotypeDisease.objects.filter(stable_id=g2p_stable_id, is_reviewed=1, is_deleted=0, lgdpanel__panel__is_visible=1).distinct()
+            queryset = LocusGenotypeDisease.objects.filter(stable_id=g2p_stable_id, is_deleted=0, lgdpanel__panel__is_visible=1).distinct()
 
         if not queryset.exists():
             raise Http404(f"No matching Entry found for: {stable_id}")
@@ -1378,6 +1378,43 @@ class LGDEditComment(CustomPermissionAPIView):
                 {"message": f"Comment successfully deleted for ID '{stable_id}'"},
                 status=status.HTTP_200_OK
             )
+
+
+@extend_schema(exclude=True)
+class LGDEditReview(APIView):
+    http_method_names = ['post', 'options']
+    serializer_class = LGDReviewSerializer
+    permission_classes = [IsSuperUser]
+
+    @transaction.atomic
+    def post(self, request, stable_id):
+        """
+        The post method updates the review status of the LGD record.
+        It updates the value under 'is_reviewed'.
+        Input example: {"is_reviewed": 0}
+        """
+        lgd = get_object_or_404(
+            LocusGenotypeDisease,
+            stable_id__stable_id=stable_id,
+            is_deleted=0,
+        )
+
+        lgd_panels = LocusGenotypeDiseaseSerializer(context={"user": request.user}).get_panels(lgd.id)
+        user_obj   = get_object_or_404(User, email=request.user, is_active=1)
+        if not UserSerializer(user_obj, context={"user": request.user}).check_panel_permission(lgd_panels):
+            return Response(
+                {"error": f"No permission to edit {stable_id}"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = LGDReviewSerializer(instance=lgd, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        state = "reviewed" if lgd.is_reviewed else "under review"
+        return Response(
+            {"message": f"{stable_id} successfully set to {state}"},
+            status=status.HTTP_200_OK,
+        )
 
 
 @extend_schema(exclude=True)

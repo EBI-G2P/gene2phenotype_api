@@ -100,7 +100,6 @@ class PanelDetailSerializer(serializers.ModelSerializer):
 
         queryset = LGDPanel.objects.filter(
             panel=id,
-            lgd__is_reviewed=1,
             lgd__is_deleted=0,
             lgd__date_review__isnull=False
             ).select_related('lgd').order_by('-lgd__date_review')

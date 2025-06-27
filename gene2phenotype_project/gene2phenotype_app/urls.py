@@ -223,6 +223,12 @@ urlpatterns = [
         views.LGDEditComment.as_view(),
         name="lgd_comment",
     ),
+    # Update the review status of the LGD record. Action: POST
+    path(
+        "lgd/<str:stable_id>/review/",
+        views.LGDEditReview.as_view(),
+        name="review",
+    ),
     # Delete LGD record. Action: PATCH
     path(
         "lgd/<str:stable_id>/delete/",

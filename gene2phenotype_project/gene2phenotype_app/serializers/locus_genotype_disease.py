@@ -1468,3 +1468,28 @@ class LGDVariantTypeDescriptionListSerializer(serializers.Serializer):
         Called by: LGDAddVariantTypeDescriptions()
     """
     variant_descriptions = LGDVariantTypeDescriptionSerializer(many=True)
+
+
+class LGDReviewSerializer(serializers.ModelSerializer):
+    """
+    Serializer to update the value of is_reviewed.
+    """
+    is_reviewed = serializers.IntegerField(min_value=0, max_value=1)
+
+    def validate_is_reviewed(self, value: int) -> int:
+        if value == self.instance.is_reviewed:
+            state = "reviewed" if value else "under review"
+            raise serializers.ValidationError(
+                f"{self.instance.stable_id.stable_id} is already set to {state}"
+            )
+        return value
+
+    def update(self, instance, validated_data):
+        instance.is_reviewed = validated_data["is_reviewed"]
+        instance.date_review = get_date_now()
+        instance.save(update_fields=["is_reviewed", "date_review"])
+        return instance
+
+    class Meta:
+        model  = LocusGenotypeDisease
+        fields = ["is_reviewed"]
