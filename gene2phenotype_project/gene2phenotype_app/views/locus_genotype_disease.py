@@ -520,7 +520,7 @@ class LGDUpdateMechanism(BaseUpdate):
 
         # Get G2P entry to be updated
         lgd_obj = self.get_queryset().first()
-        serializer = LocusGenotypeDiseaseSerializer()
+        serializer = LocusGenotypeDiseaseSerializer(context={"user": user})
 
         # Check if user has permission to edit this entry
         user_obj = get_object_or_404(User, email=user, is_active=1)
@@ -561,14 +561,14 @@ class LGDUpdateMechanism(BaseUpdate):
         try:
             serializer.update_mechanism(lgd_obj, mechanism_data)
         except Exception as e:
-            if hasattr(e, "detail") and "message" in e.detail:
+            if hasattr(e, "detail") and "error" in e.detail:
                 return Response(
-                {"error": f"Error while updating molecular mechanism: {e.detail['message']}"},
+                {"error": e.detail["error"]},
                 status=status.HTTP_400_BAD_REQUEST
             )
             else:
                 return Response(
-                    {"error": f"Error while updating molecular mechanism {e}"},
+                    {"error": str(e)},
                     status=status.HTTP_400_BAD_REQUEST
                 )
         else:
@@ -631,7 +631,9 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
         user_obj = get_object_or_404(User, email=user, is_active=1)
         serializer_user = UserSerializer(user_obj, context={"user" : user})
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
-        has_common = LocusGenotypeDiseaseSerializer(lgd).check_user_permission(lgd, user_panel_list)
+        # Calls method check_user_permission() to check the permissions
+        # This method requires user info in the context
+        has_common = LocusGenotypeDiseaseSerializer(lgd, context={"user": user}).check_user_permission(lgd, user_panel_list)
         if has_common is False:
             return Response({"error": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
 
@@ -717,7 +719,7 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
         user_obj = get_object_or_404(User, email=user, is_active=1)
         serializer_user = UserSerializer(user_obj, context={"user" : user})
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
-        has_common = LocusGenotypeDiseaseSerializer(lgd_obj).check_user_permission(lgd_obj, user_panel_list)
+        has_common = LocusGenotypeDiseaseSerializer(lgd_obj, context={"user": user}).check_user_permission(lgd_obj, user_panel_list)
         if has_common is False:
             return Response({"error": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
 
@@ -794,7 +796,7 @@ class LGDEditCCM(CustomPermissionAPIView):
         user_obj = get_object_or_404(User, email=user, is_active=1)
         serializer_user = UserSerializer(user_obj, context={"user" : user})
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
-        has_common = LocusGenotypeDiseaseSerializer(lgd).check_user_permission(lgd, user_panel_list)
+        has_common = LocusGenotypeDiseaseSerializer(lgd, context={"user": user}).check_user_permission(lgd, user_panel_list)
         if has_common is False:
             return Response(
                 {"error": f"No permission to update record '{stable_id}'"},
@@ -864,7 +866,7 @@ class LGDEditCCM(CustomPermissionAPIView):
         user_obj = get_object_or_404(User, email=user, is_active=1)
         serializer_user = UserSerializer(user_obj, context={"user" : user})
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
-        has_common = LocusGenotypeDiseaseSerializer(lgd_obj).check_user_permission(lgd_obj, user_panel_list)
+        has_common = LocusGenotypeDiseaseSerializer(lgd_obj, context={"user": user}).check_user_permission(lgd_obj, user_panel_list)
         if has_common is False:
             return Response(
                 {"error": f"No permission to update record '{stable_id}'"},
@@ -953,7 +955,7 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
         user_obj = get_object_or_404(User, email=user, is_active=1)
         serializer_user = UserSerializer(user_obj, context={"user" : user})
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
-        has_common = LocusGenotypeDiseaseSerializer(lgd).check_user_permission(lgd, user_panel_list)
+        has_common = LocusGenotypeDiseaseSerializer(lgd, context={"user": user}).check_user_permission(lgd, user_panel_list)
         if has_common is False:
             return Response(
                 {"error": f"No permission to update record '{stable_id}'"},
@@ -1029,7 +1031,7 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
         user_obj = get_object_or_404(User, email=user, is_active=1)
         serializer_user = UserSerializer(user_obj, context={"user" : user})
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
-        has_common = LocusGenotypeDiseaseSerializer(lgd_obj).check_user_permission(lgd_obj, user_panel_list)
+        has_common = LocusGenotypeDiseaseSerializer(lgd_obj, context={"user": user}).check_user_permission(lgd_obj, user_panel_list)
         if has_common is False:
             return Response(
                 {"error": f"No permission to update record '{stable_id}'"},
@@ -1133,7 +1135,7 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
         user_obj = get_object_or_404(User, email=user, is_active=1)
         serializer_user = UserSerializer(user_obj, context={"user" : user})
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
-        has_common = LocusGenotypeDiseaseSerializer(lgd).check_user_permission(lgd, user_panel_list)
+        has_common = LocusGenotypeDiseaseSerializer(lgd, context={"user": user}).check_user_permission(lgd, user_panel_list)
         if has_common is False:
             return Response({"error": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
 
@@ -1199,7 +1201,7 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
         user_obj = get_object_or_404(User, email=user, is_active=1)
         serializer_user = UserSerializer(user_obj, context={"user" : user})
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
-        has_common = LocusGenotypeDiseaseSerializer(lgd_obj).check_user_permission(lgd_obj, user_panel_list)
+        has_common = LocusGenotypeDiseaseSerializer(lgd_obj, context={"user": user}).check_user_permission(lgd_obj, user_panel_list)
         if has_common is False:
             return Response({"error": f"No permission to update record '{stable_id}'"}, status=status.HTTP_403_FORBIDDEN)
 
@@ -1273,7 +1275,7 @@ class LGDEditComment(CustomPermissionAPIView):
         success_flag = 0
 
         # Check if user can edit this LGD entry
-        lgd_serializer = LocusGenotypeDiseaseSerializer(lgd)
+        lgd_serializer = LocusGenotypeDiseaseSerializer(lgd, context={"user": user})
         lgd_panels = lgd_serializer.get_panels(lgd)
         # Example of lgd_panels:
         # [{'name': 'DD', 'description': 'Developmental disorders'}, {'name': 'Eye', 'description': 'Eye disorders'}]
@@ -1355,7 +1357,7 @@ class LGDEditComment(CustomPermissionAPIView):
         user_obj = get_object_or_404(User, email=user, is_active=1)
         serializer_user = UserSerializer(user_obj, context={"user" : user})
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
-        has_common = LocusGenotypeDiseaseSerializer(lgd_obj).check_user_permission(lgd_obj, user_panel_list)
+        has_common = LocusGenotypeDiseaseSerializer(lgd_obj, context={"user": user}).check_user_permission(lgd_obj, user_panel_list)
         if has_common is False:
             return Response(
                 {"error": f"No permission to update record '{stable_id}'"},
@@ -1404,7 +1406,7 @@ class LocusGenotypeDiseaseDelete(APIView):
         user_obj = get_object_or_404(User, email=user, is_active=1)
         serializer_user = UserSerializer(user_obj, context={"user" : user})
         user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
-        has_common = LocusGenotypeDiseaseSerializer(lgd_obj).check_user_permission(lgd_obj, user_panel_list)
+        has_common = LocusGenotypeDiseaseSerializer(lgd_obj, context={"user": user}).check_user_permission(lgd_obj, user_panel_list)
         if has_common is False:
             return Response(
                 {"error": f"No permission to update record '{stable_id}'"},
