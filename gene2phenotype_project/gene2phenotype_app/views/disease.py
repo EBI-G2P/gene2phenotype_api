@@ -576,7 +576,7 @@ class UpdateDiseaseOntologyTerms(BaseAdd):
             ontology_description = ontology_data.get("description")
 
             if not ontology_term:
-                errors.append({"error": f"Missing ontology term for '{ontology_accession}"})
+                errors.append({"error": f"Missing ontology term for '{ontology_accession}'"})
                 continue
 
             # Fetch ontology term or return 404 if not found

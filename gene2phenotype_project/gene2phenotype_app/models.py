@@ -7,17 +7,19 @@ from .utils import get_date_now
 
 class G2PStableID(models.Model):
     """
-        Represents a stable identifier for a gene-to-phenotype mapping.
+    Represents a stable identifier for a gene-to-phenotype mapping.
 
-        Attributes:
-            id (AutoField): The primary key for the G2PStableID instance.
-            stable_id (CharField): The stable identifier string, maximum length 100 characters.
-            is_live (BooleanField): Indicates whether the stable identifier is currently in use.
+    Attributes:
+        id (AutoField): The primary key for the G2PStableID instance.
+        stable_id (CharField): The stable identifier string, maximum length 100 characters.
+        is_live (BooleanField): Indicates whether the stable identifier is currently in use.
+        comment (TextField): Any useful note about the G2P ID or record associated to it.
     """
     id = models.AutoField(primary_key=True)
     stable_id = models.CharField(max_length=100, null=False, unique=True)
     is_live = models.BooleanField(default=False)
     is_deleted = models.SmallIntegerField(null=False, default=False)
+    comment = models.TextField(null=True, default=None)
     class Meta:
         """
             Meta:

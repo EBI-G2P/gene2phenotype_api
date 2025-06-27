@@ -34,5 +34,23 @@
             "publication": 4,
             "is_deleted": 1
         }
+    },
+    {
+        "model": "gene2phenotype_app.lgdpublication",
+        "pk": 5,
+        "fields": {
+            "lgd": 5,
+            "publication": 1,
+            "is_deleted": 0
+        }
+    },
+    {
+        "model": "gene2phenotype_app.lgdpublication",
+        "pk": 6,
+        "fields": {
+            "lgd": 5,
+            "publication": 5,
+            "is_deleted": 0
+        }
     }
 ]

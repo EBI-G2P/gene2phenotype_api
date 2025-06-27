@@ -1,11 +1,14 @@
 from rest_framework import status, permissions
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.db import transaction, IntegrityError
+from django.db.models import Model, QuerySet
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-from django.db import transaction, IntegrityError
 from drf_spectacular.utils import extend_schema, OpenApiExample
 import textwrap
+from typing import List, Type
 
 
 from gene2phenotype_app.serializers import (
@@ -1392,6 +1395,7 @@ class LocusGenotypeDiseaseDelete(APIView):
         This method deletes the LGD record.
         The deletion does not remove the entry from the database, instead
         it sets the flag 'is_deleted' to 1.
+        To keep the transaction in the history tables, the update is done by calling save().
         """
         user = request.user
 
@@ -1409,54 +1413,241 @@ class LocusGenotypeDiseaseDelete(APIView):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # Delete the LGD record
-        lgd_obj.is_deleted = 1
-        lgd_obj.save()
+        delete_lgd_record(lgd_obj)
 
         # Delete the stable id used by the LGD record
         stable_id_obj.is_deleted = 1
         stable_id_obj.is_live = 0
         stable_id_obj.save()
 
-        # Delete lgd-cross cutting modifiers
-        LGDCrossCuttingModifier.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
- 
-        # Delete comments
-        LGDComment.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
-
-        # Delete lgd-panels
-        LGDPanel.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
-
-        # Delete phenotypes
-        LGDPhenotype.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
-
-        # Delete phenotype summary
-        LGDPhenotypeSummary.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
-
-        # Delete variant types + comments
-        lgd_var_type_set = LGDVariantType.objects.filter(lgd=lgd_obj, is_deleted=0)
-
-        for lgd_var_type_obj in lgd_var_type_set:
-            # Check if the lgd-variant type has comments
-            # If so, delete the comments too
-            LGDVariantTypeComment.objects.filter(lgd_variant_type=lgd_var_type_obj, is_deleted=0).update(is_deleted=1)
-            lgd_var_type_obj.is_deleted = 1
-            lgd_var_type_obj.save()
-
-        # Delete variant type description
-        LGDVariantTypeDescription.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
-
-        # Delete variant consequences
-        LGDVariantGenccConsequence.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
-
-        # Delete mechanism synopsis + evidence
-        LGDMolecularMechanismSynopsis.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
-        LGDMolecularMechanismEvidence.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
-
-        # Delete publications
-        LGDPublication.objects.filter(lgd=lgd_obj, is_deleted=0).update(is_deleted=1)
-
         return Response(
             {"message": f"ID '{stable_id}' successfully deleted"},
             status=status.HTTP_200_OK
         )
+
+
+### Merge/Split records ###
+@extend_schema(exclude=True)
+@api_view(['POST'])
+@permission_classes([IsSuperUser])
+def MergeRecords(request):
+    """
+    Merges one or more LGD records ("g2p_ids") into a target record ("final_g2p_id").
+
+    Args:
+        request (Request): HTTP request containing a list of records to merge
+
+    Example:
+    [
+        {"g2p_ids": ["G2P00004"], "final_g2p_id": "G2P00001"},
+        {"g2p_ids": ["G2P00005", "G2P00008"], "final_g2p_id": "G2P00006"}
+    ]
+    """
+    records_list = request.data
+
+    if not records_list or not isinstance(records_list, list):
+        return Response(
+                {"error": "Request should be a list containing the records to merge"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    merged_records = []
+    errors = []
+
+    for record in records_list:
+        # record = {"g2p_ids": ["G2P00004"], "final_g2p_id": "G2P00001"}
+        try:
+            g2p_ids = record["g2p_ids"]
+        except KeyError:
+            errors.append({"error": f"g2p_ids key missing from input data '{record}'"})
+        else:
+            # Check if the list of IDs to merge is empty
+            if len(g2p_ids) == 0:
+                errors.append({"error": f"Empty g2p_ids '{record}'"})
+            else:
+                # Get which of the IDs is going to be kept - save it in "final_g2p_id"
+                try:
+                    final_g2p_id = record["final_g2p_id"]
+                except KeyError:
+                    errors.append({"error": f"final_g2p_id key missing from input data '{record}'"})
+                else:
+                    # Check the g2p id to keep is not in the list of g2p ids
+                    # This avoids merging a record into itself
+                    if final_g2p_id in g2p_ids:
+                        g2p_ids.remove(final_g2p_id)
+
+                    # Data to merge:
+                    # variant types, variant description, variant consequences, phenotypes,
+                    # phenotype summary, publications, comments, panels, cross cutting modifiers,
+                    # mechanism synopsis, mechanism evidence
+
+                    # Get the G2P record to keep
+                    try:
+                        lgd_obj_keep = LocusGenotypeDisease.objects.get(
+                            stable_id__stable_id = final_g2p_id,
+                            is_deleted = 0
+                        )
+                    except LocusGenotypeDisease.DoesNotExist:
+                        errors.append({"error": f"Invalid G2P record {final_g2p_id}"})
+
+                    # Loop through the records to be merged into 'lgd_obj_keep'
+                    with transaction.atomic():
+                        for g2p_id in g2p_ids:
+                            try:
+                                lgd_obj = LocusGenotypeDisease.objects.get(
+                                    stable_id__stable_id = g2p_id,
+                                    is_deleted = 0
+                                )
+                            except LocusGenotypeDisease.DoesNotExist:
+                                errors.append({"error": f"Invalid G2P record {g2p_id}"})
+                            else:
+                                # Run checks before the update
+                                # Check if the gene and genotypes are the same
+                                if lgd_obj_keep.genotype != lgd_obj.genotype:
+                                    errors.append({"error": f"Cannot merge records {final_g2p_id} and {g2p_id} with different genotypes"})
+                                elif lgd_obj_keep.locus != lgd_obj.locus:
+                                    errors.append({"error": f"Cannot merge records {final_g2p_id} and {g2p_id} with different genes"})
+                                else:
+                                    # Proceed with merge
+                                    move_related_objects(LGDPhenotype, lgd_obj, lgd_obj_keep, ["phenotype", "publication"])
+                                    move_related_objects(LGDPhenotypeSummary, lgd_obj, lgd_obj_keep)
+                                    move_related_objects(LGDVariantTypeDescription, lgd_obj, lgd_obj_keep)
+                                    move_related_objects(LGDComment, lgd_obj, lgd_obj_keep)
+                                    move_related_objects(LGDMolecularMechanismSynopsis, lgd_obj, lgd_obj_keep)
+                                    move_related_objects(LGDPublication, lgd_obj, lgd_obj_keep, ["publication"])
+                                    move_related_objects(LGDCrossCuttingModifier, lgd_obj, lgd_obj_keep, ["ccm"])
+                                    move_related_objects(LGDVariantType, lgd_obj, lgd_obj_keep, ["variant_type_ot", "publication"])
+                                    move_related_objects(LGDMolecularMechanismEvidence, lgd_obj, lgd_obj_keep, ["evidence", "publication"])
+                                    move_related_objects(LGDPanel, lgd_obj, lgd_obj_keep, ["panel"])
+                                    # Variant gencc consequence has support - do not include the support in the check
+                                    move_related_objects(LGDVariantGenccConsequence, lgd_obj, lgd_obj_keep, ["variant_consequence"])
+
+                                    delete_lgd_record(lgd_obj)
+
+                                    # Delete the stable id used by the LGD record
+                                    try:
+                                        stable_id_obj = G2PStableID.objects.get(id=lgd_obj.stable_id.id)
+                                    except G2PStableID.DoesNotExist:
+                                        errors.append({"error": f"Invalid G2P record {g2p_id}"})
+                                    else:
+                                        stable_id_obj.is_deleted = 1
+                                        stable_id_obj.is_live = 0
+                                        stable_id_obj.comment = f"Merged into {final_g2p_id}"
+                                        stable_id_obj.save()
+                                    
+                                    merged_records.append({f"{g2p_id} merged into {final_g2p_id}"})
+
+    response_data = {}
+    if merged_records:
+        response_data["merged_records"] = merged_records
+
+    if errors:
+        response_data["error"] = errors
+
+    return Response(response_data, status=status.HTTP_200_OK if merged_records else status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(exclude=True)
+def delete_lgd_record(lgd_obj: Model) -> None:
+    """
+    Method to delete the record from the main table and the data linked to it.
+    The deletion is an update of the flag 'is_deleted' to value 0.
+
+    Args:
+        lgd_obj (Model): Record to be deleted
+    """
+    # Delete lgd-cross cutting modifiers
+    for ccm in LGDCrossCuttingModifier.objects.filter(lgd=lgd_obj, is_deleted=0):
+        ccm.is_deleted = 1
+        ccm.save()
+
+    # Delete comments
+    for comment in LGDComment.objects.filter(lgd=lgd_obj, is_deleted=0):
+        comment.is_deleted = 1
+        comment.save()
+
+    # Delete lgd-panels
+    for panel in LGDPanel.objects.filter(lgd=lgd_obj, is_deleted=0):
+        panel.is_deleted = 1
+        panel.save()
+
+    # Delete phenotypes
+    for phenotypes in LGDPhenotype.objects.filter(lgd=lgd_obj, is_deleted=0):
+        phenotypes.is_deleted = 1
+        phenotypes.save()
+
+    # Delete phenotype summary
+    for pheno_summary in LGDPhenotypeSummary.objects.filter(lgd=lgd_obj, is_deleted=0):
+        pheno_summary.is_deleted = 1
+        pheno_summary.save()
+
+    # Delete variant types + comments
+    lgd_var_type_set = LGDVariantType.objects.filter(lgd=lgd_obj, is_deleted=0)
+
+    for lgd_var_type_obj in lgd_var_type_set:
+        # Check if the lgd-variant type has comments
+        # If so, delete the comments too
+        for var_comment in LGDVariantTypeComment.objects.filter(lgd_variant_type=lgd_var_type_obj, is_deleted=0):
+            var_comment.is_deleted = 1
+            var_comment.save()
+        lgd_var_type_obj.is_deleted = 1
+        lgd_var_type_obj.save()
+
+    # Delete variant type description
+    for var_description in LGDVariantTypeDescription.objects.filter(lgd=lgd_obj, is_deleted=0):
+        var_description.is_deleted = 1
+        var_description.save()
+
+    # Delete variant consequences
+    for var_consequence in LGDVariantGenccConsequence.objects.filter(lgd=lgd_obj, is_deleted=0):
+        var_consequence.is_deleted = 1
+        var_consequence.save()
+
+    # Delete mechanism synopsis
+    for mechanism_synopsis in LGDMolecularMechanismSynopsis.objects.filter(lgd=lgd_obj, is_deleted=0):
+        mechanism_synopsis.is_deleted = 1
+        mechanism_synopsis.save()
+
+    # Delete mechanism evidence
+    for mechanism_evidence in LGDMolecularMechanismEvidence.objects.filter(lgd=lgd_obj, is_deleted=0):
+        mechanism_evidence.is_deleted = 1
+        mechanism_evidence.save()
+
+    # Delete publications
+    for publication in LGDPublication.objects.filter(lgd=lgd_obj, is_deleted=0):
+        publication.is_deleted = 1
+        publication.save()
+
+    # Delete the LGD record
+    lgd_obj.is_deleted = 1
+    lgd_obj.save()
+
+
+@extend_schema(exclude=True)
+def move_related_objects(model_class: Type[Model], lgd_obj: Model, lgd_obj_keep: Model, unique_fields: List[str] = None) -> None:
+    """
+    Method to reassign related objects from a source LGD record to a target LGD record, 
+    avoiding duplicates.
+
+    Args:
+        model_class (Type[Model]): The Django model class of the related objects
+        lgd_obj (Model): The source LocusGenotypeDisease object (to merge from)
+        lgd_obj_keep (Model): The target LocusGenotypeDisease object (to merge into)
+        unique_fields (List[str]): List of fields (besides 'lgd') that define uniqueness
+    """
+    # Fetch the objects linked to the record (to merge from)
+    objs: QuerySet = model_class.objects.filter(lgd=lgd_obj, is_deleted=0)
+
+    for obj in objs:
+        if obj.lgd_id == lgd_obj_keep.id:
+            continue
+        # Build filter for existing record in target (to merge into)
+        if unique_fields:
+            filter_args = {"lgd": lgd_obj_keep}
+            for field in unique_fields:
+                filter_args[field] = getattr(obj, field)
+            if model_class.objects.filter(**filter_args).exists():
+                continue  # Skip duplicate
+
+        obj.lgd = lgd_obj_keep
+        obj.save()
