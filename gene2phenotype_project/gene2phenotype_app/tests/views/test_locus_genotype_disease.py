@@ -99,7 +99,7 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
                     "functional_studies": {
                         "Function": ["Biochemical"]
                     },
-                    "description": None
+                    "descriptions": []
                 }
             },
         }
@@ -157,3 +157,18 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
             }
         ]
         self.assertEqual(response.data["publications"], expected_data_publication)
+
+        expected_data_mechanism = {
+            "mechanism": "loss of function",
+            "mechanism_support": "evidence",
+            "synopsis": [{"synopsis": "assembly-mediated GOF", "support": "inferred"}],
+            "evidence": {
+                3897232: {
+                    "functional_studies": {
+                        "Function": ["Biochemical"]
+                    },
+                    "descriptions": ["This is the evidence found in PMID:3897232"]
+                }
+            },
+        }
+        self.assertEqual(response.data["molecular_mechanism"], expected_data_mechanism)

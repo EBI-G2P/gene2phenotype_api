@@ -126,16 +126,15 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             evidence_type = evidence_data.evidence.subtype.replace("_", " ").title()
             evidence_value = evidence_data.evidence.value.title()
 
-            if evidence_data.description and authenticated_user == 1:
-                evidence_description = evidence_data.description
-            else:
-                evidence_description = None
-
             if pmid not in mechanism_evidence:
                 mechanism_evidence[pmid] = {
                     "functional_studies": {evidence_type : [evidence_value]},
-                    "description": evidence_description
+                    "descriptions": []
                 }
+                # If description is defined and the user is authenticated,
+                # overwrite the description in the output
+                if evidence_data.description and authenticated_user == 1:
+                    mechanism_evidence[pmid]["descriptions"] = [evidence_data.description]
             else:
                 existing_evidence = mechanism_evidence[pmid]
                 # Update functional studies list
@@ -144,8 +143,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 else:
                     mechanism_evidence[pmid]["functional_studies"][evidence_type] = [evidence_value]
                 # Update description
-                if not existing_evidence["description"]:
-                    mechanism_evidence[pmid]["description"] = evidence_description
+                if (evidence_data.description and authenticated_user == 1 and
+                    evidence_data.description not in mechanism_evidence[pmid]["descriptions"]):
+                    mechanism_evidence[pmid]["descriptions"].append(evidence_data.description)
 
         mechanism_result = {
             "mechanism": mechanism,
