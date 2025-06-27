@@ -1408,13 +1408,25 @@ class LGDEditReview(APIView):
             )
 
         serializer = LGDReviewSerializer(instance=lgd, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        state = "reviewed" if lgd.is_reviewed else "under review"
-        return Response(
-            {"message": f"{stable_id} successfully set to {state}"},
-            status=status.HTTP_200_OK,
-        )
+        if serializer.is_valid():
+            serializer.save()
+            state = "reviewed" if lgd.is_reviewed else "under review"
+            return Response(
+                {"message": f"{stable_id} successfully set to {state}"},
+                status=status.HTTP_200_OK,
+            )
+        else:
+            if "is_reviewed" in serializer.errors:
+                if "error" in serializer.errors["is_reviewed"]:
+                    return Response(
+                        {"error": serializer.errors["is_reviewed"]["error"]},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+            return Response(
+                {"error": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 @extend_schema(exclude=True)

@@ -1479,9 +1479,9 @@ class LGDReviewSerializer(serializers.ModelSerializer):
     def validate_is_reviewed(self, value: int) -> int:
         if value == self.instance.is_reviewed:
             state = "reviewed" if value else "under review"
-            raise serializers.ValidationError(
-                f"{self.instance.stable_id.stable_id} is already set to {state}"
-            )
+            raise serializers.ValidationError({
+                "error": f"{self.instance.stable_id.stable_id} is already set to {state}"
+            })
         return value
 
     def update(self, instance, validated_data):

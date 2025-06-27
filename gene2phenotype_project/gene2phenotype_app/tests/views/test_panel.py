@@ -250,7 +250,7 @@ class PanelDownloadEndpointTests(TestCase):
             "Cardiac",
             "",
             "2018-07-05 16:33:03+00:00",
-            "",
+            "under review",
         ]
 
         self.assertEqual(rows[2], expected_data)

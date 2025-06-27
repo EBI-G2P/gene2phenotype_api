@@ -227,7 +227,7 @@ urlpatterns = [
     path(
         "lgd/<str:stable_id>/review/",
         views.LGDEditReview.as_view(),
-        name="review",
+        name="lgd_review",
     ),
     # Delete LGD record. Action: PATCH
     path(
