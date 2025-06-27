@@ -81,7 +81,6 @@ class LocusGeneSerializer(LocusSerializer):
         # Get all G2P records associated with the gene
         lgd = LocusGenotypeDisease.objects.filter(
             locus=id,
-            is_reviewed=1,
             is_deleted=0,
             date_review__isnull=False
             )

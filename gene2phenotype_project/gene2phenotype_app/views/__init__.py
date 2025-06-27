@@ -65,6 +65,7 @@ from .locus_genotype_disease import (
     LGDUpdateConfidence,
     LocusGenotypeDiseaseDelete,
     LGDUpdateMechanism,
+    LGDEditReview,
     MergeRecords,
 )
 

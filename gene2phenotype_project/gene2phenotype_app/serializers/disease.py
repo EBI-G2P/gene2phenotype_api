@@ -166,7 +166,6 @@ class DiseaseDetailSerializer(DiseaseSerializer):
 
         filtered_lgd_list = LocusGenotypeDisease.objects.filter(
             disease=id,
-            is_reviewed=1,
             is_deleted=0,
             date_review__isnull=False
             ).order_by('-date_review')
