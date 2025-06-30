@@ -925,7 +925,7 @@ def PanelDownload(request, name):
                 comments = "; ".join(lgd_comments[lgd_id])
 
             review = ""
-            if lgd.is_reviewed == 0:
+            if not lgd.is_reviewed:
                 review = "under review"
 
             # Write data to output file

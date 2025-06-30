@@ -62,7 +62,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     last_updated = serializers.SerializerMethodField()
     date_created = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField(allow_null=True)
-    is_reviewed = serializers.IntegerField(allow_null=True, required=False, help_text="If set to 0 the record is awaiting review")
+    is_reviewed = serializers.BooleanField()
 
     def get_locus(self, id: int) -> dict[str, Any]:
         """
@@ -474,7 +474,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 mechanism = mechanism_obj,
                 mechanism_support = mechanism_support_obj,
                 confidence = confidence_obj,
-                is_reviewed = 1,
+                is_reviewed = True,
                 is_deleted = 0,
                 date_review = get_date_now()
             )
@@ -1474,7 +1474,7 @@ class LGDReviewSerializer(serializers.ModelSerializer):
     """
     Serializer to update the value of is_reviewed.
     """
-    is_reviewed = serializers.IntegerField(min_value=0, max_value=1)
+    is_reviewed = serializers.BooleanField()
 
     def validate_is_reviewed(self, value: int) -> int:
         if value == self.instance.is_reviewed:

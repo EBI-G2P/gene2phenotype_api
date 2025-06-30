@@ -1391,7 +1391,7 @@ class LGDEditReview(APIView):
         """
         The post method updates the review status of the LGD record.
         It updates the value under 'is_reviewed'.
-        Input example: {"is_reviewed": 0}
+        Input example: {"is_reviewed": false}
         """
         lgd = get_object_or_404(
             LocusGenotypeDisease,

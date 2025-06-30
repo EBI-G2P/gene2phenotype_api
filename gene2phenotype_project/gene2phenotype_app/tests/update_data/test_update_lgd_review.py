@@ -60,7 +60,7 @@ class LGDEditLGDReview(TestCase):
         """
         Test updating review status without permission
         """
-        input_data = {"is_reviewed": 0}
+        input_data = {"is_reviewed": False}
 
         # Login
         user = User.objects.get(email="user1@test.ac.uk")
@@ -79,7 +79,7 @@ class LGDEditLGDReview(TestCase):
         """
         Test updating the status to the same value
         """
-        input_data = {"is_reviewed": 1}
+        input_data = {"is_reviewed": True}
 
         # Login
         user = User.objects.get(email="user5@test.ac.uk")
@@ -101,7 +101,7 @@ class LGDEditLGDReview(TestCase):
         """
         Test updating a reviewed record to under review
         """
-        input_data = {"is_reviewed": 0}
+        input_data = {"is_reviewed": False}
 
         # Login
         user = User.objects.get(email="user5@test.ac.uk")
