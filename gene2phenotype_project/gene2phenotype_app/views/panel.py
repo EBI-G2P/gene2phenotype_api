@@ -732,7 +732,7 @@ def PanelDownload(request, name):
                     is_deleted=0, lgdpanel__is_deleted=0
                 ) & ~Q(lgdpanel__panel__name="Demo")
 
-        # Download reviewed entries
+        # Download entries
         queryset_list = (
             LocusGenotypeDisease.objects.filter(filter_query)
             .distinct()
