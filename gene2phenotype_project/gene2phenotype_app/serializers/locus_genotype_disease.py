@@ -1486,8 +1486,10 @@ class LGDReviewSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         instance.is_reviewed = validated_data["is_reviewed"]
-        instance.date_review = get_date_now()
-        instance.save(update_fields=["is_reviewed", "date_review"])
+        # If the record is set to reviewed then update the date of the last review to today
+        if validated_data["is_reviewed"]:
+            instance.date_review = get_date_now()
+        instance.save()
         return instance
 
     class Meta:
