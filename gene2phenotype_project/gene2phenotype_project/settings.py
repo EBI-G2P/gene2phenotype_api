@@ -16,6 +16,10 @@ from configparser import ConfigParser
 from datetime import timedelta
 from rest_framework.settings import api_settings
 
+import pymysql
+pymysql.install_as_MySQLdb()
+
+
 config_path = os.environ.get('PROJECT_CONFIG_PATH')
 config = ConfigParser()
 config.read(config_path)
