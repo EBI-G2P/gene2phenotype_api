@@ -698,6 +698,7 @@ def PanelDownload(request, name):
             "panel",
             "comments",
             "date of last review",
+            "review"
         ]
     )
 
@@ -713,7 +714,6 @@ def PanelDownload(request, name):
         # Download specific panel
         filter_query = Q(
             is_deleted=0,
-            is_reviewed=1,
             lgdpanel__panel=panel,
             lgdpanel__is_deleted=0,
         )
@@ -723,17 +723,16 @@ def PanelDownload(request, name):
                 # Download all visible panels
                 filter_query = Q(
                     is_deleted=0,
-                    is_reviewed=1,
                     lgdpanel__panel__is_visible=1,
                     lgdpanel__is_deleted=0,
                 )
             else:
                 # Download all visible and non-visible panels excluding Demo panel
                 filter_query = Q(
-                    is_deleted=0, is_reviewed=1, lgdpanel__is_deleted=0
+                    is_deleted=0, lgdpanel__is_deleted=0
                 ) & ~Q(lgdpanel__panel__name="Demo")
 
-        # Download reviewed entries
+        # Download entries
         queryset_list = (
             LocusGenotypeDisease.objects.filter(filter_query)
             .distinct()
@@ -925,6 +924,10 @@ def PanelDownload(request, name):
             if lgd_id in lgd_comments:
                 comments = "; ".join(lgd_comments[lgd_id])
 
+            review = ""
+            if not lgd.is_reviewed:
+                review = "under review"
+
             # Write data to output file
             writer.writerow(
                 [
@@ -949,6 +952,7 @@ def PanelDownload(request, name):
                     panels,
                     comments,
                     lgd.date_review,
+                    review
                 ]
             )
     else:

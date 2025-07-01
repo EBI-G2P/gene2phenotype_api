@@ -62,7 +62,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     last_updated = serializers.SerializerMethodField()
     date_created = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField(allow_null=True)
-    is_reviewed = serializers.IntegerField(allow_null=True, required=False, help_text="If set to 0 the record is awaiting review")
+    is_reviewed = serializers.BooleanField() # It is the same as SmallInteger 0/1
 
     def get_locus(self, id: int) -> dict[str, Any]:
         """
@@ -474,7 +474,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 mechanism = mechanism_obj,
                 mechanism_support = mechanism_support_obj,
                 confidence = confidence_obj,
-                is_reviewed = 1,
+                is_reviewed = True,
                 is_deleted = 0,
                 date_review = get_date_now()
             )
@@ -1468,3 +1468,30 @@ class LGDVariantTypeDescriptionListSerializer(serializers.Serializer):
         Called by: LGDAddVariantTypeDescriptions()
     """
     variant_descriptions = LGDVariantTypeDescriptionSerializer(many=True)
+
+
+class LGDReviewSerializer(serializers.ModelSerializer):
+    """
+    Serializer to update the value of is_reviewed.
+    """
+    is_reviewed = serializers.BooleanField()
+
+    def validate_is_reviewed(self, value: int) -> int:
+        if value == self.instance.is_reviewed:
+            state = "reviewed" if value else "under review"
+            raise serializers.ValidationError({
+                "error": f"{self.instance.stable_id.stable_id} is already set to {state}"
+            })
+        return value
+
+    def update(self, instance, validated_data):
+        instance.is_reviewed = validated_data["is_reviewed"]
+        # If the record is set to reviewed then update the date of the last review to today
+        if validated_data["is_reviewed"]:
+            instance.date_review = get_date_now()
+        instance.save()
+        return instance
+
+    class Meta:
+        model  = LocusGenotypeDisease
+        fields = ["is_reviewed"]
