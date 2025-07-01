@@ -125,10 +125,10 @@ class LoginView(generics.GenericAPIView):
         refresh_token = login_data.get('tokens', {}).get('refresh', None)
         response = Response(login_data, status=status.HTTP_200_OK)
         if response.status_code == 200:
-            refresh_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_TOKEN_LIFETIME", timedelta(days=1))
+            refresh_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_TOKEN_LIFETIME", timedelta(hours=12))
             access_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("ACCESS_TOKEN_LIFETIME", timedelta(hours=1))
-            refresh_expires = datetime.utcnow() + refresh_token_lifetime  # Calculate refresh expiration time
-            access_expires = datetime.utcnow() + access_token_lifetime # calculate access expiration time
+            refresh_expires = datetime.now() + refresh_token_lifetime  # Calculate refresh expiration time
+            access_expires = datetime.now() + access_token_lifetime # calculate access expiration time
             refresh_expires_iso = refresh_expires.isoformat()
             login_data['refresh_token_time'] = refresh_expires.isoformat() # to add the refresh token time to the response
             response.set_cookie(
@@ -339,9 +339,9 @@ class CustomTokenRefreshView(TokenRefreshView):
     
         if response.status_code == 200:
             refresh_token_lifetime = request.COOKIES.get('refresh_token_lifetime') # we are getting the refresh timeline from the cookie 
-            access_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("ACCESS_TOKEN_LIFETIME", timedelta(minutes=45))
+            access_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get("ACCESS_TOKEN_LIFETIME", timedelta(hours=1))
             refresh_expires = datetime.fromisoformat(refresh_token_lifetime)  # Calculate refresh expiration time
-            access_expires = datetime.utcnow() + access_token_lifetime # calculate access expiration time
+            access_expires = datetime.now() + access_token_lifetime # calculate access expiration time
             response_data['refresh_token_time'] = refresh_expires
             refresh_expires_iso = refresh_expires.isoformat()
             response.set_cookie(
