@@ -520,14 +520,13 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             # if the publication (PMID) is not found, it will create the Publication obj
             # Example: publications_list = [{ "pmid": 1234,
             #                                 "comment": {"comment": "comment text", "is_public": 1},
-            #                                 "families": {
-            #                                        "families": 5, 
-            #                                        "consanguinity": "", 
-            #                                        "ancestries": "", 
-            #                                        "affected_individuals": 5
-            #                                  }
+            #                                 "families": 5, 
+            #                                 "consanguinity": "", 
+            #                                 "ancestries": "", 
+            #                                 "affected_individuals": 5
             #                              }]
             # TODO: update to accept the publication objs to avoid creating the serializer here too
+            print("Publication list inside LGD serializer:", publications_list)
             for publication_data in publications_list:
                 # PublicationSerializer is instantiated with the publication data and context
                 lgd_publication_serializer = LGDPublicationSerializer(

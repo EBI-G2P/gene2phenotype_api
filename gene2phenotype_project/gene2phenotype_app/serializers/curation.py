@@ -452,14 +452,15 @@ class CurationDataSerializer(serializers.ModelSerializer):
         ### Publications ###
         for publication in data.json_data["publications"]:
             if publication["families"] is None:
-                family = None
+                families = None
+                consanguinity = None
+                ancestries = None
+                affected_individuals = None
             else:
-                family = {
-                    "families": publication["families"],
-                    "consanguinity": publication["consanguineous"],
-                    "ancestries": publication["ancestries"],
-                    "affected_individuals": publication["affectedIndividuals"],
-                }
+                families = publication["families"]
+                consanguinity = publication["consanguineous"]
+                ancestries = publication["ancestries"]
+                affected_individuals = publication["affectedIndividuals"]
 
             if publication["comment"] is None or publication["comment"] == "":
                 comment = None
@@ -470,7 +471,10 @@ class CurationDataSerializer(serializers.ModelSerializer):
             publication_data = {
                 "pmid": publication["pmid"],
                 "comment": comment,
-                "families": family,
+                "families": families,
+                "consanguinity": consanguinity,
+                "ancestries": ancestries,
+                "affected_individuals": affected_individuals
             }
 
             # Get or create publications
@@ -589,6 +593,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
             "mechanism": mechanism_obj,
             "mechanism_support": mechanism_support_obj,
         }
+
+        print("Publication list send to LocusGenotypeDiseaseSerializer:", publications_list)
 
         lgd_obj, check = LocusGenotypeDiseaseSerializer(
             context={"user": user_obj}
