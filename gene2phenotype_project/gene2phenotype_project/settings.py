@@ -146,6 +146,7 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = json.loads(config.get('settings', 'CORS_ALLOWED_ORIGINS'))
 CSRF_TRUSTED_ORIGINS = json.loads(config.get('settings', 'CSRF_TRUSTED_ORIGINS'))
 CORS_ALLOWED_CREDENTIALS = True
+SESSION_COOKIE_SECURE = True
 
 DEFAULT_FROM_EMAIL = config.get('email', 'from')
 MAIL_HOST = config.get('email', 'host')
