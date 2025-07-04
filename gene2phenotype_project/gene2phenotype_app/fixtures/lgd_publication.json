@@ -5,6 +5,10 @@
         "fields": {
             "lgd": 1,
             "publication": 1,
+            "number_of_families": null,
+            "consanguinity": null,
+            "affected_individuals": null,
+            "ancestry": null,
             "is_deleted": 0
         }
     },
@@ -14,6 +18,10 @@
         "fields": {
             "lgd": 2,
             "publication": 2,
+            "number_of_families": null,
+            "consanguinity": null,
+            "affected_individuals": null,
+            "ancestry": null,
             "is_deleted": 0
         }
     },
@@ -23,6 +31,10 @@
         "fields": {
             "lgd": 2,
             "publication": 3,
+            "number_of_families": null,
+            "consanguinity": null,
+            "affected_individuals": null,
+            "ancestry": null,
             "is_deleted": 0
         }
     },
@@ -32,6 +44,10 @@
         "fields": {
             "lgd": 3,
             "publication": 4,
+            "number_of_families": null,
+            "consanguinity": null,
+            "affected_individuals": null,
+            "ancestry": null,
             "is_deleted": 1
         }
     },
@@ -41,6 +57,10 @@
         "fields": {
             "lgd": 5,
             "publication": 1,
+            "number_of_families": null,
+            "consanguinity": null,
+            "affected_individuals": null,
+            "ancestry": null,
             "is_deleted": 0
         }
     },
@@ -50,6 +70,10 @@
         "fields": {
             "lgd": 5,
             "publication": 5,
+            "number_of_families": null,
+            "consanguinity": null,
+            "affected_individuals": null,
+            "ancestry": null,
             "is_deleted": 0
         }
     }

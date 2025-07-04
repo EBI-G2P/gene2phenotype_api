@@ -290,6 +290,10 @@ class LGDComment(models.Model):
 class LGDPublication(models.Model):
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT)
+    number_of_families = models.IntegerField(null=True)
+    consanguinity = models.ForeignKey("Attrib", related_name='consanguinity_publication', on_delete=models.PROTECT, null=True)
+    affected_individuals = models.IntegerField(null=True)
+    ancestry = models.CharField(max_length=500, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 
@@ -529,23 +533,6 @@ class Publication(models.Model):
         indexes = [
             models.Index(fields=['pmid'])
         ]
-
-class PublicationFamilies(models.Model):
-    id = models.AutoField(primary_key=True)
-    publication = models.ForeignKey("Publication", on_delete=models.PROTECT)
-    families = models.IntegerField(null=False)
-    consanguinity = models.ForeignKey("Attrib", related_name='consanguinity_publication', on_delete=models.PROTECT, null=True)
-    affected_individuals = models.IntegerField(null=True)
-    ancestries = models.CharField(max_length=500, null=True)
-    is_deleted = models.SmallIntegerField(null=False, default=False)
-    history = HistoricalRecords()
-
-    class Meta:
-        db_table = "publication_families"
-        indexes = [
-            models.Index(fields=["publication"])
-        ]
-        unique_together = ["publication", "families", "consanguinity", "affected_individuals"]
 
 class PublicationComment(models.Model):
     id = models.AutoField(primary_key=True)
