@@ -436,9 +436,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
         that all related database operations are treated as a single unit.
 
         Args:
-            data: CurationData object to publish
+            data: CurationData object to publish (JSON format)
         """
-
         user = self.context.get("user")
         publications_list = []
 
@@ -471,14 +470,16 @@ class CurationDataSerializer(serializers.ModelSerializer):
             publication_data = {
                 "pmid": publication["pmid"],
                 "comment": comment,
-                "families": families,
+                "number_of_families": families,
                 "consanguinity": consanguinity,
-                "ancestries": ancestries,
+                "ancestry": ancestries,
                 "affected_individuals": affected_individuals
             }
 
             # Get or create publications
             # Publications should be stored in the db before any data is stored
+            # We send all data linked to the publications in 'publication_data' but only
+            # the PMID is used to get/create the publication
             try:
                 publication_serializer = PublicationSerializer(
                     data=publication_data, context={"user": user_obj}
