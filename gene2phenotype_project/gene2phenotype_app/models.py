@@ -290,10 +290,10 @@ class LGDComment(models.Model):
 class LGDPublication(models.Model):
     lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
     publication = models.ForeignKey("Publication", on_delete=models.PROTECT)
-    families = models.IntegerField(null=True)
+    number_of_families = models.IntegerField(null=True)
     consanguinity = models.ForeignKey("Attrib", related_name='consanguinity_publication', on_delete=models.PROTECT, null=True)
     affected_individuals = models.IntegerField(null=True)
-    ancestries = models.CharField(max_length=500, null=True)
+    ancestry = models.CharField(max_length=500, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 
