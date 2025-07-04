@@ -595,8 +595,6 @@ class CurationDataSerializer(serializers.ModelSerializer):
             "mechanism_support": mechanism_support_obj,
         }
 
-        print("Publication list send to LocusGenotypeDiseaseSerializer:", publications_list)
-
         lgd_obj, check = LocusGenotypeDiseaseSerializer(
             context={"user": user_obj}
         ).create(lgd_data, disease_obj, publications_list)

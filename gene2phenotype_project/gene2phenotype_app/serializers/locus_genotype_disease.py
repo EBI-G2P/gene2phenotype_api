@@ -526,7 +526,6 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             #                                 "affected_individuals": 5
             #                              }]
             # TODO: update to accept the publication objs to avoid creating the serializer here too
-            print("Publication list inside LGD serializer:", publications_list)
             for publication_data in publications_list:
                 # PublicationSerializer is instantiated with the publication data and context
                 lgd_publication_serializer = LGDPublicationSerializer(
@@ -545,7 +544,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     lgd_publication_serializer.save()
 
         return lgd_obj, check
-    
+
     def check_monoallelic_exists(self, genotype_obj: object, mechanism_obj: object, locus_obj: object, disease_obj: object) -> bool:
         """
             Checks if the about to be created biallelic related genotype has a monoallelic related genotype with the same disease name and mechanism
