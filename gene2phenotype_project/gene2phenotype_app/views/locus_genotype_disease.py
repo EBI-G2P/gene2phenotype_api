@@ -244,9 +244,12 @@ class VariantTypesList(APIView):
                             "title": "Leigh syndrome caused by mutations in MTFMT is associated with a better prognosis.",
                             "authors": "Hayhurst H et al.",
                             "year": "2019",
-                            "comments": [],
-                            "families": []
-                        }
+                            "comments": []
+                        },
+                        "number_of_families": None,
+                        "consanguinity": None,
+                        "affected_individuals": None,
+                        "ancestry": None
                     },
                     {
                         "publication": {
@@ -254,9 +257,12 @@ class VariantTypesList(APIView):
                             "title": "Mutations in MTFMT underlie a human disorder of formylation causing impaired mitochondrial translation.",
                             "authors": "Tucker EJ, Hershman SG, Köhrer C, Belcher-Timme CA, Patel J, Goldberger OA, Christodoulou J, Silberstein JM, McKenzie M, Ryan MT, Compton AG, Jaffe JD, Carr SA, Calvo SE, RajBhandary UL, Thorburn DR, Mootha VK.",
                             "year": "2011",
-                            "comments": [],
-                            "families": []
-                        }
+                            "comments": []
+                        },
+                        "number_of_families": None,
+                        "consanguinity": None,
+                        "affected_individuals": None,
+                        "ancestry": None
                     },
                     {
                         "publication": {
@@ -264,9 +270,12 @@ class VariantTypesList(APIView):
                             "title": "Phenotypic spectrum of eleven patients and five novel MTFMT mutations identified by exome sequencing and candidate gene screening.",
                             "authors": "Haack TB et al.",
                             "year": "2014",
-                            "comments": [],
-                            "families": []
-                        }
+                            "comments": []
+                        },
+                        "number_of_families": None,
+                        "consanguinity": None,
+                        "affected_individuals": None,
+                        "ancestry": None
                     },
                     {
                         "publication": {
@@ -274,9 +283,12 @@ class VariantTypesList(APIView):
                             "title": "First report of childhood progressive cerebellar atrophy due to compound heterozygous MTFMT variants.",
                             "authors": "Bai R, Haude K, Yang E, Goldstein A, Anselm I.",
                             "year": "2020",
-                            "comments": [],
-                            "families": []
-                        }
+                            "comments": []
+                        },
+                        "number_of_families": None,
+                        "consanguinity": None,
+                        "affected_individuals": None,
+                        "ancestry": None
                     },
                     {
                         "publication": {
@@ -284,9 +296,12 @@ class VariantTypesList(APIView):
                             "title": "Clinical and functional characterisation of the combined respiratory chain defect in two sisters due to autosomal recessive mutations in MTFMT.",
                             "authors": "Neeve VC, Pyle A, Boczonadi V, Gomez-Duran A, Griffin H, Santibanez-Koref M, Gaiser U, Bauer P, Tzschach A, Chinnery PF, Horvath R.",
                             "year": "2013",
-                            "comments": [],
-                            "families": []
-                        }
+                            "comments": []
+                        },
+                        "number_of_families": None,
+                        "consanguinity": None,
+                        "affected_individuals": None,
+                        "ancestry": None
                     }
                 ],
                 "panels": [
