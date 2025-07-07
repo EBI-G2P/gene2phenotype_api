@@ -77,38 +77,50 @@
                                                 "synopsis": [],
                                                 "evidence": {
                                                     "30911575": {
-                                                        "Function": [
-                                                            "Biochemical",
-                                                            "Protein Expression"
-                                                        ],
-                                                        "Functional Alteration": [
-                                                            "Patient Cells"
-                                                        ]
+                                                        "functional_studies": {
+                                                            "Function": [
+                                                                "Biochemical",
+                                                                "Protein Expression"
+                                                            ],
+                                                            "Functional Alteration": [
+                                                                "Patient Cells"
+                                                            ]
+                                                        },
+                                                        "descriptions": []
                                                     },
                                                     "21907147": {
-                                                        "Function": [
-                                                            "Biochemical"
-                                                        ],
-                                                        "Functional Alteration": [
-                                                            "Patient Cells"
-                                                        ],
-                                                        "Rescue": [
-                                                            "Patient Cells"
-                                                        ]
+                                                        "functional_studies": {
+                                                            "Function": [
+                                                                "Biochemical"
+                                                            ],
+                                                            "Functional Alteration": [
+                                                                "Patient Cells"
+                                                            ],
+                                                            "Rescue": [
+                                                                "Patient Cells"
+                                                            ]
+                                                        },
+                                                        "descriptions": []
                                                     },
                                                     "24461907": {
-                                                        "Function": [
-                                                            "Biochemical",
-                                                            "Protein Expression"
-                                                        ]
+                                                        "functional_studies": {
+                                                            "Function": [
+                                                                "Biochemical",
+                                                                "Protein Expression"
+                                                            ]
+                                                        },
+                                                        "descriptions": []
                                                     },
                                                     "23499752": {
-                                                        "Function": [
-                                                            "Protein Expression"
-                                                        ],
-                                                        "Functional Alteration": [
-                                                            "Patient Cells"
-                                                        ]
+                                                        "functional_studies": {
+                                                            "Function": [
+                                                                "Protein Expression"
+                                                            ],
+                                                            "Functional Alteration": [
+                                                                "Patient Cells"
+                                                            ]
+                                                        },
+                                                        "descriptions": []
                                                     }
                                                 }
                                             },
