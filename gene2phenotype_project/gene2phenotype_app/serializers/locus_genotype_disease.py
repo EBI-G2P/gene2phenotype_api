@@ -100,6 +100,13 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         Molecular mechanism associated with the LGMDE record.
         If available, also returns the evidence.
         """
+        user = self.context.get("user")
+        try:
+            User.objects.get(email=user)
+            authenticated_user = 1
+        except User.DoesNotExist:
+            authenticated_user = 0
+
         mechanism = id.mechanism.value
         mechanism_support = id.mechanism_support.value
         mechanism_synopsis = []
@@ -120,14 +127,25 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             evidence_value = evidence_data.evidence.value.title()
 
             if pmid not in mechanism_evidence:
-                mechanism_evidence[pmid] = { evidence_type : [evidence_value] }
-
+                mechanism_evidence[pmid] = {
+                    "functional_studies": {evidence_type : [evidence_value]},
+                    "descriptions": []
+                }
+                # If description is defined and the user is authenticated,
+                # overwrite the description in the output
+                if evidence_data.description and authenticated_user == 1:
+                    mechanism_evidence[pmid]["descriptions"] = [evidence_data.description]
             else:
                 existing_evidence = mechanism_evidence[pmid]
-                if evidence_type in existing_evidence:
-                    mechanism_evidence[pmid][evidence_type].append(evidence_value)
+                # Update functional studies list
+                if evidence_type in existing_evidence["functional_studies"]:
+                    mechanism_evidence[pmid]["functional_studies"][evidence_type].append(evidence_value)
                 else:
-                    mechanism_evidence[pmid][evidence_type] = [evidence_value]
+                    mechanism_evidence[pmid]["functional_studies"][evidence_type] = [evidence_value]
+                # Update description
+                if (evidence_data.description and authenticated_user == 1 and
+                    evidence_data.description not in mechanism_evidence[pmid]["descriptions"]):
+                    mechanism_evidence[pmid]["descriptions"].append(evidence_data.description)
 
         mechanism_result = {
             "mechanism": mechanism,
@@ -1058,6 +1076,7 @@ class LGDMechanismEvidenceSerializer(serializers.ModelSerializer):
             # Create new molecular mechanism evidence
             mechanism_evidence_obj = LGDMolecularMechanismEvidence.objects.create(
                 lgd = lgd_instance,
+                description = validate_data["description"],
                 evidence = evidence_obj,
                 publication = publication_instance,
                 is_deleted = 0
