@@ -62,7 +62,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     last_updated = serializers.SerializerMethodField()
     date_created = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField(allow_null=True)
-    is_reviewed = serializers.BooleanField() # It is the same as SmallInteger 0/1
+    is_reviewed = serializers.BooleanField(required=False) # It is the same as SmallInteger 0/1
 
     def get_locus(self, id: int) -> dict[str, Any]:
         """
