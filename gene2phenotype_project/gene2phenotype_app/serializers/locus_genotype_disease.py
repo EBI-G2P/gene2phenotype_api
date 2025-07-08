@@ -520,12 +520,10 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             # if the publication (PMID) is not found, it will create the Publication obj
             # Example: publications_list = [{ "pmid": 1234,
             #                                 "comment": {"comment": "comment text", "is_public": 1},
-            #                                 "families": {
-            #                                        "families": 5, 
-            #                                        "consanguinity": "", 
-            #                                        "ancestries": "", 
-            #                                        "affected_individuals": 5
-            #                                  }
+            #                                 "number_of_families": 5, 
+            #                                 "consanguinity": "", 
+            #                                 "ancestry": "", 
+            #                                 "affected_individuals": 5
             #                              }]
             # TODO: update to accept the publication objs to avoid creating the serializer here too
             for publication_data in publications_list:
@@ -546,7 +544,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     lgd_publication_serializer.save()
 
         return lgd_obj, check
-    
+
     def check_monoallelic_exists(self, genotype_obj: object, mechanism_obj: object, locus_obj: object, disease_obj: object) -> bool:
         """
             Checks if the about to be created biallelic related genotype has a monoallelic related genotype with the same disease name and mechanism

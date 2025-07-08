@@ -6,7 +6,7 @@ from django.db.models import F
 # helper function
 def should_process(obj):
     # to skip checks for anything in Demo
-    lgd_panels = LGDPanel.objects.filter(lgd_id=obj)
+    lgd_panels = LGDPanel.objects.filter(lgd_id=obj, is_deleted=0)
     for lgd_panel in lgd_panels:
         return lgd_panel.panel.name != "Demo"
 
@@ -14,7 +14,7 @@ def should_process(obj):
 def check_ar_constraint():
     errors = []
     locus_genotype_check = (
-        LocusGenotypeDisease.objects.all()
+        LocusGenotypeDisease.objects.filter(is_deleted=0)
         .select_related("genotype", "locus")
         .annotate(
             genotype_value=F("genotype__value"),
@@ -50,7 +50,7 @@ def check_ar_constraint():
         ):
             errors.append(
                 Error(
-                    f"'{obj.g2p_id}' PAR genotype not X or Y chromosome",
+                    f"'{obj.g2p_id}' PAR genotype is not in X or Y chromosome",
                     hint="Genotype of the PAR regions should be linked to chromosome X or Y",
                     id="gene2phenotype_app.E004",
                 )

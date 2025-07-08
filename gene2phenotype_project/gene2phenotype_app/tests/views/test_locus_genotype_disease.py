@@ -69,9 +69,12 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
                     "title": "Acetyl coenzyme A: alpha-glucosaminide N-acetyltransferase. Evidence for a transmembrane acetylation mechanism.",
                     "authors": "Bame KJ, Rome LH.",
                     "year": "1985",
-                    "comments": [],
-                    "families": [],
-                }
+                    "comments": []
+                    },
+                    "number_of_families": None,
+                    "consanguinity": None,
+                    "affected_individuals": None,
+                    "ancestry": None
             }
         ]
         self.assertEqual(response.data["publications"], expected_data_publication)
@@ -145,15 +148,18 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
                     "title": "Acetyl coenzyme A: alpha-glucosaminide N-acetyltransferase. Evidence for a transmembrane acetylation mechanism.",
                     "authors": "Bame KJ, Rome LH.",
                     "year": "1985",
-                    "families": [],
                     "comments": [
                         {
                             "comment": "See supplementary table 1. Homozygous.",
                             "user": "test_user1",
                             "date": "2025-02-19",
                         }
-                    ],
-                }
+                    ]
+                },
+                "number_of_families": None,
+                "consanguinity": None,
+                "affected_individuals": None,
+                "ancestry": None,
             }
         ]
         self.assertEqual(response.data["publications"], expected_data_publication)
