@@ -43,11 +43,36 @@ class LGDEditPublicationsEndpoint(TestCase):
             "lgd_publication", kwargs={"stable_id": "G2P00001"}
         )
 
-    def test_lgd_detail(self):
+    def test_add_no_permission(self):
         """
-        Test the locus genotype disease display
+        Test the endpoint to add a publication for non authenticated user
         """
-        # Define the complex data structure
+        publication_to_add = {
+            "publications": [
+                {
+                    "publication": {"pmid": 15214012},
+                    "comment": {"comment": "", "is_public": 1},
+                    "families": {
+                        "families": 0,
+                        "consanguinity": "unknown",
+                        "ancestries": None,
+                        "affected_individuals": 0,
+                    },
+                }
+            ],
+        }
+
+        response = self.client.post(
+            self.url_add_publication,
+            publication_to_add,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_add_lgd_publication(self):
+        """
+        Test the endpoint to add a publication to a record
+        """
         publication_to_add = {
             "publications": [
                 {
