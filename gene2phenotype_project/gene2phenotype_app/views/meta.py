@@ -18,18 +18,18 @@ from gene2phenotype_app.serializers import MetaSerializer
         200: OpenApiResponse(
             description="Reference data response",
             response={
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "key": {"type": "string"},
-                            "source": {"type": "string"},
-                            "version": {"type": "string"}
-                        }
-                    }
-            }
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "key": {"type": "string"},
+                        "source": {"type": "string"},
+                        "version": {"type": "string"},
+                    },
+                },
+            },
         )
-    }
+    },
 )
 class MetaView(APIView):
     def get_queryset(self):
@@ -44,8 +44,10 @@ class MetaView(APIView):
             latest_date=Max("date_update")
         )
 
-        # then we use a list comprehension to check using the new column latest date 
-        queryset = Meta.objects.filter(date_update__in=[record["latest_date"] for record in latest_records])
+        # then we use a list comprehension to check using the new column latest date
+        queryset = Meta.objects.filter(
+            date_update__in=[record["latest_date"] for record in latest_records]
+        )
 
         return queryset
 
@@ -63,7 +65,7 @@ class MetaView(APIView):
         for query_data in queryset:
             if query_data.key == "import_gene_disease_omim":
                 query_data.source.name = "Added by curators"
-                query_data.version = "" # we don't have a specific version
+                query_data.version = ""  # we don't have a specific version
             elif query_data.key == "import_gene_disease_mondo":
                 query_data.source.name = "Added by curators"
                 query_data.version = f"Checked against version {query_data.version}"

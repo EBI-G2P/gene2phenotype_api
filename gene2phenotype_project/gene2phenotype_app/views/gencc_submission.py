@@ -31,11 +31,12 @@ class GenCCSubmissionCreateView(generics.CreateAPIView):
 
         Returns:
             Response: Response object confirming the bulk creation is completed
-        """            
+        """
         serializer = CreateGenCCSubmissionSerializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(status=status.HTTP_201_CREATED)
+
 
 @extend_schema(exclude=True)
 class GenCCSubmissionView(APIView):
@@ -71,6 +72,7 @@ class StableIDsWithLaterReviewDateView(APIView):
             {"ids": list(stable_ids), "count": len(list(stable_ids))},
             status=status.HTTP_200_OK,
         )
+
 
 @extend_schema(exclude=True)
 class RetrieveStableIDsWithSubmissionID(APIView):

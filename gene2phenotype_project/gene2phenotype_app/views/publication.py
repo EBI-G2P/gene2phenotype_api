@@ -3,8 +3,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema, OpenApiResponse
-import textwrap
+from drf_spectacular.utils import extend_schema
 
 
 from gene2phenotype_app.serializers import (
@@ -15,7 +14,7 @@ from gene2phenotype_app.serializers import (
     LGDVariantTypeSerializer,
     LGDVariantTypeDescriptionSerializer,
     LocusGenotypeDiseaseSerializer,
-    LGDPhenotypeSummarySerializer
+    LGDPhenotypeSummarySerializer,
 )
 
 from gene2phenotype_app.models import (
@@ -26,7 +25,7 @@ from gene2phenotype_app.models import (
     LGDPhenotypeSummary,
     LGDVariantType,
     LGDVariantTypeDescription,
-    LGDMolecularMechanismEvidence
+    LGDMolecularMechanismEvidence,
 )
 
 from .base import BaseAdd, BaseUpdate, IsSuperUser
@@ -35,7 +34,7 @@ from ..utils import get_publication, get_authors, clean_title, get_date_now
 
 
 @extend_schema(exclude=True)
-@api_view(['GET'])
+@api_view(["GET"])
 def PublicationDetail(request, pmids):
     """
     Return the publication data for a list of PMIDs.
@@ -48,10 +47,10 @@ def PublicationDetail(request, pmids):
     Returns a dictionary with the following format:
         results (list): a list of the publication data for each PMID
         count (int): number of PMIDs in the response
-    
+
     Raises: Invalid PMID
     """
-    id_list = pmids.split(',')
+    id_list = pmids.split(",")
     data = []
     invalid_pmids = []
 
@@ -66,38 +65,44 @@ def PublicationDetail(request, pmids):
             # The PMID has the correct format
             try:
                 publication = Publication.objects.get(pmid=pmid)
-                data.append({
-                    'pmid': int(publication.pmid),
-                    'title': publication.title,
-                    'authors': publication.authors,
-                    'year': int(publication.year),
-                    'source': 'G2P'
-                })
+                data.append(
+                    {
+                        "pmid": int(publication.pmid),
+                        "title": publication.title,
+                        "authors": publication.authors,
+                        "year": int(publication.year),
+                        "source": "G2P",
+                    }
+                )
             except Publication.DoesNotExist:
                 # Query EuropePMC
                 response = get_publication(pmid)
-                if response['hitCount'] == 0:
+                if response["hitCount"] == 0:
                     invalid_pmids.append(pmid_str)
                 else:
                     authors = get_authors(response)
                     year = None
-                    publication_info = response['result']
-                    title = clean_title(publication_info['title'])
-                    if 'pubYear' in publication_info:
-                        year = publication_info['pubYear']
+                    publication_info = response["result"]
+                    title = clean_title(publication_info["title"])
+                    if "pubYear" in publication_info:
+                        year = publication_info["pubYear"]
 
-                    data.append({
-                        'pmid': int(pmid),
-                        'title': title,
-                        'authors': authors,
-                        'year': int(year),
-                        'source': 'EuropePMC'
-                    })
+                    data.append(
+                        {
+                            "pmid": int(pmid),
+                            "title": title,
+                            "authors": authors,
+                            "year": int(year),
+                            "source": "EuropePMC",
+                        }
+                    )
 
     # if any of the PMIDs is invalid raise error and display all invalid IDs
     if invalid_pmids:
         pmid_list = ", ".join(invalid_pmids)
-        response = Response({"error": f"Invalid PMID(s): {pmid_list}"}, status=status.HTTP_404_NOT_FOUND)
+        response = Response(
+            {"error": f"Invalid PMID(s): {pmid_list}"}, status=status.HTTP_404_NOT_FOUND
+        )
 
     else:
         response = Response({"results": data, "count": len(data)})
@@ -112,6 +117,7 @@ class AddPublication(BaseAdd):
     Add new publication.
     The create method is in the PublicationSerializer.
     """
+
     serializer_class = PublicationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -120,7 +126,7 @@ class AddPublication(BaseAdd):
 # Add or delete data
 @extend_schema(exclude=True)
 class LGDEditPublications(BaseUpdate):
-    http_method_names = ['post', 'patch', 'options']
+    http_method_names = ["post", "patch", "options"]
 
     def get_permissions(self):
         """
@@ -213,46 +219,63 @@ class LGDEditPublications(BaseUpdate):
         """
         user = self.request.user
 
-        lgd = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+        lgd = get_object_or_404(
+            LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0
+        )
 
         # LGDPublicationListSerializer accepts a list of publications
         serializer_list = LGDPublicationListSerializer(data=request.data)
 
         if serializer_list.is_valid():
-            publications_data = serializer_list.validated_data.get('publications') # the pmids are mandatory
-            phenotypes_data = serializer_list.validated_data.get('phenotypes', []) # optional
-            variant_types_data = serializer_list.validated_data.get('variant_types', []) # optional
-            variant_descriptions_data = serializer_list.validated_data.get('variant_descriptions', []) # optional
-            mechanism_data = serializer_list.validated_data.get('molecular_mechanism', None) # optional
-            mechanism_synopsis_data = serializer_list.validated_data.get('mechanism_synopsis', []) # optional
-            mechanism_evidence_data = serializer_list.validated_data.get('mechanism_evidence', None) # optional
+            publications_data = serializer_list.validated_data.get(
+                "publications"
+            )  # the pmids are mandatory
+            phenotypes_data = serializer_list.validated_data.get(
+                "phenotypes", []
+            )  # optional
+            variant_types_data = serializer_list.validated_data.get(
+                "variant_types", []
+            )  # optional
+            variant_descriptions_data = serializer_list.validated_data.get(
+                "variant_descriptions", []
+            )  # optional
+            mechanism_data = serializer_list.validated_data.get(
+                "molecular_mechanism", None
+            )  # optional
+            mechanism_synopsis_data = serializer_list.validated_data.get(
+                "mechanism_synopsis", []
+            )  # optional
+            mechanism_evidence_data = serializer_list.validated_data.get(
+                "mechanism_evidence", None
+            )  # optional
 
             for publication in publications_data:
                 serializer_class = LGDPublicationSerializer(
-                    data=publication,
-                    context={"lgd": lgd, "user": user}
+                    data=publication, context={"lgd": lgd, "user": user}
                 )
 
                 # Insert new publication
                 if serializer_class.is_valid():
                     serializer_class.save()
                 else:
-                    response = Response({"error": serializer_class.errors}, status=status.HTTP_400_BAD_REQUEST)
+                    response = Response(
+                        {"error": serializer_class.errors},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
 
             # Add extra data linked to the publication - phenotypes
             # Expected structure:
             #   { "phenotypes": [{ "accession": "HP:0003974", "publication": 1 }] }
             for phenotype in phenotypes_data:
-                hpo_terms = phenotype['hpo_terms']
+                hpo_terms = phenotype["hpo_terms"]
                 for hpo in hpo_terms:
                     phenotype_data = {
                         "accession": hpo["accession"],
-                        "publication": phenotype["pmid"]
+                        "publication": phenotype["pmid"],
                     }
                     try:
                         lgd_phenotype_serializer = LGDPhenotypeSerializer(
-                            data = phenotype_data,
-                            context = {'lgd': lgd}
+                            data=phenotype_data, context={"lgd": lgd}
                         )
                         # Validate the input data
                         if lgd_phenotype_serializer.is_valid():
@@ -261,42 +284,56 @@ class LGDEditPublications(BaseUpdate):
                         else:
                             response = Response(
                                 {"error": lgd_phenotype_serializer.errors},
-                                status=status.HTTP_400_BAD_REQUEST
+                                status=status.HTTP_400_BAD_REQUEST,
                             )
                     except:
                         accession = phenotype_data["accession"]
                         return Response(
-                            {"error": f"Could not insert phenotype '{accession}' for ID '{stable_id}'"},
-                            status=status.HTTP_400_BAD_REQUEST
+                            {
+                                "error": f"Could not insert phenotype '{accession}' for ID '{stable_id}'"
+                            },
+                            status=status.HTTP_400_BAD_REQUEST,
                         )
 
                 # Insert the phenotype summary
                 if "summary" in phenotype and phenotype["summary"] != "":
                     try:
-                        lgd_phenotype_summary_serializer = LGDPhenotypeSummarySerializer(
-                            data = {
-                                "summary": phenotype["summary"],
-                                "publication": [phenotype["pmid"]] # The serializer accepts a list
-                            },
-                            context = {'lgd': lgd}
+                        lgd_phenotype_summary_serializer = (
+                            LGDPhenotypeSummarySerializer(
+                                data={
+                                    "summary": phenotype["summary"],
+                                    "publication": [
+                                        phenotype["pmid"]
+                                    ],  # The serializer accepts a list
+                                },
+                                context={"lgd": lgd},
+                            )
                         )
                         # Validate the input data
-                        if lgd_phenotype_summary_serializer.is_valid(raise_exception=True):
+                        if lgd_phenotype_summary_serializer.is_valid(
+                            raise_exception=True
+                        ):
                             # save() is going to call create()
                             lgd_phenotype_summary_serializer.save()
                     except:
                         return Response(
-                            {"error": f"Could not insert phenotype summary for PMID '{phenotype['pmid']}'"},
-                            status=status.HTTP_400_BAD_REQUEST
+                            {
+                                "error": f"Could not insert phenotype summary for PMID '{phenotype['pmid']}'"
+                            },
+                            status=status.HTTP_400_BAD_REQUEST,
                         )
 
             # Add extra data linked to the publication - variant types
             for variant_type in variant_types_data:
-                LGDVariantTypeSerializer(context={'lgd': lgd, 'user': user}).create(variant_type)
+                LGDVariantTypeSerializer(context={"lgd": lgd, "user": user}).create(
+                    variant_type
+                )
 
             # Add extra data linked to the publication - variant descriptions (HGVS)
             for variant_type_desc in variant_descriptions_data:
-                LGDVariantTypeDescriptionSerializer(context={'lgd': lgd}).create(variant_type_desc)
+                LGDVariantTypeDescriptionSerializer(context={"lgd": lgd}).create(
+                    variant_type_desc
+                )
 
             # Only mechanism "undetermined" can be updated - the check is done in the LocusGenotypeDiseaseSerializer
             # If mechanism has to be updated, call method update_mechanism() and send new mechanism value
@@ -308,14 +345,22 @@ class LGDEditPublications(BaseUpdate):
                 mechanism_data_input = {}
 
                 # Check if mechanism value can be updated
-                if(mechanism_data and lgd.mechanism.value != "undetermined" and 
-                   "name" in mechanism_data and mechanism_data["name"] != ""):
+                if (
+                    mechanism_data
+                    and lgd.mechanism.value != "undetermined"
+                    and "name" in mechanism_data
+                    and mechanism_data["name"] != ""
+                ):
                     return self.handle_no_update("molecular mechanism", stable_id)
 
                 # If the mechanism support = "evidence" then evidence data has to
                 # be provided
-                elif(mechanism_data and "support" in mechanism_data and 
-                     mechanism_data["support"] == "evidence" and not mechanism_evidence_data):
+                elif (
+                    mechanism_data
+                    and "support" in mechanism_data
+                    and mechanism_data["support"] == "evidence"
+                    and not mechanism_evidence_data
+                ):
                     return self.handle_missing_data("Mechanism evidence")
 
                 # Attach the mechanism to be updated
@@ -336,19 +381,25 @@ class LGDEditPublications(BaseUpdate):
                     error_message = e.detail["error"]
                     return self.handle_update_exception(e, error_message)
                 except Exception as e:
-                    return self.handle_update_exception(e, "Error while updating molecular mechanism")
+                    return self.handle_update_exception(
+                        e, "Error while updating molecular mechanism"
+                    )
 
             # If only the mechanism evidence is going to be updated, call method update_mechanism_evidence()
             # update_mechanism_evidence() updates the 'date_review' of the LGD record
             elif mechanism_evidence_data:
                 lgd_serializer = LocusGenotypeDiseaseSerializer()
                 try:
-                    lgd_serializer.update_mechanism_evidence(lgd, mechanism_evidence_data)
+                    lgd_serializer.update_mechanism_evidence(
+                        lgd, mechanism_evidence_data
+                    )
                 except serializers.ValidationError as e:
                     error_message = e.detail["error"]
                     return self.handle_update_exception(e, error_message)
                 except Exception as e:
-                    return self.handle_update_exception(e, "Error while updating molecular mechanism evidence")
+                    return self.handle_update_exception(
+                        e, "Error while updating molecular mechanism evidence"
+                    )
 
             # Update the date of the last update in the record table
             lgd.date_review = get_date_now()
@@ -356,13 +407,12 @@ class LGDEditPublications(BaseUpdate):
 
             response = Response(
                 {"message": "Publication added to the G2P entry successfully."},
-                status=status.HTTP_201_CREATED
+                status=status.HTTP_201_CREATED,
             )
 
         else:
             response = Response(
-                {"error": serializer_list.errors},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
         return response
@@ -378,26 +428,31 @@ class LGDEditPublications(BaseUpdate):
             { "pmid": 1234 }
         """
         pmid = request.data.get("pmid", None)
-        user = request.user # TODO check if user has permission
+        user = request.user  # TODO check if user has permission
 
-        lgd_obj = get_object_or_404(LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0)
+        lgd_obj = get_object_or_404(
+            LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0
+        )
         publication_obj = get_object_or_404(Publication, pmid=pmid)
 
         try:
-            lgd_publication_obj = LGDPublication.objects.get(lgd=lgd_obj, publication=publication_obj, is_deleted=0)
+            lgd_publication_obj = LGDPublication.objects.get(
+                lgd=lgd_obj, publication=publication_obj, is_deleted=0
+            )
         except LGDPublication.DoesNotExist:
             return Response(
                 {"error": f"Could not find publication '{pmid}' for ID '{stable_id}'"},
-                status=status.HTTP_404_NOT_FOUND)
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         # Before deleting this publication check if LGD record is linked to other publications
         queryset_all = LGDPublication.objects.filter(lgd=lgd_obj, is_deleted=0)
 
         # TODO: if we are going to delete the last publication then delete LGD record
-        if(queryset_all.exists() and len(queryset_all) == 1):
+        if queryset_all.exists() and len(queryset_all) == 1:
             return Response(
                 {"error": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # Remove the publication from the LGD
@@ -408,19 +463,19 @@ class LGDEditPublications(BaseUpdate):
         except:
             return Response(
                 {"error": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
-                status=status.HTTP_400_BAD_REQUEST)
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Delete publication from other tables
         # lgd_phenotype - different phenotypes can be linked to the same publication
         try:
             LGDPhenotype.objects.filter(
-                lgd=lgd_obj,
-                publication=lgd_publication_obj.publication,
-                is_deleted=0).update(is_deleted=1)
+                lgd=lgd_obj, publication=lgd_publication_obj.publication, is_deleted=0
+            ).update(is_deleted=1)
         except:
             return Response(
                 {"error": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # lgd_phenotype_summary - the phenotype summary is directly associated with the LGD record
@@ -428,50 +483,48 @@ class LGDEditPublications(BaseUpdate):
         # we'll run the filter to catch all objects
         try:
             LGDPhenotypeSummary.objects.filter(
-                lgd=lgd_obj,
-                publication=lgd_publication_obj.publication,
-                is_deleted=0).update(is_deleted=1)
+                lgd=lgd_obj, publication=lgd_publication_obj.publication, is_deleted=0
+            ).update(is_deleted=1)
         except:
             return Response(
                 {"error": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # lgd_variant_type - different variant types can be linked to the same publication
         try:
             LGDVariantType.objects.filter(
-                lgd=lgd_obj,
-                publication=lgd_publication_obj.publication,
-                is_deleted=0).update(is_deleted=1)
+                lgd=lgd_obj, publication=lgd_publication_obj.publication, is_deleted=0
+            ).update(is_deleted=1)
         except:
             return Response(
                 {"error": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # lgd_variant_type_description - different descriptions can be linked to the same publication
         try:
             LGDVariantTypeDescription.objects.filter(
-                lgd=lgd_obj,
-                publication=lgd_publication_obj.publication,
-                is_deleted=0).update(is_deleted=1)
+                lgd=lgd_obj, publication=lgd_publication_obj.publication, is_deleted=0
+            ).update(is_deleted=1)
         except:
             return Response(
                 {"error": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # Delete the mechanism evidence associated with publication that is going to be deleted
         LGDMolecularMechanismEvidence.objects.filter(
-            lgd=lgd_obj,
-            publication=lgd_publication_obj.publication,
-            is_deleted=0).update(is_deleted=1)
+            lgd=lgd_obj, publication=lgd_publication_obj.publication, is_deleted=0
+        ).update(is_deleted=1)
 
         # Update the date of the last update of the record
         lgd_obj.date_review = get_date_now()
         lgd_obj.save()
 
         return Response(
-            {"message": f"Publication '{pmid}' successfully deleted for ID '{stable_id}'"},
-            status=status.HTTP_200_OK
+            {
+                "message": f"Publication '{pmid}' successfully deleted for ID '{stable_id}'"
+            },
+            status=status.HTTP_200_OK,
         )
