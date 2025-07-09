@@ -247,7 +247,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
     # using the Deepdiff module to compare JSON data
     # TODO: this still needs to be worked on when we have fixed the user permission issue
     def compare_curation_data(self, input_json_data, user_obj):
-        """ "
+        """
         Function to compare provided JSON data against JSON data stored in CurationData instances
         associated with a specific user.
         Only compares the first layer of JSON objects.
@@ -473,7 +473,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 "number_of_families": families,
                 "consanguinity": consanguinity,
                 "ancestry": ancestries,
-                "affected_individuals": affected_individuals
+                "affected_individuals": affected_individuals,
             }
 
             # Get or create publications

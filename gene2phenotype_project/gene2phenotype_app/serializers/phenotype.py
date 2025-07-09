@@ -6,7 +6,7 @@ from ..models import (
     Source,
     LGDPhenotype,
     Publication,
-    LGDPhenotypeSummary
+    LGDPhenotypeSummary,
 )
 
 from ..utils import validate_phenotype
@@ -14,12 +14,12 @@ from ..utils import validate_phenotype
 
 class PhenotypeOntologyTermSerializer(serializers.ModelSerializer):
     """
-        Serializer for the OntologyTerm model.
-        The phenotypes are represented in OntologyTerm model.
+    Serializer for the OntologyTerm model.
+    The phenotypes are represented in OntologyTerm model.
 
-        Called by:
-            - AddPhenotype()
-            - LGDPhenotypeSerializer()
+    Called by:
+        - AddPhenotype()
+        - LGDPhenotypeSerializer()
     """
 
     name = serializers.CharField(source="term", read_only=True)
@@ -27,10 +27,10 @@ class PhenotypeOntologyTermSerializer(serializers.ModelSerializer):
 
     def create(self, accession):
         """
-            Create a phenotype based on the accession.
+        Create a phenotype based on the accession.
 
-            Returns:
-                    OntologyTerm object
+        Returns:
+                OntologyTerm object
         """
 
         phenotype_accession = accession["accession"]
@@ -39,9 +39,13 @@ class PhenotypeOntologyTermSerializer(serializers.ModelSerializer):
         # Check if accession is valid - query HPO API
         validated_phenotype = validate_phenotype(phenotype_accession)
 
-        if not re.match(r'HP\:\d+', phenotype_accession) or validated_phenotype is None:
-            raise serializers.ValidationError({"message": f"Invalid phenotype accession",
-                                               "Please check ID": phenotype_accession})
+        if not re.match(r"HP\:\d+", phenotype_accession) or validated_phenotype is None:
+            raise serializers.ValidationError(
+                {
+                    "message": f"Invalid phenotype accession",
+                    "Please check ID": phenotype_accession,
+                }
+            )
 
         # TODO check if the new API has 'isObsolete'
         # if validated_phenotype['isObsolete'] == True:
@@ -54,49 +58,55 @@ class PhenotypeOntologyTermSerializer(serializers.ModelSerializer):
 
         except OntologyTerm.DoesNotExist:
             try:
-                source_obj = Source.objects.get(name='HPO')
+                source_obj = Source.objects.get(name="HPO")
             except Source.DoesNotExist:
-                raise serializers.ValidationError({"message": f"Problem fetching the phenotype source 'HPO'"})
+                raise serializers.ValidationError(
+                    {"message": f"Problem fetching the phenotype source 'HPO'"}
+                )
 
-            if 'definition' in validated_phenotype:
-                phenotype_description = validated_phenotype['definition']
+            if "definition" in validated_phenotype:
+                phenotype_description = validated_phenotype["definition"]
 
-            phenotype_obj = OntologyTerm.objects.create(accession=phenotype_accession,
-                                                        term=validated_phenotype['name'],
-                                                        description=phenotype_description,
-                                                        source=source_obj)
+            phenotype_obj = OntologyTerm.objects.create(
+                accession=phenotype_accession,
+                term=validated_phenotype["name"],
+                description=phenotype_description,
+                source=source_obj,
+            )
 
         return phenotype_obj
 
     class Meta:
         model = OntologyTerm
-        fields = ['name', 'accession', 'description']
+        fields = ["name", "accession", "description"]
 
 
 ### G2P record (LGD) - phenotype ###
 class LGDPhenotypeSerializer(serializers.ModelSerializer):
     """
-        Serializer for the LGDPhenotype model.
-        A G2P record is linked to one or more phenotypes (supported by publications).
+    Serializer for the LGDPhenotype model.
+    A G2P record is linked to one or more phenotypes (supported by publications).
     """
 
     name = serializers.CharField(source="phenotype.term", required=False)
     accession = serializers.CharField(source="phenotype.accession")
-    publication = serializers.IntegerField(source="publication.pmid", allow_null=True) # TODO support array of pmids
+    publication = serializers.IntegerField(
+        source="publication.pmid", allow_null=True
+    )  # TODO support array of pmids
 
     def create(self, validated_data):
         """
-            Method to create LGD-phenotype association.
+        Method to create LGD-phenotype association.
 
-            Args:
-                (dict) validated_data
+        Args:
+            (dict) validated_data
 
-            Returns:
-                LGDPhenotype object
+        Returns:
+            LGDPhenotype object
         """
-        lgd = self.context['lgd']
-        accession = validated_data.get("phenotype")["accession"] # HPO term
-        publication = validated_data.get("publication")["pmid"] # pmid
+        lgd = self.context["lgd"]
+        accession = validated_data.get("phenotype")["accession"]  # HPO term
+        publication = validated_data.get("publication")["pmid"]  # pmid
 
         # This method 'create' behaves like 'get_or_create'
         # If phenotype is already stored in G2P then it returns the object
@@ -110,16 +120,11 @@ class LGDPhenotypeSerializer(serializers.ModelSerializer):
         # Check if LGD-phenotype already exists
         try:
             lgd_phenotype_obj = LGDPhenotype.objects.get(
-                lgd = lgd,
-                phenotype = pheno_obj,
-                publication = publication_obj
+                lgd=lgd, phenotype=pheno_obj, publication=publication_obj
             )
         except LGDPhenotype.DoesNotExist:
             lgd_phenotype_obj = LGDPhenotype.objects.create(
-                lgd = lgd,
-                phenotype = pheno_obj,
-                is_deleted = 0,
-                publication = publication_obj
+                lgd=lgd, phenotype=pheno_obj, is_deleted=0, publication=publication_obj
             )
         else:
             # The LGD-phenotype can be deleted
@@ -132,43 +137,42 @@ class LGDPhenotypeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LGDPhenotype
-        fields = ['name', 'accession', 'publication']
+        fields = ["name", "accession", "publication"]
 
 
 class LGDPhenotypeListSerializer(serializers.Serializer):
     """
-        Serializer to accept a list of phenotypes.
-        Called by: LocusGenotypeDiseaseAddPhenotypes() and view LGDEditPhenotypes()
+    Serializer to accept a list of phenotypes.
+    Called by: LocusGenotypeDiseaseAddPhenotypes() and view LGDEditPhenotypes()
     """
+
     phenotypes = LGDPhenotypeSerializer(many=True)
 
 
 class LGDPhenotypeSummarySerializer(serializers.ModelSerializer):
     """
-        Serializer for the LGDPhenotypeSummary model.
-        It represents the summary of the phenotypes reported in a publication 
-        for a G2P record.
+    Serializer for the LGDPhenotypeSummary model.
+    It represents the summary of the phenotypes reported in a publication
+    for a G2P record.
     """
 
     summary = serializers.CharField()
-    publication = serializers.ListField(
-        child=serializers.IntegerField()
-    )
+    publication = serializers.ListField(child=serializers.IntegerField())
 
     def create(self, validated_data):
         """
-            Create an entry LGDPhenotypeSummary.
+        Create an entry LGDPhenotypeSummary.
 
-            Input example:
-                    {
-                        "summary": "This is a summary",
-                        "publication": [1, 12345]
-                    }
+        Input example:
+                {
+                    "summary": "This is a summary",
+                    "publication": [1, 12345]
+                }
 
-            Returns:
-                    LGDPhenotypeSummary object
+        Returns:
+                LGDPhenotypeSummary object
         """
-        lgd = self.context['lgd']
+        lgd = self.context["lgd"]
 
         summary = validated_data.get("summary")
         list_pmids = validated_data.get("publication")
@@ -179,22 +183,20 @@ class LGDPhenotypeSummarySerializer(serializers.ModelSerializer):
                 # Get publication object
                 # The G2P entry (LGD) is linked to publications
                 # When we add a phenotype summary the publications are
-                # already supposed to be inserted into the db 
+                # already supposed to be inserted into the db
                 publication_obj = Publication.objects.get(pmid=pmid)
 
                 # Check if LGD phenotype summary already exists
                 try:
                     lgd_phenotype_summary = LGDPhenotypeSummary.objects.get(
-                        lgd = lgd,
-                        summary = summary,
-                        publication = publication_obj
+                        lgd=lgd, summary=summary, publication=publication_obj
                     )
                 except LGDPhenotypeSummary.DoesNotExist:
                     lgd_phenotype_summary = LGDPhenotypeSummary.objects.create(
-                        lgd = lgd,
-                        summary = summary,
-                        is_deleted = 0,
-                        publication = publication_obj
+                        lgd=lgd,
+                        summary=summary,
+                        is_deleted=0,
+                        publication=publication_obj,
                     )
                 else:
                     # The LGD phenotype summary can be deleted
@@ -212,12 +214,13 @@ class LGDPhenotypeSummarySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LGDPhenotypeSummary
-        fields = ['summary', 'publication']
+        fields = ["summary", "publication"]
 
 
 class LGDPhenotypeSummaryListSerializer(serializers.Serializer):
     """
-        Serializer to accept a list of phenotype summary.
-        Called by: view LGDEditPhenotypes()
+    Serializer to accept a list of phenotype summary.
+    Called by: view LGDEditPhenotypes()
     """
+
     summaries = LGDPhenotypeSummarySerializer(many=True)

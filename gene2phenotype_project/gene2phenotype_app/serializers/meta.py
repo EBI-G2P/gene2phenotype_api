@@ -5,7 +5,7 @@ from ..models import Meta
 
 class MetaSerializer(serializers.ModelSerializer):
     """
-    Meta Serializer for the model Meta 
+    Meta Serializer for the model Meta
     """
 
     key = serializers.CharField()
