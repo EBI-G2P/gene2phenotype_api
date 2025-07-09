@@ -7,5 +7,14 @@
             "ccm": 8,
             "is_deleted": 0
         }
+    },
+    {
+        "model": "gene2phenotype_app.lgdcrosscuttingmodifier",
+        "pk": 2,
+        "fields": {
+            "lgd": 2,
+            "ccm": 5,
+            "is_deleted": 0
+        }
     }
 ]

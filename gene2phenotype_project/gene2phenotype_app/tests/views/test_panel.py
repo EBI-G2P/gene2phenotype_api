@@ -151,8 +151,17 @@ class PanelDownloadEndpointTests(TestCase):
         "gene2phenotype_app/fixtures/ontology_term.json",
         "gene2phenotype_app/fixtures/source.json",
         "gene2phenotype_app/fixtures/locus_genotype_disease.json",
+        "gene2phenotype_app/fixtures/publication.json",
         "gene2phenotype_app/fixtures/lgd_panel.json",
         "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
+        "gene2phenotype_app/fixtures/lgd_mechanism_evidence.json",
+        "gene2phenotype_app/fixtures/lgd_mechanism_synopsis.json",
+        "gene2phenotype_app/fixtures/lgd_publication.json",
+        "gene2phenotype_app/fixtures/lgd_comment.json",
+        "gene2phenotype_app/fixtures/lgd_phenotype.json",
+        "gene2phenotype_app/fixtures/lgd_cross_cutting_modifier.json",
+        "gene2phenotype_app/fixtures/lgd_variant_type.json",
+        "gene2phenotype_app/fixtures/lgd_variant_consequence.json",
     ]
 
     def test_download_visible_panel(self):
@@ -194,11 +203,12 @@ class PanelDownloadEndpointTests(TestCase):
             "",
             "loss of function",
             "evidence",
-            "",
-            "",
-            "",
+            "assembly-mediated GOF:inferred",
+            "3897232 -> function: biochemical",
+            "HP:0033127",
+            "3897232",
             "DD; Eye",
-            "",
+            "JLNS is due to altered gene product sequence",
             "2017-04-24 16:33:40+00:00",
             "",
         ]
@@ -207,7 +217,7 @@ class PanelDownloadEndpointTests(TestCase):
 
     def test_download_all_visible_panel(self):
         """
-        Download a all visible panel (non authenticated user)
+        Download all visible panel (non authenticated user)
         """
         url_panel = reverse("panel_download", kwargs={"name": "all"})
         response = self.client.get(url_panel)
@@ -238,17 +248,18 @@ class PanelDownloadEndpointTests(TestCase):
             "",
             "",
             "biallelic_autosomal",
-            "",
+            "typified by incomplete penetrance; typically de novo",
             "definitive",
-            "",
-            "",
+            "absent gene product",
+            "inframe_insertion; intron_variant",
             "loss of function",
             "evidence",
-            "",
-            "",
-            "",
+            "assembly-mediated GOF:inferred; aggregation:inferred",
+            "15214012 -> function: protein interaction",
+            "HP:0003549; HP:0010786; HP:0033127",
+            "12451214; 15214012",
             "Cardiac",
-            "",
+            "All mutations are located in the aminoterminal part of the gene, before the first epidermal growth factor-like domain.",
             "2018-07-05 16:33:03+00:00",
             "under review",
         ]
