@@ -13,6 +13,7 @@ class BaseView(generics.ListAPIView):
     Generic methods to handle expection and permissions for classes
     using generics.ListAPIView.
     """
+
     def handle_no_permission(self, name_type, name):
         if name is None:
             raise Http404(f"{name_type}")
@@ -31,12 +32,13 @@ class BaseAPIView(APIView):
     Generic methods to handle expection and permissions for classes
     using APIView.
     """
+
     def handle_no_permission(self, name_type, name):
         if name is None:
             raise Http404(f"{name_type}")
         else:
             raise Http404(f"No matching {name_type} found for: {name}")
-    
+
     def handle_no_permission_authentication(self, name_type, name):
         if name is None:
             raise AuthenticationFailed("No permission")
@@ -52,7 +54,8 @@ class BaseAPIView(APIView):
 
 class BaseAdd(generics.CreateAPIView):
     """Generic method to add data"""
-    http_method_names = ['post', 'head']
+
+    http_method_names = ["post", "head"]
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
@@ -60,17 +63,20 @@ class BaseAdd(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         instance = self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
 
 
 class BaseUpdate(generics.UpdateAPIView):
     """Generic methods to handle expection and permissions."""
+
     def handle_no_permission(self, data, stable_id):
         if data is None:
             raise Http404(f"{data}")
         else:
             raise Http404(f"Could not find '{data}' for ID '{stable_id}'")
-    
+
     def handle_no_update(self, data, stable_id):
         if data is None:
             raise Http404(f"{data}")
@@ -78,13 +84,18 @@ class BaseUpdate(generics.UpdateAPIView):
             raise PermissionDenied(f"Cannot update '{data}' for ID '{stable_id}'")
 
     def handle_update_exception(self, exception, context_message):
-        if hasattr(exception, 'detail') and 'message' in exception.detail:
-            error_message = exception.detail['message']
-            return Response({"error": f"{context_message}: {error_message}"}, status=status.HTTP_400_BAD_REQUEST)
+        if hasattr(exception, "detail") and "message" in exception.detail:
+            error_message = exception.detail["message"]
+            return Response(
+                {"error": f"{context_message}: {error_message}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         else:
             error_message = context_message
-            return Response({"error": f"{context_message}"}, status=status.HTTP_400_BAD_REQUEST)
-    
+            return Response(
+                {"error": f"{context_message}"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
     def handle_missing_data(self, data_type):
         raise Http404(f"{data_type} is missing")
 
@@ -97,8 +108,11 @@ class CustomPermissionAPIView(APIView):
     """
 
     method_permissions = {
-        "update": [permissions.IsAuthenticated], # this will be defined further in the specific view
-        "post": [permissions.IsAuthenticated],
+        "update": [
+            permissions.IsAuthenticated()
+        ],  # this will be defined further in the specific view
+        "post": [permissions.IsAuthenticated()],
+        "patch": [permissions.IsAuthenticated()],
     }
 
     def get_permissions(self):
@@ -106,15 +120,22 @@ class CustomPermissionAPIView(APIView):
         Instantiates and returns the list of permissions for this view.
         post(): updates data - available to all authenticated users
         update(): deletes data - only available to authenticated super users
+        patch(): deletes data - only available to authenticated super users
         """
-        if self.request.method.lower() == "update":
+        if (
+            self.request.method.lower() == "update"
+            or self.request.method.lower() == "patch"
+        ):
             return [permissions.IsAuthenticated(), IsSuperUser()]
         return [permissions.IsAuthenticated()]
 
 
 class IsSuperUser(BasePermission):
     """Allows access only to superusers."""
+
     def has_permission(self, request, view):
         if not (request.user and request.user.is_superuser):
-            raise PermissionDenied({"error": "You do not have permission to perform this action."})
+            raise PermissionDenied(
+                {"error": "You do not have permission to perform this action."}
+            )
         return True

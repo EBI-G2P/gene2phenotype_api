@@ -1,8 +1,7 @@
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, OpenApiResponse
-import textwrap
+from drf_spectacular.utils import extend_schema
 
 from gene2phenotype_app.serializers import AttribTypeSerializer, AttribSerializer
 from gene2phenotype_app.models import AttribType, Attrib
@@ -59,7 +58,9 @@ class AttribTypeDescriptionList(APIView):
         result = {}
         for attrib_type in queryset:
             serializer = AttribTypeSerializer(attrib_type)
-            all_attribs_description = serializer.get_all_attrib_description(attrib_type.id)
+            all_attribs_description = serializer.get_all_attrib_description(
+                attrib_type.id
+            )
             result[attrib_type.code] = all_attribs_description
 
         return Response(result)
@@ -67,11 +68,11 @@ class AttribTypeDescriptionList(APIView):
 
 @extend_schema(exclude=True)
 class AttribList(APIView):
-    lookup_field = 'type'
+    lookup_field = "type"
     serializer_class = AttribSerializer
 
     def get_queryset(self):
-        attrib_type = self.kwargs['attrib_type']
+        attrib_type = self.kwargs["attrib_type"]
 
         try:
             attrib_type_obj = AttribType.objects.get(code=attrib_type)
@@ -104,20 +105,15 @@ class AttribList(APIView):
                     "count": 6
                 }
         """
-        attrib_type = self.kwargs['attrib_type']
+        attrib_type = self.kwargs["attrib_type"]
         queryset = self.get_queryset()
 
         if not queryset:
             return Response(
                 {"error": f"Attrib type '{attrib_type}' not found"},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         attrib_type_list = [attrib.value for attrib in queryset]
 
-        return Response(
-            {
-                "results": attrib_type_list,
-                "count": len(attrib_type_list)
-            }
-        )
+        return Response({"results": attrib_type_list, "count": len(attrib_type_list)})
