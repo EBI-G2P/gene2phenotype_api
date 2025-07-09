@@ -18,6 +18,7 @@ from gene2phenotype_app.models import (
     LocusGenotypeDisease,
     LGDVariantType,
     LGDVariantGenccConsequence,
+    LGDMolecularMechanismSynopsis,
     LGDMolecularMechanismEvidence,
     LGDPhenotype,
     LGDPublication,
@@ -568,7 +569,25 @@ def PanelDownload(request, name):
                 data["variant_consequence__term"]
             )
 
-    # Preload molecular mechanism synopsis and evidence
+    # Preload molecular mechanism synopsis
+    mechanism_synopsis_data = {}
+    queryset_lgd_mechanism_synopsis = (
+        LGDMolecularMechanismSynopsis.objects.filter(is_deleted=0)
+        .select_related("lgd__id")
+        .values("lgd__id", "synopsis__value", "synopsis_support__value")
+    )
+
+    for queryset_data in queryset_lgd_mechanism_synopsis:
+        if queryset_data["lgd__id"] not in mechanism_synopsis_data:
+            mechanism_synopsis_data[queryset_data["lgd__id"]] = [
+                f"{queryset_data['synopsis__value']}:{queryset_data['synopsis_support__value']}"
+            ]
+        else:
+            mechanism_synopsis_data[queryset_data["lgd__id"]].append(
+                f"{queryset_data['synopsis__value']}:{queryset_data['synopsis_support__value']}"
+            )
+
+    # Preload molecular mechanism evidence
     mechanism_evidence_data = {}  # key = lgd_id; value = evidence
     queryset_lgd_mechanism_evidence = (
         LGDMolecularMechanismEvidence.objects.filter(is_deleted=0)
@@ -691,6 +710,7 @@ def PanelDownload(request, name):
             "variant consequence",
             "variant types",
             "molecular mechanism",
+            "molecular mechanism support",
             "molecular mechanism categorisation",
             "molecular mechanism evidence",
             "phenotypes",
@@ -698,7 +718,7 @@ def PanelDownload(request, name):
             "panel",
             "comments",
             "date of last review",
-            "review"
+            "review",
         ]
     )
 
@@ -728,9 +748,9 @@ def PanelDownload(request, name):
                 )
             else:
                 # Download all visible and non-visible panels excluding Demo panel
-                filter_query = Q(
-                    is_deleted=0, lgdpanel__is_deleted=0
-                ) & ~Q(lgdpanel__panel__name="Demo")
+                filter_query = Q(is_deleted=0, lgdpanel__is_deleted=0) & ~Q(
+                    lgdpanel__panel__name="Demo"
+                )
 
         # Download entries
         queryset_list = (
@@ -821,6 +841,7 @@ def PanelDownload(request, name):
             variant_types = ""
             variant_consequences = ""
             molecular_mechanism = ""
+            molecular_mechanism_support = ""
             molecular_mechanism_categorisation = ""
             molecular_mechanism_evidence = ""
             phenotypes = ""
@@ -854,15 +875,25 @@ def PanelDownload(request, name):
 
             # Get preloaded variant types for this g2p entry
             if lgd_id in lgd_variantype_data:
-                variant_types = "; ".join(lgd_variantype_data[lgd_id])
+                variant_types = "; ".join(sorted(lgd_variantype_data[lgd_id]))
 
             # Get preloaded variant consequences for this g2p entry
             if lgd_id in lgd_varianconsequence_data:
-                variant_consequences = "; ".join(lgd_varianconsequence_data[lgd_id])
+                variant_consequences = "; ".join(
+                    sorted(lgd_varianconsequence_data[lgd_id])
+                )
 
             # Get preloaded molecular mechanism evidence for this g2p entry
             molecular_mechanism = lgd.mechanism.value
-            molecular_mechanism_categorisation = lgd.mechanism_support.value
+            molecular_mechanism_support = lgd.mechanism_support.value
+
+            # Get preloaded mechanism synopsis/categorisation
+            if lgd_id in mechanism_synopsis_data:
+                molecular_mechanism_categorisation = "; ".join(
+                    mechanism_synopsis_data[lgd_id]
+                )
+
+            # Get preloaded mechanism evidence data
             if lgd_id in mechanism_evidence_data:
                 mechanism_evidence_by_pmid = {}
                 for evidence_data in mechanism_evidence_data[lgd_id]:
@@ -908,11 +939,11 @@ def PanelDownload(request, name):
 
             # Get preloaded phenotypes for this g2p entry
             if lgd_id in lgd_phenotype_data:
-                phenotypes = "; ".join(lgd_phenotype_data[lgd_id])
+                phenotypes = "; ".join(sorted(lgd_phenotype_data[lgd_id]))
 
             # Get preloaded publications for this g2p entry
             if lgd_id in lgd_publication_data:
-                publications = "; ".join(lgd_publication_data[lgd_id])
+                publications = "; ".join(sorted(lgd_publication_data[lgd_id]))
 
             # Get preloaded cross cutting modifier for this g2p entry
             if lgd_id in lgd_ccm_data:
@@ -945,6 +976,7 @@ def PanelDownload(request, name):
                     variant_consequences,
                     variant_types,
                     molecular_mechanism,
+                    molecular_mechanism_support,
                     molecular_mechanism_categorisation,
                     molecular_mechanism_evidence,
                     phenotypes,
@@ -952,7 +984,7 @@ def PanelDownload(request, name):
                     panels,
                     comments,
                     lgd.date_review,
-                    review
+                    review,
                 ]
             )
     else:
