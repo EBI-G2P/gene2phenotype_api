@@ -97,8 +97,9 @@ class CustomPermissionAPIView(APIView):
     """
 
     method_permissions = {
-        "update": [permissions.IsAuthenticated], # this will be defined further in the specific view
-        "post": [permissions.IsAuthenticated],
+        "update": [permissions.IsAuthenticated()], # this will be defined further in the specific view
+        "post": [permissions.IsAuthenticated()],
+        "patch": [permissions.IsAuthenticated()]
     }
 
     def get_permissions(self):
@@ -106,8 +107,9 @@ class CustomPermissionAPIView(APIView):
         Instantiates and returns the list of permissions for this view.
         post(): updates data - available to all authenticated users
         update(): deletes data - only available to authenticated super users
+        patch(): deletes data - only available to authenticated super users
         """
-        if self.request.method.lower() == "update":
+        if self.request.method.lower() == "update" or self.request.method.lower() == "patch":
             return [permissions.IsAuthenticated(), IsSuperUser()]
         return [permissions.IsAuthenticated()]
 
