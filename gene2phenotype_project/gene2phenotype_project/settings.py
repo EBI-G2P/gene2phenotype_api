@@ -16,7 +16,7 @@ from configparser import ConfigParser
 from datetime import timedelta
 from rest_framework.settings import api_settings
 
-config_path = os.environ.get('PROJECT_CONFIG_PATH')
+config_path = os.environ.get("PROJECT_CONFIG_PATH")
 config = ConfigParser()
 config.read(config_path)
 
@@ -30,37 +30,37 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ["SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config.getboolean('settings', 'DEBUG')
+DEBUG = config.getboolean("settings", "DEBUG")
 
-ALLOWED_HOSTS = json.loads(config.get('settings', 'ALLOWED_HOSTS'))
+ALLOWED_HOSTS = json.loads(config.get("settings", "ALLOWED_HOSTS"))
 
 # Application definition
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'basic': {
-            'format': '[{levelname}] {message}',
-            'style': '{',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "basic": {
+            "format": "[{levelname}] {message}",
+            "style": "{",
         },
     },
-    'handlers': {
-        'console': {
+    "handlers": {
+        "console": {
             # 'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-            'formatter': 'basic'
+            "class": "logging.StreamHandler",
+            "formatter": "basic",
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'WARNING',
+    "root": {
+        "handlers": ["console"],
+        "level": "WARNING",
     },
-    'loggers': {
-        'gene2phenotype_app.management.commands.datachecks.check_data': {
-            'handlers': ['console'],
-            'level': 'WARNING',
-            'propagate': False,
+    "loggers": {
+        "gene2phenotype_app.management.commands.datachecks.check_data": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
         },
         # The following variable prints all the db queries to the command line
         # This is useful to debug sql queries
@@ -72,37 +72,38 @@ LOGGING = {
 }
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'gene2phenotype_app',
-    'rest_framework',
-    'simple_history',
-    'rest_framework_simplejwt.token_blacklist',
-    'mail_templated',
-    'drf_spectacular'
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "gene2phenotype_app",
+    "rest_framework",
+    "simple_history",
+    "rest_framework_simplejwt.token_blacklist",
+    "mail_templated",
+    "drf_spectacular",
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'simple_history.middleware.HistoryRequestMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "simple_history.middleware.HistoryRequestMiddleware",
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework_simplejwt.authentication.JWTAuthentication', 'gene2phenotype_app.authentication.CustomAuthentication'),
-    'DEFAULT_PERMISSION_CLASSES': (
-        "rest_framework.permissions.AllowAny",
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "gene2phenotype_app.authentication.CustomAuthentication",
     ),
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema'
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 SPECTACULAR_SETTINGS = {
@@ -115,93 +116,92 @@ SPECTACULAR_SETTINGS = {
     "VERSION": config.get("g2p", "version"),
     "SERVE_INCLUDE_SCHEMA": False,
     "DISABLE_FORMAT_SUFFIX": True,
-    "SORT_OPERATIONS": False
+    "SORT_OPERATIONS": False,
 }
 
 SIMPLE_JWT = {
-  'SECURE_HASH_ALGORITHM': 'hashlib.sha512',
-  'AUTH_TOKEN_CHARACTER_LENGTH': 64,
-  'TOKEN_USER_CLASS': 'gene2phenotype_app.serializers.UserSerializer',
-  'TOKEN_LIMIT_PER_USER': None,
-  "USER_ID_FIELD": "id",
-  "USER_ID_CLAIM": "id",
-  'AUTO_REFRESH': False,
-  'EXPIRY_DATETIME_FORMAT': api_settings.DATETIME_FORMAT,
-  ##Custom
-  "AUTH_COOKIE": "access_token",
-  "REFRESH_COOKIE": "refresh_token",
-  "AUTH_COOKIE_DOMAIN": None,
-  "AUTH_COOKIE_SECURE": config.getboolean('settings', 'AUTH_COOKIE_SECURE'),
-  "AUTH_COOKIE_HTTP_ONLY": True, #prevents client side js from accessing the cookie
-  "AUTH_COOKIE_PATH": "/",
-  "AUTH_COOKIE_SAMESITE": "Lax",
-  "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
-  "REFRESH_TOKEN_LIFETIME": timedelta(hours=12),
-  "BLACKLIST_AFTER_ROTATION": True,
-  'TOKEN_BACKEND': 'rest_framework_simplejwt.token_blacklist.backends.BlacklistBackend',
-  'BLACKLIST_TOKEN_CHECKS': [ 'rest_framework_simplejwt.token_blacklist.check_blacklisted_token', ],
-  "ROTATE_REFRESH_TOKENS": True
+    "SECURE_HASH_ALGORITHM": "hashlib.sha512",
+    "AUTH_TOKEN_CHARACTER_LENGTH": 64,
+    "TOKEN_USER_CLASS": "gene2phenotype_app.serializers.UserSerializer",
+    "TOKEN_LIMIT_PER_USER": None,
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "id",
+    "AUTO_REFRESH": False,
+    "EXPIRY_DATETIME_FORMAT": api_settings.DATETIME_FORMAT,
+    ##Custom
+    "AUTH_COOKIE": "access_token",
+    "REFRESH_COOKIE": "refresh_token",
+    "AUTH_COOKIE_DOMAIN": None,
+    "AUTH_COOKIE_SECURE": config.getboolean("settings", "AUTH_COOKIE_SECURE"),
+    "AUTH_COOKIE_HTTP_ONLY": True,  # prevents client side js from accessing the cookie
+    "AUTH_COOKIE_PATH": "/",
+    "AUTH_COOKIE_SAMESITE": "Lax",
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(hours=12),
+    "BLACKLIST_AFTER_ROTATION": True,
+    "TOKEN_BACKEND": "rest_framework_simplejwt.token_blacklist.backends.BlacklistBackend",
+    "BLACKLIST_TOKEN_CHECKS": [
+        "rest_framework_simplejwt.token_blacklist.check_blacklisted_token",
+    ],
+    "ROTATE_REFRESH_TOKENS": True,
 }
 
-CORS_ALLOWED_ORIGINS = json.loads(config.get('settings', 'CORS_ALLOWED_ORIGINS'))
-CSRF_TRUSTED_ORIGINS = json.loads(config.get('settings', 'CSRF_TRUSTED_ORIGINS'))
+CORS_ALLOWED_ORIGINS = json.loads(config.get("settings", "CORS_ALLOWED_ORIGINS"))
+CSRF_TRUSTED_ORIGINS = json.loads(config.get("settings", "CSRF_TRUSTED_ORIGINS"))
 CORS_ALLOWED_CREDENTIALS = True
 SESSION_COOKIE_SECURE = True
 
-DEFAULT_FROM_EMAIL = config.get('email', 'from')
-MAIL_HOST = config.get('email', 'host')
-MAIL_PORT = config.get('email', 'port')
+DEFAULT_FROM_EMAIL = config.get("email", "from")
+MAIL_HOST = config.get("email", "host")
+MAIL_PORT = config.get("email", "port")
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 EMAIL_HOST = MAIL_HOST
 EMAIL_PORT = MAIL_PORT
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = DEFAULT_FROM_EMAIL
-MAILING_LIST = config.get('email', 'mailing_list')
-SEND_MAILS = config.getboolean('email', 'send_to_mailing_list')
+MAILING_LIST = config.get("email", "mailing_list")
+SEND_MAILS = config.getboolean("email", "send_to_mailing_list")
 
-ROOT_URLCONF = 'gene2phenotype_project.urls'
+ROOT_URLCONF = "gene2phenotype_project.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'gene2phenotype_project.wsgi.application'
+WSGI_APPLICATION = "gene2phenotype_project.wsgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 # For testing
-if 'test' in sys.argv or 'test_coverage' in sys.argv:
+if "test" in sys.argv or "test_coverage" in sys.argv:
     DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': ':memory:'
+        "default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}
     }
-}
 
 else:
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': config.get('database', 'name'),
-            'USER': config.get('database', 'user'),
-            'PASSWORD': config.get('database', 'password'),
-            'HOST': config.get('database', 'host'),
-            'PORT': config.get('database', 'port'),
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": config.get("database", "name"),
+            "USER": config.get("database", "user"),
+            "PASSWORD": config.get("database", "password"),
+            "HOST": config.get("database", "host"),
+            "PORT": config.get("database", "port"),
         }
     }
 
@@ -210,16 +210,16 @@ else:
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -229,9 +229,9 @@ AUTH_USER_MODEL = "gene2phenotype_app.User"
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'Europe/London'
+TIME_ZONE = "Europe/London"
 
 USE_I18N = True
 
@@ -241,9 +241,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_ROOT = config.get('settings', 'STATIC_ROOT')
-STATIC_URL = config.get('settings', 'STATIC_URL')
+STATIC_ROOT = config.get("settings", "STATIC_ROOT")
+STATIC_URL = config.get("settings", "STATIC_URL")
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
