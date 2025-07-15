@@ -55,7 +55,7 @@ def check_cross_references():
             errors.append(
             Error(
                     f"Disease '{obj.disease_name}' associated with suspicious ontology disease '{obj.term}' ({obj.accession})",
-                    id="gene2phenotype_app.E013",
+                    id="gene2phenotype_app.E401",
                 )
             )
 

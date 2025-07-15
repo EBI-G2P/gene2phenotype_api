@@ -34,7 +34,7 @@ from .user import UserSerializer
 from .stable_id import G2PStableIDSerializer
 from .publication import PublicationSerializer
 
-from ..utils import get_date_now
+from ..utils import get_date_now, validate_confidence_publications
 
 
 class CurationDataSerializer(serializers.ModelSerializer):
@@ -446,7 +446,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             user_obj = User.objects.get(email=user, is_active=1)
 
         except User.DoesNotExist:
-            raise serializers.ValidationError({"message": f"Invalid user '{user}'"})
+            raise serializers.ValidationError({"error": f"Invalid user '{user}'"})
 
         ### Publications ###
         for publication in data.json_data["publications"]:
@@ -566,7 +566,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             )
         except CVMolecularMechanism.DoesNotExist:
             raise serializers.ValidationError(
-                {"message": f"Invalid mechanism value '{mechanism_name}'"}
+                {"error": f"Invalid mechanism value '{mechanism_name}'"}
             )
 
         # Get mechanism support from controlled vocabulary table for molecular mechanism
@@ -577,7 +577,18 @@ class CurationDataSerializer(serializers.ModelSerializer):
             )
         except CVMolecularMechanism.DoesNotExist:
             raise serializers.ValidationError(
-                {"message": f"Invalid mechanism support value '{mechanism_support}'"}
+                {"error": f"Invalid mechanism support value '{mechanism_support}'"}
+            )
+
+        # Check if there are enough publications for the confidence value
+        number_publications = len(publications_list)
+        if not validate_confidence_publications(
+            data.json_data["confidence"], number_publications
+        ):
+            raise serializers.ValidationError(
+                {
+                    "error": f"Cannot assign confidence '{data.json_data['confidence']}' with only {number_publications} publication(s) as evidence"
+                }
             )
 
         ### Locus-Genotype-Disease ###
@@ -639,7 +650,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 publication_evidence_obj = Publication.objects.get(pmid=pmid)
             except Publication.DoesNotExist:
                 raise serializers.ValidationError(
-                    {"message": f"Invalid publication '{pmid}'"}
+                    {"error": f"Invalid publication '{pmid}'"}
                 )
 
             for evidence_type in mechanism_evidence["evidence_types"]:

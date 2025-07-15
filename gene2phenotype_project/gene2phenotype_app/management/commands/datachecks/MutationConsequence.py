@@ -1,7 +1,6 @@
 from gene2phenotype_app.models import (
     LocusGenotypeDisease,
     LGDMolecularMechanismSynopsis,
-    LGDPanel,
 )
 from django.core.checks import Error
 from .AllelicRequirement import should_process
@@ -20,7 +19,7 @@ def mutation_consequence_constraint():
             Error(
                 f"{obj.stable_id.stable_id} has mechanism value 'undetermined' and support is not inferred",
                 hint="Undetermined mechanism should have inferred support",
-                id="gene2phenotype_app.E007",
+                id="gene2phenotype_app.E301",
             )
         )
 
@@ -39,7 +38,7 @@ def mutation_consequence_constraint():
             Error(
                 f"{obj.lgd.stable_id.stable_id} has mechanism 'undetermined non-loss of function' and a defined mechanism categorisation '{obj.synopsis.value}'",
                 hint="Undetermined non-loss of function cannot have mechanism categorisation",
-                id="gene2phenotype_app.E008",
+                id="gene2phenotype_app.E302",
             )
         )
 
@@ -53,7 +52,7 @@ def mutation_consequence_constraint():
             Error(
                 f"{obj.lgd.stable_id.stable_id} mechanism value is 'loss of function' and mechanism categorisation is '{obj.synopsis.value}'",
                 hint="Loss of function mechanism should have a loss of function related categorisation",
-                id="gene2phenotype_app.E009",
+                id="gene2phenotype_app.E303",
             )
         )
 
@@ -67,7 +66,7 @@ def mutation_consequence_constraint():
             Error(
                 f"{obj.lgd.stable_id.stable_id} mechanism value is 'dominant negative' and mechanism categorisation is '{obj.synopsis.value}'",
                 hint="Dominant negative mechanism should have dominant negative related categorisation",
-                id="gene2phenotype_app.E0010",
+                id="gene2phenotype_app.E304",
             )
         )
 
@@ -85,7 +84,7 @@ def mutation_consequence_constraint():
             Error(
                 f"{obj.lgd.stable_id.stable_id} mechanism value is 'gain of function' and mechanism categorisation is '{obj.synopsis.value}'",
                 hint="Gain of function mechanism should have GOF related or aggregation categorisation",
-                id="gene2phenotype_app.E0011",
+                id="gene2phenotype_app.E305",
             )
         )
 
@@ -108,7 +107,7 @@ def mutation_consequence_constraint():
             Error(
                 f"There are monoallelic and biallelic records for the same mechanism (loss of function), disease name : ({entry['disease__name']}) and gene: ({entry['locus__name']})",
                 hint="Flag this to the curators",
-                id="gene2phenotype_app.E0012",
+                id="gene2phenotype_app.E306",
             )
         )
 

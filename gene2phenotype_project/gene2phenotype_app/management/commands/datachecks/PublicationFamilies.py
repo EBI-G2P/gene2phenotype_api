@@ -3,7 +3,7 @@ from gene2phenotype_app.models import LGDPublication
 from django.db.models import F
 
 
-def check_model_constraints():
+def check_publication_families():
     errors = []
 
     pub_families_check = LGDPublication.objects.filter(
@@ -14,7 +14,7 @@ def check_model_constraints():
             Error(
                 f"Publication ID {obj.publication_id} has number of families greater than the number of affected individuals",
                 hint="Number of families can not be greater than affected individuals",
-                id="gene2phenotype_app.E001",
+                id="gene2phenotype_app.E101",
             )
         )
 
