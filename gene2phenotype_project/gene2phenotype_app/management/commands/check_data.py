@@ -7,6 +7,7 @@ from .datachecks import (
     check_ar_publications,
     mutation_consequence_constraint,
     check_cross_references,
+    check_disease_name
 )
 
 logger = logging.getLogger(__name__)
@@ -39,3 +40,8 @@ class Command(BaseCommand):
         disease_cr_errors = check_cross_references()
         for error in disease_cr_errors:
             logger.warning(error)
+
+        # Check if the locus is in the disease name
+        disease_name_errors = check_disease_name()
+        for error in disease_name_errors:
+            logger.error(error)
