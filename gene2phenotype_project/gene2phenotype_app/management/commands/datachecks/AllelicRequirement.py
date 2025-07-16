@@ -1,14 +1,16 @@
-from gene2phenotype_app.models import LocusGenotypeDisease, LGDPanel
+from gene2phenotype_app.models import LocusGenotypeDisease, LGDPanel, LGDPublication
 from django.core.checks import Error
-from django.db.models import F
+from django.db.models import Q, F
 
 
-# helper function
+# helper function to skip checks for anything in panel Demo
 def should_process(obj):
-    # to skip checks for anything in Demo
-    lgd_panels = LGDPanel.objects.filter(lgd_id=obj, is_deleted=0)
+    lgd_panels = LGDPanel.objects.filter(lgd_id=obj, is_deleted=0).annotate(
+        panel_name=F("panel__name")
+    )
+
     for lgd_panel in lgd_panels:
-        return lgd_panel.panel.name != "Demo"
+        return lgd_panel.panel_name != "Demo"
 
 
 def check_ar_constraint():
@@ -22,6 +24,7 @@ def check_ar_constraint():
             g2p_id=F("stable_id__stable_id"),
         )
     )
+
     for obj in locus_genotype_check:
         if not should_process(obj.id):
             continue
@@ -32,7 +35,7 @@ def check_ar_constraint():
                 Error(
                     f"'{obj.g2p_id}' with autosomal genotype is not in chromosome 1-22",
                     hint="Autosomal genotype should be linked to chromosome 1-22",
-                    id="gene2phenotype_app.E002",
+                    id="gene2phenotype_app.E201",
                 )
             )
 
@@ -41,7 +44,7 @@ def check_ar_constraint():
                 Error(
                     f"'{obj.g2p_id}' with mitochondrial genotype in non mitochondrial chromosome",
                     hint="Mitochondrial genotype should be linked to chromosome MT",
-                    id="gene2phenotype_app.E003",
+                    id="gene2phenotype_app.E202",
                 )
             )
 
@@ -52,7 +55,7 @@ def check_ar_constraint():
                 Error(
                     f"'{obj.g2p_id}' PAR genotype is not in X or Y chromosome",
                     hint="Genotype of the PAR regions should be linked to chromosome X or Y",
-                    id="gene2phenotype_app.E004",
+                    id="gene2phenotype_app.E203",
                 )
             )
 
@@ -61,7 +64,7 @@ def check_ar_constraint():
                 Error(
                     f"'{obj.g2p_id}' X genotype in a non X chromosome",
                     hint="X-linked genotype should be linked to chromosome X",
-                    id="gene2phenotype_app.E005",
+                    id="gene2phenotype_app.E204",
                 )
             )
 
@@ -70,7 +73,42 @@ def check_ar_constraint():
                 Error(
                     f"'{obj.g2p_id}' Y genotype in a non Y chromosome",
                     hint="Y-linked genotype should be linked to chromosome Y",
-                    id="gene2phenotype_app.E006",
+                    id="gene2phenotype_app.E205",
+                )
+            )
+
+    return errors
+
+
+def check_ar_publications():
+    errors = []
+    locus_genotype_check = (
+        LocusGenotypeDisease.objects.filter(
+            Q(confidence__value="definitive") | Q(confidence__value="strong"),
+            is_deleted=0,
+        )
+        .select_related("confidence")
+        .annotate(
+            obj_id=F("id"),
+            confidence_value=F("confidence__value"),
+            g2p_id=F("stable_id__stable_id"),
+        )
+        .prefetch_related()
+    )
+
+    for obj in locus_genotype_check:
+        if not should_process(obj.obj_id):
+            continue
+
+        lgd_publications = LGDPublication.objects.filter(lgd=obj, is_deleted=0)
+
+        number_publications = len(lgd_publications)
+        if number_publications < 2:
+            errors.append(
+                Error(
+                    f"'{obj.g2p_id}' has confidence '{obj.confidence_value}' but only {number_publications} publication(s)",
+                    hint="Confidence 'definitive' and 'strong' require more than 1 publication",
+                    id="gene2phenotype_app.E206",
                 )
             )
 

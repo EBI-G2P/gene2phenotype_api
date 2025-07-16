@@ -3,15 +3,12 @@ from django.db.models import F
 from difflib import SequenceMatcher
 import re
 
-from gene2phenotype_app.models import (
-    DiseaseOntologyTerm,
-    LocusGenotypeDisease
-)
+from gene2phenotype_app.models import DiseaseOntologyTerm, LocusGenotypeDisease
 
 from gene2phenotype_app.utils import (
     clean_string,
     clean_omim_disease,
-    check_synonyms_disease
+    check_synonyms_disease,
 )
 
 
@@ -24,12 +21,12 @@ def check_cross_references():
         .annotate(
             disease_name=F("disease__name"),
             term=F("ontology_term__term"),
-            accession=F("ontology_term__accession")
+            accession=F("ontology_term__accession"),
         )
         .filter(
             disease__id__in=LocusGenotypeDisease.objects.filter(
-                lgdpanel__panel__is_visible=1
-            ).values('disease')
+                lgdpanel__panel__is_visible=1, is_deleted=0
+            ).values("disease")
         )
     )
 
@@ -46,16 +43,50 @@ def check_cross_references():
             continue
 
         # Calculate the string similarity
-        score = SequenceMatcher(None, clean_disease_name.lower(), clean_term.lower()).ratio()
+        score = SequenceMatcher(
+            None, clean_disease_name.lower(), clean_term.lower()
+        ).ratio()
 
-        if ((score < 0.3 and new_disease_name.lower() not in term_without_type
-            and term_without_type not in new_disease_name.lower())):
+        if (
+            score < 0.3
+            and new_disease_name.lower() not in term_without_type
+            and term_without_type not in new_disease_name.lower()
+        ):
             # Add the error message to the list
             # Do not add a hint as the messages are already long and self explanatory
             errors.append(
-            Error(
+                Error(
                     f"Disease '{obj.disease_name}' associated with suspicious ontology disease '{obj.term}' ({obj.accession})",
-                    id="gene2phenotype_app.E013",
+                    id="gene2phenotype_app.E401",
+                )
+            )
+
+    return errors
+
+
+def check_disease_name():
+    errors = []
+
+    lgd_records = (
+        LocusGenotypeDisease.objects.select_related("disease")
+        .annotate(
+            g2p_id=F("stable_id__stable_id"),
+            disease_name=F("disease__name"),
+            locus_name=F("locus__name"),
+        )
+        .filter(lgdpanel__panel__is_visible=1, is_deleted=0)
+    )
+
+    for obj in lgd_records:
+        if not (
+            obj.disease_name.startswith(f"{obj.locus_name}-")
+            or obj.disease_name.startswith(f"{obj.locus_name} ")
+        ):
+            # Do not add a hint as the messages are already long and self explanatory
+            errors.append(
+                Error(
+                    f"For record {obj.g2p_id} disease '{obj.disease_name}' is missing the locus name '{obj.locus_name}'",
+                    id="gene2phenotype_app.E402",
                 )
             )
 

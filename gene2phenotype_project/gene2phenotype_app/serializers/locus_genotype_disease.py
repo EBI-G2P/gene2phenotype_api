@@ -35,7 +35,7 @@ from .disease import DiseaseSerializer
 from .panel import LGDPanelSerializer
 
 from ..utils import get_date_now, ConfidenceCustomMail
-from ..utils import validate_mechanism_synopsis
+from ..utils import validate_mechanism_synopsis, validate_confidence_publications
 
 
 class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
@@ -650,6 +650,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         validated_confidence = validated_data.get("confidence", None)
         request = self.context.get("request")
         user = self.context.get("user")
+
         if (
             validated_confidence is not None
             and isinstance(validated_confidence, dict)
@@ -674,6 +675,17 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {
                     "error": f"G2P record '{instance.stable_id.stable_id}' already has confidence value {confidence}"
+                }
+            )
+
+        # Check if the confidence value can be updated
+        queryset_lgd_publications = LGDPublication.objects.filter(
+            lgd=instance, is_deleted=0
+        )
+        if not validate_confidence_publications(confidence, len(queryset_lgd_publications)):
+            raise serializers.ValidationError(
+                {
+                    "error": f"Confidence '{confidence}' requires more than one publication as evidence"
                 }
             )
 
