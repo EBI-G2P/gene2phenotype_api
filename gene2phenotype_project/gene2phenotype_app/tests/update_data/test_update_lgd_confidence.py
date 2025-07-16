@@ -122,5 +122,5 @@ class LGDUpdateLGDConfidence(TestCase):
         response_data = response.json()
         self.assertEqual(
             response_data["error"],
-            "Cannot assign confidence 'strong' with only 1 publication(s) as evidence",
+            "Confidence 'strong' requires more than one publication as evidence",
         )

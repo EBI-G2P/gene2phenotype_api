@@ -682,11 +682,10 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         queryset_lgd_publications = LGDPublication.objects.filter(
             lgd=instance, is_deleted=0
         )
-        number_publications = len(queryset_lgd_publications)
-        if not validate_confidence_publications(confidence, number_publications):
+        if not validate_confidence_publications(confidence, len(queryset_lgd_publications)):
             raise serializers.ValidationError(
                 {
-                    "error": f"Cannot assign confidence '{confidence}' with only {number_publications} publication(s) as evidence"
+                    "error": f"Confidence '{confidence}' requires more than one publication as evidence"
                 }
             )
 

@@ -587,7 +587,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         ):
             raise serializers.ValidationError(
                 {
-                    "error": f"Cannot assign confidence '{data.json_data['confidence']}' with only {number_publications} publication(s) as evidence"
+                    "error": f"Confidence '{data.json_data['confidence']}' requires more than one publication as evidence"
                 }
             )
 

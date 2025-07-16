@@ -269,7 +269,7 @@ class LGDAddCurationEndpoint(TestCase):
         response_data_publish = response_publish.json()
         self.assertEqual(
             response_data_publish["error"],
-            "Cannot assign confidence 'definitive' with only 1 publication(s) as evidence",
+            "Confidence 'definitive' requires more than one publication as evidence",
         )
 
     def test_publish_success(self):
