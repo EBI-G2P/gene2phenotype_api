@@ -9,6 +9,11 @@ from gene2phenotype_app.models import (
     User,
 )
 
+"""
+Command to import publication family information from a csv file.
+File format is the following:
+    g2p id,lgd_id,pmid,publication_id,number of families,affected individuals,ancestries,consanguinity
+"""
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
