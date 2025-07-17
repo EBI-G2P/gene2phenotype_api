@@ -275,6 +275,10 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
         consanguinity = validated_data.get("consanguinity", None)
         consanguinity_obj = None
 
+        # Check if ancestry is empty string
+        if ancestry == "":
+            ancestry = None
+
         # Get consanguinity from attrib
         if consanguinity:
             try:
