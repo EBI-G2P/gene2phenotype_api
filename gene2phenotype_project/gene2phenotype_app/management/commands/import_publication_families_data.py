@@ -6,6 +6,7 @@ from gene2phenotype_app.models import (
     Publication,
     LGDPublication,
     LocusGenotypeDisease,
+    User,
 )
 
 
@@ -17,9 +18,22 @@ class Command(BaseCommand):
             type=str,
             help="Input file with publication families data",
         )
+        parser.add_argument(
+            "--email",
+            required=True,
+            type=str,
+            help="User email to store in the history table",
+        )
 
     def handle(self, *args, **options):
         data_file = options["data_file"]
+        input_email = options["email"]
+
+        # Get user info
+        try:
+            user_obj = User.objects.get(email=input_email)
+        except Exception as e:
+            raise CommandError(str(e))
 
         with open(data_file, newline="") as fh_file:
             data_reader = csv.DictReader(fh_file)
@@ -71,7 +85,11 @@ class Command(BaseCommand):
                     lgd_publication_obj.affected_individuals = row[
                         "affected individuals"
                     ].strip()
-                    lgd_publication_obj.ancestry = row["ancestries"].strip()
+                    ancestry_value = row["ancestries"].strip()
+                    if ancestry_value == "":
+                        ancestry_value = None
+                    lgd_publication_obj.ancestry = ancestry_value
+                    lgd_publication_obj._history_user = user_obj
                     lgd_publication_obj.save()
                 except Exception as e:
                     raise CommandError(
