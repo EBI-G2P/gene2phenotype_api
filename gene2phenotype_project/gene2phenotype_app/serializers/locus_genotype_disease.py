@@ -65,9 +65,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     last_updated = serializers.SerializerMethodField()
     date_created = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField(allow_null=True)
-    is_reviewed = serializers.BooleanField(
-        required=False
-    )  # It is the same as SmallInteger 0/1
+    is_reviewed = serializers.SerializerMethodField()
 
     def get_locus(self, id: int) -> dict[str, Any]:
         """
@@ -438,6 +436,18 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             data.append(text)
 
         return data
+
+    def get_is_reviewed(self, obj) -> bool:
+        """
+        Return True if the record is under review.
+        The 'is_reviewed' is renamed to 'under_review' in the output response.
+        """
+        # If the value of 'is_reviewed' is 0 or False, then this record is
+        # being reviewed - in the output we are going to return 'under_review' = true
+        if not obj.is_reviewed:
+            return True
+        else:
+            return False
 
     def get_date_created(self, id) -> Optional[date]:
         """
@@ -946,6 +956,15 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         # Update LGD date_review
         lgd_obj.date_review = get_date_now()
         lgd_obj.save()
+
+    def to_representation(self, instance):
+        """
+        Format the output representation of the record
+        """
+        representation = super().to_representation(instance)
+        # Rename 'is_reviewed' to 'under_review'
+        representation['under_review'] = representation.pop('is_reviewed')
+        return representation
 
     class Meta:
         model = LocusGenotypeDisease
