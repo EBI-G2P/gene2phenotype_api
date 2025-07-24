@@ -335,7 +335,7 @@ class VariantTypesList(APIView):
                 "last_updated": "2025-03-06",
                 "date_created": "2024-03-06",
                 "comments": [],
-                "is_reviewed": True,
+                "under_review": False,
             },
         )
     ],

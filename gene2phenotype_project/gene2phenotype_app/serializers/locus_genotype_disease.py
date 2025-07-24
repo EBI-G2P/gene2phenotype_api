@@ -440,7 +440,6 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     def get_is_reviewed(self, obj) -> bool:
         """
         Return True if the record is under review.
-        The 'is_reviewed' is renamed to 'under_review' in the output response.
         """
         # If the value of 'is_reviewed' is 0 or False, then this record is
         # being reviewed - in the output we are going to return 'under_review' = true
