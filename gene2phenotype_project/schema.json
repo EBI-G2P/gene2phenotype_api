@@ -2,7 +2,7 @@
     "openapi": "3.0.3",
     "info": {
         "title": "Gene2Phenotype (G2P)",
-        "version": "6.0.0",
+        "version": "7.0.0",
         "description": "This API enables access to gene disease models held in the G2P database. See [https://www.ebi.ac.uk/gene2phenotype/](https://www.ebi.ac.uk/gene2phenotype/) for more details.<br><br>Contact us by submitting an issue via [https://github.com/EBI-G2P/gene2phenotype_api/issues](https://github.com/EBI-G2P/gene2phenotype_api/issues)."
     },
     "paths": {
@@ -248,7 +248,7 @@
                                             "last_updated": "2025-03-06",
                                             "date_created": "2024-03-06",
                                             "comments": [],
-                                            "is_reviewed": true
+                                            "under_review": false
                                         },
                                         "summary": "Example 1",
                                         "description": "Fetch detailed information for record with stable_id G2P03507"
@@ -1169,7 +1169,9 @@
                         "nullable": true
                     },
                     "is_reviewed": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "description": "Return True if the record is under review.",
+                        "readOnly": true
                     }
                 },
                 "required": [
