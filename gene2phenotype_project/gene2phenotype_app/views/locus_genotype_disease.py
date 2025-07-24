@@ -63,7 +63,7 @@ class ListMolecularMechanisms(APIView):
         queryset = (
             CVMolecularMechanism.objects.all()
             .values("type", "subtype", "value", "description")
-            .order_by("type")
+            .order_by("type", "value")
         )
         result = {}
         for mechanism in queryset:
