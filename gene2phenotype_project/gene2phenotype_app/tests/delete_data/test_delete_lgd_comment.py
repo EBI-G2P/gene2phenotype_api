@@ -56,7 +56,29 @@ class LGDDeleteComment(TestCase):
 
         response_data = response.json()
         self.assertEqual(
-            response_data["error"], "Cannot delete comment for ID 'G2P00002'"
+            response_data["error"], "Cannot delete comment for record 'G2P00002'"
+        )
+
+    def test_delete_no_permission(self):
+        """
+        Test deleting the comment for non authenticated users.
+        """
+        # Login
+        user = User.objects.get(email="mary@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.patch(
+            self.url_delete, self.comment_to_delete, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 403)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"], "No permission to update record 'G2P00002'"
         )
 
     def test_delete_non_superuser(self):

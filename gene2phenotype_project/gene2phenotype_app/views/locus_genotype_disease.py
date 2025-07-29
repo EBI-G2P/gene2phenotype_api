@@ -1506,7 +1506,7 @@ class LGDEditComment(APIView):
             )
         except:
             return Response(
-                {"error": f"Cannot delete comment for ID '{stable_id}'"},
+                {"error": f"Cannot delete comment for record '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         else:
@@ -1517,7 +1517,7 @@ class LGDEditComment(APIView):
             lgd_obj.date_review = get_date_now()
             lgd_obj.save()
             return Response(
-                {"message": f"Comment successfully deleted for ID '{stable_id}'"},
+                {"message": f"Comment successfully deleted for record '{stable_id}'"},
                 status=status.HTTP_200_OK,
             )
 
