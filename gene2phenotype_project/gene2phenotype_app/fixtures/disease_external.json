@@ -1,0 +1,110 @@
+[
+    {
+        "model": "gene2phenotype_app.diseaseexternal",
+        "pk": 1,
+        "fields": {
+            "disease": "primary peritoneal serous/papillary carcinoma",
+            "identifier": "MONDO:0018368",
+            "source": 3
+        }
+    },
+    {
+        "model": "gene2phenotype_app.diseaseexternal",
+        "pk": 2,
+        "fields": {
+            "disease": "spatial visualization, aptitude for",
+            "identifier": "MONDO:0010734",
+            "source": 3
+        }
+    },
+    {
+        "model": "gene2phenotype_app.diseaseexternal",
+        "pk": 3,
+        "fields": {
+            "disease": "ocular surface squamous neoplasia",
+            "identifier": "MONDO:0971056",
+            "source": 3
+        }
+    },
+    {
+        "model": "gene2phenotype_app.diseaseexternal",
+        "pk": 4,
+        "fields": {
+            "disease": "Keipert syndrome",
+            "identifier": "MONDO:0009720",
+            "source": 3
+        }
+    },
+    {
+        "model": "gene2phenotype_app.diseaseexternal",
+        "pk": 5,
+        "fields": {
+            "disease": "SBDS-related severe neonatal spondylometaphyseal dysplasia",
+            "identifier": "MONDO:0850096",
+            "source": 3
+        }
+    },
+    {
+        "model": "gene2phenotype_app.diseaseexternal",
+        "pk": 6,
+        "fields": {
+            "disease": "sinonasal undifferentiated carcinoma",
+            "identifier": "MONDO:0006411",
+            "source": 3
+        }
+    },
+    {
+        "model": "gene2phenotype_app.diseaseexternal",
+        "pk": 7,
+        "fields": {
+            "disease": "circumscribed palmoplantar hypokeratosis",
+            "identifier": "MONDO:0019076",
+            "source": 3
+        }
+    },
+    {
+        "model": "gene2phenotype_app.diseaseexternal",
+        "pk": 8,
+        "fields": {
+            "disease": "otosclerosis 5",
+            "identifier": "MONDO:0012121",
+            "source": 3
+        }
+    },
+    {
+        "model": "gene2phenotype_app.diseaseexternal",
+        "pk": 9,
+        "fields": {
+            "disease": "squamous cell skin papilloma",
+            "identifier": "MONDO:0004204",
+            "source": 3
+        }
+    },
+    {
+        "model": "gene2phenotype_app.diseaseexternal",
+        "pk": 10,
+        "fields": {
+            "disease": "COACH syndrome 1",
+            "identifier": "MONDO:0800103",
+            "source": 3
+        }
+    },
+    {
+        "model": "gene2phenotype_app.diseaseexternal",
+        "pk": 249,
+        "fields": {
+            "disease": "Joubert syndrome 15",
+            "identifier": "MONDO:0013763",
+            "source": 3
+        }
+    },
+    {
+        "model": "gene2phenotype_app.diseaseexternal",
+        "pk": 5680,
+        "fields": {
+            "disease": "Senior-Loken syndrome",
+            "identifier": "MONDO:0017842",
+            "source": 3
+        }
+    }
+]

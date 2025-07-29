@@ -161,3 +161,97 @@ class DiseaseSummaryTests(TestCase):
             response.data["error"],
             "No matching Disease found for: CACNA1F-related Aland Island",
         )
+
+
+class DiseaseExternalEndpointTests(TestCase):
+    """
+    Test the disease endpoint: DiseaseExternal
+    """
+
+    fixtures = [
+        "gene2phenotype_app/fixtures/disease.json",
+        "gene2phenotype_app/fixtures/gene_disease.json",
+        "gene2phenotype_app/fixtures/disease_external.json",
+        "gene2phenotype_app/fixtures/attribs.json",
+        "gene2phenotype_app/fixtures/locus.json",
+        "gene2phenotype_app/fixtures/source.json",
+        "gene2phenotype_app/fixtures/sequence.json",
+        "gene2phenotype_app/fixtures/ontology_term.json",
+    ]
+
+    def setUp(self):
+        self.url_disease = reverse(
+            "external_disease", kwargs={"ext_ids": "MONDO:0010734,MONDO:0018368"}
+        )
+        self.url_disease_2 = reverse(
+            "external_disease", kwargs={"ext_ids": "MONDO:0012433,MONDO:0018368"}
+        )
+        self.url_not_found = reverse(
+            "external_disease", kwargs={"ext_ids": "MONDO:001073,MONDO:0018368"}
+        )
+        self.url_invalid = reverse("external_disease", kwargs={"ext_ids": "Syndrome 2"})
+
+    def test_get_disease(self):
+        """
+        Test the response of the disease external endpoint
+        """
+        response = self.client.get(self.url_disease)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 2)
+
+        expected_data = [
+            {
+                "disease": "spatial visualization, aptitude for",
+                "identifier": "MONDO:0010734",
+                "source": "Mondo",
+            },
+            {
+                "disease": "primary peritoneal serous/papillary carcinoma",
+                "identifier": "MONDO:0018368",
+                "source": "Mondo",
+            },
+        ]
+        self.assertEqual(list(response.data["results"]), expected_data)
+
+    def test_get_disease_2(self):
+        """
+        Test the response of the disease external endpoint.
+        One of the IDs is found in the table gene_disease.
+        """
+        response = self.client.get(self.url_disease_2)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 2)
+
+        expected_data = [
+            {
+                "disease": "Senior-Loken syndrome 6",
+                "identifier": "MONDO:0012433",
+                "source": "Mondo",
+            },
+            {
+                "disease": "primary peritoneal serous/papillary carcinoma",
+                "identifier": "MONDO:0018368",
+                "source": "Mondo",
+            },
+        ]
+        self.assertEqual(list(response.data["results"]), expected_data)
+
+    def test_disease_external_not_found(self):
+        """
+        Test the response of the disease external endpoint when one of the IDs is not found.
+        """
+        response = self.client.get(self.url_not_found)
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.data["error"], "Invalid ID(s): MONDO:001073")
+
+    def test_disease_external_invalid(self):
+        """
+        Test the response of the disease external endpoint when invalid disease.
+        """
+        response = self.client.get(self.url_invalid)
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.data["error"], "Invalid ID(s): Syndrome 2")
