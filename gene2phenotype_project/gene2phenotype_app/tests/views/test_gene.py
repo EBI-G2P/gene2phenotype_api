@@ -233,7 +233,6 @@ class GeneDiseaseEndpointTests(TestCase):
         response = self.client.get(self.url_not_found)
 
         self.assertEqual(response.status_code, 404)
-        print("->", response.data)
         self.assertEqual(
             response.data["error"],
             "No matching Gene-Disease association found for: GS2",
