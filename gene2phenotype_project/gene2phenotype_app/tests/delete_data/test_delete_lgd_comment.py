@@ -36,10 +36,33 @@ class LGDDeleteComment(TestCase):
         }
         self.comment_to_delete_2 = {"comment": "All mutations are invalid"}
 
-    def test_delete_no_permission(self):
+    def test_invalid_delete(self):
+        """
+        Test deleting an invalid comment from the record (LGD).
+        Cannot delete a comment that does not exist.
+        """
+        # Login
+        user = User.objects.get(email="john@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.patch(
+            self.url_delete, self.comment_to_delete_2, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"], "Cannot delete comment for ID 'G2P00002'"
+        )
+
+    def test_delete_non_superuser(self):
         """
         Test deleting the comment for non superuser
-        TODO: in the future any user will be able to delete comments
+        Note: Any user can delete comments
         """
         # Login
         user = User.objects.get(email="user3@test.ac.uk")
@@ -52,35 +75,13 @@ class LGDDeleteComment(TestCase):
         response = self.client.patch(
             self.url_delete, self.comment_to_delete, content_type="application/json"
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
 
-        response_data = response.json()
-        self.assertEqual(
-            response_data["error"],
-            "You do not have permission to perform this action.",
+        # Check deleted record-publication
+        lgd_comments = LGDComment.objects.filter(
+            lgd__stable_id__stable_id="G2P00002", is_deleted=1
         )
-
-    # def test_invalid_delete(self):
-    #     """
-    #     Test deleting an invalid comment from the record (LGD)
-    #     """
-    #     # Login
-    #     user = User.objects.get(email="john@test.ac.uk")
-    #     refresh = RefreshToken.for_user(user)
-    #     access_token = str(refresh.access_token)
-
-    #     # Authenticate by setting cookie on the test client
-    #     self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
-
-    #     response = self.client.patch(
-    #         self.url_delete, self.comment_to_delete_2, content_type="application/json"
-    #     )
-    #     self.assertEqual(response.status_code, 404)
-
-    #     response_data = response.json()
-    #     self.assertEqual(
-    #         response_data["detail"], "Cannot delete comment for ID 'G2P00002'"
-    #     )
+        self.assertEqual(len(lgd_comments), 1)
 
     def test_lgd_comment_delete(self):
         """
@@ -104,3 +105,8 @@ class LGDDeleteComment(TestCase):
             lgd__stable_id__stable_id="G2P00002", is_deleted=1
         )
         self.assertEqual(len(lgd_comments), 1)
+
+        # Test the LGDComment history table
+        history_records = LGDComment.history.all()
+        self.assertEqual(len(history_records), 1)
+        self.assertEqual(history_records[0].is_deleted, 1)
