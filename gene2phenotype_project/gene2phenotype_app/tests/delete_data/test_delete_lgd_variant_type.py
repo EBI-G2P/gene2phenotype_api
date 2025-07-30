@@ -4,14 +4,14 @@ from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from gene2phenotype_app.models import (
     User,
-    LGDCrossCuttingModifier,
+    LGDVariantType,
     LocusGenotypeDisease,
 )
 
 
-class LGDEditCCMEndpoint(TestCase):
+class LGDEditVariantTypesEndpoint(TestCase):
     """
-    Test endpoint to delete cross cutting modifier from a record (LGD)
+    Test endpoint to variant types from a record (LGD)
     """
 
     fixtures = [
@@ -28,17 +28,17 @@ class LGDEditCCMEndpoint(TestCase):
         "gene2phenotype_app/fixtures/ontology_term.json",
         "gene2phenotype_app/fixtures/source.json",
         "gene2phenotype_app/fixtures/lgd_publication.json",
-        "gene2phenotype_app/fixtures/lgd_cross_cutting_modifier.json",
+        "gene2phenotype_app/fixtures/lgd_variant_type.json",
     ]
 
     def setUp(self):
         self.url_delete = reverse(
-            "lgd_cross_cutting_modifier", kwargs={"stable_id": "G2P00002"}
+            "lgd_variant_type", kwargs={"stable_id": "G2P00002"}
         )
 
     def test_invalid_delete(self):
         """
-        Test deleting an invalid cross cutting modifier from the record (LGD).
+        Test deleting an invalid variant type from the record (LGD).
         Cannot delete a term that does not exist in G2P.
         """
         # Login
@@ -51,7 +51,7 @@ class LGDEditCCMEndpoint(TestCase):
 
         response = self.client.patch(
             self.url_delete,
-            {"term": "typically de novos"},
+            {"secondary_type": "stopp_gained"},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 404)
@@ -59,12 +59,12 @@ class LGDEditCCMEndpoint(TestCase):
         response_data = response.json()
         self.assertEqual(
             response_data["error"],
-            "Invalid cross cutting modifier 'typically de novos'",
+            "Invalid variant type 'stopp_gained'",
         )
 
     def test_invalid_delete_2(self):
         """
-        Test deleting an invalid cross cutting modifier from the record (LGD).
+        Test deleting an invalid variant type from the record (LGD).
         Cannot delete a term if it is not linked to the record.
         """
         # Login
@@ -77,7 +77,7 @@ class LGDEditCCMEndpoint(TestCase):
 
         response = self.client.patch(
             self.url_delete,
-            {"term": "typically mosaic"},
+            {"secondary_type": "stop_gained"},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 404)
@@ -85,13 +85,13 @@ class LGDEditCCMEndpoint(TestCase):
         response_data = response.json()
         self.assertEqual(
             response_data["error"],
-            "Could not find cross cutting modifier 'typically mosaic' for ID 'G2P00002'",
+            "Could not find variant type 'stop_gained' for ID 'G2P00002'",
         )
 
     def test_delete_no_permission(self):
         """
-        Test deleting the cross cutting modifier for non super user.
-        Only super users can delete cross cutting modifiers.
+        Test deleting the variant type for non super user.
+        Only super users can delete variant types.
         """
         # Login
         user = User.objects.get(email="mary@test.ac.uk")
@@ -103,7 +103,7 @@ class LGDEditCCMEndpoint(TestCase):
 
         response = self.client.patch(
             self.url_delete,
-            {"term": "typically de novo"},
+            {"secondary_type": "intron_variant"},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 403)
@@ -115,7 +115,7 @@ class LGDEditCCMEndpoint(TestCase):
 
     def test_delete_no_permission_2(self):
         """
-        Test deleting the cross cutting modifier for user without permission to edit the record.
+        Test deleting the variant type for user without permission to edit the record.
         """
         # Login
         user = User.objects.get(email="sofia@test.ac.uk")
@@ -127,7 +127,7 @@ class LGDEditCCMEndpoint(TestCase):
 
         response = self.client.patch(
             self.url_delete,
-            {"term": "typically de novo"},
+            {"secondary_type": "intron_variant"},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 403)
@@ -139,7 +139,7 @@ class LGDEditCCMEndpoint(TestCase):
 
     def test_delete_empty_input(self):
         """
-        Test deleting the cross cutting modifier for empty input.
+        Test deleting the variant type for empty input.
         """
         # Login
         user = User.objects.get(email="john@test.ac.uk")
@@ -159,12 +159,12 @@ class LGDEditCCMEndpoint(TestCase):
         response_data = response.json()
         self.assertEqual(
             response_data["error"],
-            "Empty cross cutting modifier. Please provide the 'term'.",
+            "Empty variant type. Please provide the 'secondary_type'.",
         )
 
-    def test_lgd_ccm_delete(self):
+    def test_lgd_variant_type_delete(self):
         """
-        Test deleting the cross cutting modifier from the record (LGD)
+        Test deleting the variant type from the record (LGD)
         """
         # Login
         user = User.objects.get(email="john@test.ac.uk")
@@ -174,33 +174,33 @@ class LGDEditCCMEndpoint(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        # Check LGD-cross cutting modifiers before deletion
-        lgd_ccm_list = LGDCrossCuttingModifier.objects.filter(
+        # Check LGD-variant types before deletion
+        lgd_ccm_list = LGDVariantType.objects.filter(
             lgd__stable_id__stable_id="G2P00002", is_deleted=0
         )
         self.assertEqual(len(lgd_ccm_list), 2)
 
         response = self.client.patch(
             self.url_delete,
-            {"term": "typically de novo"},
+            {"secondary_type": "intron_variant"},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
 
-        # Check deleted LGD-cross cutting modifiers
-        lgd_deleted_ccms = LGDCrossCuttingModifier.objects.filter(
+        # Check deleted LGD-variant types
+        lgd_deleted_variants = LGDVariantType.objects.filter(
             lgd__stable_id__stable_id="G2P00002", is_deleted=1
         )
-        self.assertEqual(len(lgd_deleted_ccms), 1)
+        self.assertEqual(len(lgd_deleted_variants), 1)
 
-        # Check remaining LGD-cross cutting modifiers
-        lgd_ccms = LGDCrossCuttingModifier.objects.filter(
+        # Check remaining LGD-variant types
+        lgd_variants = LGDVariantType.objects.filter(
             lgd__stable_id__stable_id="G2P00002", is_deleted=0
         )
-        self.assertEqual(len(lgd_ccms), 1)
+        self.assertEqual(len(lgd_variants), 1)
 
         # Test the history tables
-        history_records = LGDCrossCuttingModifier.history.all()
+        history_records = LGDVariantType.history.all()
         self.assertEqual(len(history_records), 1)
         self.assertEqual(history_records[0].is_deleted, 1)
         history_records_lgd = LocusGenotypeDisease.history.all()

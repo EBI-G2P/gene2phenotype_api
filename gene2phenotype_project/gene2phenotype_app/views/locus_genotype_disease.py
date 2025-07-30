@@ -969,7 +969,7 @@ class LGDEditCCM(CustomPermissionAPIView):
                 {
                     "error": f"Could not find cross cutting modifier '{ccm}' for ID '{stable_id}'"
                 },
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_404_NOT_FOUND,
             )
         else:
             # Set LGD-cross cutting modifier to deleted
@@ -993,7 +993,6 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
     """
     Add or delete LGD-variant type(s).
     """
-
     http_method_names = ["post", "patch", "options"]
 
     # Define specific permissions
@@ -1131,7 +1130,7 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
             LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0
         )
 
-        # Check if user has permission to update panel
+        # Check if user has permission to update record
         user = request.user
         user_obj = get_object_or_404(User, email=user, is_active=1)
         serializer_user = UserSerializer(user_obj, context={"user": user})
@@ -1151,7 +1150,10 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
                 term=variant_type, group_type__value="variant_type"
             )
         except OntologyTerm.DoesNotExist:
-            raise Http404(f"Invalid variant type '{variant_type}'")
+            return Response(
+                {"error": f"Invalid variant type '{variant_type}'"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         # Get entries to be deleted
         # Different rows mean the lgd-variant type is associated with multiple publications
@@ -1171,9 +1173,12 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
         for lgd_var_type_obj in lgd_var_type_set:
             # Check if the lgd-variant type has comments
             # If so, delete the comments too
-            LGDVariantTypeComment.objects.filter(
+            lgd_variant_comments = LGDVariantTypeComment.objects.filter(
                 lgd_variant_type=lgd_var_type_obj, is_deleted=0
-            ).update(is_deleted=1)
+            )
+            for variant_comment in lgd_variant_comments:
+                variant_comment.is_deleted = 1
+                variant_comment.save()
             lgd_var_type_obj.is_deleted = 1
 
             try:
