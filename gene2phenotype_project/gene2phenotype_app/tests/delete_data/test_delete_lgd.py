@@ -16,13 +16,15 @@ from gene2phenotype_app.models import (
     LGDVariantTypeComment,
     LGDVariantTypeDescription,
     LGDVariantGenccConsequence,
-    LGDCrossCuttingModifier
+    LGDCrossCuttingModifier,
 )
+
 
 class LGDDeleteLGDEndpoint(TestCase):
     """
-        Test endpoint to delete a record (LGD)
+    Test endpoint to delete a record (LGD)
     """
+
     fixtures = [
         "gene2phenotype_app/fixtures/attribs.json",
         "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
@@ -47,7 +49,7 @@ class LGDDeleteLGDEndpoint(TestCase):
         "gene2phenotype_app/fixtures/lgd_variant_type_comment.json",
         "gene2phenotype_app/fixtures/lgd_variant_type_description.json",
         "gene2phenotype_app/fixtures/lgd_variant_consequence.json",
-        "gene2phenotype_app/fixtures/lgd_cross_cutting_modifier.json"
+        "gene2phenotype_app/fixtures/lgd_cross_cutting_modifier.json",
     ]
 
     def setUp(self):
@@ -55,7 +57,7 @@ class LGDDeleteLGDEndpoint(TestCase):
 
     def test_lgd_delete_no_permission(self):
         """
-            Test deleting the record (LGD) with user with no permission to edit the LGD panel
+        Test deleting the record (LGD) with user with no permission to edit the LGD panel
         """
 
         # Login
@@ -64,14 +66,16 @@ class LGDDeleteLGDEndpoint(TestCase):
         access_token = str(refresh.access_token)
 
         # Authenticate by setting cookie on the test client
-        self.client.cookies[settings.SIMPLE_JWT['AUTH_COOKIE']] = access_token
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(self.url_delete_lgd, content_type="application/json")
+        response = self.client.patch(
+            self.url_delete_lgd, content_type="application/json"
+        )
         self.assertEqual(response.status_code, 403)
 
     def test_lgd_delete_no_superuser(self):
         """
-            Test deleting the record (LGD) without super user
+        Test deleting the record (LGD) without super user
         """
 
         # Login
@@ -80,14 +84,16 @@ class LGDDeleteLGDEndpoint(TestCase):
         access_token = str(refresh.access_token)
 
         # Authenticate by setting cookie on the test client
-        self.client.cookies[settings.SIMPLE_JWT['AUTH_COOKIE']] = access_token
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(self.url_delete_lgd, content_type="application/json")
+        response = self.client.patch(
+            self.url_delete_lgd, content_type="application/json"
+        )
         self.assertEqual(response.status_code, 403)
 
     def test_lgd_delete(self):
         """
-            Test deleting the record (LGD) with correct user
+        Test deleting the record (LGD) with correct user
         """
 
         # Login
@@ -96,9 +102,11 @@ class LGDDeleteLGDEndpoint(TestCase):
         access_token = str(refresh.access_token)
 
         # Authenticate by setting cookie on the test client
-        self.client.cookies[settings.SIMPLE_JWT['AUTH_COOKIE']] = access_token
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(self.url_delete_lgd, content_type="application/json")
+        response = self.client.patch(
+            self.url_delete_lgd, content_type="application/json"
+        )
         self.assertEqual(response.status_code, 200)
 
         # Check deleted record
@@ -111,9 +119,13 @@ class LGDDeleteLGDEndpoint(TestCase):
         self.assertEqual(lgd_panel_obj.is_deleted, 1)
         lgd_comment_obj = LGDComment.objects.get(lgd=lgd_obj.id)
         self.assertEqual(lgd_comment_obj.is_deleted, 1)
-        mechanism_evidence_obj = LGDMolecularMechanismEvidence.objects.get(lgd=lgd_obj.id)
+        mechanism_evidence_obj = LGDMolecularMechanismEvidence.objects.get(
+            lgd=lgd_obj.id
+        )
         self.assertEqual(mechanism_evidence_obj.is_deleted, 1)
-        mechanism_synopsys_list = LGDMolecularMechanismSynopsis.objects.filter(lgd=lgd_obj.id)
+        mechanism_synopsys_list = LGDMolecularMechanismSynopsis.objects.filter(
+            lgd=lgd_obj.id
+        )
         for mechanism_synopsys in mechanism_synopsys_list:
             self.assertEqual(mechanism_synopsys.is_deleted, 1)
         phenotype_list = LGDPhenotype.objects.filter(lgd=lgd_obj.id)
@@ -125,13 +137,19 @@ class LGDDeleteLGDEndpoint(TestCase):
         lgd_variant_type_list = LGDVariantType.objects.filter(lgd=lgd_obj.id)
         for variant_type in lgd_variant_type_list:
             self.assertEqual(variant_type.is_deleted, 1)
-            variant_type_comment_list = LGDVariantTypeComment.objects.filter(lgd_variant_type=variant_type.id)
+            variant_type_comment_list = LGDVariantTypeComment.objects.filter(
+                lgd_variant_type=variant_type.id
+            )
             for variant_type_comment in variant_type_comment_list:
                 self.assertEqual(variant_type_comment.is_deleted, 1)
-        lgd_variant_type_desc_list = LGDVariantTypeDescription.objects.filter(lgd=lgd_obj.id)
+        lgd_variant_type_desc_list = LGDVariantTypeDescription.objects.filter(
+            lgd=lgd_obj.id
+        )
         for variant_type_desc in lgd_variant_type_desc_list:
             self.assertEqual(variant_type_desc.is_deleted, 1)
-        lgd_variant_consequence_list = LGDVariantGenccConsequence.objects.filter(lgd=lgd_obj.id)
+        lgd_variant_consequence_list = LGDVariantGenccConsequence.objects.filter(
+            lgd=lgd_obj.id
+        )
         for variant_consequence in lgd_variant_consequence_list:
             self.assertEqual(variant_consequence.is_deleted, 1)
         lgd_ccm_list = LGDCrossCuttingModifier.objects.filter(lgd=lgd_obj.id)

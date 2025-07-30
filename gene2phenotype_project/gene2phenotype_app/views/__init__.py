@@ -70,10 +70,10 @@ from .locus_genotype_disease import (
 )
 
 from .gencc_submission import (
-  GenCCSubmissionCreateView,
-  GenCCSubmissionView,
-  StableIDsWithLaterReviewDateView,
-  RetrieveStableIDsWithSubmissionID
+    GenCCSubmissionCreateView,
+    GenCCSubmissionView,
+    StableIDsWithLaterReviewDateView,
+    RetrieveStableIDsWithSubmissionID,
 )
 
 from .phenotype import (

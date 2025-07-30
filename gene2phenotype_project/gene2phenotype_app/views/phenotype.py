@@ -14,7 +14,7 @@ from gene2phenotype_app.serializers import (
     LGDPhenotypeListSerializer,
     LGDPhenotypeSummaryListSerializer,
     LocusGenotypeDiseaseSerializer,
-    UserSerializer
+    UserSerializer,
 )
 
 from gene2phenotype_app.models import (
@@ -22,7 +22,7 @@ from gene2phenotype_app.models import (
     LGDPhenotype,
     LocusGenotypeDisease,
     LGDPhenotypeSummary,
-    User
+    User,
 )
 
 from .base import BaseAdd, CustomPermissionAPIView, IsSuperUser
@@ -141,6 +141,8 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
                     }]
                 }
         """
+        user = request.user
+
         lgd = get_object_or_404(
             LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0
         )
@@ -156,6 +158,19 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
             {"error": "Invalid data format. Please provide valid data."},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+        # Check if user has permission to update record
+        user_obj = get_object_or_404(User, email=user, is_active=1)
+        serializer_user = UserSerializer(user_obj, context={"user": user})
+        user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
+        has_common = LocusGenotypeDiseaseSerializer(
+            lgd, context={"user": user}
+        ).check_user_permission(lgd, user_panel_list)
+        if has_common is False:
+            return Response(
+                {"error": f"No permission to update record '{stable_id}'"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         # Check and prepare data structure the send to the serializer
         # LGDPhenotypeListSerializer accepts the phenotypes in a specific struture
@@ -300,9 +315,7 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
             phenotype_obj = OntologyTerm.objects.get(accession=accession)
         except OntologyTerm.DoesNotExist:
             return Response(
-                {
-                    "error": f"Cannot find phenotype for accession '{accession}'"
-                },
+                {"error": f"Cannot find phenotype for accession '{accession}'"},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
