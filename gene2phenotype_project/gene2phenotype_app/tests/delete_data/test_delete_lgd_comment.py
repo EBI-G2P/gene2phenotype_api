@@ -15,7 +15,6 @@ class LGDDeleteComment(TestCase):
         "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
         "gene2phenotype_app/fixtures/disease.json",
         "gene2phenotype_app/fixtures/g2p_stable_id.json",
-        "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
         "gene2phenotype_app/fixtures/lgd_panel.json",
         "gene2phenotype_app/fixtures/locus_genotype_disease.json",
         "gene2phenotype_app/fixtures/locus.json",

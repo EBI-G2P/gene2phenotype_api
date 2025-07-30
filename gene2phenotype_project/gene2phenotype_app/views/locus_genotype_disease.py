@@ -955,20 +955,31 @@ class LGDEditCCM(CustomPermissionAPIView):
         try:
             ccm_obj = Attrib.objects.get(value=ccm, type__code="cross_cutting_modifier")
         except Attrib.DoesNotExist:
-            raise Http404(f"Invalid cross cutting modifier '{ccm}'")
+            return Response(
+                {"error": f"Invalid cross cutting modifier '{ccm}'"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         try:
-            LGDCrossCuttingModifier.objects.filter(
+            lgd_ccm = LGDCrossCuttingModifier.objects.get(
                 lgd=lgd_obj, ccm=ccm_obj, is_deleted=0
-            ).update(is_deleted=1)
-        except:
+            )
+        except LGDCrossCuttingModifier.DoesNotExist:
             return Response(
                 {
-                    "error": f"Could not delete cross cutting modifier '{ccm}' for ID '{stable_id}'"
+                    "error": f"Could not find cross cutting modifier '{ccm}' for ID '{stable_id}'"
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
         else:
+            # Set LGD-cross cutting modifier to deleted
+            lgd_ccm.is_deleted = 1
+            lgd_ccm.save()
+
+            # The cross cutting modifier was deleted successfully - update the date of last update in the record table
+            lgd_obj.date_review = get_date_now()
+            lgd_obj.save()
+
             return Response(
                 {
                     "message": f"Cross cutting modifier '{ccm}' successfully deleted for ID '{stable_id}'"
