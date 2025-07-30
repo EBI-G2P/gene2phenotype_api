@@ -896,6 +896,11 @@ class LGDEditCCM(CustomPermissionAPIView):
 
                 if serializer_class.is_valid():
                     serializer_class.save()
+
+                    # Update LGD date_review
+                    lgd.date_review = get_date_now()
+                    lgd.save()
+
                     response = Response(
                         {
                             "message": "Cross cutting modifier added to the G2P entry successfully."

@@ -1323,10 +1323,6 @@ class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
                 lgd_ccm_obj.is_deleted = 0
                 lgd_ccm_obj.save()
 
-        # Update LGD date_review
-        lgd.date_review = get_date_now()
-        lgd.save()
-
         return lgd_ccm_obj
 
     class Meta:
