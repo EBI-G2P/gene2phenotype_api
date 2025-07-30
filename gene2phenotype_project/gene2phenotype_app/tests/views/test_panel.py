@@ -28,7 +28,7 @@ class PanelListEndpointTests(TestCase):
         """
         response = self.client.get(self.url_panels)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data.get("count"), 3)
+        self.assertEqual(response.data.get("count"), 4)
 
     def test_login_get_panel_list(self):
         """
@@ -46,7 +46,7 @@ class PanelListEndpointTests(TestCase):
         response = self.client.get(self.url_panels)
         self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(response.data.get("count"), 4)
+        self.assertEqual(response.data.get("count"), 5)
 
 
 class PanelDetailsEndpointTests(TestCase):

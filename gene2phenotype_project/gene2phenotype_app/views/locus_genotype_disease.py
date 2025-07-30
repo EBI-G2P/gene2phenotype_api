@@ -1356,19 +1356,14 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
 
 
 @extend_schema(exclude=True)
-class LGDEditComment(CustomPermissionAPIView):
+class LGDEditComment(APIView):
     """
     Add or delete a comment to a G2P record (LGD).
     """
 
     http_method_names = ["post", "patch", "options"]
     serializer_class = LGDCommentSerializer
-
-    # Define specific permissions
-    method_permissions = {
-        "post": [permissions.IsAuthenticated],
-        "patch": [permissions.IsAuthenticated, IsSuperUser],
-    }
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self, action):
         """
@@ -1481,6 +1476,7 @@ class LGDEditComment(CustomPermissionAPIView):
     def patch(self, request, stable_id):
         """
         This method deletes the LGD-comment.
+        This action is available to all authenticated users.
 
         Example: { "comment": "This is a comment" }
         """
@@ -1505,19 +1501,23 @@ class LGDEditComment(CustomPermissionAPIView):
             )
 
         try:
-            LGDComment.objects.filter(
+            lgd_comment = LGDComment.objects.get(
                 lgd=lgd_obj, comment=comment, is_deleted=0
-            ).update(is_deleted=1)
+            )
         except:
             return Response(
-                {"error": f"Cannot delete comment for ID '{stable_id}'"},
+                {"error": f"Cannot delete comment for record '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         else:
+            # Set comment to deleted
+            lgd_comment.is_deleted = 1
+            lgd_comment.save()
+            # Update the date of the last review
             lgd_obj.date_review = get_date_now()
             lgd_obj.save()
             return Response(
-                {"message": f"Comment successfully deleted for ID '{stable_id}'"},
+                {"message": f"Comment successfully deleted for record '{stable_id}'"},
                 status=status.HTTP_200_OK,
             )
 

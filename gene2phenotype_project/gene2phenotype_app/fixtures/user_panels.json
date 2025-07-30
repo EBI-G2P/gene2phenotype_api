@@ -90,6 +90,21 @@
         }
     },
     {
+        "model": "gene2phenotype_app.user",
+        "pk": 7,
+        "fields": {
+            "password": "pbkdf2_sha256$720000$w5I3Bm9k1tX10ZHYbkyXiB$MAOsldxIofWkGpKIVTvgpBp3hWGBfCCwrpuRedueshE=",
+            "is_staff": false,
+            "is_active": true,
+            "username": "test_user_mary",
+            "email": "mary@test.ac.uk",
+            "is_deleted": false,
+            "is_superuser": 0,
+            "first_name": "Mary",
+            "last_name": "Smith"
+        }
+    },
+    {
         "model": "gene2phenotype_app.panel",
         "pk": 1,
         "fields": {
@@ -122,6 +137,15 @@
         "fields": {
             "name": "Cardiac",
             "description": "Cardiac disorders",
+            "is_visible": 1
+        }
+    },
+    {
+        "model": "gene2phenotype_app.panel",
+        "pk": 5,
+        "fields": {
+            "name": "Cancer",
+            "description": "Cancer disorders",
             "is_visible": 1
         }
     },
@@ -266,6 +290,15 @@
         "fields": {
             "user": 6,
             "panel": 4,
+            "is_deleted": 0
+        }
+    },
+    {
+        "model": "gene2phenotype_app.userpanel",
+        "pk": 17,
+        "fields": {
+            "user": 7,
+            "panel": 5,
             "is_deleted": 0
         }
     }
