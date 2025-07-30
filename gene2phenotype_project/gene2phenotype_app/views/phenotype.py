@@ -80,7 +80,7 @@ def PhenotypeDetail(request, hpo_list):
     if invalid_hpos:
         hpo_list = ", ".join(invalid_hpos)
         response = Response(
-            {"detail": f"Invalid HPO term(s): {hpo_list}"},
+            {"error": f"Invalid HPO term(s): {hpo_list}"},
             status=status.HTTP_404_NOT_FOUND,
         )
 

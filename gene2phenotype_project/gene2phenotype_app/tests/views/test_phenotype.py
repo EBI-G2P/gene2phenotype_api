@@ -50,7 +50,7 @@ class PhenotypeTests(TestCase):
         response = self.client.get(self.url_pheno)
 
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.data["detail"], "Invalid HPO term(s): HP:0")
+        self.assertEqual(response.data["error"], "Invalid HPO term(s): HP:0")
 
     def test_invalid_2(self):
         """
@@ -63,4 +63,4 @@ class PhenotypeTests(TestCase):
         response = self.client.get(self.url_pheno)
 
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.data["detail"], "Invalid HPO term(s): HPO:0009726")
+        self.assertEqual(response.data["error"], "Invalid HPO term(s): HPO:0009726")
