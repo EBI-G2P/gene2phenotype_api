@@ -28,7 +28,6 @@ class LGDDeleteLGDEndpoint(TestCase):
         "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
         "gene2phenotype_app/fixtures/disease.json",
         "gene2phenotype_app/fixtures/g2p_stable_id.json",
-        "gene2phenotype_app/fixtures/g2p_stable_id.json",
         "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
         "gene2phenotype_app/fixtures/lgd_mechanism_evidence.json",
         "gene2phenotype_app/fixtures/lgd_mechanism_synopsis.json",
@@ -138,3 +137,46 @@ class LGDDeleteLGDEndpoint(TestCase):
         lgd_ccm_list = LGDCrossCuttingModifier.objects.filter(lgd=lgd_obj.id)
         for lgd_ccm in lgd_ccm_list:
             self.assertEqual(lgd_ccm.is_deleted, 1)
+
+        # Check history tables
+        history_records_lgd = LocusGenotypeDisease.history.all()
+        self.assertEqual(len(history_records_lgd), 1)
+        self.assertEqual(history_records_lgd[0].is_deleted, 1)
+        history_records_panel = LGDPanel.history.all()
+        self.assertEqual(len(history_records_panel), 1)
+        self.assertEqual(history_records_panel[0].is_deleted, 1)
+        history_records_comment = LGDComment.history.all()
+        self.assertEqual(len(history_records_comment), 1)
+        self.assertEqual(history_records_comment[0].is_deleted, 1)
+        history_records_mechanism_evidence = LGDMolecularMechanismEvidence.history.all()
+        self.assertEqual(len(history_records_mechanism_evidence), 1)
+        self.assertEqual(history_records_mechanism_evidence[0].is_deleted, 1)
+        history_records_mechanism_synopsis = LGDMolecularMechanismSynopsis.history.all()
+        self.assertEqual(len(history_records_mechanism_synopsis), 2)
+        for synopsis in history_records_mechanism_synopsis:
+            self.assertEqual(synopsis.is_deleted, 1)
+        history_records_phenotype = LGDPhenotype.history.all()
+        self.assertEqual(len(history_records_phenotype), 3)
+        for phenotype in history_records_phenotype:
+            self.assertEqual(phenotype.is_deleted, 1)
+        history_records_pheno_summary = LGDPhenotypeSummary.history.all()
+        self.assertEqual(len(history_records_pheno_summary), 1)
+        self.assertEqual(history_records_pheno_summary[0].is_deleted, 1)
+        history_records_variant_type = LGDVariantType.history.all()
+        self.assertEqual(len(history_records_variant_type), 2)
+        for variant_type in history_records_variant_type:
+            self.assertEqual(variant_type.is_deleted, 1)
+        history_records_variant_type_comment = LGDVariantTypeComment.history.all()
+        self.assertEqual(len(history_records_variant_type_comment), 1)
+        self.assertEqual(history_records_variant_type_comment[0].is_deleted, 1)
+        history_records_variant_type_desc = LGDVariantTypeDescription.history.all()
+        self.assertEqual(len(history_records_variant_type_desc), 2)
+        for variant_description in history_records_variant_type_desc:
+            self.assertEqual(variant_description.is_deleted, 1)
+        history_records_variant_consequence = LGDVariantGenccConsequence.history.all()
+        self.assertEqual(len(history_records_variant_consequence), 1)
+        self.assertEqual(history_records_variant_consequence[0].is_deleted, 1)
+        history_records_ccm = LGDCrossCuttingModifier.history.all()
+        self.assertEqual(len(history_records_ccm), 2)
+        for ccm in history_records_ccm:
+            self.assertEqual(ccm.is_deleted, 1)

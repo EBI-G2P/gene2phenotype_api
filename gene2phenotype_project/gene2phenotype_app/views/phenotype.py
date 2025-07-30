@@ -13,6 +13,8 @@ from gene2phenotype_app.serializers import (
     LGDPhenotypeSummarySerializer,
     LGDPhenotypeListSerializer,
     LGDPhenotypeSummaryListSerializer,
+    LocusGenotypeDiseaseSerializer,
+    UserSerializer
 )
 
 from gene2phenotype_app.models import (
@@ -20,6 +22,7 @@ from gene2phenotype_app.models import (
     LGDPhenotype,
     LocusGenotypeDisease,
     LGDPhenotypeSummary,
+    User
 )
 
 from .base import BaseAdd, CustomPermissionAPIView, IsSuperUser
@@ -273,32 +276,54 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
         it sets the flag 'is_deleted' to 1.
         """
         accession = request.data.get("accession")
-        user = self.request.user  # TODO check if user has permission
+        user = request.user
 
         lgd_obj = get_object_or_404(
             LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0
         )
 
+        # Check if user has permission to update record
+        user_obj = get_object_or_404(User, email=user, is_active=1)
+        serializer_user = UserSerializer(user_obj, context={"user": user})
+        user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
+        has_common = LocusGenotypeDiseaseSerializer(
+            lgd_obj, context={"user": user}
+        ).check_user_permission(lgd_obj, user_panel_list)
+        if has_common is False:
+            return Response(
+                {"error": f"No permission to update record '{stable_id}'"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         # Fetch phenotype from Ontology Term
         try:
             phenotype_obj = OntologyTerm.objects.get(accession=accession)
         except OntologyTerm.DoesNotExist:
-            raise Http404(f"Cannot find phenotype for accession '{accession}'")
+            return Response(
+                {
+                    "error": f"Cannot find phenotype for accession '{accession}'"
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         # Fetch LGD-phenotype list
         # Each phenotype can be linked to several publications
-        try:
-            LGDPhenotype.objects.filter(
-                lgd=lgd_obj, phenotype=phenotype_obj, is_deleted=0
-            ).update(is_deleted=1)
-        except:
+        lgd_phenotype_list = LGDPhenotype.objects.filter(
+            lgd=lgd_obj, phenotype=phenotype_obj, is_deleted=0
+        )
+
+        if not lgd_phenotype_list:
             return Response(
                 {
-                    "error": f"Could not delete phenotype '{accession}' for ID '{stable_id}'"
+                    "error": f"Could not find phenotype '{accession}' for ID '{stable_id}'"
                 },
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_404_NOT_FOUND,
             )
         else:
+            # Set LGD-phenotype to deleted
+            for lgd_phenotype in lgd_phenotype_list:
+                lgd_phenotype.is_deleted = 1
+                lgd_phenotype.save()
             # The phenotype was deleted successfully - update the date of last update in the record table
             lgd_obj.date_review = get_date_now()
             lgd_obj.save()
