@@ -69,12 +69,12 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
                     "title": "Acetyl coenzyme A: alpha-glucosaminide N-acetyltransferase. Evidence for a transmembrane acetylation mechanism.",
                     "authors": "Bame KJ, Rome LH.",
                     "year": "1985",
-                    "comments": []
-                    },
-                    "number_of_families": None,
-                    "consanguinity": None,
-                    "affected_individuals": None,
-                    "ancestry": None
+                    "comments": [],
+                },
+                "number_of_families": None,
+                "consanguinity": None,
+                "affected_individuals": None,
+                "ancestry": None,
             }
         ]
         self.assertEqual(response.data["publications"], expected_data_publication)
@@ -99,10 +99,8 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
             "synopsis": [{"synopsis": "assembly-mediated GOF", "support": "inferred"}],
             "evidence": {
                 3897232: {
-                    "functional_studies": {
-                        "Function": ["Biochemical"]
-                    },
-                    "descriptions": []
+                    "functional_studies": {"Function": ["Biochemical"]},
+                    "descriptions": [],
                 }
             },
         }
@@ -154,7 +152,7 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
                             "user": "test_user1",
                             "date": "2025-02-19",
                         }
-                    ]
+                    ],
                 },
                 "number_of_families": None,
                 "consanguinity": None,
@@ -170,10 +168,8 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
             "synopsis": [{"synopsis": "assembly-mediated GOF", "support": "inferred"}],
             "evidence": {
                 3897232: {
-                    "functional_studies": {
-                        "Function": ["Biochemical"]
-                    },
-                    "descriptions": ["This is the evidence found in PMID:3897232"]
+                    "functional_studies": {"Function": ["Biochemical"]},
+                    "descriptions": ["This is the evidence found in PMID:3897232"],
                 }
             },
         }

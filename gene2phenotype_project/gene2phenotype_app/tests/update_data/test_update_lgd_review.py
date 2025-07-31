@@ -53,7 +53,7 @@ class LGDEditLGDReview(TestCase):
         self.assertEqual(response.status_code, 400)
 
         response_data = response.json()
-        expected_error = {'is_reviewed': ['This field is required.']}
+        expected_error = {"is_reviewed": ["This field is required."]}
         self.assertEqual(response_data["error"], expected_error)
 
     def test_no_permission(self):
@@ -117,7 +117,9 @@ class LGDEditLGDReview(TestCase):
         self.assertEqual(response.status_code, 200)
 
         response_data = response.json()
-        self.assertEqual(response_data["message"], "G2P00001 successfully set to under review")
+        self.assertEqual(
+            response_data["message"], "G2P00001 successfully set to under review"
+        )
 
         # Check the data
         lgd_obj = LocusGenotypeDisease.objects.get(stable_id__stable_id="G2P00001")
