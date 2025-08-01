@@ -5,9 +5,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from gene2phenotype_app.models import (
     User,
     LGDPublication,
+    LGDPublicationComment,
     LGDMolecularMechanismEvidence,
     LGDMolecularMechanismSynopsis,
     LGDPhenotype,
+    LGDPhenotypeSummary,
     LGDVariantType,
     LGDVariantTypeDescription,
 )
@@ -26,6 +28,8 @@ class LGDEditPublicationsEndpoint(TestCase):
         "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
         "gene2phenotype_app/fixtures/lgd_mechanism_evidence.json",
         "gene2phenotype_app/fixtures/lgd_mechanism_synopsis.json",
+        "gene2phenotype_app/fixtures/lgd_phenotype.json",
+        "gene2phenotype_app/fixtures/lgd_phenotype_summary.json",
         "gene2phenotype_app/fixtures/lgd_panel.json",
         "gene2phenotype_app/fixtures/locus_genotype_disease.json",
         "gene2phenotype_app/fixtures/locus.json",
@@ -35,6 +39,7 @@ class LGDEditPublicationsEndpoint(TestCase):
         "gene2phenotype_app/fixtures/ontology_term.json",
         "gene2phenotype_app/fixtures/source.json",
         "gene2phenotype_app/fixtures/lgd_publication.json",
+        "gene2phenotype_app/fixtures/lgd_publication_comment.json",
     ]
 
     def setUp(self):
@@ -88,7 +93,7 @@ class LGDEditPublicationsEndpoint(TestCase):
             "phenotypes": [
                 {
                     "pmid": "15214012",
-                    "summary": "",
+                    "summary": "Summary of phenotypes reported in PMID 15214012",
                     "hpo_terms": [
                         {
                             "term": "Abnormality of connective tissue",
@@ -145,33 +150,243 @@ class LGDEditPublicationsEndpoint(TestCase):
             response_data["message"], "Publication added to the G2P entry successfully."
         )
 
+        # Check inserted data and history tables
+        lgd_publications = LGDPublication.objects.filter(
+            lgd__stable_id__stable_id="G2P00001", is_deleted=0
+        )
+        self.assertEqual(len(lgd_publications), 2)
+        history_lgd_publications = LGDPublication.history.all()
+        self.assertEqual(len(history_lgd_publications), 1)
+
+        lgd_mechanism_evidence = LGDMolecularMechanismEvidence.objects.filter(
+            lgd__stable_id__stable_id="G2P00001", is_deleted=0
+        )
+        self.assertEqual(len(lgd_mechanism_evidence), 2)
+        history_mechanism_evidence = LGDMolecularMechanismEvidence.history.all()
+        self.assertEqual(len(history_mechanism_evidence), 1)
+
+        lgd_mechanism_synopsis = LGDMolecularMechanismSynopsis.objects.filter(
+            lgd__stable_id__stable_id="G2P00001", is_deleted=0
+        )
+        self.assertEqual(len(lgd_mechanism_synopsis), 1)
+        history_mechanism_synopsis = LGDMolecularMechanismSynopsis.history.all()
+        self.assertEqual(len(history_mechanism_synopsis), 0)  # there was no insertion
+
+        lgd_phenotypes = LGDPhenotype.objects.filter(
+            lgd__stable_id__stable_id="G2P00001", is_deleted=0
+        )
+        self.assertEqual(len(lgd_phenotypes), 2)
+        history_lgd_phenotypes = LGDPhenotype.history.all()
+        self.assertEqual(len(history_lgd_phenotypes), 1)
+
+        lgd_phenotype_summary = LGDPhenotypeSummary.objects.filter(
+            lgd__stable_id__stable_id="G2P00001", is_deleted=0
+        )
+        self.assertEqual(len(lgd_phenotype_summary), 1)
+        history_phenotype_summary = LGDPhenotypeSummary.history.all()
+        self.assertEqual(len(history_phenotype_summary), 1)
+
+        lgd_variant_types = LGDVariantType.objects.filter(
+            lgd__stable_id__stable_id="G2P00001", is_deleted=0
+        )
+        self.assertEqual(len(lgd_variant_types), 1)
+        history_lgd_variant_types = LGDVariantType.history.all()
+        self.assertEqual(len(history_lgd_variant_types), 1)
+
+        lgd_variant_descriptions = LGDVariantTypeDescription.objects.filter(
+            lgd__stable_id__stable_id="G2P00001", is_deleted=0
+        )
+        self.assertEqual(len(lgd_variant_descriptions), 1)
+        history_variant_descriptions = LGDVariantTypeDescription.history.all()
+        self.assertEqual(len(history_variant_descriptions), 1)
+
+    def test_add_lgd_publication_with_comment(self):
+        """
+        Test the endpoint to add a publication with commment to a record
+        """
+        publication_to_add = {
+            "publications": [
+                {
+                    "publication": {"pmid": 15214012},
+                    "comment": {
+                        "comment": "Cardiac anomalies are reported in less than 20% of affected males",
+                        "is_public": 0,
+                    },
+                    "families": {
+                        "families": 1,
+                        "consanguinity": "unknown",
+                        "ancestries": "European, American",
+                        "affected_individuals": 1,
+                    },
+                }
+            ],
+        }
+
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.post(
+            self.url_add_publication,
+            publication_to_add,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 201)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["message"], "Publication added to the G2P entry successfully."
+        )
+
         # Check inserted data
         lgd_publications = LGDPublication.objects.filter(
             lgd__stable_id__stable_id="G2P00001", is_deleted=0
         )
         self.assertEqual(len(lgd_publications), 2)
 
-        lgd_mechanism_evidence = LGDMolecularMechanismEvidence.objects.filter(
-            lgd__stable_id__stable_id="G2P00001", is_deleted=0
-        )
-        self.assertEqual(len(lgd_mechanism_evidence), 2)
+        for lgd_publication in lgd_publications:
+            # Check the comments linked to the LGD-publication
+            lgd_publication_comments = LGDPublicationComment.objects.filter(
+                lgd_publication_id=lgd_publication.id, is_deleted=0
+            )
+            self.assertEqual(len(lgd_publication_comments), 1)
 
-        lgd_mechanism_synopsis = LGDMolecularMechanismSynopsis.objects.filter(
-            lgd__stable_id__stable_id="G2P00001", is_deleted=0
+        # Check the families/affected individuals for the new publication
+        lgd_publication = LGDPublication.objects.get(
+            lgd__stable_id__stable_id="G2P00001",
+            publication__pmid=15214012,
+            is_deleted=0,
         )
-        self.assertEqual(len(lgd_mechanism_synopsis), 1)
+        self.assertEqual(lgd_publication.number_of_families, 1)
+        self.assertEqual(lgd_publication.affected_individuals, 1)
+        self.assertEqual(lgd_publication.ancestry, "European, American")
+        self.assertEqual(lgd_publication.consanguinity.value, "unknown")
 
-        lgd_phenotypes = LGDPhenotype.objects.filter(
-            lgd__stable_id__stable_id="G2P00001", is_deleted=0
-        )
-        self.assertEqual(len(lgd_phenotypes), 1)
+        # Check history tables
+        history_records = LGDPublication.history.all()
+        self.assertEqual(len(history_records), 1)
+        history_records_comments = LGDPublicationComment.history.all()
+        self.assertEqual(len(history_records_comments), 1)
 
-        lgd_variant_types = LGDVariantType.objects.filter(
-            lgd__stable_id__stable_id="G2P00001", is_deleted=0
-        )
-        self.assertEqual(len(lgd_variant_types), 1)
+    def test_add_lgd_publication_invalid_pmid(self):
+        """
+        Test the endpoint to add a LGD-publication with invalid PMID
+        """
+        publication_to_add = {
+            "publications": [
+                {
+                    "publication": {"pmid": 0},
+                    "comment": {
+                        "comment": "Cardiac anomalies are reported in less than 20% of affected males",
+                        "is_public": 0,
+                    },
+                    "families": {
+                        "families": 1,
+                        "consanguinity": "unknown",
+                        "ancestries": "European, American",
+                        "affected_individuals": 1,
+                    },
+                }
+            ],
+        }
 
-        lgd_variant_descriptions = LGDVariantTypeDescription.objects.filter(
-            lgd__stable_id__stable_id="G2P00001", is_deleted=0
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.post(
+            self.url_add_publication,
+            publication_to_add,
+            content_type="application/json",
         )
-        self.assertEqual(len(lgd_variant_descriptions), 1)
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(response_data["error"], "Invalid PMID 0")
+
+    def test_add_lgd_publication_invalid(self):
+        """
+        Test the endpoint to add a LGD-publication with invalid consanguinity
+        """
+        publication_to_add = {
+            "publications": [
+                {
+                    "publication": {"pmid": 15214012},
+                    "comment": {
+                        "comment": "Cardiac anomalies are reported in less than 20% of affected males",
+                        "is_public": 0,
+                    },
+                    "families": {
+                        "families": 1,
+                        "consanguinity": "u",
+                        "ancestries": "European, American",
+                        "affected_individuals": 1,
+                    },
+                }
+            ],
+        }
+
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.post(
+            self.url_add_publication,
+            publication_to_add,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(response_data["error"], "Invalid consanguinity value 'u'")
+
+    def test_add_lgd_publication_invalid_input(self):
+        """
+        Test the endpoint to add a LGD-publication with invalid consanguinity
+        """
+        publication_to_add = {
+            "publication": [
+                {
+                    "publication": {"pmid": 15214012},
+                    "comment": {"comment": "", "is_public": 0},
+                    "families": {
+                        "families": 1,
+                        "consanguinity": "",
+                        "ancestries": "European, American",
+                        "affected_individuals": 1,
+                    },
+                }
+            ],
+        }
+
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.post(
+            self.url_add_publication,
+            publication_to_add,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"], {"publications": ["This field is required."]}
+        )

@@ -16,7 +16,6 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
         "gene2phenotype_app/fixtures/disease.json",
         "gene2phenotype_app/fixtures/g2p_stable_id.json",
-        "gene2phenotype_app/fixtures/g2p_stable_id.json",
         "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
         "gene2phenotype_app/fixtures/lgd_mechanism_evidence.json",
         "gene2phenotype_app/fixtures/lgd_mechanism_synopsis.json",
@@ -31,7 +30,7 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         "gene2phenotype_app/fixtures/lgd_publication.json",
         "gene2phenotype_app/fixtures/lgd_comment.json",
         "gene2phenotype_app/fixtures/lgd_phenotype.json",
-        "gene2phenotype_app/fixtures/publication_comment.json",
+        "gene2phenotype_app/fixtures/lgd_publication_comment.json",
     ]
 
     def test_lgd_detail(self):
@@ -69,12 +68,12 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
                     "title": "Acetyl coenzyme A: alpha-glucosaminide N-acetyltransferase. Evidence for a transmembrane acetylation mechanism.",
                     "authors": "Bame KJ, Rome LH.",
                     "year": "1985",
-                    "comments": [],
                 },
                 "number_of_families": None,
                 "consanguinity": None,
                 "affected_individuals": None,
                 "ancestry": None,
+                "comments": [],
             }
         ]
         self.assertEqual(response.data["publications"], expected_data_publication)
@@ -146,18 +145,18 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
                     "title": "Acetyl coenzyme A: alpha-glucosaminide N-acetyltransferase. Evidence for a transmembrane acetylation mechanism.",
                     "authors": "Bame KJ, Rome LH.",
                     "year": "1985",
-                    "comments": [
-                        {
-                            "comment": "See supplementary table 1. Homozygous.",
-                            "user": "test_user1",
-                            "date": "2025-02-19",
-                        }
-                    ],
                 },
                 "number_of_families": None,
                 "consanguinity": None,
                 "affected_individuals": None,
                 "ancestry": None,
+                "comments": [
+                    {
+                        "comment": "See supplementary table 1. Homozygous.",
+                        "user": "test_user1",
+                        "date": "2025-02-19",
+                    }
+                ],
             }
         ]
         self.assertEqual(response.data["publications"], expected_data_publication)

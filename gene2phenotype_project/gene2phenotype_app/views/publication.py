@@ -224,7 +224,9 @@ class LGDEditPublications(BaseUpdate):
         )
 
         # LGDPublicationListSerializer accepts a list of publications
-        serializer_list = LGDPublicationListSerializer(data=request.data)
+        serializer_list = LGDPublicationListSerializer(
+            data=request.data, context={"lgd": lgd, "user": user}
+        )
 
         if serializer_list.is_valid():
             publications_data = serializer_list.validated_data.get(
