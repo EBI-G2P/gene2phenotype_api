@@ -1,55 +1,56 @@
 from rest_framework import serializers
 import re
 
-from ..models import Publication, PublicationComment, Attrib, LGDPublication
+from ..models import Publication, LGDPublicationComment, Attrib, LGDPublication
 
 from ..utils import get_publication, get_authors
 
 from ..utils import get_date_now, clean_title
 
 
-class PublicationCommentSerializer(serializers.ModelSerializer):
+class LGDPublicationCommentSerializer(serializers.ModelSerializer):
     """
-    Serializer for the PublicationComment model.
+    Serializer for the LGDPublicationComment model.
     To insert a comment the user is fetched from the context.
     Publication comments are only available to authenticated users.
     """
-
     comment = serializers.CharField()
-    date = serializers.DateTimeField()
-    user = serializers.CharField(source="user.username")
+    date = serializers.DateTimeField(read_only=True)
+    user = serializers.CharField(source="user.username", read_only=True)
 
-    def create(self, data, publication):
+    def create(self, data):
         """
-        Method to add a comment to a publication.
-        The comment can be public or private.
+        Method to add a comment to a lgd-publication.
+        The publication comments are always private.
 
         Returns:
-                PublicationComment object
+                LGDPublicationComment object
         """
-
         comment_text = data.get("comment")
-        user_obj = self.context["user"]  # gets the user from the context
+        user_obj = self.context["user"] # gets the user from the context
+        lgd_publication_obj = self.context["lgd_publication"]
         is_public = 0  # publication comments are private
 
         # Remove newlines from comment
         comment_text = re.sub(r"\n", " ", comment_text)
 
         # Check if comment is already stored. We consider same comment if they have the same:
-        #   publication, comment text, user and it's not deleted TODO
+        #   lgd-publication, comment text and it is not deleted
         # Filter can return multiple values - this can happen if we have duplicated entries
-        publication_comment_list = PublicationComment.objects.filter(
-            comment=comment_text, publication=publication, is_deleted=0
+        publication_comment_list = LGDPublicationComment.objects.filter(
+            lgd_publication=lgd_publication_obj,
+            comment=comment_text,
+            is_deleted=0
         )
 
         # Comment was not found in table - insert new comment
         if not publication_comment_list:
-            publication_comment_obj = PublicationComment.objects.create(
+            publication_comment_obj = LGDPublicationComment.objects.create(
+                lgd_publication=lgd_publication_obj,
                 comment=comment_text,
                 is_public=is_public,
                 is_deleted=0,
                 date=get_date_now(),
-                publication=publication,
                 user=user_obj,
             )
 
@@ -59,7 +60,7 @@ class PublicationCommentSerializer(serializers.ModelSerializer):
         return publication_comment_obj
 
     class Meta:
-        model = PublicationComment
+        model = LGDPublicationComment
         fields = ["comment", "date", "user"]
 
 
@@ -67,33 +68,97 @@ class PublicationSerializer(serializers.ModelSerializer):
     """
     Serializer for the Publication model.
     """
-
     pmid = serializers.IntegerField()
     title = serializers.CharField(read_only=True)
     authors = serializers.CharField(read_only=True)
     year = serializers.CharField(read_only=True)
+
+    def create(self, validated_data):
+        """
+        Method to create a publication.
+        This method is called when publishing a record.
+        The PMID is mandatory.
+
+        Args:
+            (dict) validated_data: valid PublicationSerializer fields
+                                   accepted fields are: pmid
+
+        Returns:
+                Publication object
+
+        Raises:
+                Invalid PMID
+        """
+        pmid = validated_data["pmid"]  # serializer fields
+
+        try:
+            publication_obj = Publication.objects.get(pmid=pmid)
+
+        except Publication.DoesNotExist:
+            response = get_publication(pmid)
+
+            if response["hitCount"] == 0:
+                raise serializers.ValidationError(
+                    {"error": f"Invalid PMID {pmid}"}
+                )
+
+            authors = get_authors(response)
+            year = None
+            doi = None
+            publication_info = response["result"]
+            title = clean_title(publication_info["title"])
+            if "doi" in publication_info:
+                doi = publication_info["doi"]
+            if "pubYear" in publication_info:
+                year = publication_info["pubYear"]
+
+            # Insert publication
+            publication_obj = Publication.objects.create(
+                pmid=pmid, title=title, authors=authors, year=year, doi=doi
+            )
+
+        return publication_obj
+
+    class Meta:
+        model = Publication
+        fields = ["pmid", "title", "authors", "year"]
+
+
+### G2P record (LGD) - publication ###
+class LGDPublicationSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the LGDPublication model.
+    Called by: LocusGenotypeDiseaseSerializer()
+               LGDPublicationListSerializer()
+    """
+    publication = PublicationSerializer()
+    number_of_families = serializers.IntegerField(required=False, allow_null=True)
+    consanguinity = serializers.CharField(
+        source="consanguinity.value", required=False, allow_null=True
+    )
+    affected_individuals = serializers.IntegerField(required=False, allow_null=True)
+    ancestry = serializers.CharField(required=False, allow_null=True)
     comments = serializers.SerializerMethodField(allow_null=True)
 
     def get_comments(self, id):
         """
-        Get all comments associated with the publication.
+        Get all comments associated with the LGD-publication.
 
         Returns:
-                (list) comments: list of comments
+            (list) comments: list of comments
         """
-
         user = self.context.get("user")
 
         # Authenticated users can view all types of comments
         if user and user.is_authenticated:
-            queryset = PublicationComment.objects.filter(
-                publication_id=id.id, is_deleted=0
+            queryset = LGDPublicationComment.objects.filter(
+                lgd_publication_id=id, is_deleted=0
             ).prefetch_related("user")
 
         # Anonymous users can only view public comments
         else:
-            queryset = PublicationComment.objects.filter(
-                publication_id=id.id, is_deleted=0, is_public=1
+            queryset = LGDPublicationComment.objects.filter(
+                lgd_publication_id=id, is_deleted=0, is_public=1
             ).prefetch_related("user")
 
         data = []
@@ -112,97 +177,6 @@ class PublicationSerializer(serializers.ModelSerializer):
             data.append(comment)
 
         return data
-
-    def validate(self, data):
-        """
-        Overwrite the validate method to accept extra fields:
-         - comments
-        """
-        if hasattr(self, "initial_data"):
-            data = self.initial_data
-
-        return data
-
-    def create(self, validated_data):
-        """
-        Method to create a publication.
-        If PMID is already stored in G2P, add the new comment to the existing PMID.
-        This method is called when publishing a record.
-
-        The PMID is mandatory, while comment is optional.
-
-        Args:
-            (dict) validated_data: valid PublicationSerializer fields
-                                   accepted fields are: pmid, comment
-
-        Returns:
-                Publication object
-
-        Raises:
-                Invalid PMID
-        """
-        pmid = validated_data["pmid"]  # serializer fields
-        comment = validated_data["comment"]  # extra data - comment
-
-        user_obj = self.context["user"]
-
-        try:
-            publication_obj = Publication.objects.get(pmid=pmid)
-
-        except Publication.DoesNotExist:
-            response = get_publication(pmid)
-
-            if response["hitCount"] == 0:
-                raise serializers.ValidationError(
-                    {"message": "Invalid PMID", "Please check ID": pmid}
-                )
-
-            authors = get_authors(response)
-            year = None
-            doi = None
-            publication_info = response["result"]
-            title = clean_title(publication_info["title"])
-            if "doi" in publication_info:
-                doi = publication_info["doi"]
-            if "pubYear" in publication_info:
-                year = publication_info["pubYear"]
-
-            # Insert publication
-            publication_obj = Publication.objects.create(
-                pmid=pmid, title=title, authors=authors, year=year, doi=doi
-            )
-
-        # Add new comment
-        # Comment: {'comment': 'this is a comment', 'is_public': 1}
-        if comment is not None:
-            PublicationCommentSerializer(
-                # the user is necessary to save the comment
-                context={"user": user_obj}
-            ).create(comment, publication_obj)
-
-        return publication_obj
-
-    class Meta:
-        model = Publication
-        fields = ["pmid", "title", "authors", "year", "comments"]
-
-
-### G2P record (LGD) - publication ###
-class LGDPublicationSerializer(serializers.ModelSerializer):
-    """
-    Serializer for the LGDPublication model.
-    Called by: LocusGenotypeDiseaseSerializer()
-               LGDPublicationListSerializer()
-    """
-
-    publication = PublicationSerializer()
-    number_of_families = serializers.IntegerField(required=False, allow_null=True)
-    consanguinity = serializers.CharField(
-        source="consanguinity.value", required=False, allow_null=True
-    )
-    affected_individuals = serializers.IntegerField(required=False, allow_null=True)
-    ancestry = serializers.CharField(required=False, allow_null=True)
-    comment = serializers.DictField(required=False)
 
     def validate(self, data):
         """
@@ -261,13 +235,14 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
                 LGDPublication object
         """
         lgd = self.context["lgd"]
+        user_obj = self.context["user"]
 
-        publication_data = validated_data.get(
-            "publication"
-        )  # 'publication': {'pmid': 39385417}
-        comment = validated_data.get(
-            "comment", None
-        )  # 'comment': {'comment': 'this is a comment', 'is_public': 1}
+        # Format: {'publication': {'pmid': 39385417}}
+        publication_data = validated_data.get("publication")
+        # Format: {'comment': {'comment': 'this is a comment', 'is_public': 0}}
+        comment = validated_data.get("comment", None)
+        comment_text = None
+
         # The families format can be different depending on the type of update
         number_of_families = validated_data.get("number_of_families", None)
         affected_individuals = validated_data.get("affected_individuals", None)
@@ -287,24 +262,17 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
                 )
             except Attrib.DoesNotExist:
                 raise serializers.ValidationError(
-                    {"message": f"Invalid consanguinity value '{consanguinity}'"}
+                    {"error": f"Invalid consanguinity value '{consanguinity}'"}
                 )
 
         if comment:
             comment_text = comment["comment"]
-
             # Check if comment text is empty string
             if not comment_text or comment_text == "":
-                comment = None
-            # Publication comments are always private
-            else:
-                comment["is_public"] = 0
+                comment_text = None
 
-        # it is necessary to send the user
-        # the publication comment is linked to the user
         publication_serializer = PublicationSerializer(
-            data={"pmid": publication_data.get("pmid"), "comment": comment},
-            context={"user": self.context.get("user")},
+            data={"pmid": publication_data.get("pmid")},
         )
 
         # Validate the input data
@@ -327,6 +295,17 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
                 ancestry=ancestry,
                 is_deleted=0,
             )
+            if comment_text:
+                # Insert LGD-publication-comment entry
+                lgd_publication_comment_serializer = LGDPublicationCommentSerializer(
+                    data={"comment": comment_text},
+                    context={"user": user_obj, "lgd_publication": lgd_publication_obj},
+                )
+                if lgd_publication_comment_serializer.is_valid(raise_exception=True):
+                    # save() is going to call create() method
+                    lgd_publication_comment_serializer.save()
+                else:
+                    print("Error adding lgdpublication-comment")
         else:
             # LGD-publication already exists
             # If it does not have number of families or affected individuals then update it
@@ -339,6 +318,19 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
                 lgd_publication_obj.ancestry = ancestry
                 lgd_publication_obj.consanguinity = consanguinity_obj
                 lgd_publication_obj.save()
+
+            # Insert comment to existing publication
+            if comment_text:
+                # Insert LGD-publication-comment entry
+                lgd_publication_comment_serializer = LGDPublicationCommentSerializer(
+                    data={"comment": comment_text},
+                    context={"user": user_obj, "lgd_publication": lgd_publication_obj},
+                )
+                if lgd_publication_comment_serializer.is_valid(raise_exception=True):
+                    # save() is going to call create() method
+                    lgd_publication_comment_serializer.save()
+                else:
+                    print("Error adding lgdpublication-comment")
 
         # If LGD-publication already exists then returns the existing object
         # New comments are added to the existing object
@@ -357,7 +349,7 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
             "consanguinity",
             "affected_individuals",
             "ancestry",
-            "comment",
+            "comments",
         ]
 
 
@@ -367,7 +359,6 @@ class LGDPublicationListSerializer(serializers.Serializer):
     This method only validates the publications, it does not update any data.
     Called by: LocusGenotypeDiseaseAddPublication() and view LGDEditPublications()
     """
-
     publications = LGDPublicationSerializer(many=True)
 
     def validate(self, data):

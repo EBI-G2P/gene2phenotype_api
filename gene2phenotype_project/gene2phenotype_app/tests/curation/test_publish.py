@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
-from gene2phenotype_app.models import User, CurationData
+from gene2phenotype_app.models import (User, LocusGenotypeDisease, LGDPublication, LGDPublicationComment)
 
 
 class LGDAddCurationEndpoint(TestCase):
@@ -391,4 +391,16 @@ class LGDAddCurationEndpoint(TestCase):
         self.assertEqual(
             response_data_publish["message"],
             "Record 'G2P00007' published successfully",
+        )
+
+        # Check inserted data
+        lgd_obj = LocusGenotypeDisease.objects.get(
+            locus__name="SRY",
+            disease__name="SRY-related 46,xx sex reversal",
+            genotype__value="monoallelic_Y_hemizygous",
+            is_deleted=0
+        )
+        lgd_publications = LGDPublication.objects.filter(
+            lgd=lgd_obj,
+            is_deleted=0
         )

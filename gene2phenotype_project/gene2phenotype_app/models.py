@@ -584,9 +584,13 @@ class Publication(models.Model):
         indexes = [models.Index(fields=["pmid"])]
 
 
-class PublicationComment(models.Model):
+class LGDPublicationComment(models.Model):
     id = models.AutoField(primary_key=True)
-    publication = models.ForeignKey("Publication", on_delete=models.PROTECT)
+    lgd_publication = models.ForeignKey(
+        "LGDPublication",
+        on_delete=models.PROTECT,
+        null=True,  # Temporary
+    )
     comment = models.TextField(null=False)
     is_public = models.SmallIntegerField(null=False, default=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
@@ -595,7 +599,7 @@ class PublicationComment(models.Model):
     history = HistoricalRecords()
 
     class Meta:
-        db_table = "publication_comment"
+        db_table = "lgd_publication_comment"
 
 
 class Source(models.Model):
