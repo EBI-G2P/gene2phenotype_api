@@ -205,6 +205,9 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
                     "affected_individuals"
                 ]
 
+            if "comment" in self.initial_data["publication"]:
+                data["comment"] = self.initial_data["publication"]["comment"]
+
             # Check the format when sent by 'add publications'
             # Expected format:
             # {'publication': {'pmid': '2'},
