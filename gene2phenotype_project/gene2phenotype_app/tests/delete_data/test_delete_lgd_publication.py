@@ -2,7 +2,16 @@ from django.test import TestCase
 from django.urls import reverse
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
-from gene2phenotype_app.models import User, LGDPublication
+from gene2phenotype_app.models import (
+    User,
+    LGDPublication,
+    LGDPhenotype,
+    LGDPhenotypeSummary,
+    LGDVariantType,
+    LGDVariantTypeComment,
+    LGDVariantTypeDescription,
+    LGDMolecularMechanismEvidence,
+)
 
 
 class LGDDeletePublication(TestCase):
@@ -39,6 +48,9 @@ class LGDDeletePublication(TestCase):
 
     def setUp(self):
         self.url_delete = reverse("lgd_publication", kwargs={"stable_id": "G2P00002"})
+        self.url_try_delete = reverse(
+            "lgd_publication", kwargs={"stable_id": "G2P00001"}
+        )
 
     def test_delete_no_permission(self):
         """
@@ -134,6 +146,31 @@ class LGDDeletePublication(TestCase):
             "Could not find publication '3897232' for ID 'G2P00002'",
         )
 
+    def test_invalid_delete_3(self):
+        """
+        Test deleting the only publication of the record G2P00001
+        """
+        to_delete = {"pmid": 3897232}
+
+        # Login
+        user = User.objects.get(email="john@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.patch(
+            self.url_try_delete, to_delete, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"],
+            "Could not delete PMID '3897232' for ID 'G2P00001'",
+        )
+
     def test_lgd_publication_delete(self):
         """
         Test deleting the publication from the record (LGD)
@@ -161,7 +198,54 @@ class LGDDeletePublication(TestCase):
         )
         self.assertEqual(len(lgd_publications), 1)
 
+        lgd_phenotypes = LGDPhenotype.objects.filter(
+            lgd__stable_id__stable_id="G2P00002",
+            publication__pmid=15214012,
+            is_deleted=1,
+        )
+        self.assertEqual(len(lgd_phenotypes), 3)
+
+        lgd_phenotype_summary = LGDPhenotypeSummary.objects.filter(
+            lgd__stable_id__stable_id="G2P00002",
+            publication__pmid=15214012,
+            is_deleted=1,
+        )
+        self.assertEqual(len(lgd_phenotype_summary), 1)
+
+        lgd_variant_type = LGDVariantType.objects.filter(
+            lgd__stable_id__stable_id="G2P00002",
+            publication__pmid=15214012,
+            is_deleted=1,
+        )
+        self.assertEqual(len(lgd_variant_type), 2)
+
+        lgd_variant_description = LGDVariantTypeDescription.objects.filter(
+            lgd__stable_id__stable_id="G2P00002",
+            publication__pmid=15214012,
+            is_deleted=1,
+        )
+        self.assertEqual(len(lgd_variant_description), 2)
+
+        lgd_mechanism_evidence = LGDMolecularMechanismEvidence.objects.filter(
+            lgd__stable_id__stable_id="G2P00002",
+            publication__pmid=15214012,
+            is_deleted=1,
+        )
+        self.assertEqual(len(lgd_mechanism_evidence), 1)
+
         # Check the history table
         history_records = LGDPublication.history.all()
         self.assertEqual(len(history_records), 1)
         self.assertEqual(history_records[0].is_deleted, 1)
+        history_records_phenotype = LGDPhenotype.history.all()
+        self.assertEqual(len(history_records_phenotype), 3)
+        history_records_pheno_sum = LGDPhenotypeSummary.history.all()
+        self.assertEqual(len(history_records_pheno_sum), 1)
+        history_records_var_type = LGDVariantType.history.all()
+        self.assertEqual(len(history_records_var_type), 2)
+        history_records_var_type_comment = LGDVariantTypeComment.history.all()
+        self.assertEqual(len(history_records_var_type_comment), 1)
+        history_records_var_type_desc = LGDVariantTypeDescription.history.all()
+        self.assertEqual(len(history_records_var_type_desc), 2)
+        history_records_mechanism_evidence = LGDMolecularMechanismEvidence.history.all()
+        self.assertEqual(len(history_records_mechanism_evidence), 1)
