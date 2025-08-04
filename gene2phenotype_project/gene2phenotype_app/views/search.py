@@ -14,7 +14,12 @@ from gene2phenotype_app.serializers import (
     CurationDataSerializer,
 )
 
-from gene2phenotype_app.models import LGDPanel, LocusGenotypeDisease, CurationData
+from gene2phenotype_app.models import (
+    LGDPanel,
+    LocusGenotypeDisease,
+    CurationData,
+    G2PStableID,
+)
 
 from .base import BaseView
 
@@ -422,10 +427,23 @@ class SearchView(BaseView):
         If no search type is specified then it performs a generic search.
         The search can be specific to one panel if using parameter 'panel'.
         """
-        queryset = self.get_queryset()
-        serializer = self.get_serializer_class()
         search_query = request.query_params.get("query", None)
         search_type = request.query_params.get("type", None)
+
+        # Check if query is a merged record
+        if search_type == "stable_id" or (
+            search_query and search_query.startswith("G2P")
+        ):
+            try:
+                g2p_obj = G2PStableID.objects.get(stable_id=search_query, is_deleted=1)
+            except G2PStableID.DoesNotExist:
+                pass
+            else:
+                if g2p_obj.comment and g2p_obj.comment.startswith("Merged into"):
+                    return self.handle_merged_record(g2p_obj.comment)
+
+        queryset = self.get_queryset()
+        serializer = self.get_serializer_class()
 
         if not search_type:
             search_type = "results"

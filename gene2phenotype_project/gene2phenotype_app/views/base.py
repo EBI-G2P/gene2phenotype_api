@@ -1,8 +1,9 @@
-from rest_framework import generics, status, permissions
 from django.core.exceptions import PermissionDenied
-from django.http import Http404
-from rest_framework.response import Response
 from django.db import transaction
+from django.http import Http404
+from django.urls import reverse
+from rest_framework import generics, status, permissions
+from rest_framework.response import Response
 from rest_framework.permissions import BasePermission
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.views import APIView
@@ -25,6 +26,13 @@ class BaseView(generics.ListAPIView):
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         return super().handle_exception(exc)
+
+    def handle_merged_record(self, message):
+        return Response(
+            {"detail": message},
+            status=status.HTTP_410_GONE,
+            # headers={"Location": reverse("lgd", args=[g2p_id])}
+        )
 
 
 class BaseAPIView(APIView):
@@ -50,6 +58,13 @@ class BaseAPIView(APIView):
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         return super().handle_exception(exc)
+
+    def handle_merged_record(self, message):
+        return Response(
+            {"detail": message},
+            status=status.HTTP_410_GONE,
+            # headers={"Location": reverse("lgd", args=[g2p_id])}
+        )
 
 
 class BaseAdd(generics.CreateAPIView):
