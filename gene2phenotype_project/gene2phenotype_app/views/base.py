@@ -28,11 +28,7 @@ class BaseView(generics.ListAPIView):
         return super().handle_exception(exc)
 
     def handle_merged_record(self, message):
-        return Response(
-            {"detail": message},
-            status=status.HTTP_410_GONE,
-            # headers={"Location": reverse("lgd", args=[g2p_id])}
-        )
+        return Response({"detail": message}, status=status.HTTP_410_GONE)
 
 
 class BaseAPIView(APIView):
