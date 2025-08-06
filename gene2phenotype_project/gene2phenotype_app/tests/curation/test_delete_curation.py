@@ -7,7 +7,7 @@ from gene2phenotype_app.models import User, CurationData, G2PStableID
 
 class LGDDeleteCurationEndpoint(TestCase):
     """
-    Test endpoint to list curation drafts
+    Test endpoint to delete curation
     """
 
     fixtures = [
@@ -95,6 +95,6 @@ class LGDDeleteCurationEndpoint(TestCase):
         self.assertEqual(g2p_stable_id_obj.is_live, False)
         self.assertEqual(g2p_stable_id_obj.is_deleted, 1)
 
-        # Test history tables
+        # Test history table
         history_records = CurationData.history.filter(stable_id__stable_id="G2P00004")
         self.assertEqual(len(history_records), 1)
