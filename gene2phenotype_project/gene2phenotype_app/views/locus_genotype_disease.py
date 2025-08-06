@@ -392,7 +392,8 @@ class LocusGenotypeDiseaseDetail(BaseAPIView):
         if g2p_stable_id.is_deleted:
             comment = g2p_stable_id.comment
             if comment and comment.startswith("Merged into"):
-                return self.handle_merged_record(comment)
+                match = re.search(r"G2P\d{5,}", comment)
+                return self.handle_merged_record(stable_id, match.group())
 
         queryset = self.get_queryset().first()
         serializer = LocusGenotypeDiseaseSerializer(

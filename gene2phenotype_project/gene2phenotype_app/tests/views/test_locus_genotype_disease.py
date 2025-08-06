@@ -65,7 +65,8 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         """
         response = self.client.get(self.url_lgd_merged)
         self.assertEqual(response.status_code, 410)
-        self.assertEqual(response.data["detail"], "Merged into G2P00001")
+        self.assertEqual(response.data["detail"], "G2P00007 was merged into G2P00001")
+        self.assertEqual(response.data["stable_id"], "G2P00001")
 
     def test_lgd_detail(self):
         """

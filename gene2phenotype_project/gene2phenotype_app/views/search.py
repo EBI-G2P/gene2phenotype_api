@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q, F
-import textwrap
+import textwrap, re
 from drf_spectacular.utils import (
     extend_schema,
     OpenApiResponse,
@@ -440,7 +440,8 @@ class SearchView(BaseView):
                 pass
             else:
                 if g2p_obj.comment and g2p_obj.comment.startswith("Merged into"):
-                    return self.handle_merged_record(g2p_obj.comment)
+                    match = re.search(r"G2P\d{5,}", g2p_obj.comment)
+                    return self.handle_merged_record(search_query, match.group())
 
         queryset = self.get_queryset()
         serializer = self.get_serializer_class()

@@ -27,8 +27,14 @@ class BaseView(generics.ListAPIView):
 
         return super().handle_exception(exc)
 
-    def handle_merged_record(self, message):
-        return Response({"detail": message}, status=status.HTTP_410_GONE)
+    def handle_merged_record(self, old_stable_id, new_stable_id):
+        return Response(
+            {
+                "detail": f"{old_stable_id} was merged into {new_stable_id}",
+                "stable_id": new_stable_id,
+            },
+            status=status.HTTP_410_GONE,
+        )
 
 
 class BaseAPIView(APIView):
@@ -55,9 +61,12 @@ class BaseAPIView(APIView):
 
         return super().handle_exception(exc)
 
-    def handle_merged_record(self, message):
+    def handle_merged_record(self, old_stable_id, new_stable_id):
         return Response(
-            {"detail": message},
+            {
+                "detail": f"{old_stable_id} was merged into {new_stable_id}",
+                "stable_id": new_stable_id,
+            },
             status=status.HTTP_410_GONE,
         )
 
