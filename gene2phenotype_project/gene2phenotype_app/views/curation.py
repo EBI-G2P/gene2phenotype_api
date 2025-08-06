@@ -377,13 +377,13 @@ class DeleteCurationData(generics.DestroyAPIView):
         try:
             # delete record + G2P ID
             self.perform_destroy(curation_obj, stable_id)
-        except:
+        except Exception as e:
             return Response(
-                {"error": f"Cannot delete data for ID {stable_id}"},
+                {"error": f"Cannot delete data for ID {stable_id}: {str(e)}"},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
         return Response(
             {"message": f"Data deleted successfully for ID {stable_id}"},
-            status=status.HTTP_204_NO_CONTENT,
+            status=status.HTTP_200_OK,
         )

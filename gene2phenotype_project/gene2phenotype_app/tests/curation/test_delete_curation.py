@@ -81,7 +81,7 @@ class LGDDeleteCurationEndpoint(TestCase):
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
         response = self.client.delete(self.url_delete_curation)
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.status_code, 200)
 
         response_data = response.json()
         self.assertEqual(
