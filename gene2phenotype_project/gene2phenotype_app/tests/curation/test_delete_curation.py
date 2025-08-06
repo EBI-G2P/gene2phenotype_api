@@ -64,9 +64,7 @@ class LGDDeleteCurationEndpoint(TestCase):
         self.assertEqual(response.status_code, 404)
 
         response_data = response.json()
-        self.assertEqual(
-            response_data["error"], "Cannot find ID G2P00004"
-        )
+        self.assertEqual(response_data["error"], "Cannot find ID G2P00004")
 
     def test_delete_curation_success(self):
         """
@@ -89,9 +87,7 @@ class LGDDeleteCurationEndpoint(TestCase):
         )
 
         # Check curation_data table
-        lgd_comments = CurationData.objects.filter(
-            stable_id__stable_id="G2P00004"
-        )
+        lgd_comments = CurationData.objects.filter(stable_id__stable_id="G2P00004")
         self.assertEqual(len(lgd_comments), 0)
 
         # Check g2p_stableid table
