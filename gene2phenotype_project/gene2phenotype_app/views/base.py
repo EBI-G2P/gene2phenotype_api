@@ -59,7 +59,6 @@ class BaseAPIView(APIView):
         return Response(
             {"detail": message},
             status=status.HTTP_410_GONE,
-            # headers={"Location": reverse("lgd", args=[g2p_id])}
         )
 
 
