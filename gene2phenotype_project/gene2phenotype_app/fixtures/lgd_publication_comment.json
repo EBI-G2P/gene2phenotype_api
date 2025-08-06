@@ -1,9 +1,9 @@
 [
     {
-        "model": "gene2phenotype_app.publicationcomment",
+        "model": "gene2phenotype_app.lgdpublicationcomment",
         "pk": 1,
         "fields": {
-            "publication": 1,
+            "lgd_publication": 1,
             "comment": "See supplementary table 1. Homozygous.",
             "is_public": 0,
             "is_deleted": 0,
