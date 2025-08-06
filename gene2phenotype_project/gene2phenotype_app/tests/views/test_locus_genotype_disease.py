@@ -54,6 +54,7 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
 
         expected_data_comments = [
             {
+                "id": 2,
                 "date": "2024-09-24",
                 "is_public": 1,
                 "text": "JLNS is due to altered gene product sequence",

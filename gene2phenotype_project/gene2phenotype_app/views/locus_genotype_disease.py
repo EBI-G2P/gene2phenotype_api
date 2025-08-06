@@ -1498,11 +1498,15 @@ class LGDEditComment(APIView):
         """
         This method deletes the LGD-comment.
         This action is available to all authenticated users.
-
-        Example: { "comment": "This is a comment" }
         """
-        comment = request.data.get("comment")
+        comment_id = request.data.get("comment_id", None)
         user = request.user
+
+        if not comment_id:
+            return Response(
+                {"error": f"Missing input key 'comment_id'"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         lgd_obj = get_object_or_404(
             LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0
@@ -1523,7 +1527,7 @@ class LGDEditComment(APIView):
 
         try:
             lgd_comment = LGDComment.objects.get(
-                lgd=lgd_obj, comment=comment, is_deleted=0
+                lgd=lgd_obj, id=comment_id, is_deleted=0
             )
         except:
             return Response(

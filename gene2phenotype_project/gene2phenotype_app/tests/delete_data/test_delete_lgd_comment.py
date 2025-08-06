@@ -30,9 +30,8 @@ class LGDDeleteComment(TestCase):
     def setUp(self):
         self.url_delete = reverse("lgd_comment", kwargs={"stable_id": "G2P00002"})
         self.comment_to_delete = {
-            "comment": "All mutations are located in the aminoterminal part of the gene, before the first epidermal growth factor-like domain."
+            "comment_id": 1
         }
-        self.comment_to_delete_2 = {"comment": "All mutations are invalid"}
 
     def test_invalid_delete(self):
         """
@@ -48,7 +47,7 @@ class LGDDeleteComment(TestCase):
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
         response = self.client.patch(
-            self.url_delete, self.comment_to_delete_2, content_type="application/json"
+            self.url_delete, {"comment_id": 1000}, content_type="application/json"
         )
         self.assertEqual(response.status_code, 400)
 
@@ -57,12 +56,39 @@ class LGDDeleteComment(TestCase):
             response_data["error"], "Cannot delete comment for record 'G2P00002'"
         )
 
+        response_2 = self.client.patch(
+            self.url_delete, {}, content_type="application/json"
+        )
+        self.assertEqual(response_2.status_code, 400)
+
     def test_delete_no_permission(self):
         """
-        Test deleting the comment for non authenticated users.
+        Test deleting the comment for user (non-super user) without permission to edit panel.
         """
         # Login
         user = User.objects.get(email="mary@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.patch(
+            self.url_delete, self.comment_to_delete, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 403)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"], "No permission to update record 'G2P00002'"
+        )
+
+    def test_delete_no_permission_2(self):
+        """
+        Test deleting the comment for user (super user) without permission to edit panel.
+        """
+        # Login
+        user = User.objects.get(email="sofia@test.ac.uk")
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
 
