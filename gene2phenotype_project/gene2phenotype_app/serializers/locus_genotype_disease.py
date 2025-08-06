@@ -424,6 +424,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 date = comment.date.strftime("%Y-%m-%d")
 
             text = {
+                "id": comment.id,
                 "text": comment.comment,
                 "date": date,
                 "is_public": comment.is_public,
