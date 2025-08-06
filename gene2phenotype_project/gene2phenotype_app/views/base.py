@@ -1,8 +1,9 @@
-from rest_framework import generics, status, permissions
 from django.core.exceptions import PermissionDenied
-from django.http import Http404
-from rest_framework.response import Response
 from django.db import transaction
+from django.http import Http404
+from django.urls import reverse
+from rest_framework import generics, status, permissions
+from rest_framework.response import Response
 from rest_framework.permissions import BasePermission
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.views import APIView
@@ -25,6 +26,15 @@ class BaseView(generics.ListAPIView):
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         return super().handle_exception(exc)
+
+    def handle_merged_record(self, old_stable_id, new_stable_id):
+        return Response(
+            {
+                "message": f"{old_stable_id} is no longer available. It has been merged into {new_stable_id}",
+                "stable_id": new_stable_id,
+            },
+            status=status.HTTP_410_GONE,
+        )
 
 
 class BaseAPIView(APIView):
@@ -50,6 +60,15 @@ class BaseAPIView(APIView):
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         return super().handle_exception(exc)
+
+    def handle_merged_record(self, old_stable_id, new_stable_id):
+        return Response(
+            {
+                "message": f"{old_stable_id} is no longer available. It has been merged into {new_stable_id}",
+                "stable_id": new_stable_id,
+            },
+            status=status.HTTP_410_GONE,
+        )
 
 
 class BaseAdd(generics.CreateAPIView):

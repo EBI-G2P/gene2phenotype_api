@@ -78,5 +78,15 @@
             "relevance": 1,
             "is_deleted": 0
         }
+    },
+    {
+        "model": "gene2phenotype_app.lgdpanel",
+        "pk": 9,
+        "fields": {
+            "lgd": 6,
+            "panel": 1,
+            "relevance": 1,
+            "is_deleted": 1
+        }
     }
 ]

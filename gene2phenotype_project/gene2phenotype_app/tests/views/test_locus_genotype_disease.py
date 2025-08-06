@@ -33,13 +33,49 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         "gene2phenotype_app/fixtures/lgd_publication_comment.json",
     ]
 
+    def setUp(self):
+        self.url_list_lgd = reverse("lgd", kwargs={"stable_id": "G2P00001"})
+        self.url_lgd_deleted = reverse("lgd", kwargs={"stable_id": "G2P00003"})
+        self.url_lgd_invalid = reverse("lgd", kwargs={"stable_id": "G2P00000"})
+        self.url_lgd_merged = reverse("lgd", kwargs={"stable_id": "G2P00007"})
+
+    def test_lgd_deleted(self):
+        """
+        Test calling the endpoint for a deleted record
+        """
+        response = self.client.get(self.url_lgd_deleted)
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(
+            response.data["error"], "No matching Entry found for: G2P00003"
+        )
+
+    def test_lgd_invalid(self):
+        """
+        Test calling the endpoint for an invalid record
+        """
+        response = self.client.get(self.url_lgd_invalid)
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(
+            response.data["error"], "No G2PStableID matches the given query."
+        )
+
+    def test_lgd_merged(self):
+        """
+        Test calling the endpoint for a record that has been merged/moved to another record
+        """
+        response = self.client.get(self.url_lgd_merged)
+        self.assertEqual(response.status_code, 410)
+        self.assertEqual(
+            response.data["message"],
+            "G2P00007 is no longer available. It has been merged into G2P00001",
+        )
+        self.assertEqual(response.data["stable_id"], "G2P00001")
+
     def test_lgd_detail(self):
         """
         Test the locus genotype disease display
         """
-        url_list_lgd = reverse("lgd", kwargs={"stable_id": "G2P00001"})
-
-        response = self.client.get(url_list_lgd)
+        response = self.client.get(self.url_list_lgd)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["stable_id"], "G2P00001")
         self.assertEqual(response.data["genotype"], "biallelic_autosomal")
@@ -126,8 +162,6 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         Test the locus genotype disease display for authenticated users.
         Check if publication comments are available.
         """
-        url_list_lgd = reverse("lgd", kwargs={"stable_id": "G2P00001"})
-
         # Login
         user = User.objects.get(email="user5@test.ac.uk")
         refresh = RefreshToken.for_user(user)
@@ -136,7 +170,7 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.get(url_list_lgd)
+        response = self.client.get(self.url_list_lgd)
         self.assertEqual(response.status_code, 200)
 
         expected_data_publication = [

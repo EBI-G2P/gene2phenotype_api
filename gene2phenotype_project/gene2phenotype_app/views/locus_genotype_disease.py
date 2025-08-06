@@ -7,6 +7,8 @@ from django.db.models import Model, QuerySet
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiExample
+
+import re
 import textwrap
 from typing import List, Type
 
@@ -48,7 +50,7 @@ from gene2phenotype_app.models import (
     LGDComment,
 )
 
-from .base import BaseUpdate, CustomPermissionAPIView, IsSuperUser
+from .base import BaseAPIView, BaseUpdate, CustomPermissionAPIView, IsSuperUser
 
 from ..utils import get_date_now
 
@@ -340,13 +342,14 @@ class VariantTypesList(APIView):
         )
     ],
 )
-class LocusGenotypeDiseaseDetail(APIView):
+class LocusGenotypeDiseaseDetail(BaseAPIView):
     serializer_class = LocusGenotypeDiseaseSerializer
 
     def get_queryset(self):
         stable_id = self.kwargs["stable_id"]
         user = self.request.user
 
+        # Fetch the G2P stable ID without considering if ID is deleted
         g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
 
         # Authenticated users (curators) can see all entries:
@@ -361,7 +364,7 @@ class LocusGenotypeDiseaseDetail(APIView):
             ).distinct()
 
         if not queryset.exists():
-            raise Http404(f"No matching Entry found for: {stable_id}")
+            self.handle_no_permission("Entry", stable_id)
         else:
             return queryset
 
@@ -382,6 +385,16 @@ class LocusGenotypeDiseaseDetail(APIView):
             publications (list)
             ...
         """
+        stable_id = self.kwargs["stable_id"]
+
+        # Check for merged records before calling get_queryset
+        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
+        if g2p_stable_id.is_deleted:
+            comment = g2p_stable_id.comment
+            if comment and comment.startswith("Merged into"):
+                match = re.search(r"G2P\d{5,}", comment)
+                return self.handle_merged_record(stable_id, match.group())
+
         queryset = self.get_queryset().first()
         serializer = LocusGenotypeDiseaseSerializer(
             queryset, context={"user": self.request.user}
