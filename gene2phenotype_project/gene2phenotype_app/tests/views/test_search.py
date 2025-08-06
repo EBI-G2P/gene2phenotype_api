@@ -196,7 +196,10 @@ class SearchTests(TestCase):
         response = self.client.get(url_search_id)
 
         self.assertEqual(response.status_code, 410)
-        self.assertEqual(response.data["detail"], "G2P00007 was merged into G2P00001")
+        self.assertEqual(
+            response.data["message"],
+            "G2P00007 is no longer available. It has been merged into G2P00001",
+        )
         self.assertEqual(response.data["stable_id"], "G2P00001")
 
     def test_generic_search_merged(self):
@@ -207,7 +210,10 @@ class SearchTests(TestCase):
         response = self.client.get(url_search_id)
 
         self.assertEqual(response.status_code, 410)
-        self.assertEqual(response.data["detail"], "G2P00007 was merged into G2P00001")
+        self.assertEqual(
+            response.data["message"],
+            "G2P00007 is no longer available. It has been merged into G2P00001",
+        )
         self.assertEqual(response.data["stable_id"], "G2P00001")
 
     def test_search_draft(self):

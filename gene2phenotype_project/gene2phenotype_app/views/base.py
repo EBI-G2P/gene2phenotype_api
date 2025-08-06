@@ -30,7 +30,7 @@ class BaseView(generics.ListAPIView):
     def handle_merged_record(self, old_stable_id, new_stable_id):
         return Response(
             {
-                "detail": f"{old_stable_id} was merged into {new_stable_id}",
+                "message": f"{old_stable_id} is no longer available. It has been merged into {new_stable_id}",
                 "stable_id": new_stable_id,
             },
             status=status.HTTP_410_GONE,
@@ -64,7 +64,7 @@ class BaseAPIView(APIView):
     def handle_merged_record(self, old_stable_id, new_stable_id):
         return Response(
             {
-                "detail": f"{old_stable_id} was merged into {new_stable_id}",
+                "message": f"{old_stable_id} is no longer available. It has been merged into {new_stable_id}",
                 "stable_id": new_stable_id,
             },
             status=status.HTTP_410_GONE,
