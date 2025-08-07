@@ -145,6 +145,10 @@ class LGDUpdateCurationEndpoint(TestCase):
         curation_entries = CurationData.objects.filter(session_name="test session")
         self.assertEqual(len(curation_entries), 1)
 
+        # Test history table
+        history_records = CurationData.history.filter(stable_id__stable_id="G2P00004")
+        self.assertEqual(len(history_records), 1)
+
     def test_update_curation_existing_curation(self):
         """
         Test call to update curation endpoint with existing curation
@@ -197,6 +201,10 @@ class LGDUpdateCurationEndpoint(TestCase):
         # Check curation_data table
         curation_entries = CurationData.objects.filter(session_name="test session")
         self.assertEqual(len(curation_entries), 1)
+
+        # Test history table
+        history_records = CurationData.history.filter(stable_id__stable_id="G2P00004")
+        self.assertEqual(len(history_records), 1)
 
     def test_update_curation_no_permission(self):
         """
