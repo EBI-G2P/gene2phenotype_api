@@ -11,7 +11,7 @@ from gene2phenotype_app.serializers import CurationDataSerializer
 
 from gene2phenotype_app.models import G2PStableID, CurationData, LocusGenotypeDisease
 
-from .base import BaseView, BaseAdd
+from .base import BaseView, BaseAdd, BaseUpdate
 
 
 ### Curation data
@@ -169,7 +169,7 @@ class CurationDataDetail(BaseView):
 
 
 @extend_schema(exclude=True)
-class UpdateCurationData(generics.UpdateAPIView):
+class UpdateCurationData(BaseUpdate):
     http_method_names = ["put", "options"]
     serializer_class = CurationDataSerializer
     permission_classes = [permissions.IsAuthenticated]
