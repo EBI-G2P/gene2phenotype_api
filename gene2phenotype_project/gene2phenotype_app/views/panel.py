@@ -371,13 +371,14 @@ class LGDEditPanel(CustomPermissionAPIView):
 
         panel_name_input = request.data.get("name", None)
 
+        # Check if panel name is valid
         if panel_name_input is None or panel_name_input == "":
             return Response(
                 {"error": f"Please enter a panel name"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Check if panel name is valid
+        # Check if panel exists
         panel_obj = get_object_or_404(Panel, name=panel_name_input)
 
         # Check if user can update panel
@@ -393,6 +394,7 @@ class LGDEditPanel(CustomPermissionAPIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        # Get G2P entry to be updated
         lgd = get_object_or_404(
             LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0
         )
@@ -423,31 +425,56 @@ class LGDEditPanel(CustomPermissionAPIView):
         This method deletes the LGD-panel
         """
         panel = request.data.get("name", None)
-        user = (
-            request.user
-        )  # TODO check if user has permission to edit the panel and the record
+
+        # Check if panel name is valid
+        if panel is None or panel == "":
+            return Response(
+                {"error": f"Please enter a panel name"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        # Check if panel exists
+        panel_obj = get_object_or_404(Panel, name=panel)
+
+        # Check if user can update panel
+        user = self.request.user
+        user_obj = get_object_or_404(User, email=user)
+        serializer = UserSerializer(user_obj, context={"user": user})
+        user_panel_list_lower = [
+            panel.lower() for panel in serializer.panels_names(user_obj)
+        ]
+
+        if panel.lower() not in user_panel_list_lower:
+            return Response(
+                {"error": f"No permission to update panel {panel}"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         # Get G2P entry to be updated
         lgd_obj = get_object_or_404(
             LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0
         )
-        panel_obj = get_object_or_404(Panel, name=panel)
 
+        # Check if G2P entry has more than 1 panel
         queryset_all_panels = LGDPanel.objects.filter(lgd=lgd_obj, is_deleted=0)
 
         if len(queryset_all_panels) == 1:
-            raise Http404(f"Cannot delete panel for ID '{stable_id}'")
+            return Response(
+                {"error": f"Can not delete panel '{panel}' for ID '{stable_id}'"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
-            LGDPanel.objects.filter(lgd=lgd_obj, panel=panel_obj, is_deleted=0).update(
-                is_deleted=1
-            )
-        except:
+            lgd_panel_obj = LGDPanel.objects.get(lgd=lgd_obj, panel=panel_obj, is_deleted=0)
+        except LGDPanel.DoesNotExist:
             return Response(
-                {"error": f"Could not delete panel '{panel}' for ID '{stable_id}'"},
+                {"error": f"Panel '{panel}' does not exist for ID '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         else:
+            # Set panel to deleted
+            lgd_panel_obj.is_deleted = 1
+            lgd_panel_obj.save()
             # The panel was deleted successfully - update the date of last update in the record table
             lgd_obj.date_review = get_date_now()
             lgd_obj.save()
