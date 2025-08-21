@@ -15,6 +15,7 @@ from gene2phenotype_app.serializers import (
     LGDVariantTypeDescriptionSerializer,
     LocusGenotypeDiseaseSerializer,
     LGDPhenotypeSummarySerializer,
+    UserSerializer
 )
 
 from gene2phenotype_app.models import (
@@ -27,6 +28,7 @@ from gene2phenotype_app.models import (
     LGDVariantTypeDescription,
     LGDVariantTypeComment,
     LGDMolecularMechanismEvidence,
+    User
 )
 
 from .base import BaseAdd, BaseUpdate, IsSuperUser
@@ -431,11 +433,31 @@ class LGDEditPublications(BaseUpdate):
             { "pmid": 1234 }
         """
         pmid = request.data.get("pmid", None)
-        user = request.user  # TODO check if user has permission
+        user = request.user
+
+        if not pmid or pmid == "" or not isinstance(pmid, int):
+            return Response(
+                    {"error": "Please provide valid pmid."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         lgd_obj = get_object_or_404(
             LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0
         )
+
+        # Check if user has permission to update record
+        user_obj = get_object_or_404(User, email=user, is_active=1)
+        serializer_user = UserSerializer(user_obj, context={"user": user})
+        user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
+        has_common = LocusGenotypeDiseaseSerializer(
+            lgd_obj, context={"user": user}
+        ).check_user_permission(lgd_obj, user_panel_list)
+        if has_common is False:
+            return Response(
+                {"error": f"No permission to update record '{stable_id}'"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         publication_obj = get_object_or_404(Publication, pmid=pmid)
 
         try:

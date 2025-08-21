@@ -25,7 +25,6 @@ class LGDEditPublicationsEndpoint(TestCase):
         "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
         "gene2phenotype_app/fixtures/disease.json",
         "gene2phenotype_app/fixtures/g2p_stable_id.json",
-        "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
         "gene2phenotype_app/fixtures/lgd_mechanism_evidence.json",
         "gene2phenotype_app/fixtures/lgd_mechanism_synopsis.json",
         "gene2phenotype_app/fixtures/lgd_phenotype.json",
@@ -199,6 +198,141 @@ class LGDEditPublicationsEndpoint(TestCase):
         self.assertEqual(len(lgd_variant_descriptions), 1)
         history_variant_descriptions = LGDVariantTypeDescription.history.all()
         self.assertEqual(len(history_variant_descriptions), 1)
+
+    def test_add_lgd_publication_wrong_mechanism_evidence(self):
+        """
+        Test to add mechanism evidence with wrong value
+        """
+        publication_to_add = {
+            "publications": [
+                {
+                    "publication": {"pmid": 15214012},
+                    "comment": {"comment": "This is new evidence", "is_public": 0},
+                    "families": {
+                        "families": 1,
+                        "consanguinity": "unknown",
+                        "ancestries": None,
+                        "affected_individuals": 1,
+                    },
+                }
+            ],
+            "mechanism_evidence": [
+                {
+                    "pmid": "15214012",
+                    "description": "This is new evidence for the existing mechanism evidence.",
+                    "evidence_types": [
+                        {"primary_type": "Function", "secondary_type": ["Biochemicals"]}
+                    ],
+                }
+            ],
+        }
+
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.post(
+            self.url_add_publication,
+            publication_to_add,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"], "Invalid mechanism evidence 'Biochemicals'"
+        )
+
+    def test_add_lgd_publication_wrong_mechanism_synopsis(self):
+        """
+        Test to add mechanism synopsis with wrong value
+        """
+        publication_to_add = {
+            "publications": [
+                {
+                    "publication": {"pmid": 15214012},
+                    "comment": {"comment": "This is new evidence", "is_public": 0},
+                    "families": {
+                        "families": 1,
+                        "consanguinity": "unknown",
+                        "ancestries": None,
+                        "affected_individuals": 1,
+                    },
+                }
+            ],
+            "mechanism_synopsis": [{"name": "destabilising", "support": "inferred"}],
+            "mechanism_evidence": [
+                {
+                    "pmid": "15214012",
+                    "description": "This is new evidence for the existing mechanism evidence.",
+                    "evidence_types": [
+                        {"primary_type": "Function", "secondary_type": ["Biochemicals"]}
+                    ],
+                }
+            ],
+        }
+
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.post(
+            self.url_add_publication,
+            publication_to_add,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"], "Invalid mechanism synopsis value 'destabilising'"
+        )
+
+    def test_add_lgd_publication_wrong_mechanism_synopsis_support(self):
+        """
+        Test to add mechanism synopsis with wrong support value
+        """
+        publication_to_add = {
+            "publications": [
+                {
+                    "publication": {"pmid": 15214012},
+                    "comment": {"comment": "This is new evidence", "is_public": 0},
+                    "families": {
+                        "families": 1,
+                        "consanguinity": "unknown",
+                        "ancestries": None,
+                        "affected_individuals": 1,
+                    },
+                }
+            ],
+            "mechanism_synopsis": [
+                {"name": "destabilising LOF", "support": "inferreds"}
+            ],
+        }
+
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.post(
+            self.url_add_publication,
+            publication_to_add,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"], "Invalid mechanism synopsis support 'inferreds'"
+        )
 
     def test_add_lgd_publication_with_comment(self):
         """

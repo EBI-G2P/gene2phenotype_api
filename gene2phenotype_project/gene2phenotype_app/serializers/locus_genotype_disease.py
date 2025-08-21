@@ -511,7 +511,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         if not panels or not publications_list:
             raise serializers.ValidationError(
                 {
-                    "message": f"Missing data to create the G2P record {stable_id_obj.stable_id}"
+                    "error": f"Missing data to create the G2P record {stable_id_obj.stable_id}"
                 }
             )
 
@@ -526,7 +526,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 locus_obj = Locus.objects.get(name=locus_name)
             except Locus.DoesNotExist:
                 raise serializers.ValidationError(
-                    {"message": f"Invalid locus {locus_name}"}
+                    {"error": f"Invalid locus {locus_name}"}
                 )
 
             # Get genotype
@@ -534,7 +534,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 genotype_obj = Attrib.objects.get(value=genotype, type__code="genotype")
             except Attrib.DoesNotExist:
                 raise serializers.ValidationError(
-                    {"message": f"Invalid genotype value {genotype}"}
+                    {"error": f"Invalid genotype value {genotype}"}
                 )
 
             # Get confidence
@@ -544,7 +544,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 )
             except Attrib.DoesNotExist:
                 raise serializers.ValidationError(
-                    {"message": f"Invalid confidence value {confidence}"}
+                    {"error": f"Invalid confidence value {confidence}"}
                 )
 
             # a check that for if the monoallelic record exists
@@ -573,7 +573,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     panel_obj = Panel.objects.get(description=panel)
                 except Panel.DoesNotExist:
                     raise serializers.ValidationError(
-                        {"message": f"Invalid panel {panel}"}
+                        {"error": f"Invalid panel {panel}"}
                     )
                 else:
                     data_panel = {"name": panel_obj.name}
@@ -756,9 +756,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             and "name" in molecular_mechanism
             and molecular_mechanism["name"] != ""
         ):
-            molecular_mechanism_value = molecular_mechanism[
-                "name"
-            ]  # the mechanism value
+            molecular_mechanism_value = molecular_mechanism["name"]
 
             try:
                 cv_mechanism_obj = CVMolecularMechanism.objects.get(
@@ -900,7 +898,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             except Publication.DoesNotExist:
                 # TODO: improve in future to insert new pmids + link them to the record
                 raise serializers.ValidationError(
-                    {"message": f"pmid '{pmid}' not found in G2P"}
+                    {"error": f"pmid '{pmid}' not found in G2P"}
                 )
 
             if evidence["description"] != "":
@@ -914,7 +912,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 primary_type = evidence_type.get("primary_type", None)
                 if not primary_type:
                     raise serializers.ValidationError(
-                        {"message": f"Empty evidence subtype"}
+                        {"error": f"Empty evidence subtype"}
                     )
                 primary_type = primary_type.replace(" ", "_").lower()
                 # secondary_type is the evidence value ('human')
@@ -926,7 +924,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                         )
                     except CVMolecularMechanism.DoesNotExist:
                         raise serializers.ValidationError(
-                            {"message": f"Invalid mechanism evidence '{m_type}'"}
+                            {"error": f"Invalid mechanism evidence '{m_type}'"}
                         )
 
                     # Insert evidence
@@ -1004,7 +1002,7 @@ class LGDCommentSerializer(serializers.ModelSerializer):
         if lgd_comments:
             raise serializers.ValidationError(
                 {
-                    "message": f"Comment is already associated with {lgd.stable_id.stable_id}"
+                    "error": f"Comment is already associated with {lgd.stable_id.stable_id}"
                 }
             )
 
@@ -1084,7 +1082,7 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
             )
         except OntologyTerm.DoesNotExist:
             raise serializers.ValidationError(
-                {"message": f"Invalid variant consequence '{term}'"}
+                {"error": f"Invalid variant consequence '{term}'"}
             )
 
         # Get support value from attrib
@@ -1093,7 +1091,7 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
             support_obj = Attrib.objects.get(value=support, type__code="support")
         except Attrib.DoesNotExist:
             raise serializers.ValidationError(
-                {"message": f"Invalid support value '{support}'"}
+                {"error": f"Invalid support value '{support}'"}
             )
 
         # Check if the same term is already linked to the LGD record
@@ -1114,7 +1112,7 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
             if lgd_var_consequence_obj.is_deleted == 0:
                 raise serializers.ValidationError(
                     {
-                        "message": f"'{term}' already linked to '{lgd.stable_id.stable_id}'"
+                        "error": f"'{term}' already linked to '{lgd.stable_id.stable_id}'"
                     }
                 )
             # If deleted then update to not deleted
@@ -1247,7 +1245,7 @@ class LGDMechanismEvidenceSerializer(serializers.ModelSerializer):
                 )
             except CVMolecularMechanism.DoesNotExist:
                 raise serializers.ValidationError(
-                    {"message": f"Invalid mechanism evidence value '{evidence_value}'"}
+                    {"error": f"Invalid mechanism evidence value '{evidence_value}'"}
                 )
 
             # Create new molecular mechanism evidence
@@ -1300,7 +1298,7 @@ class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
             )
         except Attrib.DoesNotExist:
             raise serializers.ValidationError(
-                {"message": f"Invalid cross cutting modifier '{term}'"}
+                {"error": f"Invalid cross cutting modifier '{term}'"}
             )
 
         # Check if LGD-cross cutting modifier already exists
@@ -1316,7 +1314,7 @@ class LGDCrossCuttingModifierSerializer(serializers.ModelSerializer):
             if lgd_ccm_obj.is_deleted == 0:
                 raise serializers.ValidationError(
                     {
-                        "message": f"G2P entry {lgd.stable_id.stable_id} is already linked to cross cutting modifier '{term}'"
+                        "error": f"G2P entry {lgd.stable_id.stable_id} is already linked to cross cutting modifier '{term}'"
                     }
                 )
             else:
@@ -1420,7 +1418,7 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
             )
         except OntologyTerm.DoesNotExist:
             raise serializers.ValidationError(
-                {"message": f"Invalid variant type '{var_type}'"}
+                {"error": f"Invalid variant type '{var_type}'"}
             )
 
         # Variants are supposed to be linked to publications
@@ -1493,7 +1491,7 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
 
                 except Publication.DoesNotExist:
                     raise serializers.ValidationError(
-                        {"message": f"Invalid publication '{publication}'"}
+                        {"error": f"Invalid publication '{publication}'"}
                     )
 
                 else:
@@ -1668,7 +1666,7 @@ class LGDVariantTypeDescriptionSerializer(serializers.ModelSerializer):
                 publication_obj = Publication.objects.get(pmid=pmid)
             except Publication.DoesNotExist:
                 raise serializers.ValidationError(
-                    {"message": f"Invalid publication '{publication}'"}
+                    {"error": f"Invalid publication '{publication}'"}
                 )
 
             # Check if LGDVariantTypeDescription exists
