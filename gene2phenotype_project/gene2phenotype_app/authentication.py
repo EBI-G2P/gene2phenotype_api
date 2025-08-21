@@ -1,11 +1,9 @@
 from rest_framework.exceptions import AuthenticationFailed
-from django.conf import settings
-from django.middleware.csrf import CsrfViewMiddleware
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
-    
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+from django.conf import settings
+
 
 class CustomAuthentication(JWTAuthentication):
 
@@ -31,8 +29,8 @@ class CustomAuthentication(JWTAuthentication):
         except Exception as e:
             raise AuthenticationFailed(str(e))
         return self.get_user(validated_token), validated_token
-    
-    
+
+
     @staticmethod
     def is_token_blacklisted(token_string):
         try:
@@ -40,6 +38,6 @@ class CustomAuthentication(JWTAuthentication):
             if BlacklistedToken.objects.filter(token__jti=token['jti']).exists():
                 return True
         except Exception as e:
-            raise AuthenticationFailed(f"Token blacklist check failed: {e}")
+            raise AuthenticationFailed(f"Token blacklist check failed: {str(e)}")
 
         return False

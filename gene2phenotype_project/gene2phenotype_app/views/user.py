@@ -1,17 +1,16 @@
 from rest_framework.response import Response
-from rest_framework import generics, permissions
-from rest_framework.exceptions import ParseError
-from rest_framework import status
+from rest_framework import generics, permissions, status
+from rest_framework.exceptions import ParseError, AuthenticationFailed
 from rest_framework_simplejwt.views import TokenRefreshView
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 from drf_spectacular.utils import extend_schema
 from datetime import timedelta, datetime
 from django.conf import settings
-from datetime import timedelta
-from .base import BaseView
+from django.utils import timezone
 from django.db.models import F
+
+from .base import BaseView
 
 from gene2phenotype_app.authentication import CustomAuthentication
 
@@ -96,7 +95,7 @@ class AddUserToPanelView(generics.CreateAPIView):
 @extend_schema(exclude=True)
 class LoginView(generics.GenericAPIView):
     serializer_class = LoginSerializer
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request, *args, **kwargs):
         """
@@ -120,28 +119,22 @@ class LoginView(generics.GenericAPIView):
         serializer = LoginSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         login_data = serializer.login(serializer.validated_data)
-        access_token = login_data.get("tokens", {}).get(
-            "access", None
-        )  # to access the token which is in the serializer.data
+        # to access the token which is in the serializer.data
+        access_token = login_data.get("tokens", {}).get("access", None)
         refresh_token = login_data.get("tokens", {}).get("refresh", None)
         response = Response(login_data, status=status.HTTP_200_OK)
+
         if response.status_code == 200:
-            refresh_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get(
-                "REFRESH_TOKEN_LIFETIME", timedelta(days=1)
-            )
-            access_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get(
-                "ACCESS_TOKEN_LIFETIME", timedelta(hours=1)
-            )
-            refresh_expires = (
-                datetime.utcnow() + refresh_token_lifetime
-            )  # Calculate refresh expiration time
-            access_expires = (
-                datetime.utcnow() + access_token_lifetime
-            )  # calculate access expiration time
+            refresh_token_lifetime = settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"]
+            access_token_lifetime = settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"]
+            # Calculate refresh expiration time
+            refresh_expires = (timezone.now() + refresh_token_lifetime)
+            # calculate access expiration time
+            access_expires = (timezone.now() + access_token_lifetime)
             refresh_expires_iso = refresh_expires.isoformat()
-            login_data["refresh_token_time"] = (
-                refresh_expires.isoformat()
-            )  # to add the refresh token time to the response
+            # to add the refresh token time to the response
+            login_data["refresh_token_time"] = (refresh_expires.isoformat())
+
             response.set_cookie(
                 key=settings.SIMPLE_JWT["AUTH_COOKIE"],
                 value=access_token,
@@ -154,7 +147,7 @@ class LoginView(generics.GenericAPIView):
             )
 
             response.set_cookie(
-                key=settings.SIMPLE_JWT["REFRESH_COOKIE"],  # Refresh token cookie name
+                key=settings.SIMPLE_JWT["REFRESH_COOKIE"], # Refresh token cookie name
                 value=refresh_token,
                 domain=settings.SIMPLE_JWT["AUTH_COOKIE_DOMAIN"],
                 path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
@@ -163,6 +156,7 @@ class LoginView(generics.GenericAPIView):
                 httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
                 samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
             )
+
             response.set_cookie(
                 key="refresh_token_lifetime",
                 value=refresh_expires_iso,
@@ -175,16 +169,17 @@ class LoginView(generics.GenericAPIView):
             )
         else:
             raise ValueError("Failed to set cookies")
-        del login_data[
-            "tokens"
-        ]  # to delete tokens from the response after setting cookies
+
+        # to delete tokens from the response after setting cookies
+        del login_data["tokens"]
+
         return response
 
 
 @extend_schema(exclude=True)
 class LogOutView(generics.GenericAPIView):
     serializer_class = LogoutSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
         """
@@ -201,9 +196,7 @@ class LogOutView(generics.GenericAPIView):
             - ValidationError: Raised if the refresh token is invalid or missing.
             - AuthenticationFailed: Raised if the user is not authenticated.
         """
-        refresh_token = request.COOKIES.get(
-            getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_COOKIE", "refresh_token")
-        )
+        refresh_token = request.COOKIES.get(settings.SIMPLE_JWT["REFRESH_COOKIE"])
 
         if not refresh_token:
             return Response(
@@ -214,7 +207,6 @@ class LogOutView(generics.GenericAPIView):
         serializer = self.serializer_class(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        # return Response(status=status.HTTP_204_NO_CONTENT)
         response = Response(status=status.HTTP_204_NO_CONTENT)
         if response:
             response.delete_cookie(
@@ -235,7 +227,7 @@ class LogOutView(generics.GenericAPIView):
 @extend_schema(exclude=True)
 class ManageUserView(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         """
@@ -253,7 +245,7 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
 @extend_schema(exclude=True)
 class ChangePasswordView(generics.GenericAPIView):
     serializer_class = ChangePasswordSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         """
@@ -276,7 +268,7 @@ class ChangePasswordView(generics.GenericAPIView):
 @extend_schema(exclude=True)
 class VerifyEmailView(generics.GenericAPIView):
     serializer_class = VerifyEmailSerializer
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request, *args, **kwargs):
         """
@@ -288,9 +280,7 @@ class VerifyEmailView(generics.GenericAPIView):
         Returns:
             Response: Response (user information)
         """
-        serializer = self.serializer_class(
-            data=request.data, context={"request": request}
-        )
+        serializer = self.serializer_class(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         result = serializer.get_user_and_send_email(user=request.data)
 
@@ -300,7 +290,7 @@ class VerifyEmailView(generics.GenericAPIView):
 @extend_schema(exclude=True)
 class ResetPasswordView(generics.GenericAPIView):
     serializer_class = PasswordResetSerializer
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request, uid, token):
         """
@@ -325,7 +315,7 @@ class ResetPasswordView(generics.GenericAPIView):
 @extend_schema(exclude=True)
 class CustomTokenRefreshView(TokenRefreshView):
     serializer_class = TokenRefreshSerializer
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request, *args, **kwargs):
         """
@@ -343,29 +333,22 @@ class CustomTokenRefreshView(TokenRefreshView):
         """
 
         # fetch refresh_token from the cookies
-        refresh_token = request.COOKIES.get(
-            getattr(settings, "SIMPLE_JWT", {}).get("REFRESH_COOKIE", "refresh_token")
-        )
+        refresh_token = request.COOKIES.get(settings.SIMPLE_JWT["REFRESH_COOKIE"])
 
         if CustomAuthentication.is_token_blacklisted(refresh_token):
             raise AuthenticationFailed("Token has been blacklisted")
 
-        data = {
-            "refresh": refresh_token
-        }  # to make sure the data thats being sent is from the cookies
-        serializer = TokenRefreshSerializer(
-            data=data
-        )  # instead of request data, give it the data created
+        # to make sure the data that's being sent is from the cookies
+        data = {"refresh": refresh_token}
+        # instead of request data, give it the data created
+        serializer = TokenRefreshSerializer(data=data)
         serializer.is_valid(raise_exception=True)
-        refresh_token = serializer.validated_data.get(
-            "refresh"
-        )  # the validated results sent from the TokenRefreshSerializer
-        access_token = serializer.validated_data.get(
-            "access"
-        )  # the validated results sent from the TokenRefreshSerializer
+        # the validated results sent from the TokenRefreshSerializer
+        refresh_token = serializer.validated_data.get("refresh")
+        access_token = serializer.validated_data.get("access")
 
         try:
-            if getattr(settings, "SIMPLE_JWT", {}).get("ROTATE_REFRESH_TOKENS", True):
+            if settings.SIMPLE_JWT["ROTATE_REFRESH_TOKENS"]:
                 new_refresh_token = str(RefreshToken(refresh_token))
             else:
                 new_refresh_token = refresh_token
@@ -376,59 +359,34 @@ class CustomTokenRefreshView(TokenRefreshView):
         response = Response(response_data, status=status.HTTP_200_OK)
 
         if response.status_code == 200:
-            refresh_token_lifetime = request.COOKIES.get(
-                "refresh_token_lifetime"
-            )  # we are getting the refresh timeline from the cookie
-            access_token_lifetime = getattr(settings, "SIMPLE_JWT", {}).get(
-                "ACCESS_TOKEN_LIFETIME", timedelta(hours=1)
-            )
-            refresh_expires = datetime.fromisoformat(
-                refresh_token_lifetime
-            )  # Calculate refresh expiration time
-            access_expires = (
-                datetime.utcnow() + access_token_lifetime
-            )  # calculate access expiration time
+            # we are getting the refresh timeline from the cookie
+            refresh_token_lifetime = request.COOKIES.get("refresh_token_lifetime")
+            access_token_lifetime = settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"]
+            # Calculate refresh expiration time
+            refresh_expires = datetime.fromisoformat(refresh_token_lifetime)
+            # calculate access expiration time
+            access_expires = (timezone.now() + access_token_lifetime)
             response_data["refresh_token_time"] = refresh_expires
             refresh_expires_iso = refresh_expires.isoformat()
             response.set_cookie(
-                key=getattr(settings, "SIMPLE_JWT", {}).get(
-                    "AUTH_COOKIE", "access_token"
-                ),
+                key=settings.SIMPLE_JWT["AUTH_COOKIE"],
                 value=access_token,
-                domain=getattr(settings, "SIMPLE_JWT", {}).get(
-                    "AUTH_COOKIE_DOMAIN", None
-                ),
-                path=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE_PATH", "/"),
+                domain=settings.SIMPLE_JWT["AUTH_COOKIE_DOMAIN"],
+                path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
                 expires=access_expires,
-                secure=getattr(settings, "SIMPLE_JWT", {}).get(
-                    "AUTH_COOKIE_SECURE", False
-                ),
-                httponly=getattr(settings, "SIMPLE_JWT", {}).get(
-                    "AUTH_COOKIE_HTTP_ONLY", True
-                ),
-                samesite=getattr(settings, "SIMPLE_JWT", {}).get(
-                    "AUTH_COOKIE_SAMESITE", "Lax"
-                ),
+                secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
+                httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
+                samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
             )
             response.set_cookie(
-                key=getattr(settings, "SIMPLE_JWT", {}).get(
-                    "REFRESH_COOKIE", "refresh_token"
-                ),
+                key=settings.SIMPLE_JWT["REFRESH_COOKIE"],
                 value=new_refresh_token,
-                domain=getattr(settings, "SIMPLE_JWT", {}).get(
-                    "AUTH_COOKIE_DOMAIN", None
-                ),
-                path=getattr(settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE_PATH", "/"),
+                domain=settings.SIMPLE_JWT["AUTH_COOKIE_DOMAIN"],
+                path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
                 expires=refresh_expires,
-                secure=getattr(settings, "SIMPLE_JWT", {}).get(
-                    "AUTH_COOKIE_SECURE", False
-                ),
-                httponly=getattr(settings, "SIMPLE_JWT", {}).get(
-                    "AUTH_COOKIE_HTTP_ONLY", True
-                ),
-                samesite=getattr(settings, "SIMPLE_JWT", {}).get(
-                    "AUTH_COOKIE_SAMESITE", "Lax"
-                ),
+                secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
+                httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
+                samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
             )
             response.set_cookie(
                 key="refresh_token_lifetime",

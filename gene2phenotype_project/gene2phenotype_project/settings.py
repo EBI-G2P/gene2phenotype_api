@@ -120,7 +120,7 @@ SPECTACULAR_SETTINGS = {
 }
 
 SIMPLE_JWT = {
-    "SECURE_HASH_ALGORITHM": "hashlib.sha512",
+    "ALGORITHM": "HS256",
     "AUTH_TOKEN_CHARACTER_LENGTH": 64,
     "TOKEN_USER_CLASS": "gene2phenotype_app.serializers.UserSerializer",
     "TOKEN_LIMIT_PER_USER": None,
@@ -133,7 +133,7 @@ SIMPLE_JWT = {
     "REFRESH_COOKIE": "refresh_token",
     "AUTH_COOKIE_DOMAIN": None,
     "AUTH_COOKIE_SECURE": config.getboolean("settings", "AUTH_COOKIE_SECURE"),
-    "AUTH_COOKIE_HTTP_ONLY": True,  # prevents client side js from accessing the cookie
+    "AUTH_COOKIE_HTTP_ONLY": True, # prevents client side js from accessing the cookie
     "AUTH_COOKIE_PATH": "/",
     "AUTH_COOKIE_SAMESITE": "Lax",
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
