@@ -98,9 +98,15 @@ class BaseUpdate(generics.UpdateAPIView):
 
     def handle_no_update(self, data, stable_id):
         if data is None:
-            raise Http404(f"{data}")
+            return Response(
+                {"error": f"Cannot update '{data}'"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         else:
-            raise PermissionDenied(f"Cannot update '{data}' for ID '{stable_id}'")
+            return Response(
+                {"error": f"Cannot update '{data}' for ID '{stable_id}'"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
     def handle_update_exception(self, exception, context_message):
         if hasattr(exception, "detail") and "message" in exception.detail:
