@@ -24,7 +24,6 @@ class LGDDeletePublication(TestCase):
         "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
         "gene2phenotype_app/fixtures/disease.json",
         "gene2phenotype_app/fixtures/g2p_stable_id.json",
-        "gene2phenotype_app/fixtures/g2p_stable_id.json",
         "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
         "gene2phenotype_app/fixtures/lgd_mechanism_evidence.json",
         "gene2phenotype_app/fixtures/lgd_mechanism_synopsis.json",
@@ -71,6 +70,25 @@ class LGDDeletePublication(TestCase):
         )
         self.assertEqual(response.status_code, 403)
 
+    def test_delete_no_permission_2(self):
+        """
+        Test deleting the publication for user without permission to edit panel
+        """
+        to_delete = {"pmid": 15214012}
+
+        # Login with super user
+        user = User.objects.get(email="sofia@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.patch(
+            self.url_delete, to_delete, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 403)
+
     def test_forbidden_delete(self):
         """
         Test deleting the publication for record with only one publication
@@ -79,7 +97,7 @@ class LGDDeletePublication(TestCase):
         to_delete = {"pmid": 3897232}
 
         # Login
-        user = User.objects.get(email="john@test.ac.uk")
+        user = User.objects.get(email="user5@test.ac.uk")
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
 
@@ -146,29 +164,27 @@ class LGDDeletePublication(TestCase):
             "Could not find publication '3897232' for ID 'G2P00002'",
         )
 
-    def test_invalid_delete_3(self):
+    def test_invalid_input(self):
         """
-        Test deleting the only publication of the record G2P00001
+        Test deleting a publication with empty pmid
         """
-        to_delete = {"pmid": 3897232}
+        to_delete = {"pmid": ""}
 
         # Login
         user = User.objects.get(email="john@test.ac.uk")
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
         response = self.client.patch(
-            self.url_try_delete, to_delete, content_type="application/json"
+            self.url_delete, to_delete, content_type="application/json"
         )
         self.assertEqual(response.status_code, 400)
 
         response_data = response.json()
         self.assertEqual(
             response_data["error"],
-            "Could not delete PMID '3897232' for ID 'G2P00001'",
+            "Please provide valid pmid.",
         )
 
     def test_lgd_publication_delete(self):

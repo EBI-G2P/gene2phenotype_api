@@ -399,6 +399,19 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
             LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0
         )
 
+        # Check if user has permission to update record
+        user_obj = get_object_or_404(User, email=user, is_active=1)
+        serializer_user = UserSerializer(user_obj, context={"user": user})
+        user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
+        has_common = LocusGenotypeDiseaseSerializer(
+            lgd, context={"user": user}
+        ).check_user_permission(lgd, user_panel_list)
+        if has_common is False:
+            return Response(
+                {"error": f"No permission to update record '{stable_id}'"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         serializer_summary_list = LGDPhenotypeSummaryListSerializer(
             data={"summaries": request.data}
         )
@@ -456,35 +469,58 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
         The deletion does not remove the entry from the database, instead
         it sets the flag 'is_deleted' to 1.
         """
+        user = self.request.user
         summary = request.data.get("summary")
 
-        # Get G2P entries to be deleted
+        if not summary or summary == "":
+            return Response(
+                {"error": "Please provide valid phenotype summary."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Get G2P record linked to the phenotype summary
         lgd_obj = get_object_or_404(
             LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0
         )
 
+        # Check if user has permission to update record
+        user_obj = get_object_or_404(User, email=user, is_active=1)
+        serializer_user = UserSerializer(user_obj, context={"user": user})
+        user_panel_list = [panel for panel in serializer_user.panels_names(user_obj)]
+        has_common = LocusGenotypeDiseaseSerializer(
+            lgd_obj, context={"user": user}
+        ).check_user_permission(lgd_obj, user_panel_list)
+        if has_common is False:
+            return Response(
+                {"error": f"No permission to update record '{stable_id}'"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         # Fetch LGD-phenotype summary list
         # Different rows mean the lgd-phenotype summary is associated with multiple publications
         # We have to delete all rows
-        try:
-            LGDPhenotypeSummary.objects.filter(
-                lgd=lgd_obj, summary=summary, is_deleted=0
-            ).update(is_deleted=1)
-        except:
+        phenotype_summary_list = LGDPhenotypeSummary.objects.filter(
+            lgd=lgd_obj, summary=summary, is_deleted=0
+        )
+
+        if not phenotype_summary_list:
             return Response(
-                {"error": f"Could not delete phenotype summary for ID '{stable_id}'"},
+                {"error": f"Phenotype summary is not associated with '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         else:
+            for phenotype_summary in phenotype_summary_list:
+                phenotype_summary.is_deleted = 1
+                phenotype_summary.save()
+
             # The phenotype was deleted successfully - update the date of last update in the record table
             lgd_obj.date_review = get_date_now()
             lgd_obj.save()
-            return Response(
-                {
-                    "message": f"Phenotype summary successfully deleted for ID '{stable_id}'"
-                },
-                status=status.HTTP_200_OK,
-            )
+
+        return Response(
+            {"message": f"Phenotype summary successfully deleted for ID '{stable_id}'"},
+            status=status.HTTP_200_OK,
+        )
 
 
 ### Add phenotype ###
