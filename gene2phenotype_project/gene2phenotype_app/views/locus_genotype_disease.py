@@ -1224,9 +1224,8 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
 @extend_schema(exclude=True)
 class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
     """
-    Add or delete LGD-variant type(s)
+    Add or delete LGD-variant type description(s)
     """
-
     http_method_names = ["post", "patch", "options"]
 
     # Define specific permissions
@@ -1262,8 +1261,8 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
             Example:
                 {
                     "variant_descriptions": [{
-                            "publications": [1, 1234],
-                            "description": "NM_000546.6:c.794T>C (p.Leu265Pro)"
+                        "publications": [1, 1234],
+                        "description": "NM_000546.6:c.794T>C (p.Leu265Pro)"
                     }]
                 }
         """
@@ -1290,6 +1289,7 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
         serializer_list = LGDVariantTypeDescriptionListSerializer(data=request.data)
 
         if serializer_list.is_valid():
+            success_flag = 0
             descriptions_data = request.data.get("variant_descriptions")
 
             # Check if list of descriptions is empty
@@ -1309,6 +1309,7 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
 
                 if serializer_class.is_valid():
                     serializer_class.save()
+                    success_flag = 1
                     response = Response(
                         {
                             "message": "Variant description added to the G2P entry successfully."
@@ -1320,6 +1321,11 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
                         {"error": serializer_class.errors},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
+
+            if success_flag:
+                # Update the record date last review
+                lgd.date_review = get_date_now()
+                lgd.save()
 
         else:
             response = Response(
@@ -1341,7 +1347,7 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
         if "description" not in request.data or request.data.get("description") == "":
             return Response(
                 {
-                    "error": f"Empty variant type description. Please provide the 'description'."
+                    "error": f"Empty variant description. Please provide valid data."
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -1369,18 +1375,24 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
         # Get entries to be deleted
         # Different rows mean the lgd-variant type description is associated with multiple publications
         # We have to delete all rows
-        try:
-            LGDVariantTypeDescription.objects.filter(
-                lgd=lgd_obj, description=var_desc, is_deleted=0
-            ).update(is_deleted=1)
-        except:
+        variant_description_list = LGDVariantTypeDescription.objects.filter(
+            lgd=lgd_obj, description=var_desc, is_deleted=0
+        )
+
+        if not variant_description_list:
             return Response(
-                {
-                    "error": f"Could not delete variant type description '{var_desc}' for ID '{stable_id}'"
-                },
+                {"error": f"Variant description '{var_desc}' is not associated with '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         else:
+            for variant_description in variant_description_list:
+                variant_description.is_deleted = 1
+                variant_description.save()
+            
+            # Update the record date of last review
+            lgd_obj.date_review = get_date_now()
+            lgd_obj.save()
+
             return Response(
                 {
                     "message": f"Variant type description '{var_desc}' successfully deleted for ID '{stable_id}'"
