@@ -32,6 +32,12 @@ class LGDUpdateLGDConfidence(TestCase):
         self.url_lgd_confidence = reverse(
             "lgd_update_confidence", kwargs={"stable_id": "G2P00001"}
         )
+        self.url_lgd_confidence_2 = reverse(
+            "lgd_update_confidence", kwargs={"stable_id": "G2P00002"}
+        )
+        self.url_invalid_lgd = reverse(
+            "lgd_update_confidence", kwargs={"stable_id": "G2P00007"}
+        )
 
         # Setup login
         user = User.objects.get(email="user5@test.ac.uk")
@@ -65,6 +71,28 @@ class LGDUpdateLGDConfidence(TestCase):
             self.url_lgd_confidence, input_data, content_type="application/json"
         )
         self.assertEqual(response.status_code, 401)
+
+    def test_no_permission_2(self):
+        """
+        Test trying to update the confidence for user without permission to edit record
+        """
+        input_data = {"confidence": "limited"}
+
+        # Login
+        user = User.objects.get(email="sofia@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.put(
+            self.url_lgd_confidence_2, input_data, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 403)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"], "No permission to update record 'G2P00002'"
+        )
 
     def test_update_same_value(self):
         """
@@ -123,4 +151,22 @@ class LGDUpdateLGDConfidence(TestCase):
         self.assertEqual(
             response_data["error"],
             "Confidence 'strong' requires more than one publication as evidence",
+        )
+
+    def test_invalid_record(self):
+        """
+        Test updating confidence for an invalid record
+        """
+        input_data = {}
+
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = self.access_token
+
+        response = self.client.put(
+            self.url_invalid_lgd, input_data, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 404)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["detail"], "Could not find 'Entry' for ID 'G2P00007'"
         )
