@@ -68,7 +68,7 @@ class LGDEditVariantTypeDescriptionTests(TestCase):
         )
         self.assertEqual(response.status_code, 401)
 
-    def test_add_no_permission_2(self):
+    def test_add_no_permission(self):
         """
         Test the endpoint to add variant type description for user without permission to edit record
         """
