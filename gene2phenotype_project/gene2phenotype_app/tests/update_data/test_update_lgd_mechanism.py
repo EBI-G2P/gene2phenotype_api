@@ -86,7 +86,7 @@ class LGDUpdateLGDMechanism(TestCase):
         )
         self.assertEqual(response.status_code, 401)
 
-    def test_no_permission_2(self):
+    def test_no_permission(self):
         """
         Test trying to update the mechanism for user without permission to edit record
         """
