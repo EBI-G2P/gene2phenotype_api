@@ -102,7 +102,7 @@ class LGDDeletePhenotypeSummary(TestCase):
             response_data["error"], "You do not have permission to perform this action."
         )
 
-    def test_delete_no_permission_2(self):
+    def test_delete_no_permission(self):
         """
         Test deleting the phenotype summary for user without permission to edit the record.
         """
