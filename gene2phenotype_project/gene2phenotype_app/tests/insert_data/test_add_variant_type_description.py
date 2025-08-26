@@ -57,7 +57,7 @@ class LGDEditVariantTypeDescriptionTests(TestCase):
             ]
         }
 
-    def test_add_no_permission(self):
+    def test_add_unauthorised_access(self):
         """
         Test the endpoint to add variant type description for non authenticated user
         """
