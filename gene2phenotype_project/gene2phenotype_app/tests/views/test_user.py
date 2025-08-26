@@ -40,7 +40,6 @@ class UserPanelEndpointTests(TestCase):
         response = self.client.get(self.url_user_panels)
 
         self.assertEqual(response.status_code, 200)
-
         self.assertEqual(len(response.data), 3)
 
 
@@ -100,3 +99,34 @@ class AddUserToPanelEndpointTest(TestCase):
         )
 
         self.assertEqual(response.status_code, 201)
+
+
+class LoginLogoutTest(TestCase):
+    fixtures = ["gene2phenotype_app/fixtures/user_panels.json"]
+
+    def setUp(self):
+        self.url_login = reverse("_login")
+        self.url_logout = reverse("logout")
+
+    def test_login_success(self):
+        data = {"username": "user5@test.ac.uk", "password": "test_user5"}
+
+        # Login
+        response = self.client.post(
+            self.url_login, data, content_type="application/json"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["email"], "user5@test.ac.uk")
+        self.assertEqual(response.data["user"], "Test User5")
+        self.assertEqual(response.data["username"], "test_user5")
+        self.assertEqual(response.data["is_superuser"], True)
+        self.assertEqual(
+            list(response.data["panels"]), ["Developmental disorders", "Eye disorders"]
+        )
+
+        # Logout
+        response_logout = self.client.post(
+            self.url_logout, content_type="application/json"
+        )
+        self.assertEqual(response_logout.status_code, 204)
