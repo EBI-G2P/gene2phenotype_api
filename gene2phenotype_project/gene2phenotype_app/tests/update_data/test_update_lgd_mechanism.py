@@ -77,7 +77,7 @@ class LGDUpdateLGDMechanism(TestCase):
         response_data = response.json()
         self.assertEqual(response_data["detail"], "Mechanism data is missing")
 
-    def test_no_permission(self):
+    def test_unauthorised_access(self):
         """
         Test updating record mechanism without being authenticated
         """
