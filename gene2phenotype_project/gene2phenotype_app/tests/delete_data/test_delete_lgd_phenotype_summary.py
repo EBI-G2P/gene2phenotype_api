@@ -79,7 +79,7 @@ class LGDDeletePhenotypeSummary(TestCase):
             "Please provide valid phenotype summary.",
         )
 
-    def test_delete_no_permission(self):
+    def test_delete_non_superuser(self):
         """
         Test deleting the phenotype summary for non super user.
         Only super users can delete phenotype summaries.
