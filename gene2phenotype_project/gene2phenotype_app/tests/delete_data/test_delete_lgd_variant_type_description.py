@@ -64,7 +64,7 @@ class LGDEditVariantTypeDescriptionEndpoint(TestCase):
             "Variant description 'NM_000546:c.794T>C (p.Leu265Pro)' is not associated with 'G2P00002'",
         )
 
-    def test_delete_no_permission(self):
+    def test_delete_non_superuser(self):
         """
         Test deleting the variant description for non super user.
         Only super users can delete variant description.
