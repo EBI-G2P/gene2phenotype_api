@@ -118,8 +118,7 @@ class LoginLogoutTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["email"], "user5@test.ac.uk")
-        self.assertEqual(response.data["user"], "Test User5")
-        self.assertEqual(response.data["username"], "test_user5")
+        self.assertEqual(response.data["full_name"], "Test User5")
         self.assertEqual(response.data["is_superuser"], True)
         self.assertEqual(
             list(response.data["panels"]), ["Developmental disorders", "Eye disorders"]

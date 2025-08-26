@@ -742,8 +742,7 @@ class LoginSerializer(serializers.ModelSerializer):
 
             login_data = {
                 "email": user.email,
-                "user": user.first_name + " " + user.last_name,
-                "username": user.username,
+                "full_name": user.first_name + " " + user.last_name,
                 "panels": panels,
                 "is_superuser": user.is_superuser,
                 "tokens": user.tokens(),
