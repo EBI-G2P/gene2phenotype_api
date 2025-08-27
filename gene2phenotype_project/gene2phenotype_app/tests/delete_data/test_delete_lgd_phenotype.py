@@ -56,7 +56,7 @@ class LGDDeletePhenotype(TestCase):
             response_data["error"], "Cannot find phenotype for accession 'HP:0033128'"
         )
 
-    def test_invalid_delete_2(self):
+    def test_delete_unlinked_phenotype(self):
         """
         Test deleting a phenotype that is not linked to the record (LGD).
         """
@@ -81,7 +81,7 @@ class LGDDeletePhenotype(TestCase):
             "Could not find phenotype 'HP:0000118' for ID 'G2P00002'",
         )
 
-    def test_delete_no_permission(self):
+    def test_delete_non_superuser(self):
         """
         Test deleting the phenotype for non super user.
         Only super users can delete phenotypes.
@@ -106,7 +106,7 @@ class LGDDeletePhenotype(TestCase):
             response_data["error"], "You do not have permission to perform this action."
         )
 
-    def test_delete_no_permission_2(self):
+    def test_delete_no_permission(self):
         """
         Test deleting the phenotype for user without permission to edit the record.
         """

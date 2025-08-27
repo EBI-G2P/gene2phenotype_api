@@ -48,7 +48,7 @@ class LGDEditPhenotypeEndpoint(TestCase):
         }
         self.phenotype_to_add_2 = {"hpo_terms": []}
 
-    def test_add_no_permission(self):
+    def test_add_unauthorised_access(self):
         """
         Test the endpoint to add phenotypes for non authenticated user
         """
@@ -59,7 +59,7 @@ class LGDEditPhenotypeEndpoint(TestCase):
         )
         self.assertEqual(response.status_code, 401)
 
-    def test_add_no_permission_2(self):
+    def test_add_no_permission(self):
         """
         Test the endpoint to add phenotypes for user without permission to edit record
         """

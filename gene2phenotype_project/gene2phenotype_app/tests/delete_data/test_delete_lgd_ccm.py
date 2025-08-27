@@ -62,7 +62,7 @@ class LGDEditCCMEndpoint(TestCase):
             "Invalid cross cutting modifier 'typically de novos'",
         )
 
-    def test_invalid_delete_2(self):
+    def test_delete_unlinked_ccm(self):
         """
         Test deleting an invalid cross cutting modifier from the record (LGD).
         Cannot delete a term if it is not linked to the record.
@@ -88,7 +88,7 @@ class LGDEditCCMEndpoint(TestCase):
             "Could not find cross cutting modifier 'typically mosaic' for ID 'G2P00002'",
         )
 
-    def test_delete_no_permission(self):
+    def test_delete_non_superuser(self):
         """
         Test deleting the cross cutting modifier for non super user.
         Only super users can delete cross cutting modifiers.
@@ -113,7 +113,7 @@ class LGDEditCCMEndpoint(TestCase):
             response_data["error"], "You do not have permission to perform this action."
         )
 
-    def test_delete_no_permission_2(self):
+    def test_delete_no_permission(self):
         """
         Test deleting the cross cutting modifier for user without permission to edit the record.
         """

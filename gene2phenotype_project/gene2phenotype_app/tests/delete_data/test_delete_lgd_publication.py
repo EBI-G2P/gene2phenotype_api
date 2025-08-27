@@ -51,7 +51,7 @@ class LGDDeletePublication(TestCase):
             "lgd_publication", kwargs={"stable_id": "G2P00001"}
         )
 
-    def test_delete_no_permission(self):
+    def test_delete_non_superuser(self):
         """
         Test deleting the publication for non superuser
         """
@@ -70,7 +70,7 @@ class LGDDeletePublication(TestCase):
         )
         self.assertEqual(response.status_code, 403)
 
-    def test_delete_no_permission_2(self):
+    def test_delete_no_permission(self):
         """
         Test deleting the publication for user without permission to edit panel
         """
@@ -139,7 +139,7 @@ class LGDDeletePublication(TestCase):
             response_data["detail"], "No Publication matches the given query."
         )
 
-    def test_invalid_delete_2(self):
+    def test_delete_unlinked_publication(self):
         """
         Test deleting a publication that is not linked to record (LGD)
         """
