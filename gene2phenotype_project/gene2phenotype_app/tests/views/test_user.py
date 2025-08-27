@@ -106,6 +106,7 @@ class LoginLogoutTest(TestCase):
 
     def setUp(self):
         self.url_login = reverse("_login")
+        self.url_profile = reverse("profile")
         self.url_logout = reverse("logout")
 
     def test_login_success(self):
@@ -122,6 +123,18 @@ class LoginLogoutTest(TestCase):
         self.assertEqual(response.data["is_superuser"], True)
         self.assertEqual(
             list(response.data["panels"]), ["Developmental disorders", "Eye disorders"]
+        )
+
+        # Check the profile
+        response_profile = self.client.get(
+            self.url_profile, content_type="application/json"
+        )
+        self.assertEqual(response_profile.status_code, 200)
+        self.assertEqual(response_profile.data["full_name"], "Test User5")
+        self.assertEqual(response_profile.data["email"], "user5@test.ac.uk")
+        self.assertEqual(response_profile.data["is_superuser"], True)
+        self.assertEqual(
+            list(response_profile.data["panels"]), ["Developmental disorders", "Eye disorders"]
         )
 
         # Logout

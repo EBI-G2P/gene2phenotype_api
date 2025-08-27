@@ -18,26 +18,25 @@ class UserSerializer(serializers.ModelSerializer):
     """
     Serializer for the User model.
     """
-
-    user_name = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
     email = serializers.CharField(read_only=True)
     panels = serializers.SerializerMethodField()
     is_active = serializers.BooleanField()
     is_superuser = serializers.BooleanField()
     is_staff = serializers.BooleanField()
 
-    def get_user_name(self, obj):
+    def get_full_name(self, obj):
         """
-        Gets the user name.
-        If the first and last name are not available then
+        Get the user first and last names.
+        If the first and last names are not available then
         splits the username.
         """
         user = User.objects.filter(email=obj).first()
         if user.first_name is not None and user.last_name is not None:
             name = f"{user.first_name} {user.last_name}"
         else:
-            user_name = user.username.split("_")
-            name = " ".join(user_name).title()
+            full_name = user.username.split("_")
+            name = " ".join(full_name).title()
 
         return name
 
@@ -48,7 +47,6 @@ class UserSerializer(serializers.ModelSerializer):
 
         Output example: ["Developmental disorders", "Ear disorders"]
         """
-
         user_login = self.context.get("user")
         if user_login and user_login.is_authenticated:
             user_panels = (
@@ -72,7 +70,6 @@ class UserSerializer(serializers.ModelSerializer):
 
         Output example: ["DD", "Ear"]
         """
-
         user_login = self.context.get("user")
         if user_login and user_login.is_authenticated:
             user_panels = (
@@ -119,7 +116,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            "user_name",
+            "full_name",
             "email",
             "is_active",
             "panels",
