@@ -61,7 +61,7 @@ class LGDUpdateLGDConfidence(TestCase):
         expected_error = {"confidence": ["This field is required."]}
         self.assertEqual(response_data["error"], expected_error)
 
-    def test_no_permission(self):
+    def test_unauthorised_access(self):
         """
         Test updating record confidence without being authenticated
         """
@@ -72,7 +72,7 @@ class LGDUpdateLGDConfidence(TestCase):
         )
         self.assertEqual(response.status_code, 401)
 
-    def test_no_permission_2(self):
+    def test_no_permission(self):
         """
         Test trying to update the confidence for user without permission to edit record
         """
