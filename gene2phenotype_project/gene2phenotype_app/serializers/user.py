@@ -683,7 +683,6 @@ class LoginSerializer(serializers.ModelSerializer):
     def get_tokens(self, obj):
         """
         Returns the authentication tokens for a given user.
-
         This method retrieves the `refresh` and `access` tokens for the user based on their email.
 
         Parameters:
@@ -696,8 +695,8 @@ class LoginSerializer(serializers.ModelSerializer):
         Raises:
             - User.DoesNotExist: If no user with the provided email exists in the database.
         """
-
         user = User.objects.get(email=obj["username"])
+
         if user:
             return {
                 "refresh": user.tokens()["refresh"],
@@ -707,30 +706,23 @@ class LoginSerializer(serializers.ModelSerializer):
     def login(self, validated_data):
         """
         Validates the user credentials and checks account status.
-
         This method authenticates the user by verifying the provided username and password. It also
-        checks whether the user's account is disabled. If successful, it returns the user's email,
-        username, and authentication tokens.
+        checks whether the user's account is disabled. If successful, it returns the user's information
+        and tokens.
 
         Parameters:
-            - attrs (dict): A dictionary containing user input data, specifically 'username' and
-            'password'.
+            - attrs (dict): A dictionary containing user input data: 'username' (email) and 'password'.
 
         Returns:
-            - dict: A dictionary containing the user's email, username, and tokens if authentication
-            is successful.
+            - dict: A dictionary containing the user's information and tokens
 
         Raises:
-            - AuthenticationFailed: If the authentication fails due to incorrect username or password,
+            - AuthenticationFailed: If the authentication fails due to incorrect username or password
             or if the user's account has been disabled.
-
-        Note:
-            The user must not be deleted (i.e., `user.is_deleted` must be `False`). If the account is
-            deleted, an error message is raised with instructions to contact support.
         """
-
-        username = validated_data.get("username")
+        username = validated_data.get("username") # this is the email
         password = validated_data.get("password")
+
         if username and password:
             user = authenticate(
                 request=self.context.get("request"), email=username, password=password
@@ -745,14 +737,14 @@ class LoginSerializer(serializers.ModelSerializer):
 
             user_serializer = UserSerializer(User)
             panels = user_serializer.get_panels(id=user.id)
-            update_last_login(
-                None, user
-            )  # to update the last login column in the User table on login
+            # Update the last login column in the User table on login
+            update_last_login(None, user)
 
             login_data = {
                 "email": user.email,
-                "user_name": user.first_name + " " + user.last_name,
+                "full_name": user.first_name + " " + user.last_name,
                 "panels": panels,
+                "is_superuser": user.is_superuser,
                 "tokens": user.tokens(),
             }
             return login_data
@@ -764,8 +756,6 @@ class LoginSerializer(serializers.ModelSerializer):
 
 class LogoutSerializer(serializers.Serializer):
     """
-    LogoutSerializer: Handles the serialization and validation of the refresh token for logout.
-
     This serializer is used to validate and process the refresh token provided during a logout
     request. It ensures that the token is valid and then attempts to blacklist it, effectively
     revoking the token and preventing further use.
@@ -796,15 +786,12 @@ class LogoutSerializer(serializers.Serializer):
         Raises:
             - serializers.ValidationError: If the `refresh` field is not provided or invalid.
         """
-
         self.token = attrs["refresh"]
 
         return attrs
 
     def save(self, **kwargs):
         """
-        Blacklists the refresh token to revoke user access.
-
         This method uses the Django REST Framework SimpleJWT `RefreshToken` class to blacklist the
         provided refresh token. Blacklisting the token ensures it can no longer be used to obtain
         new access tokens.
@@ -815,8 +802,8 @@ class LogoutSerializer(serializers.Serializer):
         Raises:
             - serializers.ValidationError: If the token is invalid or blacklisting fails.
         """
-
         token = RefreshToken(self.token)
+
         try:
             token.blacklist()
         except TokenError as e:
