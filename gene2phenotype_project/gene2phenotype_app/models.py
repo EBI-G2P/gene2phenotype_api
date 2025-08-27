@@ -586,11 +586,7 @@ class Publication(models.Model):
 
 class LGDPublicationComment(models.Model):
     id = models.AutoField(primary_key=True)
-    lgd_publication = models.ForeignKey(
-        "LGDPublication",
-        on_delete=models.PROTECT,
-        null=True,  # Temporary
-    )
+    lgd_publication = models.ForeignKey("LGDPublication", on_delete=models.PROTECT)
     comment = models.TextField(null=False)
     is_public = models.SmallIntegerField(null=False, default=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
