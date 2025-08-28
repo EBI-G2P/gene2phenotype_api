@@ -768,6 +768,54 @@ class DiseaseExternal(models.Model):
         indexes = [models.Index(fields=["identifier"])]
 
 
+class MinedPublication(models.Model):
+    """
+    Imported mined publications data.
+    """
+
+    id = models.AutoField(primary_key=True)
+    pmid = models.IntegerField(null=False, unique=True)
+    title = models.CharField(max_length=500, null=False)
+    gene = models.ForeignKey("Locus", on_delete=models.PROTECT)
+    go_biological_process = models.TextField(null=True, default=None)
+    go_molecular_function = models.TextField(null=True, default=None)
+    reactome_pathways = models.TextField(null=True, default=None)
+    hpo_ids = models.TextField(null=True, default=None)
+    unweighted_hpo_ids = models.TextField(null=True, default=None)
+    text = models.TextField(null=True, default=None)
+    date_upload = models.DateTimeField(null=False)
+    history = HistoricalRecords()
+
+    class Meta:
+        db_table = "mined_publication"
+        indexes = [
+          models.Index(fields=["pmid"]),
+          models.Index(fields=["gene"]),
+        ]
+
+
+class LGDMinedPublication(models.Model):
+    id = models.AutoField(primary_key=True)
+    lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
+    mined_publication = models.ForeignKey("MinedPublication", on_delete=models.PROTECT)
+    status = models.CharField(max_length=50, null=False)
+    comment = models.TextField(null=True, default=None)
+    history = HistoricalRecords()
+
+    class Meta:
+      db_table = "lgd_mined_publication"
+      constraints = [
+            models.CheckConstraint(
+                check=Q(status__in=["rejected", "curated", "mined"]),
+                name="status_valid",
+            ),
+        ]
+      unique_together = ["lgd", "mined_publication"]
+      indexes = [
+        models.Index(fields=["lgd", "mined_publication"])
+      ]
+
+
 ### Table to keep track of GenCC submissions ###
 class GenCCSubmission(models.Model):
     """
