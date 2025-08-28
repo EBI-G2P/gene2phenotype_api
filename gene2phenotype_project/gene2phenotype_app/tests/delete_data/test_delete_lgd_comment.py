@@ -61,7 +61,7 @@ class LGDDeleteComment(TestCase):
         )
         self.assertEqual(response_2.status_code, 400)
 
-    def test_delete_no_permission(self):
+    def test_delete_non_superuser_no_permission(self):
         """
         Test deleting the comment for user (non-super user) without permission to edit panel.
         """
@@ -83,7 +83,7 @@ class LGDDeleteComment(TestCase):
             response_data["error"], "No permission to update record 'G2P00002'"
         )
 
-    def test_delete_no_permission_2(self):
+    def test_delete_no_permission(self):
         """
         Test deleting the comment for user (super user) without permission to edit panel.
         """
@@ -105,7 +105,7 @@ class LGDDeleteComment(TestCase):
             response_data["error"], "No permission to update record 'G2P00002'"
         )
 
-    def test_delete_non_superuser(self):
+    def test_delete_non_superuser_with_permission(self):
         """
         Test deleting the comment for non superuser
         Note: Any user can delete comments

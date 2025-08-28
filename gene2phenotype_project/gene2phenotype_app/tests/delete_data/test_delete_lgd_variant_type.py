@@ -62,7 +62,7 @@ class LGDEditVariantTypesEndpoint(TestCase):
             "Invalid variant type 'stopp_gained'",
         )
 
-    def test_invalid_delete_2(self):
+    def test_delete_unlinked_variant_type(self):
         """
         Test deleting an invalid variant type from the record (LGD).
         Cannot delete a term if it is not linked to the record.
@@ -88,7 +88,7 @@ class LGDEditVariantTypesEndpoint(TestCase):
             "Could not find variant type 'stop_gained' for ID 'G2P00002'",
         )
 
-    def test_delete_no_permission(self):
+    def test_delete_non_superuser(self):
         """
         Test deleting the variant type for non super user.
         Only super users can delete variant types.
@@ -113,7 +113,7 @@ class LGDEditVariantTypesEndpoint(TestCase):
             response_data["error"], "You do not have permission to perform this action."
         )
 
-    def test_delete_no_permission_2(self):
+    def test_delete_no_permission(self):
         """
         Test deleting the variant type for user without permission to edit the record.
         """

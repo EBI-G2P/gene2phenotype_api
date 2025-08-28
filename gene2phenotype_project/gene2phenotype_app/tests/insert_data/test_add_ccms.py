@@ -41,7 +41,7 @@ class LGDEditCCMEndpoint(TestCase):
         self.ccm_to_add = {"cross_cutting_modifiers": [{"term": "typically mosaic"}]}
         self.empty_ccm_to_add = {"cross_cutting_modifiers": []}
 
-    def test_add_no_permission(self):
+    def test_add_unauthorised_access(self):
         """
         Test the endpoint to add cross cutting modifiers for non authenticated user
         """
@@ -52,7 +52,7 @@ class LGDEditCCMEndpoint(TestCase):
         )
         self.assertEqual(response.status_code, 401)
 
-    def test_add_no_permission_2(self):
+    def test_add_no_permission(self):
         """
         Test the endpoint to add cross cutting modifiers for user without permission to edit record
         """
