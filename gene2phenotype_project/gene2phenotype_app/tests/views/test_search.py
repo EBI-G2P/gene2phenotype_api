@@ -183,9 +183,9 @@ class SearchTests(TestCase):
         url_search_id = f"{self.base_url_search}?type=stable_id&query=G2P00003"
         response = self.client.get(url_search_id)
 
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 410)
         self.assertEqual(
-            response.data["error"], "No matching stable_id found for: G2P00003"
+            response.data["message"], "G2P00003 is no longer available."
         )
 
     def test_search_g2p_id_merged(self):

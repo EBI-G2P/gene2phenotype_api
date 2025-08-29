@@ -28,10 +28,20 @@ class BaseView(generics.ListAPIView):
         return super().handle_exception(exc)
 
     def handle_merged_record(self, old_stable_id, new_stable_id):
+        """Method to return a message indicating the records has been merged"""
         return Response(
             {
                 "message": f"{old_stable_id} is no longer available. It has been merged into {new_stable_id}",
                 "stable_id": new_stable_id,
+            },
+            status=status.HTTP_410_GONE,
+        )
+
+    def handle_deleted_record(self, old_stable_id):
+        """Method to return a message indicating the records has been deleted"""
+        return Response(
+            {
+                "message": f"{old_stable_id} is no longer available."
             },
             status=status.HTTP_410_GONE,
         )
@@ -62,10 +72,20 @@ class BaseAPIView(APIView):
         return super().handle_exception(exc)
 
     def handle_merged_record(self, old_stable_id, new_stable_id):
+        """Method to return a message indicating the records has been merged"""
         return Response(
             {
                 "message": f"{old_stable_id} is no longer available. It has been merged into {new_stable_id}",
                 "stable_id": new_stable_id,
+            },
+            status=status.HTTP_410_GONE,
+        )
+    
+    def handle_deleted_record(self, old_stable_id):
+        """Method to return a message indicating the records has been deleted"""
+        return Response(
+            {
+                "message": f"{old_stable_id} is no longer available."
             },
             status=status.HTTP_410_GONE,
         )
