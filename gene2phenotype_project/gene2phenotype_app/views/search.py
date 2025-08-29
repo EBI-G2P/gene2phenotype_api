@@ -430,7 +430,7 @@ class SearchView(BaseView):
         search_query = request.query_params.get("query", None)
         search_type = request.query_params.get("type", None)
 
-        # Check if query is a merged record
+        # Check if query is a merged or deleted record
         if search_type == "stable_id" or (
             search_query and search_query.startswith("G2P")
         ):
@@ -442,6 +442,9 @@ class SearchView(BaseView):
                 if g2p_obj.comment and g2p_obj.comment.startswith("Merged into"):
                     match = re.search(r"G2P\d{5,}", g2p_obj.comment)
                     return self.handle_merged_record(search_query, match.group())
+                else:
+                # No comment or comment with other description is considered to be simply deleted
+                    return self.handle_deleted_record(search_query)
 
         queryset = self.get_queryset()
         serializer = self.get_serializer_class()

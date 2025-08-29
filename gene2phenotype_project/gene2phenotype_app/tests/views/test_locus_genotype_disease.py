@@ -44,9 +44,9 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         Test calling the endpoint for a deleted record
         """
         response = self.client.get(self.url_lgd_deleted)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 410)
         self.assertEqual(
-            response.data["error"], "No matching Entry found for: G2P00003"
+            response.data["message"], "G2P00003 is no longer available."
         )
 
     def test_lgd_invalid(self):
