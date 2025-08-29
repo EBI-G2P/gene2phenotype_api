@@ -105,15 +105,18 @@ class Command(BaseCommand):
                     new_g2p_id = re.sub(":.*", "", g2p_id)
 
                     if new_g2p_id not in final_list_g2p_ids:
-                        final_list_g2p_ids.append(new_g2p_id)
-
                         # Get the LocusGenotypeDisease for the G2P ID
                         try:
                             lgd_obj = LocusGenotypeDisease.objects.get(
                                 stable_id__stable_id=new_g2p_id, is_deleted=0
                             )
                         except LocusGenotypeDisease.DoesNotExist:
-                            raise CommandError(f"Invalid G2P ID {new_g2p_id}")
+                            # The record could have been merged or deleted
+                            logger.warning(
+                                f"Invalid G2P ID {new_g2p_id}. Skipping import."
+                            )
+
+                        final_list_g2p_ids.append(new_g2p_id)
 
                         # Check if LGDMinedPublication already exists
                         try:
