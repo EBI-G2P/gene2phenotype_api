@@ -22,7 +22,7 @@ The mined publications are going to be saved into tables 'mined_publications' an
 The command does not perform a bulk import because we want to populate the history tables - bulk updates
 do not insert rows into history tables.
 
-Supported into file: csv
+Supported input file: csv
 File format is the following:
 PMID\tG2P_IDs
 
