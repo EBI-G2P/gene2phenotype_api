@@ -2,14 +2,12 @@ import csv
 import logging
 import re
 import os.path
-from datetime import datetime
 
 from django.core.management.base import BaseCommand, CommandError
 
 from ...utils import get_publication, clean_title, get_date_now
 
 from gene2phenotype_app.models import (
-    Publication,
     MinedPublication,
     LGDMinedPublication,
     LGDPublication,
@@ -19,11 +17,17 @@ from gene2phenotype_app.models import (
 
 
 """
-Command to load mined publications from a csv file.
-The mined publications are going to be saved in tables 'mined_publications' and 'lgd_mined_publications'.
+Command to load mined publications into G2P database.
+The mined publications are going to be saved into tables 'mined_publications' and 'lgd_mined_publications'.
+The command does not perform a bulk import because we want to populate the history tables - bulk updates
+do not insert rows into history tables.
 
+Supported into file: csv
 File format is the following:
 PMID\tG2P_IDs
+
+How to run the command:
+python manage.py load_mined_publications --data_file input_ddg2p_.csv --email <email>
 """
 
 logger = logging.getLogger(__name__)
@@ -47,8 +51,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         data_file = options["data_file"]
         input_email = options["email"]
-
-        print("Start:", datetime.now())
 
         if not os.path.isfile(data_file):
             raise CommandError(f"Invalid file {data_file}")
@@ -80,7 +82,7 @@ class Command(BaseCommand):
                 pmid = row["PMID"].strip()
                 g2p_ids = row["G2P_IDs"].strip()
 
-                if not pmid or not g2p_ids or not isinstance(pmid, int):
+                if not pmid or not g2p_ids or not g2p_ids.startswith("G2P"):
                     logger.warning(f"Invalid PMID or G2P IDs in row {str(row)}")
                     continue
 
@@ -131,7 +133,7 @@ class Command(BaseCommand):
                             # Insert the LGDMinedPublication obj
                             # Before insertion we need to know if the LGD-publication association already exists
                             try:
-                                lgd_publication_obj = LGDPublication.objects.get(
+                                LGDPublication.objects.get(
                                     lgd=lgd_obj, publication__pmid=pmid, is_deleted=0
                                 )
                             except LGDPublication.DoesNotExist:
@@ -151,5 +153,3 @@ class Command(BaseCommand):
                             logger.warning(
                                 f"{new_g2p_id}-{pmid} already exists. Skipping import."
                             )
-
-        print("End:", datetime.now())
