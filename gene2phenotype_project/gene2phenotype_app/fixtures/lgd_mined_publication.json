@@ -1,0 +1,12 @@
+[
+  {
+    "model": "gene2phenotype_app.lgdminedpublication",
+    "pk": 1,
+    "fields": {
+      "lgd": 1,
+      "mined_publication": 1,
+      "status": "mined",
+      "comment": null
+    }
+  }
+]

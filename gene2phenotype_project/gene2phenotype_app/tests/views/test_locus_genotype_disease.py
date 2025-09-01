@@ -31,6 +31,8 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         "gene2phenotype_app/fixtures/lgd_comment.json",
         "gene2phenotype_app/fixtures/lgd_phenotype.json",
         "gene2phenotype_app/fixtures/lgd_publication_comment.json",
+        "gene2phenotype_app/fixtures/mined_publication.json",
+        "gene2phenotype_app/fixtures/lgd_mined_publication.json",
     ]
 
     def setUp(self):
@@ -114,6 +116,16 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
             }
         ]
         self.assertEqual(response.data["publications"], expected_data_publication)
+
+        expected_data_mined_publication = [
+            {
+                "pmid": 7866404,
+                "title": "Autosomal dominant spondylarthropathy due to a type II procollagen gene (COL2A1) point mutation.",
+                "status": "mined",
+                "comment": None,
+            }
+        ]
+        self.assertEqual(response.data["mined_publications"], expected_data_mined_publication)
 
         expected_data_disease = {
             "name": "CEP290-related JOUBERT SYNDROME TYPE 5",
