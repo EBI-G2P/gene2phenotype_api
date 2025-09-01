@@ -2,6 +2,7 @@ import csv
 import logging
 import re
 import os.path
+from datetime import datetime
 
 from django.core.management.base import BaseCommand, CommandError
 
@@ -47,6 +48,8 @@ class Command(BaseCommand):
         data_file = options["data_file"]
         input_email = options["email"]
 
+        print("Start:", datetime.now())
+
         if not os.path.isfile(data_file):
             raise CommandError(f"Invalid file {data_file}")
 
@@ -59,8 +62,8 @@ class Command(BaseCommand):
         # Get user info
         try:
             user_obj = User.objects.get(email=input_email)
-        except Exception as e:
-            raise CommandError(str(e))
+        except User.DoesNotExist:
+            raise CommandError(f"Invalid user {input_email}")
 
         with open(data_file, newline="") as fh_file:
             data_reader = csv.DictReader(fh_file)
@@ -77,13 +80,13 @@ class Command(BaseCommand):
                 pmid = row["PMID"].strip()
                 g2p_ids = row["G2P_IDs"].strip()
 
-                if pmid == "" or g2p_ids == "":
-                    logger.warning(f"Missing PMID or G2P IDs in row {str(row)}")
+                if not pmid or not g2p_ids or not isinstance(pmid, int):
+                    logger.warning(f"Invalid PMID or G2P IDs in row {str(row)}")
                     continue
 
                 list_g2p_ids = g2p_ids.split(";")
                 # to make sure we don't try to insert duplicates
-                final_list_g2p_ids = []
+                final_list_g2p_ids = set()
 
                 try:
                     mined_publication_obj = MinedPublication.objects.get(pmid=int(pmid))
@@ -115,8 +118,9 @@ class Command(BaseCommand):
                             logger.warning(
                                 f"Invalid G2P ID {new_g2p_id}. Skipping import."
                             )
+                            continue
 
-                        final_list_g2p_ids.append(new_g2p_id)
+                        final_list_g2p_ids.add(new_g2p_id)
 
                         # Check if LGDMinedPublication already exists
                         try:
@@ -147,3 +151,5 @@ class Command(BaseCommand):
                             logger.warning(
                                 f"{new_g2p_id}-{pmid} already exists. Skipping import."
                             )
+
+        print("End:", datetime.now())
