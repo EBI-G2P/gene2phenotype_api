@@ -768,6 +768,45 @@ class DiseaseExternal(models.Model):
         indexes = [models.Index(fields=["identifier"])]
 
 
+class MinedPublication(models.Model):
+    """
+    Imported mined publications data.
+    """
+
+    id = models.AutoField(primary_key=True)
+    pmid = models.IntegerField(null=False, unique=True)
+    title = models.CharField(max_length=500, null=False)
+    date_upload = models.DateTimeField(null=False)
+    history = HistoricalRecords()
+
+    class Meta:
+        db_table = "mined_publication"
+        indexes = [models.Index(fields=["pmid"])]
+
+
+class LGDMinedPublication(models.Model):
+    id = models.AutoField(primary_key=True)
+    lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
+    mined_publication = models.ForeignKey("MinedPublication", on_delete=models.PROTECT)
+    status = models.CharField(max_length=50, null=False)
+    comment = models.TextField(null=True, default=None)
+    history = HistoricalRecords()
+
+    class Meta:
+        db_table = "lgd_mined_publication"
+        constraints = [
+            models.CheckConstraint(
+                check=Q(status__in=["rejected", "curated", "mined"]),
+                name="status_valid",
+            ),
+        ]
+        unique_together = ["lgd", "mined_publication"]
+        indexes = [
+            models.Index(fields=["lgd"]),
+            models.Index(fields=["mined_publication"]),
+        ]
+
+
 ### Table to keep track of GenCC submissions ###
 class GenCCSubmission(models.Model):
     """
