@@ -14,6 +14,7 @@ from ..models import (
     LGDVariantGenccConsequence,
     LGDCrossCuttingModifier,
     LGDPublication,
+    LGDMinedPublication,
     LGDPhenotype,
     LGDVariantType,
     Locus,
@@ -30,6 +31,7 @@ from ..models import (
 )
 
 from .publication import LGDPublicationSerializer
+from .mined_publication import LGDMinedPublicationSerializer
 from .locus import LocusSerializer
 from .disease import DiseaseSerializer
 from .panel import LGDPanelSerializer
@@ -56,6 +58,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     disease = serializers.SerializerMethodField()  # part of the unique entry
     confidence = serializers.CharField(source="confidence.value")
     publications = serializers.SerializerMethodField()
+    mined_publications = serializers.SerializerMethodField()
     panels = serializers.SerializerMethodField()
     cross_cutting_modifier = serializers.SerializerMethodField(allow_null=True)
     variant_type = serializers.SerializerMethodField(allow_null=True)
@@ -193,6 +196,13 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         return LGDPublicationSerializer(
             queryset, context={"user": self.context.get("user")}, many=True
         ).data
+    
+    def get_mined_publications(self, id: int) -> list[dict[str, Any]]:
+        """
+        Mined publications associated with the LGMDE record.
+        """
+        queryset = LGDMinedPublication.objects.filter(lgd_id=id)
+        return LGDMinedPublicationSerializer(queryset, many=True).data
 
     def get_phenotypes(self, id: int) -> list[dict[str, Any]]:
         """
