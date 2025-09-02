@@ -200,6 +200,11 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     def get_mined_publications(self, id: int) -> list[dict[str, Any]]:
         """
         Mined publications associated with the LGMDE record.
+        This response includes the list of publications that are automatically extracted from literature which are relevant to the LGMDE record.
+        The "status" field can have the following three possible values:
+        1. "mined" - extracted publication which was not yet curated
+        2. "curated" - extracted publication which was curated
+        3. "rejected" - extracted publication which was rejected by curators
         """
         queryset = LGDMinedPublication.objects.filter(lgd_id=id)
         return LGDMinedPublicationSerializer(queryset, many=True).data

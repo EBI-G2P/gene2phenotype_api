@@ -2,7 +2,7 @@
     "openapi": "3.0.3",
     "info": {
         "title": "Gene2Phenotype (G2P)",
-        "version": "9.0.0",
+        "version": "3.0.0",
         "description": "This API enables access to gene disease models held in the G2P database. See [https://www.ebi.ac.uk/gene2phenotype/](https://www.ebi.ac.uk/gene2phenotype/) for more details.<br><br>Contact us by submitting an issue via [https://github.com/EBI-G2P/gene2phenotype_api/issues](https://github.com/EBI-G2P/gene2phenotype_api/issues)."
     },
     "paths": {
@@ -197,14 +197,7 @@
                                                     "comments": []
                                                 }
                                             ],
-                                            "mined_publications": [
-                                                {
-                                                    "pmid": 7866404,
-                                                    "title": "Autosomal dominant spondylarthropathy due to a type II procollagen gene (COL2A1) point mutation.",
-                                                    "status": "mined",
-                                                    "comment": null
-                                                }
-                                            ],
+                                            "mined_publications": [],
                                             "panels": [
                                                 {
                                                     "name": "DD",
@@ -1096,7 +1089,7 @@
                             "type": "object",
                             "additionalProperties": {}
                         },
-                        "description": "Mined publications associated with the LGMDE record.",
+                        "description": "Mined publications associated with the LGMDE record.\nThis response includes the list of publications that are automatically extracted from literature which are relevant to the LGMDE record.\nThe \"status\" field can have the following three possible values:\n1. \"mined\" - extracted publication which was not yet curated\n2. \"curated\" - extracted publication which was curated\n3. \"rejected\" - extracted publication which was rejected by curators",
                         "readOnly": true
                     },
                     "panels": {

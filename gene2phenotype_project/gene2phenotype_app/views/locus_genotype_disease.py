@@ -291,14 +291,7 @@ class VariantTypesList(APIView):
                         "comments": [],
                     },
                 ],
-                "mined_publications": [
-                    {
-                        "pmid": 7866404,
-                        "title": "Autosomal dominant spondylarthropathy due to a type II procollagen gene (COL2A1) point mutation.",
-                        "status": "mined",
-                        "comment": None,
-                    },
-                ],
+                "mined_publications": [],
                 "panels": [{"name": "DD", "description": "Developmental disorders"}],
                 "cross_cutting_modifier": [],
                 "variant_type": [
