@@ -6,7 +6,8 @@ It is part of the Gene2Phenotype project, established by David FitzPatrick in 20
 API documentation is available at [Gene2Phenotype API Documentation](https://www.ebi.ac.uk/gene2phenotype/api/).
 
 ### Installation and requirements
-The G2P requires:
+
+The G2P API requires:
 
     * **Python 3.10**
     * **MySQL 8**
@@ -18,6 +19,7 @@ pip install -r requirements.txt
 ```
 
 ### Configuration
+
 All configuration settings, including database details, should be set in the config.ini file. Here's an example configuration:
 
 ```ini
@@ -49,9 +51,11 @@ STATIC_URL = <your_static_url>
 ```
 
 ### Usage
+
 1. Configure your environment by updating the config.ini file.
 2. Configure your environment variables (e.g. Django SECRET_KEY and PROJECT_CONFIG_PATH).
 3. Run the server:
+
 ```bash
 python manage.py runserver
 ```
