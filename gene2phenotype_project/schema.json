@@ -1,1225 +1,1159 @@
 {
-    "openapi": "3.0.3",
-    "info": {
-        "title": "Gene2Phenotype (G2P)",
-        "version": "3.0.0",
-        "description": "This API enables access to gene disease models held in the G2P database. See [https://www.ebi.ac.uk/gene2phenotype/](https://www.ebi.ac.uk/gene2phenotype/) for more details.<br><br>Contact us by submitting an issue via [https://github.com/EBI-G2P/gene2phenotype_api/issues](https://github.com/EBI-G2P/gene2phenotype_api/issues)."
-    },
-    "paths": {
-        "/gene2phenotype/api/lgd/{stable_id}/": {
-            "get": {
-                "operationId": "lgd_retrieve",
-                "description": "\nFetch detailed information about a specific record using the G2P stable ID (stable_id).\n\nA record is a unique Locus-Genotype-Mechanism-Disease-Evidence (LGMDE) thread.\n",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "stable_id",
-                        "schema": {
-                            "type": "string"
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Gene2Phenotype (G2P)",
+    "version": "9.0.0",
+    "description": "This API enables access to gene disease models held in the G2P database. See [https://www.ebi.ac.uk/gene2phenotype/](https://www.ebi.ac.uk/gene2phenotype/) for more details.<br><br>Contact us by submitting an issue via [https://github.com/EBI-G2P/gene2phenotype_api/issues](https://github.com/EBI-G2P/gene2phenotype_api/issues)."
+  },
+  "paths": {
+    "/gene2phenotype/api/lgd/{stable_id}/": {
+      "get": {
+        "operationId": "lgd_retrieve",
+        "description": "\nFetch detailed information about a specific record using the G2P stable ID (stable_id).\n\nA record is a unique Locus-Genotype-Mechanism-Disease-Evidence (LGMDE) thread.\n",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "stable_id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["G2P record"],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocusGenotypeDisease"
+                },
+                "examples": {
+                  "Example1": {
+                    "value": {
+                      "locus": {
+                        "gene_symbol": "MTFMT",
+                        "sequence": "15",
+                        "start": 65001512,
+                        "end": 65029639,
+                        "strand": -1,
+                        "reference": "grch38",
+                        "ids": {
+                          "HGNC": "HGNC:29666",
+                          "Ensembl": "ENSG00000103707",
+                          "OMIM": "611766"
                         },
-                        "required": true
-                    }
-                ],
-                "tags": [
-                    "G2P record"
-                ],
-                "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {}
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/LocusGenotypeDisease"
-                                },
-                                "examples": {
-                                    "Example1": {
-                                        "value": {
-                                            "locus": {
-                                                "gene_symbol": "MTFMT",
-                                                "sequence": "15",
-                                                "start": 65001512,
-                                                "end": 65029639,
-                                                "strand": -1,
-                                                "reference": "grch38",
-                                                "ids": {
-                                                    "HGNC": "HGNC:29666",
-                                                    "Ensembl": "ENSG00000103707",
-                                                    "OMIM": "611766"
-                                                },
-                                                "synonyms": [
-                                                    "FMT1"
-                                                ]
-                                            },
-                                            "stable_id": "G2P03507",
-                                            "genotype": "biallelic_autosomal",
-                                            "variant_consequence": [
-                                                {
-                                                    "variant_consequence": "absent gene product",
-                                                    "accession": "SO:0002317",
-                                                    "support": "inferred",
-                                                    "publication": null
-                                                },
-                                                {
-                                                    "variant_consequence": "altered gene product structure",
-                                                    "accession": "SO:0002318",
-                                                    "support": "inferred",
-                                                    "publication": null
-                                                }
-                                            ],
-                                            "molecular_mechanism": {
-                                                "mechanism": "loss of function",
-                                                "mechanism_support": "evidence",
-                                                "synopsis": [],
-                                                "evidence": {
-                                                    "30911575": {
-                                                        "functional_studies": {
-                                                            "Function": [
-                                                                "Biochemical",
-                                                                "Protein Expression"
-                                                            ],
-                                                            "Functional Alteration": [
-                                                                "Patient Cells"
-                                                            ]
-                                                        },
-                                                        "descriptions": []
-                                                    },
-                                                    "21907147": {
-                                                        "functional_studies": {
-                                                            "Function": [
-                                                                "Biochemical"
-                                                            ],
-                                                            "Functional Alteration": [
-                                                                "Patient Cells"
-                                                            ],
-                                                            "Rescue": [
-                                                                "Patient Cells"
-                                                            ]
-                                                        },
-                                                        "descriptions": []
-                                                    },
-                                                    "24461907": {
-                                                        "functional_studies": {
-                                                            "Function": [
-                                                                "Biochemical",
-                                                                "Protein Expression"
-                                                            ]
-                                                        },
-                                                        "descriptions": []
-                                                    },
-                                                    "23499752": {
-                                                        "functional_studies": {
-                                                            "Function": [
-                                                                "Protein Expression"
-                                                            ],
-                                                            "Functional Alteration": [
-                                                                "Patient Cells"
-                                                            ]
-                                                        },
-                                                        "descriptions": []
-                                                    }
-                                                }
-                                            },
-                                            "disease": {
-                                                "name": "MTFMT-related mitochondrial disease with regression and lactic acidosis",
-                                                "ontology_terms": [],
-                                                "synonyms": []
-                                            },
-                                            "confidence": "definitive",
-                                            "publications": [
-                                                {
-                                                    "publication": {
-                                                        "pmid": 30911575,
-                                                        "title": "Leigh syndrome caused by mutations in MTFMT is associated with a better prognosis.",
-                                                        "authors": "Hayhurst H et al.",
-                                                        "year": "2019"
-                                                    },
-                                                    "number_of_families": null,
-                                                    "consanguinity": null,
-                                                    "affected_individuals": null,
-                                                    "ancestry": null,
-                                                    "comments": []
-                                                },
-                                                {
-                                                    "publication": {
-                                                        "pmid": 21907147,
-                                                        "title": "Mutations in MTFMT underlie a human disorder of formylation causing impaired mitochondrial translation.",
-                                                        "authors": "Tucker EJ, Hershman SG, Köhrer C, Belcher-Timme CA, Patel J, Goldberger OA, Christodoulou J, Silberstein JM, McKenzie M, Ryan MT, Compton AG, Jaffe JD, Carr SA, Calvo SE, RajBhandary UL, Thorburn DR, Mootha VK.",
-                                                        "year": "2011"
-                                                    },
-                                                    "number_of_families": null,
-                                                    "consanguinity": null,
-                                                    "affected_individuals": null,
-                                                    "ancestry": null,
-                                                    "comments": []
-                                                },
-                                                {
-                                                    "publication": {
-                                                        "pmid": 24461907,
-                                                        "title": "Phenotypic spectrum of eleven patients and five novel MTFMT mutations identified by exome sequencing and candidate gene screening.",
-                                                        "authors": "Haack TB et al.",
-                                                        "year": "2014"
-                                                    },
-                                                    "number_of_families": null,
-                                                    "consanguinity": null,
-                                                    "affected_individuals": null,
-                                                    "ancestry": null,
-                                                    "comments": []
-                                                },
-                                                {
-                                                    "publication": {
-                                                        "pmid": 32133637,
-                                                        "title": "First report of childhood progressive cerebellar atrophy due to compound heterozygous MTFMT variants.",
-                                                        "authors": "Bai R, Haude K, Yang E, Goldstein A, Anselm I.",
-                                                        "year": "2020"
-                                                    },
-                                                    "number_of_families": null,
-                                                    "consanguinity": null,
-                                                    "affected_individuals": null,
-                                                    "ancestry": null,
-                                                    "comments": []
-                                                },
-                                                {
-                                                    "publication": {
-                                                        "pmid": 23499752,
-                                                        "title": "Clinical and functional characterisation of the combined respiratory chain defect in two sisters due to autosomal recessive mutations in MTFMT.",
-                                                        "authors": "Neeve VC, Pyle A, Boczonadi V, Gomez-Duran A, Griffin H, Santibanez-Koref M, Gaiser U, Bauer P, Tzschach A, Chinnery PF, Horvath R.",
-                                                        "year": "2013"
-                                                    },
-                                                    "number_of_families": null,
-                                                    "consanguinity": null,
-                                                    "affected_individuals": null,
-                                                    "ancestry": null,
-                                                    "comments": []
-                                                }
-                                            ],
-                                            "mined_publications": [
-                                                {
-                                                    "pmid": 7866404,
-                                                    "title": "Autosomal dominant spondylarthropathy due to a type II procollagen gene (COL2A1) point mutation.",
-                                                    "status": "mined",
-                                                    "comment": null
-                                                }
-                                            ],
-                                            "panels": [
-                                                {
-                                                    "name": "DD",
-                                                    "description": "Developmental disorders"
-                                                }
-                                            ],
-                                            "cross_cutting_modifier": [],
-                                            "variant_type": [
-                                                {
-                                                    "term": "splice_region_variant",
-                                                    "accession": "SO:0001630",
-                                                    "inherited": false,
-                                                    "de_novo": false,
-                                                    "unknown_inheritance": false,
-                                                    "publications": [],
-                                                    "comments": []
-                                                },
-                                                {
-                                                    "term": "frameshift_variant",
-                                                    "accession": "SO:0001589",
-                                                    "inherited": false,
-                                                    "de_novo": false,
-                                                    "unknown_inheritance": false,
-                                                    "publications": [],
-                                                    "comments": []
-                                                },
-                                                {
-                                                    "term": "stop_gained",
-                                                    "accession": "SO:0001587",
-                                                    "inherited": false,
-                                                    "de_novo": false,
-                                                    "unknown_inheritance": false,
-                                                    "publications": [],
-                                                    "comments": []
-                                                },
-                                                {
-                                                    "term": "missense_variant",
-                                                    "accession": "SO:0001583",
-                                                    "inherited": false,
-                                                    "de_novo": false,
-                                                    "unknown_inheritance": false,
-                                                    "publications": [],
-                                                    "comments": []
-                                                }
-                                            ],
-                                            "variant_description": [],
-                                            "phenotypes": [],
-                                            "phenotype_summary": [],
-                                            "last_updated": "2025-03-06",
-                                            "date_created": "2024-03-06",
-                                            "comments": [],
-                                            "under_review": false
-                                        },
-                                        "summary": "Example 1",
-                                        "description": "Fetch detailed information for record with stable_id G2P03507"
-                                    }
-                                }
-                            }
+                        "synonyms": ["FMT1"]
+                      },
+                      "stable_id": "G2P03507",
+                      "genotype": "biallelic_autosomal",
+                      "variant_consequence": [
+                        {
+                          "variant_consequence": "absent gene product",
+                          "accession": "SO:0002317",
+                          "support": "inferred",
+                          "publication": null
                         },
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/gene2phenotype/api/search/": {
-            "get": {
-                "operationId": "search_list",
-                "description": "\nSearch G2P records and return summaries of LGMDE records.\nG2P stable IDs (stable_id) are returned to enable extraction of full details.\n\nYou can tailor your search using the following query parameters:\n\n**Required Parameter**\n- `query`\n  The term you wish to search for.\n  This could be a gene symbol, disease name, phenotype (e.g. HP:0000853) or a G2P stable ID.\n\n**Optional Parameters**\n- `type`\n  Specifies the type of your search. If omitted, the endpoint performs a generic search across all types.\n\n  Accepted values include:\n\n\n    gene      : by gene symbol\n    disease   : by text string (e.g. Cowden syndrome), Mondo or OMIM identifier\n    phenotype : by description (e.g. Goiter) or accession (e.g.  HP:0000853)\n    stable_id : by the G2P stable ID\n\n\n- `panel`\n  Filters results to a specific panel by name.\n\n  Accepted names include:\n\n\n    Cancer\n    Cardiac\n    DD\n    Ear\n    Eye\n    Skeletal\n    Skin\n\n\nWhen more than 20 records are available, results are paginated.\n\n**Example Requests**\n- Search by gene:\n    `/search/?query=TP53&type=gene`\n\n- Search by phenotype:\n    `/search/?query=HP:0003416&type=phenotype`\n\n- Generic search across all categories:\n    `/search/?query=Weill-Marchesani syndrome`\n\n- Search gene within a specific panel:\n    `/search/?type=gene&query=FBN1&panel=DD`\n",
-                "parameters": [
-                    {
-                        "name": "page",
-                        "required": false,
-                        "in": "query",
-                        "description": "A page number within the paginated result set.",
-                        "schema": {
-                            "type": "integer"
+                        {
+                          "variant_consequence": "altered gene product structure",
+                          "accession": "SO:0002318",
+                          "support": "inferred",
+                          "publication": null
                         }
-                    },
-                    {
-                        "in": "query",
-                        "name": "panel",
-                        "schema": {
-                            "type": "string"
+                      ],
+                      "molecular_mechanism": {
+                        "mechanism": "loss of function",
+                        "mechanism_support": "evidence",
+                        "synopsis": [],
+                        "evidence": {
+                          "30911575": {
+                            "functional_studies": {
+                              "Function": ["Biochemical", "Protein Expression"],
+                              "Functional Alteration": ["Patient Cells"]
+                            },
+                            "descriptions": []
+                          },
+                          "21907147": {
+                            "functional_studies": {
+                              "Function": ["Biochemical"],
+                              "Functional Alteration": ["Patient Cells"],
+                              "Rescue": ["Patient Cells"]
+                            },
+                            "descriptions": []
+                          },
+                          "24461907": {
+                            "functional_studies": {
+                              "Function": ["Biochemical", "Protein Expression"]
+                            },
+                            "descriptions": []
+                          },
+                          "23499752": {
+                            "functional_studies": {
+                              "Function": ["Protein Expression"],
+                              "Functional Alteration": ["Patient Cells"]
+                            },
+                            "descriptions": []
+                          }
+                        }
+                      },
+                      "disease": {
+                        "name": "MTFMT-related mitochondrial disease with regression and lactic acidosis",
+                        "ontology_terms": [],
+                        "synonyms": []
+                      },
+                      "confidence": "definitive",
+                      "publications": [
+                        {
+                          "publication": {
+                            "pmid": 30911575,
+                            "title": "Leigh syndrome caused by mutations in MTFMT is associated with a better prognosis.",
+                            "authors": "Hayhurst H et al.",
+                            "year": "2019"
+                          },
+                          "number_of_families": null,
+                          "consanguinity": null,
+                          "affected_individuals": null,
+                          "ancestry": null,
+                          "comments": []
                         },
-                        "description": "Fetch only records associated with a specific panel"
-                    },
-                    {
-                        "in": "query",
-                        "name": "query",
-                        "schema": {
-                            "type": "string"
+                        {
+                          "publication": {
+                            "pmid": 21907147,
+                            "title": "Mutations in MTFMT underlie a human disorder of formylation causing impaired mitochondrial translation.",
+                            "authors": "Tucker EJ, Hershman SG, Köhrer C, Belcher-Timme CA, Patel J, Goldberger OA, Christodoulou J, Silberstein JM, McKenzie M, Ryan MT, Compton AG, Jaffe JD, Carr SA, Calvo SE, RajBhandary UL, Thorburn DR, Mootha VK.",
+                            "year": "2011"
+                          },
+                          "number_of_families": null,
+                          "consanguinity": null,
+                          "affected_individuals": null,
+                          "ancestry": null,
+                          "comments": []
                         },
-                        "description": "The term you wish to search for",
-                        "required": true
-                    },
-                    {
-                        "in": "query",
-                        "name": "type",
-                        "schema": {
-                            "type": "string"
+                        {
+                          "publication": {
+                            "pmid": 24461907,
+                            "title": "Phenotypic spectrum of eleven patients and five novel MTFMT mutations identified by exome sequencing and candidate gene screening.",
+                            "authors": "Haack TB et al.",
+                            "year": "2014"
+                          },
+                          "number_of_families": null,
+                          "consanguinity": null,
+                          "affected_individuals": null,
+                          "ancestry": null,
+                          "comments": []
                         },
-                        "description": "Type of search can be: gene symbol, disease name, phenotype (e.g. HP:0000853) or a G2P stable ID"
-                    }
-                ],
-                "tags": [
-                    "Search records"
-                ],
-                "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {}
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "count",
-                                        "results"
-                                    ],
-                                    "properties": {
-                                        "count": {
-                                            "type": "integer",
-                                            "example": 123
-                                        },
-                                        "next": {
-                                            "type": "string",
-                                            "nullable": true,
-                                            "format": "uri",
-                                            "example": "http://api.example.org/accounts/?page=4"
-                                        },
-                                        "previous": {
-                                            "type": "string",
-                                            "nullable": true,
-                                            "format": "uri",
-                                            "example": "http://api.example.org/accounts/?page=2"
-                                        },
-                                        "results": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "stable_id": {
-                                                        "type": "string"
-                                                    },
-                                                    "gene": {
-                                                        "type": "string"
-                                                    },
-                                                    "genotype": {
-                                                        "type": "string"
-                                                    },
-                                                    "disease": {
-                                                        "type": "string"
-                                                    },
-                                                    "mechanism": {
-                                                        "type": "string"
-                                                    },
-                                                    "panel": {
-                                                        "type": "array",
-                                                        "items": {
-                                                            "type": "string"
-                                                        }
-                                                    },
-                                                    "confidence": {
-                                                        "type": "string"
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                },
-                                "examples": {
-                                    "SearchByPhenotype": {
-                                        "value": {
-                                            "count": 123,
-                                            "next": "http://api.example.org/accounts/?page=4",
-                                            "previous": "http://api.example.org/accounts/?page=2",
-                                            "results": [
-                                                {
-                                                    "stable_id": "G2P01947",
-                                                    "gene": "ADAMTS10",
-                                                    "genotype": "biallelic_autosomal",
-                                                    "disease": "ADAMTS10-related Weill-Marchesani syndrome",
-                                                    "mechanism": "loss of function",
-                                                    "panel": [
-                                                        "Eye",
-                                                        "Skin"
-                                                    ],
-                                                    "confidence": "definitive"
-                                                }
-                                            ]
-                                        },
-                                        "summary": "Search by phenotype",
-                                        "description": "Search G2P records associated with phenotype HP:0003416"
-                                    },
-                                    "SearchByGene": {
-                                        "value": {
-                                            "count": 123,
-                                            "next": "http://api.example.org/accounts/?page=4",
-                                            "previous": "http://api.example.org/accounts/?page=2",
-                                            "results": [
-                                                {
-                                                    "stable_id": "G2P01830",
-                                                    "gene": "TP53",
-                                                    "genotype": "monoallelic_autosomal",
-                                                    "disease": "TP53-related Li-Fraumeni syndrome",
-                                                    "mechanism": "loss of function",
-                                                    "panel": [
-                                                        "Cancer"
-                                                    ],
-                                                    "confidence": "definitive"
-                                                }
-                                            ]
-                                        },
-                                        "summary": "Search by gene",
-                                        "description": "Search G2P records associated with gene TP53"
-                                    }
-                                }
-                            }
+                        {
+                          "publication": {
+                            "pmid": 32133637,
+                            "title": "First report of childhood progressive cerebellar atrophy due to compound heterozygous MTFMT variants.",
+                            "authors": "Bai R, Haude K, Yang E, Goldstein A, Anselm I.",
+                            "year": "2020"
+                          },
+                          "number_of_families": null,
+                          "consanguinity": null,
+                          "affected_individuals": null,
+                          "ancestry": null,
+                          "comments": []
                         },
-                        "description": "Search response"
-                    }
+                        {
+                          "publication": {
+                            "pmid": 23499752,
+                            "title": "Clinical and functional characterisation of the combined respiratory chain defect in two sisters due to autosomal recessive mutations in MTFMT.",
+                            "authors": "Neeve VC, Pyle A, Boczonadi V, Gomez-Duran A, Griffin H, Santibanez-Koref M, Gaiser U, Bauer P, Tzschach A, Chinnery PF, Horvath R.",
+                            "year": "2013"
+                          },
+                          "number_of_families": null,
+                          "consanguinity": null,
+                          "affected_individuals": null,
+                          "ancestry": null,
+                          "comments": []
+                        }
+                      ],
+                      "mined_publications": [
+                        {
+                          "pmid": 7866404,
+                          "title": "Autosomal dominant spondylarthropathy due to a type II procollagen gene (COL2A1) point mutation.",
+                          "status": "mined",
+                          "comment": null
+                        }
+                      ],
+                      "panels": [
+                        {
+                          "name": "DD",
+                          "description": "Developmental disorders"
+                        }
+                      ],
+                      "cross_cutting_modifier": [],
+                      "variant_type": [
+                        {
+                          "term": "splice_region_variant",
+                          "accession": "SO:0001630",
+                          "inherited": false,
+                          "de_novo": false,
+                          "unknown_inheritance": false,
+                          "publications": [],
+                          "comments": []
+                        },
+                        {
+                          "term": "frameshift_variant",
+                          "accession": "SO:0001589",
+                          "inherited": false,
+                          "de_novo": false,
+                          "unknown_inheritance": false,
+                          "publications": [],
+                          "comments": []
+                        },
+                        {
+                          "term": "stop_gained",
+                          "accession": "SO:0001587",
+                          "inherited": false,
+                          "de_novo": false,
+                          "unknown_inheritance": false,
+                          "publications": [],
+                          "comments": []
+                        },
+                        {
+                          "term": "missense_variant",
+                          "accession": "SO:0001583",
+                          "inherited": false,
+                          "de_novo": false,
+                          "unknown_inheritance": false,
+                          "publications": [],
+                          "comments": []
+                        }
+                      ],
+                      "variant_description": [],
+                      "phenotypes": [],
+                      "phenotype_summary": [],
+                      "last_updated": "2025-03-06",
+                      "date_created": "2024-03-06",
+                      "comments": [],
+                      "under_review": false
+                    },
+                    "summary": "Example 1",
+                    "description": "Fetch detailed information for record with stable_id G2P03507"
+                  }
                 }
-            }
-        },
-        "/gene2phenotype/api/panels/": {
-            "get": {
-                "operationId": "panels_retrieve",
-                "description": "\nFetch summary counts for all G2P panels.\n",
-                "tags": [
-                    "Fetch counts by panel"
-                ],
-                "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {}
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "results": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "name": {
-                                                        "type": "string"
-                                                    },
-                                                    "description": {
-                                                        "type": "string"
-                                                    },
-                                                    "stats": {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "total_records": {
-                                                                "type": "integer"
-                                                            },
-                                                            "total_genes": {
-                                                                "type": "integer"
-                                                            },
-                                                            "by_confidence": {
-                                                                "type": "object",
-                                                                "properties": {
-                                                                    "definitive": {
-                                                                        "type": "integer"
-                                                                    },
-                                                                    "strong": {
-                                                                        "type": "integer"
-                                                                    },
-                                                                    "limited": {
-                                                                        "type": "integer"
-                                                                    },
-                                                                    "moderate": {
-                                                                        "type": "integer"
-                                                                    },
-                                                                    "refuted": {
-                                                                        "type": "integer"
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    },
-                                                    "last_updated": {
-                                                        "type": "string"
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        "count": {
-                                            "type": "integer"
-                                        }
-                                    }
-                                },
-                                "examples": {
-                                    "Example": {
-                                        "value": {
-                                            "results": [
-                                                {
-                                                    "name": "Cancer",
-                                                    "description": "Cancer disorders",
-                                                    "stats": {
-                                                        "total_records": 129,
-                                                        "total_genes": 116,
-                                                        "by_confidence": {
-                                                            "definitive": 97,
-                                                            "moderate": 14,
-                                                            "strong": 10,
-                                                            "limited": 8
-                                                        }
-                                                    },
-                                                    "last_updated": "2025-04-23"
-                                                },
-                                                {
-                                                    "name": "Cardiac",
-                                                    "description": "Cardiac disorders",
-                                                    "stats": {
-                                                        "total_records": 80,
-                                                        "total_genes": 54,
-                                                        "by_confidence": {
-                                                            "strong": 6,
-                                                            "definitive": 66,
-                                                            "moderate": 8
-                                                        }
-                                                    },
-                                                    "last_updated": "2025-03-07"
-                                                },
-                                                {
-                                                    "name": "DD",
-                                                    "description": "Developmental disorders",
-                                                    "stats": {
-                                                        "total_records": 2768,
-                                                        "total_genes": 2457,
-                                                        "by_confidence": {
-                                                            "definitive": 1482,
-                                                            "strong": 726,
-                                                            "limited": 374,
-                                                            "moderate": 185,
-                                                            "refuted": 1
-                                                        }
-                                                    },
-                                                    "last_updated": "2025-04-11"
-                                                }
-                                            ]
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "description": "Panels response"
-                    }
-                }
-            }
-        },
-        "/gene2phenotype/api/panel/{name}/": {
-            "get": {
-                "operationId": "panel_retrieve",
-                "description": "\nFetch counts for a specific panel by using a panel short name as the parameter.\n\nAccepted names include:\n\n\n    Cancer\n    Cardiac\n    DD\n    Ear\n    Eye\n    Skeletal\n    Skin\n\n\nThe response provides summary statistics about the records associated with it.\n",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "name",
-                        "schema": {
-                            "type": "string"
-                        },
-                        "required": true
-                    }
-                ],
-                "tags": [
-                    "Fetch information by panel"
-                ],
-                "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {}
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "name": {
-                                            "type": "string"
-                                        },
-                                        "description": {
-                                            "type": "string"
-                                        },
-                                        "last_updated": {
-                                            "type": "string"
-                                        },
-                                        "stats": {
-                                            "type": "object",
-                                            "properties": {
-                                                "total_records": {
-                                                    "type": "integer"
-                                                },
-                                                "total_genes": {
-                                                    "type": "integer"
-                                                },
-                                                "by_confidence": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "definitive": {
-                                                            "type": "integer"
-                                                        },
-                                                        "strong": {
-                                                            "type": "integer"
-                                                        },
-                                                        "limited": {
-                                                            "type": "integer"
-                                                        },
-                                                        "moderate": {
-                                                            "type": "integer"
-                                                        },
-                                                        "refuted": {
-                                                            "type": "integer"
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                },
-                                "examples": {
-                                    "DDPanel": {
-                                        "value": {
-                                            "name": "DD",
-                                            "description": "Developmental disorders",
-                                            "last_updated": "2025-04-11",
-                                            "stats": {
-                                                "total_records": 2768,
-                                                "total_genes": 2457,
-                                                "by_confidence": {
-                                                    "definitive": 1482,
-                                                    "strong": 726,
-                                                    "limited": 374,
-                                                    "moderate": 185,
-                                                    "refuted": 1
-                                                }
-                                            }
-                                        },
-                                        "summary": "DD panel",
-                                        "description": "Fetch details for Developmental disorders (DD) panel"
-                                    }
-                                }
-                            }
-                        },
-                        "description": "Panel detail response"
-                    }
-                }
-            }
-        },
-        "/gene2phenotype/api/panel/{name}/download/": {
-            "get": {
-                "operationId": "panel_download_retrieve",
-                "description": "\nDownload all records associated with a specific panel by using its short name as the parameter.\n\n\nAccepted names include:\n\n\n    Cancer\n    Cardiac\n    DD\n    Ear\n    Eye\n    Skeletal\n    Skin\n\n\nTo download records from all panels input `all` as the short name.\n\nIt returns an uncompressed csv file.\n\n**Example Requests**\n- Download DD records:\n    `/panel/DD/download`\n",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "name",
-                        "schema": {
-                            "type": "string"
-                        },
-                        "required": true
-                    }
-                ],
-                "tags": [
-                    "Fetch information by panel"
-                ],
-                "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {}
-                ],
-                "responses": {
-                    "200": {
-                        "description": "No response body"
-                    }
-                }
-            }
-        },
-        "/gene2phenotype/api/gene/{name}/summary/": {
-            "get": {
-                "operationId": "gene_summary_retrieve",
-                "description": "\nFetch latest records associated with a specific gene by using the gene symbol.\n",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "name",
-                        "schema": {
-                            "type": "string"
-                        },
-                        "required": true
-                    }
-                ],
-                "tags": [
-                    "Fetch G2P summary records by gene"
-                ],
-                "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {}
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "gene_symbol": {
-                                            "type": "string"
-                                        },
-                                        "records_summary": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "disease": {
-                                                        "type": "string"
-                                                    },
-                                                    "genotype": {
-                                                        "type": "string"
-                                                    },
-                                                    "confidence": {
-                                                        "type": "string"
-                                                    },
-                                                    "panels": {
-                                                        "type": "array",
-                                                        "items": {
-                                                            "type": "string"
-                                                        }
-                                                    },
-                                                    "variant_consequence": {
-                                                        "type": "array",
-                                                        "items": {
-                                                            "type": "string"
-                                                        }
-                                                    },
-                                                    "variant_type": {
-                                                        "type": "array",
-                                                        "items": {
-                                                            "type": "string"
-                                                        }
-                                                    },
-                                                    "molecular_mechanism": {
-                                                        "type": "string"
-                                                    },
-                                                    "last_updated": {
-                                                        "type": "string"
-                                                    },
-                                                    "stable_id": {
-                                                        "type": "string"
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                },
-                                "examples": {
-                                    "GeneFBN1": {
-                                        "value": {
-                                            "gene_symbol": "FBN1",
-                                            "records_summary": [
-                                                {
-                                                    "disease": "FBN1-related isolated ectopia lentis",
-                                                    "genotype": "monoallelic_autosomal",
-                                                    "confidence": "limited",
-                                                    "panels": [
-                                                        "Eye",
-                                                        "Skin"
-                                                    ],
-                                                    "variant_consequence": [
-                                                        "altered gene product structure"
-                                                    ],
-                                                    "variant_type": [
-                                                        "missense_variant",
-                                                        "inframe_deletion",
-                                                        "inframe_insertion"
-                                                    ],
-                                                    "molecular_mechanism": "undetermined",
-                                                    "last_updated": "2024-08-20",
-                                                    "stable_id": "G2P02104"
-                                                },
-                                                {
-                                                    "disease": "FBN1-related Weill-Marchesani syndrome",
-                                                    "genotype": "monoallelic_autosomal",
-                                                    "confidence": "strong",
-                                                    "panels": [
-                                                        "DD",
-                                                        "Eye",
-                                                        "Skin",
-                                                        "Skeletal"
-                                                    ],
-                                                    "variant_consequence": [
-                                                        "altered gene product structure"
-                                                    ],
-                                                    "variant_type": [
-                                                        "missense_variant",
-                                                        "inframe_deletion",
-                                                        "inframe_insertion"
-                                                    ],
-                                                    "molecular_mechanism": "undetermined",
-                                                    "last_updated": "2024-08-20",
-                                                    "stable_id": "G2P01563"
-                                                },
-                                                {
-                                                    "disease": "FBN1-related Marfan syndrome",
-                                                    "genotype": "biallelic_autosomal",
-                                                    "confidence": "definitive",
-                                                    "panels": [
-                                                        "DD",
-                                                        "Eye",
-                                                        "Skin",
-                                                        "Skeletal"
-                                                    ],
-                                                    "variant_consequence": [
-                                                        "absent gene product",
-                                                        "altered gene product structure"
-                                                    ],
-                                                    "variant_type": [
-                                                        "splice_region_variant",
-                                                        "frameshift_variant",
-                                                        "missense_variant"
-                                                    ],
-                                                    "molecular_mechanism": "loss of function",
-                                                    "last_updated": "2024-05-13",
-                                                    "stable_id": "G2P03125"
-                                                },
-                                                {
-                                                    "disease": "FBN1-related Marfan syndrome",
-                                                    "genotype": "monoallelic_autosomal",
-                                                    "confidence": "definitive",
-                                                    "panels": [
-                                                        "DD",
-                                                        "Eye",
-                                                        "Skin",
-                                                        "Skeletal"
-                                                    ],
-                                                    "variant_consequence": [
-                                                        "absent gene product",
-                                                        "altered gene product structure"
-                                                    ],
-                                                    "variant_type": [],
-                                                    "molecular_mechanism": "loss of function",
-                                                    "last_updated": "2023-05-24",
-                                                    "stable_id": "G2P01013"
-                                                }
-                                            ]
-                                        },
-                                        "summary": "gene FBN1",
-                                        "description": "Fetch latest records associated with gene FBN1"
-                                    }
-                                }
-                            }
-                        },
-                        "description": "Gene summary response"
-                    }
-                }
-            }
-        },
-        "/gene2phenotype/api/disease/{id}/summary/": {
-            "get": {
-                "operationId": "disease_summary_retrieve",
-                "description": "\nReturn a summary of the G2P records associated with the disease.\n\nThe disease input can be a disease name or ontology ID (e.g. Mondo or OMIM).\n",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "id",
-                        "schema": {
-                            "type": "string"
-                        },
-                        "required": true
-                    }
-                ],
-                "tags": [
-                    "Fetch G2P summary records by disease"
-                ],
-                "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {}
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "disease": {
-                                            "type": "string"
-                                        },
-                                        "records_summary": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "locus": {
-                                                        "type": "string"
-                                                    },
-                                                    "genotype": {
-                                                        "type": "string"
-                                                    },
-                                                    "confidence": {
-                                                        "type": "string"
-                                                    },
-                                                    "panels": {
-                                                        "type": "array",
-                                                        "items": {
-                                                            "type": "string"
-                                                        }
-                                                    },
-                                                    "variant_consequence": {
-                                                        "type": "array",
-                                                        "items": {
-                                                            "type": "string"
-                                                        }
-                                                    },
-                                                    "variant_type": {
-                                                        "type": "array",
-                                                        "items": {
-                                                            "type": "string"
-                                                        }
-                                                    },
-                                                    "molecular_mechanism": {
-                                                        "type": "string"
-                                                    },
-                                                    "stable_id": {
-                                                        "type": "string"
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                },
-                                "examples": {
-                                    "MONDO:0008913": {
-                                        "value": {
-                                            "disease": "MONDO:0008913",
-                                            "records_summary": [
-                                                {
-                                                    "locus": "PLD1",
-                                                    "genotype": "biallelic_autosomal",
-                                                    "confidence": "definitive",
-                                                    "panels": [
-                                                        "DD"
-                                                    ],
-                                                    "variant_consequence": [
-                                                        "absent gene product"
-                                                    ],
-                                                    "variant_type": [
-                                                        "splice_donor_variant",
-                                                        "frameshift_variant",
-                                                        "stop_gained",
-                                                        "missense_variant"
-                                                    ],
-                                                    "molecular_mechanism": "loss of function",
-                                                    "stable_id": "G2P03704"
-                                                }
-                                            ]
-                                        },
-                                        "description": "Fetch records linked to disease 'MONDO:0008913'"
-                                    }
-                                }
-                            }
-                        },
-                        "description": "Disease summary response"
-                    }
-                }
-            }
-        },
-        "/gene2phenotype/api/reference_data/": {
-            "get": {
-                "operationId": "reference_data_retrieve",
-                "description": "\nFetch list of all reference data used in G2P with their respective versions.\n",
-                "tags": [
-                    "Reference data"
-                ],
-                "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {}
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "key": {
-                                                "type": "string"
-                                            },
-                                            "source": {
-                                                "type": "string"
-                                            },
-                                            "version": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "description": "Reference data response"
-                    }
-                }
-            }
+              }
+            },
+            "description": ""
+          }
         }
+      }
     },
-    "components": {
-        "schemas": {
-            "LocusGenotypeDisease": {
-                "type": "object",
-                "description": "Serializer for the LocusGenotypeDisease model.\nLocusGenotypeDisease represents a unique Locus-Genotype-Mechanism-Disease-Evidence (LGMDE) record.",
-                "properties": {
-                    "locus": {
+    "/gene2phenotype/api/search/": {
+      "get": {
+        "operationId": "search_list",
+        "description": "\nSearch G2P records and return summaries of LGMDE records.\nG2P stable IDs (stable_id) are returned to enable extraction of full details.\n\nYou can tailor your search using the following query parameters:\n\n**Required Parameter**\n- `query`\n  The term you wish to search for.\n  This could be a gene symbol, disease name, phenotype (e.g. HP:0000853) or a G2P stable ID.\n\n**Optional Parameters**\n- `type`\n  Specifies the type of your search. If omitted, the endpoint performs a generic search across all types.\n\n  Accepted values include:\n\n\n    gene      : by gene symbol\n    disease   : by text string (e.g. Cowden syndrome), Mondo or OMIM identifier\n    phenotype : by description (e.g. Goiter) or accession (e.g.  HP:0000853)\n    stable_id : by the G2P stable ID\n\n\n- `panel`\n  Filters results to a specific panel by name.\n\n  Accepted names include:\n\n\n    Cancer\n    Cardiac\n    DD\n    Ear\n    Eye\n    Skeletal\n    Skin\n\n\nWhen more than 20 records are available, results are paginated.\n\n**Example Requests**\n- Search by gene:\n    `/search/?query=TP53&type=gene`\n\n- Search by phenotype:\n    `/search/?query=HP:0003416&type=phenotype`\n\n- Generic search across all categories:\n    `/search/?query=Weill-Marchesani syndrome`\n\n- Search gene within a specific panel:\n    `/search/?type=gene&query=FBN1&panel=DD`\n",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "A page number within the paginated result set.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "panel",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Fetch only records associated with a specific panel"
+          },
+          {
+            "in": "query",
+            "name": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "The term you wish to search for",
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Type of search can be: gene symbol, disease name, phenotype (e.g. HP:0000853) or a G2P stable ID"
+          }
+        ],
+        "tags": ["Search records"],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["count", "results"],
+                  "properties": {
+                    "count": {
+                      "type": "integer",
+                      "example": 123
+                    },
+                    "next": {
+                      "type": "string",
+                      "nullable": true,
+                      "format": "uri",
+                      "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                      "type": "string",
+                      "nullable": true,
+                      "format": "uri",
+                      "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
                         "type": "object",
-                        "additionalProperties": {},
-                        "description": "Gene associated with the LGMDE record",
-                        "readOnly": true
+                        "properties": {
+                          "stable_id": {
+                            "type": "string"
+                          },
+                          "gene": {
+                            "type": "string"
+                          },
+                          "genotype": {
+                            "type": "string"
+                          },
+                          "disease": {
+                            "type": "string"
+                          },
+                          "mechanism": {
+                            "type": "string"
+                          },
+                          "panel": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "confidence": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "SearchByPhenotype": {
+                    "value": {
+                      "count": 123,
+                      "next": "http://api.example.org/accounts/?page=4",
+                      "previous": "http://api.example.org/accounts/?page=2",
+                      "results": [
+                        {
+                          "stable_id": "G2P01947",
+                          "gene": "ADAMTS10",
+                          "genotype": "biallelic_autosomal",
+                          "disease": "ADAMTS10-related Weill-Marchesani syndrome",
+                          "mechanism": "loss of function",
+                          "panel": ["Eye", "Skin"],
+                          "confidence": "definitive"
+                        }
+                      ]
                     },
-                    "stable_id": {
-                        "type": "string",
-                        "readOnly": true
+                    "summary": "Search by phenotype",
+                    "description": "Search G2P records associated with phenotype HP:0003416"
+                  },
+                  "SearchByGene": {
+                    "value": {
+                      "count": 123,
+                      "next": "http://api.example.org/accounts/?page=4",
+                      "previous": "http://api.example.org/accounts/?page=2",
+                      "results": [
+                        {
+                          "stable_id": "G2P01830",
+                          "gene": "TP53",
+                          "genotype": "monoallelic_autosomal",
+                          "disease": "TP53-related Li-Fraumeni syndrome",
+                          "mechanism": "loss of function",
+                          "panel": ["Cancer"],
+                          "confidence": "definitive"
+                        }
+                      ]
                     },
-                    "genotype": {
-                        "type": "string",
-                        "readOnly": true
-                    },
-                    "variant_consequence": {
-                        "type": "array",
-                        "items": {
+                    "summary": "Search by gene",
+                    "description": "Search G2P records associated with gene TP53"
+                  }
+                }
+              }
+            },
+            "description": "Search response"
+          }
+        }
+      }
+    },
+    "/gene2phenotype/api/panels/": {
+      "get": {
+        "operationId": "panels_retrieve",
+        "description": "\nFetch summary counts for all G2P panels.\n",
+        "tags": ["Fetch counts by panel"],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "stats": {
                             "type": "object",
-                            "additionalProperties": {}
-                        },
-                        "description": "Variant consequences linked to the LGMDE record.\nThis is the GenCC level of variant consequence: altered_gene_product_level, etc.",
-                        "readOnly": true,
-                        "nullable": true
-                    },
-                    "molecular_mechanism": {
-                        "type": "object",
-                        "additionalProperties": {},
-                        "description": "Molecular mechanism associated with the LGMDE record.\nIf available, also returns the evidence.",
-                        "readOnly": true,
-                        "nullable": true
-                    },
-                    "disease": {
-                        "type": "object",
-                        "additionalProperties": {},
-                        "description": "Disease associated with the LGMDE record",
-                        "readOnly": true
-                    },
-                    "confidence": {
-                        "type": "string"
-                    },
-                    "publications": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": {
+                            "properties": {
+                              "total_records": {
+                                "type": "integer"
+                              },
+                              "total_genes": {
+                                "type": "integer"
+                              },
+                              "by_confidence": {
                                 "type": "object",
-                                "additionalProperties": {}
+                                "properties": {
+                                  "definitive": {
+                                    "type": "integer"
+                                  },
+                                  "strong": {
+                                    "type": "integer"
+                                  },
+                                  "limited": {
+                                    "type": "integer"
+                                  },
+                                  "moderate": {
+                                    "type": "integer"
+                                  },
+                                  "refuted": {
+                                    "type": "integer"
+                                  }
+                                }
+                              }
                             }
-                        },
-                        "description": "Publications associated with the LGMDE record.",
-                        "readOnly": true
+                          },
+                          "last_updated": {
+                            "type": "string"
+                          }
+                        }
+                      }
                     },
-                    "mined_publications": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": {}
-                        },
-                        "description": "Mined publications associated with the LGMDE record.",
-                        "readOnly": true
-                    },
-                    "panels": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
+                    "count": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "examples": {
+                  "Example": {
+                    "value": {
+                      "results": [
+                        {
+                          "name": "Cancer",
+                          "description": "Cancer disorders",
+                          "stats": {
+                            "total_records": 129,
+                            "total_genes": 116,
+                            "by_confidence": {
+                              "definitive": 97,
+                              "moderate": 14,
+                              "strong": 10,
+                              "limited": 8
                             }
+                          },
+                          "last_updated": "2025-04-23"
                         },
-                        "description": "Panel(s) associated with the LGMDE record.",
-                        "readOnly": true
-                    },
-                    "cross_cutting_modifier": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
+                        {
+                          "name": "Cardiac",
+                          "description": "Cardiac disorders",
+                          "stats": {
+                            "total_records": 80,
+                            "total_genes": 54,
+                            "by_confidence": {
+                              "strong": 6,
+                              "definitive": 66,
+                              "moderate": 8
                             }
+                          },
+                          "last_updated": "2025-03-07"
                         },
-                        "description": "Cross cutting modifier terms associated with the LGMDE record.",
-                        "readOnly": true,
-                        "nullable": true
+                        {
+                          "name": "DD",
+                          "description": "Developmental disorders",
+                          "stats": {
+                            "total_records": 2768,
+                            "total_genes": 2457,
+                            "by_confidence": {
+                              "definitive": 1482,
+                              "strong": 726,
+                              "limited": 374,
+                              "moderate": 185,
+                              "refuted": 1
+                            }
+                          },
+                          "last_updated": "2025-04-11"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Panels response"
+          }
+        }
+      }
+    },
+    "/gene2phenotype/api/panel/{name}/": {
+      "get": {
+        "operationId": "panel_retrieve",
+        "description": "\nFetch counts for a specific panel by using a panel short name as the parameter.\n\nAccepted names include:\n\n\n    Cancer\n    Cardiac\n    DD\n    Ear\n    Eye\n    Skeletal\n    Skin\n\n\nThe response provides summary statistics about the records associated with it.\n",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["Fetch information by panel"],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
                     },
-                    "variant_type": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": {}
-                        },
-                        "description": "Variant types associated with the LGMDE record.\nThe variant type can be linked to several publications therefore response\nincludes the list of publications associated with the variant type.",
-                        "readOnly": true,
-                        "nullable": true
-                    },
-                    "variant_description": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": {}
-                        },
-                        "description": "Variant HGVS description linked to the LGMDE record and publication(s).\nThe response includes a list of publications associated with the HGVS description.",
-                        "readOnly": true,
-                        "nullable": true
-                    },
-                    "phenotypes": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": {}
-                        },
-                        "description": "Phenotypes associated with the LGMDE record.\nThe response includes the list of publications associated with the phenotype.",
-                        "readOnly": true,
-                        "nullable": true
-                    },
-                    "phenotype_summary": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": {}
-                        },
-                        "description": "A summary about the phenotypes associated with the LGMDE record.\nThe response includes the publication associated with the summary.",
-                        "readOnly": true,
-                        "nullable": true
+                    "description": {
+                      "type": "string"
                     },
                     "last_updated": {
-                        "type": "string",
-                        "nullable": true,
-                        "description": "Date last time the LGMDE record was updated by a curator",
-                        "readOnly": true
+                      "type": "string"
                     },
-                    "date_created": {
-                        "type": "string",
-                        "format": "date",
-                        "nullable": true,
-                        "description": "Date the LGMDE record was created.\nDependency: this method depends on the history table.\nNote: entries that were migrated from the old db don't have the date when they were created.",
-                        "readOnly": true
-                    },
-                    "comments": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                    "stats": {
+                      "type": "object",
+                      "properties": {
+                        "total_records": {
+                          "type": "integer"
                         },
-                        "description": "Comments associated with the LGMDE record.\nComments can be public or private. Private comments can only be\nseen by curators.",
-                        "readOnly": true,
-                        "nullable": true
-                    },
-                    "is_reviewed": {
-                        "type": "boolean",
-                        "description": "Return True if the record is under review.",
-                        "readOnly": true
+                        "total_genes": {
+                          "type": "integer"
+                        },
+                        "by_confidence": {
+                          "type": "object",
+                          "properties": {
+                            "definitive": {
+                              "type": "integer"
+                            },
+                            "strong": {
+                              "type": "integer"
+                            },
+                            "limited": {
+                              "type": "integer"
+                            },
+                            "moderate": {
+                              "type": "integer"
+                            },
+                            "refuted": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
                     }
+                  }
                 },
-                "required": [
-                    "comments",
-                    "confidence",
-                    "cross_cutting_modifier",
-                    "date_created",
-                    "disease",
-                    "genotype",
-                    "is_reviewed",
-                    "last_updated",
-                    "locus",
-                    "mined_publications",
-                    "molecular_mechanism",
-                    "panels",
-                    "phenotype_summary",
-                    "phenotypes",
-                    "publications",
-                    "stable_id",
-                    "variant_consequence",
-                    "variant_description",
-                    "variant_type"
-                ]
-            }
-        },
-        "securitySchemes": {
-            "jwtAuth": {
-                "type": "http",
-                "scheme": "bearer",
-                "bearerFormat": "JWT"
-            }
+                "examples": {
+                  "DDPanel": {
+                    "value": {
+                      "name": "DD",
+                      "description": "Developmental disorders",
+                      "last_updated": "2025-04-11",
+                      "stats": {
+                        "total_records": 2768,
+                        "total_genes": 2457,
+                        "by_confidence": {
+                          "definitive": 1482,
+                          "strong": 726,
+                          "limited": 374,
+                          "moderate": 185,
+                          "refuted": 1
+                        }
+                      }
+                    },
+                    "summary": "DD panel",
+                    "description": "Fetch details for Developmental disorders (DD) panel"
+                  }
+                }
+              }
+            },
+            "description": "Panel detail response"
+          }
         }
+      }
+    },
+    "/gene2phenotype/api/panel/{name}/download/": {
+      "get": {
+        "operationId": "panel_download_retrieve",
+        "description": "\nDownload all records associated with a specific panel by using its short name as the parameter.\n\n\nAccepted names include:\n\n\n    Cancer\n    Cardiac\n    DD\n    Ear\n    Eye\n    Skeletal\n    Skin\n\n\nTo download records from all panels input `all` as the short name.\n\nIt returns an uncompressed csv file.\n\n**Example Requests**\n- Download DD records:\n    `/panel/DD/download`\n",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["Fetch information by panel"],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/gene2phenotype/api/gene/{name}/summary/": {
+      "get": {
+        "operationId": "gene_summary_retrieve",
+        "description": "\nFetch latest records associated with a specific gene by using the gene symbol.\n",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["Fetch G2P summary records by gene"],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "gene_symbol": {
+                      "type": "string"
+                    },
+                    "records_summary": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "disease": {
+                            "type": "string"
+                          },
+                          "genotype": {
+                            "type": "string"
+                          },
+                          "confidence": {
+                            "type": "string"
+                          },
+                          "panels": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "variant_consequence": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "variant_type": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "molecular_mechanism": {
+                            "type": "string"
+                          },
+                          "last_updated": {
+                            "type": "string"
+                          },
+                          "stable_id": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "GeneFBN1": {
+                    "value": {
+                      "gene_symbol": "FBN1",
+                      "records_summary": [
+                        {
+                          "disease": "FBN1-related isolated ectopia lentis",
+                          "genotype": "monoallelic_autosomal",
+                          "confidence": "limited",
+                          "panels": ["Eye", "Skin"],
+                          "variant_consequence": [
+                            "altered gene product structure"
+                          ],
+                          "variant_type": [
+                            "missense_variant",
+                            "inframe_deletion",
+                            "inframe_insertion"
+                          ],
+                          "molecular_mechanism": "undetermined",
+                          "last_updated": "2024-08-20",
+                          "stable_id": "G2P02104"
+                        },
+                        {
+                          "disease": "FBN1-related Weill-Marchesani syndrome",
+                          "genotype": "monoallelic_autosomal",
+                          "confidence": "strong",
+                          "panels": ["DD", "Eye", "Skin", "Skeletal"],
+                          "variant_consequence": [
+                            "altered gene product structure"
+                          ],
+                          "variant_type": [
+                            "missense_variant",
+                            "inframe_deletion",
+                            "inframe_insertion"
+                          ],
+                          "molecular_mechanism": "undetermined",
+                          "last_updated": "2024-08-20",
+                          "stable_id": "G2P01563"
+                        },
+                        {
+                          "disease": "FBN1-related Marfan syndrome",
+                          "genotype": "biallelic_autosomal",
+                          "confidence": "definitive",
+                          "panels": ["DD", "Eye", "Skin", "Skeletal"],
+                          "variant_consequence": [
+                            "absent gene product",
+                            "altered gene product structure"
+                          ],
+                          "variant_type": [
+                            "splice_region_variant",
+                            "frameshift_variant",
+                            "missense_variant"
+                          ],
+                          "molecular_mechanism": "loss of function",
+                          "last_updated": "2024-05-13",
+                          "stable_id": "G2P03125"
+                        },
+                        {
+                          "disease": "FBN1-related Marfan syndrome",
+                          "genotype": "monoallelic_autosomal",
+                          "confidence": "definitive",
+                          "panels": ["DD", "Eye", "Skin", "Skeletal"],
+                          "variant_consequence": [
+                            "absent gene product",
+                            "altered gene product structure"
+                          ],
+                          "variant_type": [],
+                          "molecular_mechanism": "loss of function",
+                          "last_updated": "2023-05-24",
+                          "stable_id": "G2P01013"
+                        }
+                      ]
+                    },
+                    "summary": "gene FBN1",
+                    "description": "Fetch latest records associated with gene FBN1"
+                  }
+                }
+              }
+            },
+            "description": "Gene summary response"
+          }
+        }
+      }
+    },
+    "/gene2phenotype/api/disease/{id}/summary/": {
+      "get": {
+        "operationId": "disease_summary_retrieve",
+        "description": "\nReturn a summary of the G2P records associated with the disease.\n\nThe disease input can be a disease name or ontology ID (e.g. Mondo or OMIM).\n",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["Fetch G2P summary records by disease"],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "disease": {
+                      "type": "string"
+                    },
+                    "records_summary": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "locus": {
+                            "type": "string"
+                          },
+                          "genotype": {
+                            "type": "string"
+                          },
+                          "confidence": {
+                            "type": "string"
+                          },
+                          "panels": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "variant_consequence": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "variant_type": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "molecular_mechanism": {
+                            "type": "string"
+                          },
+                          "stable_id": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "MONDO:0008913": {
+                    "value": {
+                      "disease": "MONDO:0008913",
+                      "records_summary": [
+                        {
+                          "locus": "PLD1",
+                          "genotype": "biallelic_autosomal",
+                          "confidence": "definitive",
+                          "panels": ["DD"],
+                          "variant_consequence": ["absent gene product"],
+                          "variant_type": [
+                            "splice_donor_variant",
+                            "frameshift_variant",
+                            "stop_gained",
+                            "missense_variant"
+                          ],
+                          "molecular_mechanism": "loss of function",
+                          "stable_id": "G2P03704"
+                        }
+                      ]
+                    },
+                    "description": "Fetch records linked to disease 'MONDO:0008913'"
+                  }
+                }
+              }
+            },
+            "description": "Disease summary response"
+          }
+        }
+      }
+    },
+    "/gene2phenotype/api/reference_data/": {
+      "get": {
+        "operationId": "reference_data_retrieve",
+        "description": "\nFetch list of all reference data used in G2P with their respective versions.\n",
+        "tags": ["Reference data"],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "key": {
+                        "type": "string"
+                      },
+                      "source": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Reference data response"
+          }
+        }
+      }
     }
+  },
+  "components": {
+    "schemas": {
+      "LocusGenotypeDisease": {
+        "type": "object",
+        "description": "Serializer for the LocusGenotypeDisease model.\nLocusGenotypeDisease represents a unique Locus-Genotype-Mechanism-Disease-Evidence (LGMDE) record.",
+        "properties": {
+          "locus": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Gene associated with the LGMDE record",
+            "readOnly": true
+          },
+          "stable_id": {
+            "type": "string",
+            "readOnly": true
+          },
+          "genotype": {
+            "type": "string",
+            "readOnly": true
+          },
+          "variant_consequence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "description": "Variant consequences linked to the LGMDE record.\nThis is the GenCC level of variant consequence: altered_gene_product_level, etc.",
+            "readOnly": true,
+            "nullable": true
+          },
+          "molecular_mechanism": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Molecular mechanism associated with the LGMDE record.\nIf available, also returns the evidence.",
+            "readOnly": true,
+            "nullable": true
+          },
+          "disease": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Disease associated with the LGMDE record",
+            "readOnly": true
+          },
+          "confidence": {
+            "type": "string"
+          },
+          "publications": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            },
+            "description": "Publications associated with the LGMDE record.",
+            "readOnly": true
+          },
+          "mined_publications": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "description": "Mined publications associated with the LGMDE record.",
+            "readOnly": true
+          },
+          "panels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "description": "Panel(s) associated with the LGMDE record.",
+            "readOnly": true
+          },
+          "cross_cutting_modifier": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "description": "Cross cutting modifier terms associated with the LGMDE record.",
+            "readOnly": true,
+            "nullable": true
+          },
+          "variant_type": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "description": "Variant types associated with the LGMDE record.\nThe variant type can be linked to several publications therefore response\nincludes the list of publications associated with the variant type.",
+            "readOnly": true,
+            "nullable": true
+          },
+          "variant_description": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "description": "Variant HGVS description linked to the LGMDE record and publication(s).\nThe response includes a list of publications associated with the HGVS description.",
+            "readOnly": true,
+            "nullable": true
+          },
+          "phenotypes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "description": "Phenotypes associated with the LGMDE record.\nThe response includes the list of publications associated with the phenotype.",
+            "readOnly": true,
+            "nullable": true
+          },
+          "phenotype_summary": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "description": "A summary about the phenotypes associated with the LGMDE record.\nThe response includes the publication associated with the summary.",
+            "readOnly": true,
+            "nullable": true
+          },
+          "last_updated": {
+            "type": "string",
+            "nullable": true,
+            "description": "Date last time the LGMDE record was updated by a curator",
+            "readOnly": true
+          },
+          "date_created": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Date the LGMDE record was created.\nDependency: this method depends on the history table.\nNote: entries that were migrated from the old db don't have the date when they were created.",
+            "readOnly": true
+          },
+          "comments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "description": "Comments associated with the LGMDE record.\nComments can be public or private. Private comments can only be\nseen by curators.",
+            "readOnly": true,
+            "nullable": true
+          },
+          "is_reviewed": {
+            "type": "boolean",
+            "description": "Return True if the record is under review.",
+            "readOnly": true
+          }
+        },
+        "required": [
+          "comments",
+          "confidence",
+          "cross_cutting_modifier",
+          "date_created",
+          "disease",
+          "genotype",
+          "is_reviewed",
+          "last_updated",
+          "locus",
+          "mined_publications",
+          "molecular_mechanism",
+          "panels",
+          "phenotype_summary",
+          "phenotypes",
+          "publications",
+          "stable_id",
+          "variant_consequence",
+          "variant_description",
+          "variant_type"
+        ]
+      }
+    },
+    "securitySchemes": {
+      "jwtAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
 }
