@@ -1,11 +1,20 @@
 [
-  {
-    "model": "gene2phenotype_app.minedpublication",
-    "pk": 1,
-    "fields": {
-      "pmid": 7866404,
-      "title": "Autosomal dominant spondylarthropathy due to a type II procollagen gene (COL2A1) point mutation.",
-      "date_upload": "2025-09-01T11:38:52Z"
+    {
+        "model": "gene2phenotype_app.minedpublication",
+        "pk": 1,
+        "fields": {
+            "pmid": 7866404,
+            "title": "Autosomal dominant spondylarthropathy due to a type II procollagen gene (COL2A1) point mutation.",
+            "date_upload": "2025-09-01T11:38:52Z"
+        }
+    },
+    {
+        "model": "gene2phenotype_app.minedpublication",
+        "pk": 2,
+        "fields": {
+            "pmid": 32302040,
+            "title": "CDH1-related blepharocheilodontic syndrome is associated with diffuse gastric cancer risk.",
+            "date_upload": "2025-09-01T11:38:52Z"
+        }
     }
-  }
 ]

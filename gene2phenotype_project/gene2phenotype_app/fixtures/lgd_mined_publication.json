@@ -1,12 +1,22 @@
 [
-  {
-    "model": "gene2phenotype_app.lgdminedpublication",
-    "pk": 1,
-    "fields": {
-      "lgd": 1,
-      "mined_publication": 1,
-      "status": "mined",
-      "comment": null
+    {
+        "model": "gene2phenotype_app.lgdminedpublication",
+        "pk": 1,
+        "fields": {
+            "lgd": 1,
+            "mined_publication": 1,
+            "status": "mined",
+            "comment": null
+        }
+    },
+    {
+        "model": "gene2phenotype_app.lgdminedpublication",
+        "pk": 2,
+        "fields": {
+            "lgd": 2,
+            "mined_publication": 2,
+            "status": "mined",
+            "comment": null
+        }
     }
-  }
 ]
