@@ -196,7 +196,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         return LGDPublicationSerializer(
             queryset, context={"user": self.context.get("user")}, many=True
         ).data
-    
+
     def get_mined_publications(self, id: int) -> list[dict[str, Any]]:
         """
         Mined publications associated with the LGMDE record.
@@ -702,7 +702,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         queryset_lgd_publications = LGDPublication.objects.filter(
             lgd=instance, is_deleted=0
         )
-        if not validate_confidence_publications(confidence, len(queryset_lgd_publications)):
+        if not validate_confidence_publications(
+            confidence, len(queryset_lgd_publications)
+        ):
             raise serializers.ValidationError(
                 {
                     "error": f"Confidence '{confidence}' requires more than one publication as evidence"
@@ -971,7 +973,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         """
         representation = super().to_representation(instance)
         # Rename 'is_reviewed' to 'under_review'
-        representation['under_review'] = representation.pop('is_reviewed')
+        representation["under_review"] = representation.pop("is_reviewed")
         return representation
 
     class Meta:
@@ -1121,9 +1123,7 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
             # If not deleted throw error 'entry already exists'
             if lgd_var_consequence_obj.is_deleted == 0:
                 raise serializers.ValidationError(
-                    {
-                        "error": f"'{term}' already linked to '{lgd.stable_id.stable_id}'"
-                    }
+                    {"error": f"'{term}' already linked to '{lgd.stable_id.stable_id}'"}
                 )
             # If deleted then update to not deleted
             else:
