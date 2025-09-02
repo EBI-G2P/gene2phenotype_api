@@ -27,7 +27,7 @@ File format is the following:
 PMID\tG2P_IDs
 
 How to run the command:
-python manage.py load_mined_publications --data_file input_ddg2p_.csv --email <email>
+python manage.py load_mined_publications --data_file <csv data file> --email <user account email>
 """
 
 logger = logging.getLogger(__name__)
