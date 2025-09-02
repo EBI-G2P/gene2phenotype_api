@@ -2,7 +2,7 @@
     "openapi": "3.0.3",
     "info": {
         "title": "Gene2Phenotype (G2P)",
-        "version": "7.0.0",
+        "version": "3.0.0",
         "description": "This API enables access to gene disease models held in the G2P database. See [https://www.ebi.ac.uk/gene2phenotype/](https://www.ebi.ac.uk/gene2phenotype/) for more details.<br><br>Contact us by submitting an issue via [https://github.com/EBI-G2P/gene2phenotype_api/issues](https://github.com/EBI-G2P/gene2phenotype_api/issues)."
     },
     "paths": {
@@ -195,6 +195,14 @@
                                                     "affected_individuals": null,
                                                     "ancestry": null,
                                                     "comments": []
+                                                }
+                                            ],
+                                            "mined_publications": [
+                                                {
+                                                    "pmid": 7866404,
+                                                    "title": "Autosomal dominant spondylarthropathy due to a type II procollagen gene (COL2A1) point mutation.",
+                                                    "status": "mined",
+                                                    "comment": null
                                                 }
                                             ],
                                             "panels": [
@@ -1082,6 +1090,15 @@
                         "description": "Publications associated with the LGMDE record.",
                         "readOnly": true
                     },
+                    "mined_publications": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "description": "Mined publications associated with the LGMDE record.",
+                        "readOnly": true
+                    },
                     "panels": {
                         "type": "array",
                         "items": {
@@ -1184,6 +1201,7 @@
                     "is_reviewed",
                     "last_updated",
                     "locus",
+                    "mined_publications",
                     "molecular_mechanism",
                     "panels",
                     "phenotype_summary",
