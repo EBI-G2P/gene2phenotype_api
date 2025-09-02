@@ -291,6 +291,7 @@ class VariantTypesList(APIView):
                         "comments": [],
                     },
                 ],
+                "mined_publications": [],
                 "panels": [{"name": "DD", "description": "Developmental disorders"}],
                 "cross_cutting_modifier": [],
                 "variant_type": [
@@ -1015,6 +1016,7 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
     """
     Add or delete LGD-variant type(s).
     """
+
     http_method_names = ["post", "patch", "options"]
 
     # Define specific permissions
@@ -1230,6 +1232,7 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
     """
     Add or delete LGD-variant type description(s)
     """
+
     http_method_names = ["post", "patch", "options"]
 
     # Define specific permissions
@@ -1350,9 +1353,7 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
         # Check if the input has the expected data
         if "description" not in request.data or request.data.get("description") == "":
             return Response(
-                {
-                    "error": f"Empty variant description. Please provide valid data."
-                },
+                {"error": f"Empty variant description. Please provide valid data."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -1385,14 +1386,16 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
 
         if not variant_description_list:
             return Response(
-                {"error": f"Variant description '{var_desc}' is not associated with '{stable_id}'"},
+                {
+                    "error": f"Variant description '{var_desc}' is not associated with '{stable_id}'"
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
         else:
             for variant_description in variant_description_list:
                 variant_description.is_deleted = 1
                 variant_description.save()
-            
+
             # Update the record date of last review
             lgd_obj.date_review = get_date_now()
             lgd_obj.save()

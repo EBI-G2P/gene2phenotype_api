@@ -14,6 +14,7 @@ from ..models import (
     LGDVariantGenccConsequence,
     LGDCrossCuttingModifier,
     LGDPublication,
+    LGDMinedPublication,
     LGDPhenotype,
     LGDVariantType,
     Locus,
@@ -30,6 +31,7 @@ from ..models import (
 )
 
 from .publication import LGDPublicationSerializer
+from .mined_publication import LGDMinedPublicationSerializer
 from .locus import LocusSerializer
 from .disease import DiseaseSerializer
 from .panel import LGDPanelSerializer
@@ -56,6 +58,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     disease = serializers.SerializerMethodField()  # part of the unique entry
     confidence = serializers.CharField(source="confidence.value")
     publications = serializers.SerializerMethodField()
+    mined_publications = serializers.SerializerMethodField()
     panels = serializers.SerializerMethodField()
     cross_cutting_modifier = serializers.SerializerMethodField(allow_null=True)
     variant_type = serializers.SerializerMethodField(allow_null=True)
@@ -193,6 +196,18 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         return LGDPublicationSerializer(
             queryset, context={"user": self.context.get("user")}, many=True
         ).data
+
+    def get_mined_publications(self, id: int) -> list[dict[str, Any]]:
+        """
+        Mined publications associated with the LGMDE record.
+        This response includes the list of publications that are automatically extracted from literature which are relevant to the LGMDE record.
+        The "status" field can have the following three possible values:
+        1. "mined" - extracted publication which was not yet curated
+        2. "curated" - extracted publication which was curated
+        3. "rejected" - extracted publication which was rejected by curators
+        """
+        queryset = LGDMinedPublication.objects.filter(lgd_id=id)
+        return LGDMinedPublicationSerializer(queryset, many=True).data
 
     def get_phenotypes(self, id: int) -> list[dict[str, Any]]:
         """
@@ -692,7 +707,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         queryset_lgd_publications = LGDPublication.objects.filter(
             lgd=instance, is_deleted=0
         )
-        if not validate_confidence_publications(confidence, len(queryset_lgd_publications)):
+        if not validate_confidence_publications(
+            confidence, len(queryset_lgd_publications)
+        ):
             raise serializers.ValidationError(
                 {
                     "error": f"Confidence '{confidence}' requires more than one publication as evidence"
@@ -961,7 +978,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         """
         representation = super().to_representation(instance)
         # Rename 'is_reviewed' to 'under_review'
-        representation['under_review'] = representation.pop('is_reviewed')
+        representation["under_review"] = representation.pop("is_reviewed")
         return representation
 
     class Meta:
@@ -1111,9 +1128,7 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
             # If not deleted throw error 'entry already exists'
             if lgd_var_consequence_obj.is_deleted == 0:
                 raise serializers.ValidationError(
-                    {
-                        "error": f"'{term}' already linked to '{lgd.stable_id.stable_id}'"
-                    }
+                    {"error": f"'{term}' already linked to '{lgd.stable_id.stable_id}'"}
                 )
             # If deleted then update to not deleted
             else:

@@ -2,7 +2,7 @@
     "openapi": "3.0.3",
     "info": {
         "title": "Gene2Phenotype (G2P)",
-        "version": "7.0.0",
+        "version": "9.0.0",
         "description": "This API enables access to gene disease models held in the G2P database. See [https://www.ebi.ac.uk/gene2phenotype/](https://www.ebi.ac.uk/gene2phenotype/) for more details.<br><br>Contact us by submitting an issue via [https://github.com/EBI-G2P/gene2phenotype_api/issues](https://github.com/EBI-G2P/gene2phenotype_api/issues)."
     },
     "paths": {
@@ -197,6 +197,7 @@
                                                     "comments": []
                                                 }
                                             ],
+                                            "mined_publications": [],
                                             "panels": [
                                                 {
                                                     "name": "DD",
@@ -1082,6 +1083,15 @@
                         "description": "Publications associated with the LGMDE record.",
                         "readOnly": true
                     },
+                    "mined_publications": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                        },
+                        "description": "Mined publications associated with the LGMDE record.\nThis response includes the list of publications that are automatically extracted from literature which are relevant to the LGMDE record.\nThe \"status\" field can have the following three possible values:\n1. \"mined\" - extracted publication which was not yet curated\n2. \"curated\" - extracted publication which was curated\n3. \"rejected\" - extracted publication which was rejected by curators",
+                        "readOnly": true
+                    },
                     "panels": {
                         "type": "array",
                         "items": {
@@ -1184,6 +1194,7 @@
                     "is_reviewed",
                     "last_updated",
                     "locus",
+                    "mined_publications",
                     "molecular_mechanism",
                     "panels",
                     "phenotype_summary",
