@@ -15,7 +15,8 @@ from gene2phenotype_app.serializers import (
     LGDVariantTypeDescriptionSerializer,
     LocusGenotypeDiseaseSerializer,
     LGDPhenotypeSummarySerializer,
-    UserSerializer
+    UserSerializer,
+    LGDMinedPublicationSerializer,
 )
 
 from gene2phenotype_app.models import (
@@ -28,7 +29,7 @@ from gene2phenotype_app.models import (
     LGDVariantTypeDescription,
     LGDVariantTypeComment,
     LGDMolecularMechanismEvidence,
-    User
+    User,
 )
 
 from .base import BaseAdd, BaseUpdate, IsSuperUser
@@ -406,6 +407,17 @@ class LGDEditPublications(BaseUpdate):
                         e, "Error while updating molecular mechanism evidence"
                     )
 
+            # Update the status of linked mined publications to "curated"
+            lgd_mined_publication_serializer = LGDMinedPublicationSerializer()
+            try:
+                lgd_mined_publication_serializer.update_status_to_curated(
+                    lgd, publications_data
+                )
+            except Exception as e:
+                return self.handle_update_exception(
+                    e, "Error while updating mined publications"
+                )
+
             # Update the date of the last update in the record table
             lgd.date_review = get_date_now()
             lgd.save()
@@ -437,9 +449,9 @@ class LGDEditPublications(BaseUpdate):
 
         if not pmid or pmid == "" or not isinstance(pmid, int):
             return Response(
-                    {"error": "Please provide valid pmid."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+                {"error": "Please provide valid pmid."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         lgd_obj = get_object_or_404(
             LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0
