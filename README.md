@@ -5,12 +5,12 @@ It is part of the Gene2Phenotype project, established by David FitzPatrick in 20
 
 API documentation is available at [Gene2Phenotype API Documentation](https://www.ebi.ac.uk/gene2phenotype/api/).
 
-### Installation and requirements
+### Requirements
 
-The G2P API requires:
+- Python 3.10
+- MySQL 8
 
-    * **Python 3.10**
-    * **MySQL 8**
+### Installation
 
 ```bash
 git clone https://github.com/EBI-G2P/gene2phenotype_api.git
