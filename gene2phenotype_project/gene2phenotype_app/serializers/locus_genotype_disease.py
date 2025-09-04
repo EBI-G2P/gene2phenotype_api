@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from django.db import connection, IntegrityError
+from django.db import IntegrityError
 from django.db.models import Prefetch
 from django.conf import settings
 from typing import Any, Optional
@@ -683,7 +683,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         ):
             confidence = validated_confidence["value"]
         else:
-            raise serializers.ValidationError({"error": f"Empty confidence value"})
+            raise serializers.ValidationError({"error": "Empty confidence value"})
 
         # Get confidence
         try:
@@ -929,7 +929,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 primary_type = evidence_type.get("primary_type", None)
                 if not primary_type:
                     raise serializers.ValidationError(
-                        {"error": f"Empty evidence subtype"}
+                        {"error": "Empty evidence subtype"}
                     )
                 primary_type = primary_type.replace(" ", "_").lower()
                 # secondary_type is the evidence value ('human')

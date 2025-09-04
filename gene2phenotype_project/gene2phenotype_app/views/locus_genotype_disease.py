@@ -764,7 +764,7 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
         ):
             return Response(
                 {
-                    "error": f"Empty variant consequence. Please provide the 'variant_consequence'."
+                    "error": "Empty variant consequence. Please provide the 'variant_consequence'."
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -773,7 +773,7 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
 
         if consequence is None:
             return Response(
-                {"error": f"Empty variant consequence"},
+                {"error": "Empty variant consequence"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -950,7 +950,7 @@ class LGDEditCCM(CustomPermissionAPIView):
         """
         if "term" not in request.data or request.data.get("term") == "":
             return Response(
-                {"error": f"Empty cross cutting modifier. Please provide the 'term'."},
+                {"error": "Empty cross cutting modifier. Please provide the 'term'."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -1144,7 +1144,7 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
             or request.data.get("secondary_type") == ""
         ):
             return Response(
-                {"error": f"Empty variant type. Please provide the 'secondary_type'."},
+                {"error": "Empty variant type. Please provide the 'secondary_type'."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -1353,7 +1353,7 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
         # Check if the input has the expected data
         if "description" not in request.data or request.data.get("description") == "":
             return Response(
-                {"error": f"Empty variant description. Please provide valid data."},
+                {"error": "Empty variant description. Please provide valid data."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -1509,7 +1509,7 @@ class LGDEditComment(APIView):
 
             success_flag = 1
             response = Response(
-                {"message": f"Comments added to the G2P entry successfully."},
+                {"message": "Comments added to the G2P entry successfully."},
                 status=status.HTTP_201_CREATED,
             )
 
@@ -1536,7 +1536,7 @@ class LGDEditComment(APIView):
 
         if not comment_id:
             return Response(
-                {"error": f"Missing input key 'comment_id'"},
+                {"error": "Missing input key 'comment_id'"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
