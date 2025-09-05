@@ -39,6 +39,8 @@ class LGDEditCCMEndpoint(TestCase):
         )
         self.ccm_to_add = {"cross_cutting_modifiers": [{"term": "typically mosaic"}]}
         self.empty_ccm_to_add = {"cross_cutting_modifiers": []}
+        # test activity logs after insertion
+        self.url_base_activity_logs = reverse("activity_logs")
 
     def test_add_unauthorised_access(self):
         """
@@ -111,6 +113,17 @@ class LGDEditCCMEndpoint(TestCase):
         self.assertEqual(len(history_records), 1)
         history_records_lgd = LocusGenotypeDisease.history.all()
         self.assertEqual(len(history_records_lgd), 1)
+
+        # Query the activity logs
+        url_activity_logs = f"{self.url_base_activity_logs}?stable_id=G2P00002"
+        response_logs = self.client.get(url_activity_logs)
+        self.assertEqual(response_logs.status_code, 200)
+        response_logs_data = response_logs.json()
+        self.assertEqual(response_logs_data["cross_cutting_modifier"][0]["change_type"], "created")
+        # Query the activity logs for an invalid record
+        url_activity_logs_invalid = f"{self.url_base_activity_logs}?stable_id=G2P00000"
+        response_logs_invalid = self.client.get(url_activity_logs_invalid)
+        self.assertEqual(response_logs_invalid.status_code, 404)
 
     def test_add_empty_ccm(self):
         """

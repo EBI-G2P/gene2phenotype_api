@@ -48,6 +48,8 @@ class LGDEditPublicationsEndpoint(TestCase):
         self.url_add_publication = reverse(
             "lgd_publication", kwargs={"stable_id": "G2P00001"}
         )
+        # test activity logs after insertion
+        self.url_base_activity_logs = reverse("activity_logs")
 
     def test_add_no_permission(self):
         """
@@ -201,6 +203,16 @@ class LGDEditPublicationsEndpoint(TestCase):
         self.assertEqual(len(lgd_variant_descriptions), 1)
         history_variant_descriptions = LGDVariantTypeDescription.history.all()
         self.assertEqual(len(history_variant_descriptions), 1)
+
+        # Query the activity logs
+        url_activity_logs = f"{self.url_base_activity_logs}?stable_id=G2P00001"
+        response_logs = self.client.get(url_activity_logs)
+        self.assertEqual(response_logs.status_code, 200)
+        response_logs_data = response_logs.json()
+        self.assertEqual(response_logs_data["publications"][0]["change_type"], "created")
+        self.assertEqual(response_logs_data["molecular_mechanism_evidence"][0]["change_type"], "created")
+        self.assertEqual(response_logs_data["phenotypes"][0]["change_type"], "created")
+        self.assertEqual(response_logs_data["phenotype_summary"][0]["change_type"], "created")
 
     def test_add_lgd_publication_linked_mined_publication(self):
         """

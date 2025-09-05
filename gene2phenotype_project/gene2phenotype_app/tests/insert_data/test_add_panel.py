@@ -40,6 +40,9 @@ class LGDAddPanelEndpoint(TestCase):
             "name": "DD"
         }
 
+        # test activity logs after insertion
+        self.url_base_activity_logs = reverse("activity_logs")
+
     def test_add_panel_unauthorised_access(self):
         """
         Test the endpoint to add panel for non authenticated user
@@ -176,3 +179,10 @@ class LGDAddPanelEndpoint(TestCase):
         # Test history table              
         history_records = LGDPanel.history.filter(lgd__stable_id__stable_id="G2P00005")
         self.assertEqual(len(history_records), 1)
+
+        # Query the activity logs
+        url_activity_logs = f"{self.url_base_activity_logs}?stable_id=G2P00005"
+        response_logs = self.client.get(url_activity_logs)
+        self.assertEqual(response_logs.status_code, 200)
+        response_logs_data = response_logs.json()
+        self.assertEqual(response_logs_data["panels"][0]["change_type"], "created")
