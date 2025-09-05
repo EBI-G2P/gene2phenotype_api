@@ -1,7 +1,6 @@
-from rest_framework import permissions, status
+from rest_framework import permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
 from django.db.models import Q, Max
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 import textwrap
@@ -10,7 +9,6 @@ from gene2phenotype_app.models import (
     G2PStableID,
     Meta,
     LocusGenotypeDisease,
-    User,
     LGDPanel,
     LGDPublication,
     LGDCrossCuttingModifier,
@@ -101,18 +99,19 @@ class ActivityLogs(BaseView):
         Return the history data for all tables associated with the LGD record.
         """
         stable_id = self.request.query_params.get("stable_id", None)
-        date_cutoff = self.request.query_params.get("date", None)
 
         if stable_id is None:
             self.handle_missing_input("stable_id", stable_id)
 
         try:
-            G2PStableID.objects.get(stable_id=stable_id)
+            G2PStableID.objects.get(stable_id=stable_id, is_deleted=0)
         except G2PStableID.DoesNotExist:
             self.handle_no_permission("stable_id", stable_id)
 
         try:
-            lgd_obj = LocusGenotypeDisease.objects.get(stable_id__stable_id=stable_id)
+            lgd_obj = LocusGenotypeDisease.objects.get(
+                stable_id__stable_id=stable_id, is_deleted=0
+            )
         except LocusGenotypeDisease.DoesNotExist:
             self.handle_no_permission("G2P record", stable_id)
 
