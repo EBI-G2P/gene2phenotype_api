@@ -98,15 +98,20 @@ class MetaView(APIView):
 class ActivityLogs(BaseView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_data(self):
+    def list(self, request, *args, **kwargs):
         """
-        Return the history data for all tables associated with the LGD record.
+        Returns a dictionary where key is the type of data and value is a list of activities.
+        Options:
+            stable_id
+            date_cutoff
+
+        Examples:
+            gene2phenotype/api/activity_logs/?stable_id=G2P03520
+            gene2phenotype/api/activity_logs/?stable_id=G2P03520&date_cutoff=2025-06-06
+            gene2phenotype/api/activity_logs/?date_cutoff=2025-06-06
         """
         stable_id = self.request.query_params.get("stable_id", None)
         start_date = self.request.query_params.get("date_cutoff", None)
-
-        if stable_id is None:
-            raise ValidationError("The stable_id is required.")
 
         if start_date:
             try:
@@ -119,21 +124,25 @@ class ActivityLogs(BaseView):
                     f"Date format '{start_date}' does not match YYYY-MM-DD"
                 )
 
-        try:
-            G2PStableID.objects.get(stable_id=stable_id, is_deleted=0)
-        except G2PStableID.DoesNotExist:
-            self.handle_no_permission("stable_id", stable_id)
+        if stable_id:
+            try:
+                G2PStableID.objects.get(stable_id=stable_id, is_deleted=0)
+            except G2PStableID.DoesNotExist:
+                self.handle_no_permission("stable_id", stable_id)
 
-        try:
-            lgd_obj = LocusGenotypeDisease.objects.get(
-                stable_id__stable_id=stable_id, is_deleted=0
-            )
-        except LocusGenotypeDisease.DoesNotExist:
-            self.handle_no_permission("G2P record", stable_id)
+            try:
+                lgd_obj = LocusGenotypeDisease.objects.get(
+                    stable_id__stable_id=stable_id, is_deleted=0
+                )
+            except LocusGenotypeDisease.DoesNotExist:
+                self.handle_no_permission("G2P record", stable_id)
 
         # Define the filters
-        filter_query = Q(lgd_id=lgd_obj.id)
-        filter_query_disease = Q(id=lgd_obj.disease.id)
+        filter_query = Q()
+        filter_query_disease = Q()
+        if stable_id:
+            filter_query &= Q(lgd_id=lgd_obj.id)
+            filter_query_disease &= Q(id=lgd_obj.disease.id)
         # Add the date to filter the results by date
         if start_date:
             filter_query &= Q(history_date__gte=date_input)
@@ -145,6 +154,7 @@ class ActivityLogs(BaseView):
             "history_date",
             "history_type",
             "panel_id__name",
+            "lgd_id__stable_id__stable_id",
             "is_deleted",
         )
 
@@ -156,6 +166,7 @@ class ActivityLogs(BaseView):
             "history_date",
             "history_type",
             "publication_id__pmid",
+            "lgd_id__stable_id__stable_id",
             "is_deleted",
         )
 
@@ -167,6 +178,7 @@ class ActivityLogs(BaseView):
             "history_date",
             "history_type",
             "ccm_id__value",
+            "lgd_id__stable_id__stable_id",
             "is_deleted",
         )
 
@@ -177,6 +189,7 @@ class ActivityLogs(BaseView):
             "history_type",
             "phenotype_id__accession",
             "publication_id__pmid",
+            "lgd_id__stable_id__stable_id",
             "is_deleted",
         )
 
@@ -189,6 +202,7 @@ class ActivityLogs(BaseView):
             "history_type",
             "summary",
             "publication_id__pmid",
+            "lgd_id__stable_id__stable_id",
             "is_deleted",
         )
 
@@ -200,6 +214,7 @@ class ActivityLogs(BaseView):
             "history_date",
             "history_type",
             "variant_consequence_id__term",
+            "lgd_id__stable_id__stable_id",
             "is_deleted",
         )
 
@@ -210,6 +225,7 @@ class ActivityLogs(BaseView):
             "history_type",
             "variant_type_ot_id__term",
             "publication_id__pmid",
+            "lgd_id__stable_id__stable_id",
             "inherited",
             "de_novo",
             "unknown_inheritance",
@@ -225,6 +241,7 @@ class ActivityLogs(BaseView):
             "history_type",
             "description",
             "publication_id__pmid",
+            "lgd_id__stable_id__stable_id",
             "is_deleted",
         )
 
@@ -236,6 +253,7 @@ class ActivityLogs(BaseView):
                 "history_type",
                 "description",
                 "publication_id__pmid",
+                "lgd_id__stable_id__stable_id",
                 "evidence_id__value",
                 "evidence_id__subtype",
                 "is_deleted",
@@ -250,6 +268,7 @@ class ActivityLogs(BaseView):
                 "history_type",
                 "synopsis_id__value",
                 "synopsis_support_id__value",
+                "lgd_id__stable_id__stable_id",
                 "is_deleted",
             )
         )
@@ -263,37 +282,6 @@ class ActivityLogs(BaseView):
             "name",
         )
 
-        return (
-            history_records_lgdpanel,
-            history_records_lgdpublication,
-            history_records_ccm,
-            history_records_phenotype,
-            history_records_phenotype_sum,
-            history_records_consequence,
-            history_records_var_type,
-            history_records_var_desc,
-            history_records_mechanism_evidence,
-            history_records_mechanism_synopsis,
-            history_records_disease,
-        )
-
-    def list(self, request, *args, **kwargs):
-        """
-        Returns a dictionary where key is the type of data and value is a list of activities.
-        """
-        (
-            history_records_lgdpanel,
-            history_records_lgdpublication,
-            history_records_ccm,
-            history_records_phenotype,
-            history_records_phenotype_sum,
-            history_records_consequence,
-            history_records_var_type,
-            history_records_var_desc,
-            history_records_mechanism_evidence,
-            history_records_mechanism_synopsis,
-            history_records_disease,
-        ) = self.get_data()
         type_of_change = {"~": "updated", "+": "created", "-": "deleted"}
 
         output_data = {}
@@ -318,7 +306,8 @@ class ActivityLogs(BaseView):
             )
             log_data["change_type"] = type_of_change[log.get("history_type")]
             log_data["date"] = date_formatted
-            log_data["panel"] = log.get("panel_id__name")
+            log_data["panel_name"] = log.get("panel_id__name")
+            log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
             log_data["is_deleted"] = log.get("is_deleted")
 
             output_data["panels"].append(log_data)
@@ -332,7 +321,8 @@ class ActivityLogs(BaseView):
             )
             log_data["change_type"] = type_of_change[log.get("history_type")]
             log_data["date"] = date_formatted
-            log_data["publication"] = log.get("publication_id__pmid")
+            log_data["publication_pmid"] = log.get("publication_id__pmid")
+            log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
             log_data["is_deleted"] = log.get("is_deleted")
 
             output_data["publications"].append(log_data)
@@ -347,6 +337,7 @@ class ActivityLogs(BaseView):
             log_data["change_type"] = type_of_change[log.get("history_type")]
             log_data["date"] = date_formatted
             log_data["ccm"] = log.get("ccm_id__value")
+            log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
             log_data["is_deleted"] = log.get("is_deleted")
 
             output_data["cross_cutting_modifier"].append(log_data)
@@ -361,7 +352,8 @@ class ActivityLogs(BaseView):
             log_data["change_type"] = type_of_change[log.get("history_type")]
             log_data["date"] = date_formatted
             log_data["phenotype"] = log.get("phenotype_id__accession")
-            log_data["publication"] = log.get("publication_id__pmid")
+            log_data["publication_pmid"] = log.get("publication_id__pmid")
+            log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
             log_data["is_deleted"] = log.get("is_deleted")
 
             output_data["phenotypes"].append(log_data)
@@ -376,7 +368,8 @@ class ActivityLogs(BaseView):
             log_data["change_type"] = type_of_change[log.get("history_type")]
             log_data["date"] = date_formatted
             log_data["summary"] = log.get("summary")
-            log_data["publication"] = log.get("publication_id__pmid")
+            log_data["publication_pmid"] = log.get("publication_id__pmid")
+            log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
             log_data["is_deleted"] = log.get("is_deleted")
 
             output_data["phenotype_summary"].append(log_data)
@@ -391,6 +384,7 @@ class ActivityLogs(BaseView):
             log_data["change_type"] = type_of_change[log.get("history_type")]
             log_data["date"] = date_formatted
             log_data["variant_consequence"] = log.get("variant_consequence_id__term")
+            log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
             log_data["is_deleted"] = log.get("is_deleted")
 
             output_data["variant_consequence"].append(log_data)
@@ -405,7 +399,8 @@ class ActivityLogs(BaseView):
             log_data["change_type"] = type_of_change[log.get("history_type")]
             log_data["date"] = date_formatted
             log_data["variant_type"] = log.get("variant_type_ot_id__term")
-            log_data["publication"] = log.get("publication_id__pmid")
+            log_data["publication_pmid"] = log.get("publication_id__pmid")
+            log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
             log_data["inherited"] = log.get("inherited")
             log_data["de_novo"] = log.get("de_novo")
             log_data["unknown_inheritance"] = log.get("unknown_inheritance")
@@ -423,7 +418,8 @@ class ActivityLogs(BaseView):
             log_data["change_type"] = type_of_change[log.get("history_type")]
             log_data["date"] = date_formatted
             log_data["description"] = log.get("description")
-            log_data["publication"] = log.get("publication_id__pmid")
+            log_data["publication_pmid"] = log.get("publication_id__pmid")
+            log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
             log_data["is_deleted"] = log.get("is_deleted")
 
             output_data["variant_description"].append(log_data)
@@ -438,7 +434,8 @@ class ActivityLogs(BaseView):
             log_data["change_type"] = type_of_change[log.get("history_type")]
             log_data["date"] = date_formatted
             log_data["description"] = log.get("description")
-            log_data["publication"] = log.get("publication_id__pmid")
+            log_data["publication_pmid"] = log.get("publication_id__pmid")
+            log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
             log_data["evidence"] = log.get("evidence_id__value")
             log_data["evidence_type"] = log.get("evidence_id__subtype")
             log_data["is_deleted"] = log.get("is_deleted")
@@ -456,6 +453,7 @@ class ActivityLogs(BaseView):
             log_data["date"] = date_formatted
             log_data["synopsis"] = log.get("synopsis_id__value")
             log_data["support"] = log.get("synopsis_support_id__value")
+            log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
             log_data["is_deleted"] = log.get("is_deleted")
 
             output_data["molecular_mechanism_synopsis"].append(log_data)
