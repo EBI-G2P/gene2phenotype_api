@@ -1,9 +1,12 @@
 from rest_framework import permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.db.models import Q, Max
 from drf_spectacular.utils import extend_schema, OpenApiResponse
+from rest_framework.exceptions import ValidationError
+from django.db.models import Q, Max
+from django.utils import timezone
 import textwrap
+from datetime import datetime
 
 from gene2phenotype_app.models import (
     Disease,
@@ -100,9 +103,21 @@ class ActivityLogs(BaseView):
         Return the history data for all tables associated with the LGD record.
         """
         stable_id = self.request.query_params.get("stable_id", None)
+        start_date = self.request.query_params.get("date_cutoff", None)
 
         if stable_id is None:
-            self.handle_missing_input("stable_id", stable_id)
+            raise ValidationError("The stable_id is required.")
+
+        if start_date:
+            try:
+                date_formatted = datetime.strptime(start_date, "%Y-%m-%d")
+                date_input = timezone.make_aware(
+                    date_formatted, timezone.get_current_timezone()
+                )
+            except ValueError:
+                raise ValidationError(
+                    f"Date format '{start_date}' does not match YYYY-MM-DD"
+                )
 
         try:
             G2PStableID.objects.get(stable_id=stable_id, is_deleted=0)
@@ -116,8 +131,13 @@ class ActivityLogs(BaseView):
         except LocusGenotypeDisease.DoesNotExist:
             self.handle_no_permission("G2P record", stable_id)
 
-        # Define the filter
+        # Define the filters
         filter_query = Q(lgd_id=lgd_obj.id)
+        filter_query_disease = Q(id=lgd_obj.disease.id)
+        # Add the date to filter the results by date
+        if start_date:
+            filter_query &= Q(history_date__gte=date_input)
+            filter_query_disease &= Q(history_date__gte=date_input)
 
         history_records_lgdpanel = LGDPanel.history.filter(filter_query).values(
             "history_user__first_name",
@@ -235,7 +255,7 @@ class ActivityLogs(BaseView):
         )
 
         # Get the disease info
-        history_records_disease = Disease.history.filter(id=lgd_obj.disease.id).values(
+        history_records_disease = Disease.history.filter(filter_query_disease).values(
             "history_user__first_name",
             "history_user__last_name",
             "history_date",
