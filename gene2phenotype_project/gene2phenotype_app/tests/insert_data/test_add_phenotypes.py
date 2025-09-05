@@ -46,6 +46,8 @@ class LGDEditPhenotypeEndpoint(TestCase):
             "summaries": [{"summary": "This is a summary", "publication": [12451214]}],
         }
         self.phenotype_to_add_2 = {"hpo_terms": []}
+        # test activity logs after insertion
+        self.url_base_activity_logs = reverse("activity_logs")
 
     def test_add_unauthorised_access(self):
         """
@@ -111,6 +113,13 @@ class LGDEditPhenotypeEndpoint(TestCase):
             lgd__stable_id__stable_id="G2P00002", is_deleted=0
         )
         self.assertEqual(len(lgd_phenotypes), 4)
+
+        # Query the activity logs
+        url_activity_logs = f"{self.url_base_activity_logs}?stable_id=G2P00002"
+        response_logs = self.client.get(url_activity_logs)
+        self.assertEqual(response_logs.status_code, 200)
+        response_logs_data = response_logs.json()
+        self.assertEqual(response_logs_data["phenotypes"][0]["change_type"], "created")
 
     def test_add_lgd_phenotypes_with_summary(self):
         """

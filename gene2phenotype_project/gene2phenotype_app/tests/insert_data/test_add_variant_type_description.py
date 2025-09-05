@@ -56,6 +56,8 @@ class LGDEditVariantTypeDescriptionTests(TestCase):
                 }
             ]
         }
+        # test activity logs after insertion
+        self.url_base_activity_logs = reverse("activity_logs")
 
     def test_add_unauthorised_access(self):
         """
@@ -124,6 +126,13 @@ class LGDEditVariantTypeDescriptionTests(TestCase):
         self.assertEqual(len(history_records), 3)
         history_records_lgd = LocusGenotypeDisease.history.all()
         self.assertEqual(len(history_records_lgd), 1)
+
+        # Query the activity logs
+        url_activity_logs = f"{self.url_base_activity_logs}?stable_id=G2P00002"
+        response_logs = self.client.get(url_activity_logs)
+        self.assertEqual(response_logs.status_code, 200)
+        response_logs_data = response_logs.json()
+        self.assertEqual(response_logs_data["variant_description"][0]["change_type"], "created")
 
     def test_add_empty_variant_description(self):
         """
