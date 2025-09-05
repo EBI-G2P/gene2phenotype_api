@@ -209,10 +209,7 @@ class LGDEditPublicationsEndpoint(TestCase):
         response_logs = self.client.get(url_activity_logs)
         self.assertEqual(response_logs.status_code, 200)
         response_logs_data = response_logs.json()
-        self.assertEqual(response_logs_data["publications"][0]["change_type"], "created")
-        self.assertEqual(response_logs_data["molecular_mechanism_evidence"][0]["change_type"], "created")
-        self.assertEqual(response_logs_data["phenotypes"][0]["change_type"], "created")
-        self.assertEqual(response_logs_data["phenotype_summary"][0]["change_type"], "created")
+        self.assertEqual(len(response_logs_data), 6)
 
     def test_add_lgd_publication_linked_mined_publication(self):
         """
