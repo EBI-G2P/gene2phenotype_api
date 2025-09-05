@@ -6,6 +6,7 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse
 import textwrap
 
 from gene2phenotype_app.models import (
+    Disease,
     G2PStableID,
     Meta,
     LocusGenotypeDisease,
@@ -233,6 +234,15 @@ class ActivityLogs(BaseView):
             )
         )
 
+        # Get the disease info
+        history_records_disease = Disease.history.filter(id=lgd_obj.disease.id).values(
+            "history_user__first_name",
+            "history_user__last_name",
+            "history_date",
+            "history_type",
+            "name",
+        )
+
         return (
             history_records_lgdpanel,
             history_records_lgdpublication,
@@ -244,6 +254,7 @@ class ActivityLogs(BaseView):
             history_records_var_desc,
             history_records_mechanism_evidence,
             history_records_mechanism_synopsis,
+            history_records_disease,
         )
 
     def list(self, request, *args, **kwargs):
@@ -261,6 +272,7 @@ class ActivityLogs(BaseView):
             history_records_var_desc,
             history_records_mechanism_evidence,
             history_records_mechanism_synopsis,
+            history_records_disease,
         ) = self.get_data()
         type_of_change = {"~": "updated", "+": "created", "-": "deleted"}
 
@@ -275,6 +287,7 @@ class ActivityLogs(BaseView):
         output_data["variant_description"] = []
         output_data["molecular_mechanism_evidence"] = []
         output_data["molecular_mechanism_synopsis"] = []
+        output_data["disease"] = []
 
         # Get panel history
         for log in history_records_lgdpanel:
@@ -426,5 +439,18 @@ class ActivityLogs(BaseView):
             log_data["is_deleted"] = log.get("is_deleted")
 
             output_data["molecular_mechanism_synopsis"].append(log_data)
+
+        # Get disease
+        for log in history_records_disease:
+            date_formatted = log.get("history_date").strftime("%Y-%m-%d %H:%M:%S")
+            log_data = {}
+            log_data["user"] = (
+                f"{log.get('history_user__first_name')} {log.get('history_user__last_name')}"
+            )
+            log_data["change_type"] = type_of_change[log.get("history_type")]
+            log_data["date"] = date_formatted
+            log_data["name"] = log.get("name")
+
+            output_data["disease"].append(log_data)
 
         return Response(output_data)
