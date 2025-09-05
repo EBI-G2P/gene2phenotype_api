@@ -284,18 +284,7 @@ class ActivityLogs(BaseView):
 
         type_of_change = {"~": "updated", "+": "created", "-": "deleted"}
 
-        output_data = {}
-        output_data["panels"] = []
-        output_data["publications"] = []
-        output_data["cross_cutting_modifier"] = []
-        output_data["phenotypes"] = []
-        output_data["phenotype_summary"] = []
-        output_data["variant_consequence"] = []
-        output_data["variant_type"] = []
-        output_data["variant_description"] = []
-        output_data["molecular_mechanism_evidence"] = []
-        output_data["molecular_mechanism_synopsis"] = []
-        output_data["disease"] = []
+        output_data = []  # TODO: return a list
 
         # Get panel history
         for log in history_records_lgdpanel:
@@ -309,8 +298,9 @@ class ActivityLogs(BaseView):
             log_data["panel_name"] = log.get("panel_id__name")
             log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
             log_data["is_deleted"] = log.get("is_deleted")
+            log_data["data_type"] = "panel"
 
-            output_data["panels"].append(log_data)
+            output_data.append(log_data)
 
         # Get publication history
         for log in history_records_lgdpublication:
@@ -324,8 +314,9 @@ class ActivityLogs(BaseView):
             log_data["publication_pmid"] = log.get("publication_id__pmid")
             log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
             log_data["is_deleted"] = log.get("is_deleted")
+            log_data["data_type"] = "publication"
 
-            output_data["publications"].append(log_data)
+            output_data.append(log_data)
 
         # Get ccm history
         for log in history_records_ccm:
@@ -339,8 +330,9 @@ class ActivityLogs(BaseView):
             log_data["ccm"] = log.get("ccm_id__value")
             log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
             log_data["is_deleted"] = log.get("is_deleted")
+            log_data["data_type"] = "cross_cutting_modifier"
 
-            output_data["cross_cutting_modifier"].append(log_data)
+            output_data.append(log_data)
 
         # Get phenotype history
         for log in history_records_phenotype:
@@ -355,8 +347,9 @@ class ActivityLogs(BaseView):
             log_data["publication_pmid"] = log.get("publication_id__pmid")
             log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
             log_data["is_deleted"] = log.get("is_deleted")
+            log_data["data_type"] = "phenotype"
 
-            output_data["phenotypes"].append(log_data)
+            output_data.append(log_data)
 
         # Get phenotype summary history
         for log in history_records_phenotype_sum:
@@ -371,8 +364,9 @@ class ActivityLogs(BaseView):
             log_data["publication_pmid"] = log.get("publication_id__pmid")
             log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
             log_data["is_deleted"] = log.get("is_deleted")
+            log_data["data_type"] = "phenotype_summary"
 
-            output_data["phenotype_summary"].append(log_data)
+            output_data.append(log_data)
 
         # Get variant gencc consequence history
         for log in history_records_consequence:
@@ -386,8 +380,9 @@ class ActivityLogs(BaseView):
             log_data["variant_consequence"] = log.get("variant_consequence_id__term")
             log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
             log_data["is_deleted"] = log.get("is_deleted")
+            log_data["data_type"] = "variant_consequence"
 
-            output_data["variant_consequence"].append(log_data)
+            output_data.append(log_data)
 
         # Get variant type history
         for log in history_records_var_type:
@@ -405,8 +400,9 @@ class ActivityLogs(BaseView):
             log_data["de_novo"] = log.get("de_novo")
             log_data["unknown_inheritance"] = log.get("unknown_inheritance")
             log_data["is_deleted"] = log.get("is_deleted")
+            log_data["data_type"] = "variant_type"
 
-            output_data["variant_type"].append(log_data)
+            output_data.append(log_data)
 
         # Get variant description (HGVS) history
         for log in history_records_var_desc:
@@ -421,8 +417,9 @@ class ActivityLogs(BaseView):
             log_data["publication_pmid"] = log.get("publication_id__pmid")
             log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
             log_data["is_deleted"] = log.get("is_deleted")
+            log_data["data_type"] = "variant_description"
 
-            output_data["variant_description"].append(log_data)
+            output_data.append(log_data)
 
         # Get mechanism evidence
         for log in history_records_mechanism_evidence:
@@ -439,8 +436,9 @@ class ActivityLogs(BaseView):
             log_data["evidence"] = log.get("evidence_id__value")
             log_data["evidence_type"] = log.get("evidence_id__subtype")
             log_data["is_deleted"] = log.get("is_deleted")
+            log_data["data_type"] = "mechanism_evidence"
 
-            output_data["molecular_mechanism_evidence"].append(log_data)
+            output_data.append(log_data)
 
         # Get mechanism synopsis
         for log in history_records_mechanism_synopsis:
@@ -455,8 +453,9 @@ class ActivityLogs(BaseView):
             log_data["support"] = log.get("synopsis_support_id__value")
             log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
             log_data["is_deleted"] = log.get("is_deleted")
+            log_data["data_type"] = "mechanism_synopsis"
 
-            output_data["molecular_mechanism_synopsis"].append(log_data)
+            output_data.append(log_data)
 
         # Get disease
         for log in history_records_disease:
@@ -468,7 +467,15 @@ class ActivityLogs(BaseView):
             log_data["change_type"] = type_of_change[log.get("history_type")]
             log_data["date"] = date_formatted
             log_data["name"] = log.get("name")
+            log_data["data_type"] = "disease"
 
-            output_data["disease"].append(log_data)
+            output_data.append(log_data)
 
-        return Response(output_data)
+        # Sort the results by date
+        sorted_output_data = sorted(
+            output_data,
+            key=lambda x: datetime.strptime(x["date"], "%Y-%m-%d %H:%M:%S"),
+            reverse=True,
+        )
+
+        return Response(sorted_output_data)
