@@ -47,12 +47,6 @@ class BaseView(generics.ListAPIView):
             status=status.HTTP_410_GONE,
         )
 
-    def handle_missing_input(self, name_type, name):
-        if name is None:
-            raise Http404(f"Missing {name_type}")
-        else:
-            raise Http404(f"Missing {name_type} {name}")
-
 
 class BaseAPIView(APIView):
     """
