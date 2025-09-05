@@ -117,8 +117,7 @@ class ActivityLogs(BaseView):
             self.handle_no_permission("G2P record", stable_id)
 
         # Define the filter
-        # For now we only fetch history_type = create
-        filter_query = Q(lgd_id=lgd_obj.id, history_type="+")
+        filter_query = Q(lgd_id=lgd_obj.id)
 
         history_records_lgdpanel = LGDPanel.history.filter(filter_query).values(
             "history_user__first_name",
@@ -126,6 +125,7 @@ class ActivityLogs(BaseView):
             "history_date",
             "history_type",
             "panel_id__name",
+            "is_deleted",
         )
 
         history_records_lgdpublication = LGDPublication.history.filter(
@@ -136,6 +136,7 @@ class ActivityLogs(BaseView):
             "history_date",
             "history_type",
             "publication_id__pmid",
+            "is_deleted",
         )
 
         history_records_ccm = LGDCrossCuttingModifier.history.filter(
@@ -146,6 +147,7 @@ class ActivityLogs(BaseView):
             "history_date",
             "history_type",
             "ccm_id__value",
+            "is_deleted",
         )
 
         history_records_phenotype = LGDPhenotype.history.filter(filter_query).values(
@@ -155,6 +157,7 @@ class ActivityLogs(BaseView):
             "history_type",
             "phenotype_id__accession",
             "publication_id__pmid",
+            "is_deleted",
         )
 
         history_records_phenotype_sum = LGDPhenotypeSummary.history.filter(
@@ -166,6 +169,7 @@ class ActivityLogs(BaseView):
             "history_type",
             "summary",
             "publication_id__pmid",
+            "is_deleted",
         )
 
         history_records_consequence = LGDVariantGenccConsequence.history.filter(
@@ -176,6 +180,7 @@ class ActivityLogs(BaseView):
             "history_date",
             "history_type",
             "variant_consequence_id__term",
+            "is_deleted",
         )
 
         history_records_var_type = LGDVariantType.history.filter(filter_query).values(
@@ -200,6 +205,7 @@ class ActivityLogs(BaseView):
             "history_type",
             "description",
             "publication_id__pmid",
+            "is_deleted",
         )
 
         history_records_mechanism_evidence = (
@@ -212,6 +218,7 @@ class ActivityLogs(BaseView):
                 "publication_id__pmid",
                 "evidence_id__value",
                 "evidence_id__subtype",
+                "is_deleted",
             )
         )
 
@@ -223,6 +230,7 @@ class ActivityLogs(BaseView):
                 "history_type",
                 "synopsis_id__value",
                 "synopsis_support_id__value",
+                "is_deleted",
             )
         )
 
@@ -279,6 +287,7 @@ class ActivityLogs(BaseView):
             log_data["change_type"] = type_of_change[log.get("history_type")]
             log_data["date"] = date_formatted
             log_data["panel"] = log.get("panel_id__name")
+            log_data["is_deleted"] = log.get("is_deleted")
 
             output_data["panels"].append(log_data)
 
@@ -292,6 +301,7 @@ class ActivityLogs(BaseView):
             log_data["change_type"] = type_of_change[log.get("history_type")]
             log_data["date"] = date_formatted
             log_data["publication"] = log.get("publication_id__pmid")
+            log_data["is_deleted"] = log.get("is_deleted")
 
             output_data["publications"].append(log_data)
 
@@ -305,6 +315,7 @@ class ActivityLogs(BaseView):
             log_data["change_type"] = type_of_change[log.get("history_type")]
             log_data["date"] = date_formatted
             log_data["ccm"] = log.get("ccm_id__value")
+            log_data["is_deleted"] = log.get("is_deleted")
 
             output_data["cross_cutting_modifier"].append(log_data)
 
@@ -319,6 +330,7 @@ class ActivityLogs(BaseView):
             log_data["date"] = date_formatted
             log_data["phenotype"] = log.get("phenotype_id__accession")
             log_data["publication"] = log.get("publication_id__pmid")
+            log_data["is_deleted"] = log.get("is_deleted")
 
             output_data["phenotypes"].append(log_data)
 
@@ -333,6 +345,7 @@ class ActivityLogs(BaseView):
             log_data["date"] = date_formatted
             log_data["summary"] = log.get("summary")
             log_data["publication"] = log.get("publication_id__pmid")
+            log_data["is_deleted"] = log.get("is_deleted")
 
             output_data["phenotype_summary"].append(log_data)
 
@@ -346,6 +359,7 @@ class ActivityLogs(BaseView):
             log_data["change_type"] = type_of_change[log.get("history_type")]
             log_data["date"] = date_formatted
             log_data["variant_consequence"] = log.get("variant_consequence_id__term")
+            log_data["is_deleted"] = log.get("is_deleted")
 
             output_data["variant_consequence"].append(log_data)
 
@@ -378,6 +392,7 @@ class ActivityLogs(BaseView):
             log_data["date"] = date_formatted
             log_data["description"] = log.get("description")
             log_data["publication"] = log.get("publication_id__pmid")
+            log_data["is_deleted"] = log.get("is_deleted")
 
             output_data["variant_description"].append(log_data)
 
@@ -394,6 +409,7 @@ class ActivityLogs(BaseView):
             log_data["publication"] = log.get("publication_id__pmid")
             log_data["evidence"] = log.get("evidence_id__value")
             log_data["evidence_type"] = log.get("evidence_id__subtype")
+            log_data["is_deleted"] = log.get("is_deleted")
 
             output_data["molecular_mechanism_evidence"].append(log_data)
 
@@ -408,6 +424,7 @@ class ActivityLogs(BaseView):
             log_data["date"] = date_formatted
             log_data["synopsis"] = log.get("synopsis_id__value")
             log_data["support"] = log.get("synopsis_support_id__value")
+            log_data["is_deleted"] = log.get("is_deleted")
 
             output_data["molecular_mechanism_synopsis"].append(log_data)
 
