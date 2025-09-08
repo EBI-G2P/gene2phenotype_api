@@ -1,14 +1,20 @@
 from django.core.checks import Error
 from django.db.models import F, OuterRef, Exists
 
-from gene2phenotype_app.models import (MinedPublication, LGDMinedPublication, LGDPublication)
+from gene2phenotype_app.models import (
+    MinedPublication,
+    LGDMinedPublication,
+    LGDPublication,
+)
+
 
 def check_mined_publication_status():
     errors = []
 
     # Curated rows have to be stored in LGDPublication
     list_curated_lgd_publications = (
-        LGDMinedPublication.objects.select_related("mined_publication", "lgd").annotate(
+        LGDMinedPublication.objects.select_related("mined_publication", "lgd")
+        .annotate(
             mined_pmid=F("mined_publication__pmid"),
             g2p_id=F("lgd__stable_id__stable_id"),
         )
@@ -26,7 +32,8 @@ def check_mined_publication_status():
 
     # Rejected rows cannot be stored in LGDPublication
     list_rejected_lgd_publications = (
-        LGDMinedPublication.objects.select_related("mined_publication", "lgd").annotate(
+        LGDMinedPublication.objects.select_related("mined_publication", "lgd")
+        .annotate(
             mined_pmid=F("mined_publication__pmid"),
             g2p_id=F("lgd__stable_id__stable_id"),
         )
