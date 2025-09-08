@@ -6,6 +6,7 @@ from .datachecks import (
     check_ar_constraint,
     check_ar_publications,
     mutation_consequence_constraint,
+    check_mined_publication_status,
     check_cross_references,
     check_disease_name
 )
@@ -17,7 +18,7 @@ class Command(BaseCommand):
     help = "Check for issues in the data"
 
     def handle(self, *args, **kwargs):
-        print("Running data checks ...")
+        print("Running data checks...")
 
         publication_families_errors = check_publication_families()
         for error in publication_families_errors:
@@ -35,13 +36,19 @@ class Command(BaseCommand):
         for error in mc_errors:
             logger.error(error)
 
+        mined_publication_status = check_mined_publication_status()
+        for error in mined_publication_status:
+            logger.error(error)
+
+        # Check if the locus is in the disease name
+        disease_name_errors = check_disease_name()
+        for error in disease_name_errors:
+            logger.error(error)
+
         # Run the disease cross references check
         # This check is non critical: level = WARNING
         disease_cr_errors = check_cross_references()
         for error in disease_cr_errors:
             logger.warning(error)
 
-        # Check if the locus is in the disease name
-        disease_name_errors = check_disease_name()
-        for error in disease_name_errors:
-            logger.error(error)
+        print("Running data checks... done")
