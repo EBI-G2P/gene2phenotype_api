@@ -27,7 +27,7 @@ from gene2phenotype_app.models import (
 
 from gene2phenotype_app.serializers import MetaSerializer
 
-from .base import BaseView
+from .base import BaseView, CustomPagination
 
 
 @extend_schema(
@@ -96,6 +96,7 @@ class MetaView(APIView):
 
 @extend_schema(exclude=True)
 class ActivityLogs(BaseView):
+    pagination_class = CustomPagination
     permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request, *args, **kwargs):
@@ -140,13 +141,16 @@ class ActivityLogs(BaseView):
         # Define the filters
         filter_query = Q()
         filter_query_disease = Q()
+        filter_query_record = Q()
         if stable_id:
             filter_query &= Q(lgd_id=lgd_obj.id)
             filter_query_disease &= Q(id=lgd_obj.disease.id)
+            filter_query_record &= Q(stable_id__stable_id=stable_id)
         # Add the date to filter the results by date
         if start_date:
             filter_query &= Q(history_date__gte=date_input)
             filter_query_disease &= Q(history_date__gte=date_input)
+            filter_query_record &= Q(history_date__gte=date_input)
 
         history_records_lgdpanel = LGDPanel.history.filter(filter_query).values(
             "history_user__first_name",
@@ -273,6 +277,23 @@ class ActivityLogs(BaseView):
             )
         )
 
+        # Get the main record
+        history_records_lgd = (
+            LocusGenotypeDisease.history.filter(filter_query_record).values(
+                "history_user__first_name",
+                "history_user__last_name",
+                "history_date",
+                "history_type",
+                "confidence_id__value",
+                "mechanism_id__value",
+                "mechanism_support_id__value",
+                "disease_id__name",
+                "is_reviewed",
+                "stable_id__stable_id",
+                "is_deleted",
+            )
+        )
+
         # Get the disease info
         history_records_disease = Disease.history.filter(filter_query_disease).values(
             "history_user__first_name",
@@ -284,7 +305,7 @@ class ActivityLogs(BaseView):
 
         type_of_change = {"~": "updated", "+": "created", "-": "deleted"}
 
-        output_data = []  # TODO: return a list
+        output_data = []
 
         # Get panel history
         for log in history_records_lgdpanel:
@@ -457,6 +478,26 @@ class ActivityLogs(BaseView):
 
             output_data.append(log_data)
 
+        # Get record info
+        for log in history_records_lgd:
+            date_formatted = log.get("history_date").strftime("%Y-%m-%d %H:%M:%S")
+            log_data = {}
+            log_data["user"] = (
+                f"{log.get('history_user__first_name')} {log.get('history_user__last_name')}"
+            )
+            log_data["change_type"] = type_of_change[log.get("history_type")]
+            log_data["date"] = date_formatted
+            log_data["confidence"] = log.get("confidence_id__value")
+            log_data["mechanism"] = log.get("mechanism_id__value")
+            log_data["mechanism_support"] = log.get("mechanism_support_id__value")
+            log_data["disease"] = log.get("disease_id__name")
+            log_data["is_reviewed"] = log.get("is_reviewed")
+            log_data["g2p_id"] = log.get("stable_id__stable_id")
+            log_data["is_deleted"] = log.get("is_deleted")
+            log_data["data_type"] = "record"
+
+            output_data.append(log_data)
+
         # Get disease
         for log in history_records_disease:
             date_formatted = log.get("history_date").strftime("%Y-%m-%d %H:%M:%S")
@@ -478,4 +519,9 @@ class ActivityLogs(BaseView):
             reverse=True,
         )
 
-        return Response(sorted_output_data)
+        paginated_output = self.paginate_queryset(sorted_output_data)
+
+        if paginated_output is not None:
+            return self.get_paginated_response(paginated_output)
+
+        return Response({"results": sorted_output_data, "count": len(sorted_output_data)})

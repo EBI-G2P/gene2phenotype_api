@@ -119,7 +119,7 @@ class LGDEditCCMEndpoint(TestCase):
         response_logs = self.client.get(url_activity_logs)
         self.assertEqual(response_logs.status_code, 200)
         response_logs_data = response_logs.json()
-        self.assertEqual(response_logs_data[0]["change_type"], "created")
+        self.assertEqual(response_logs_data["results"][0]["change_type"], "created")
         # Query the activity logs for an invalid record
         url_activity_logs_invalid = f"{self.url_base_activity_logs}?stable_id=G2P00000"
         response_logs_invalid = self.client.get(url_activity_logs_invalid)
