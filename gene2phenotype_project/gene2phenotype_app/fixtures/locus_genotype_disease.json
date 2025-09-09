@@ -100,5 +100,39 @@
             "is_reviewed": 1,
             "is_deleted": 1
         }
+    },
+    {
+        "model": "gene2phenotype_app.locusgenotypedisease",
+        "pk": 7,
+        "fields": {
+            "stable_id": 8,
+            "locus": 5,
+            "genotype": 9,
+            "disease": 10,
+            "mechanism": 1,
+            "mechanism_support": 16,
+            "confidence": 1,
+            "confidence_support": null,
+            "date_review": "2017-05-24T09:03:04Z",
+            "is_reviewed": 1,
+            "is_deleted": 0
+        }
+    },
+    {
+        "model": "gene2phenotype_app.locusgenotypedisease",
+        "pk": 8,
+        "fields": {
+            "stable_id": 9,
+            "locus": 4,
+            "genotype": 9,
+            "disease": 12,
+            "mechanism": 5,
+            "mechanism_support": 16,
+            "confidence": 1,
+            "confidence_support": null,
+            "date_review": "2017-05-24T09:03:04Z",
+            "is_reviewed": 1,
+            "is_deleted": 0
+        }
     }
 ]

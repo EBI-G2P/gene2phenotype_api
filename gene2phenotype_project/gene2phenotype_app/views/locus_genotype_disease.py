@@ -597,10 +597,10 @@ class LGDUpdateMechanism(BaseUpdate):
 
         # If the mechanism support is "evidence" then the evidence has to be provided
         if (
-            mechanism_evidence is None
-            and molecular_mechanism
+            molecular_mechanism
             and "support" in molecular_mechanism
             and molecular_mechanism["support"] == "evidence"
+            and (mechanism_evidence is None or len(mechanism_evidence) == 0)
         ):
             self.handle_missing_data("Mechanism evidence")
 
