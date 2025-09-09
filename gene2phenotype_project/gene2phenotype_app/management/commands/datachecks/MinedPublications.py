@@ -49,6 +49,33 @@ def check_mined_publication_status():
         )
     )
 
+    # Rows in LGDPublication that are in LGDMinedPublication should have 'curated' status
+    list_lgd_publications = (
+        LGDPublication.objects.select_related("publication", "lgd")
+        .annotate(
+            pmid=F("publication__pmid"),
+            g2p_id=F("lgd__stable_id__stable_id"),
+        )
+        .filter(
+            Exists(
+                LGDMinedPublication.objects.filter(
+                    lgd=OuterRef("lgd"),
+                    mined_publication__pmid=OuterRef("publication__pmid"),
+                )
+            ),
+            is_deleted=0,
+        )
+        .exclude(
+            Exists(
+                LGDMinedPublication.objects.filter(
+                    lgd=OuterRef("lgd"),
+                    mined_publication__pmid=OuterRef("publication__pmid"),
+                    status="curated",
+                )
+            )
+        )
+    )
+
     for obj in list_curated_lgd_publications:
         errors.append(
             Error(
@@ -62,6 +89,14 @@ def check_mined_publication_status():
             Error(
                 f"Record {obj.g2p_id} has mined publication PMID '{obj.mined_pmid}' with wrong status 'rejected'",
                 id="gene2phenotype_app.E502",
+            )
+        )
+
+    for obj in list_lgd_publications:
+        errors.append(
+            Error(
+                f"Record {obj.g2p_id} has publication PMID '{obj.pmid}' with wrong status in mined publications",
+                id="gene2phenotype_app.E503",
             )
         )
 
