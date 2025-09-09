@@ -117,6 +117,16 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "DISABLE_FORMAT_SUFFIX": True,
     "SORT_OPERATIONS": False,
+    "TAGS": [
+        {"name": "G2P record"},
+        {"name": "Search records"},
+        {"name": "Fetch counts by panel"},
+        {"name": "Fetch information by panel"},
+        {"name": "Fetch G2P summary records by gene"},
+        {"name": "Fetch G2P summary records by disease"},
+        {"name": "Terminology"},
+        {"name": "Reference data"},
+    ],
 }
 
 SIMPLE_JWT = {

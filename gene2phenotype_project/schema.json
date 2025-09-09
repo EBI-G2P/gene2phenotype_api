@@ -690,6 +690,117 @@
                 }
             }
         },
+        "/gene2phenotype/api/molecular_mechanisms/": {
+            "get": {
+                "operationId": "molecular_mechanisms_retrieve",
+                "description": "\nFetch the molecular mechanism terminologies used in G2P following the definitions of Backwell and Marsh (see more details here https://europepmc.org/article/MED/35395171)\n\nThe mechanism of disease is derived from the available evidence.\n\nThe mechanism synopsis is a more detailed description of the molecular mechanism.\n",
+                "tags": [
+                    "Terminology"
+                ],
+                "security": [
+                    {
+                        "jwtAuth": []
+                    },
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "evidence": {
+                                            "type": "object",
+                                            "properties": {
+                                                "function": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "key": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                "rescue": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "key": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                "models": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "key": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                "functional_alteration": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "key": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "mechanism": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "key": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "mechanism_synopsis": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "key": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "support": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "key": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "description": "Molecular mechanism terminology response"
+                    }
+                }
+            }
+        },
         "/gene2phenotype/api/gene/{name}/summary/": {
             "get": {
                 "operationId": "gene_summary_retrieve",
@@ -1214,5 +1325,31 @@
                 "bearerFormat": "JWT"
             }
         }
-    }
+    },
+    "tags": [
+        {
+            "name": "G2P record"
+        },
+        {
+            "name": "Search records"
+        },
+        {
+            "name": "Fetch counts by panel"
+        },
+        {
+            "name": "Fetch information by panel"
+        },
+        {
+            "name": "Fetch G2P summary records by gene"
+        },
+        {
+            "name": "Fetch G2P summary records by disease"
+        },
+        {
+            "name": "Terminology"
+        },
+        {
+            "name": "Reference data"
+        }
+    ]
 }

@@ -6,7 +6,7 @@ from django.db import transaction, IntegrityError
 from django.db.models import Model, QuerySet
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiResponse
 
 import re
 import textwrap
@@ -55,7 +55,80 @@ from .base import BaseAPIView, BaseUpdate, CustomPermissionAPIView, IsSuperUser
 from ..utils import get_date_now
 
 
-@extend_schema(exclude=True)
+@extend_schema(
+    tags=["Terminology"],
+    description=textwrap.dedent("""
+    Fetch the molecular mechanism terminologies used in G2P following the definitions of Backwell and Marsh (see more details here https://europepmc.org/article/MED/35395171)
+    
+    The mechanism of disease is derived from the available evidence.
+    
+    The mechanism synopsis is a more detailed description of the molecular mechanism.
+    """),
+    responses={
+        200: OpenApiResponse(
+            description="Molecular mechanism terminology response",
+            response={
+                "type": "object",
+                "properties": {
+                    "evidence": {
+                        "type": "object",
+                        "properties": {
+                            "function": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {"key": {"type": "string"}},
+                                },
+                            },
+                            "rescue": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {"key": {"type": "string"}},
+                                },
+                            },
+                            "models": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {"key": {"type": "string"}},
+                                },
+                            },
+                            "functional_alteration": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {"key": {"type": "string"}},
+                                },
+                            },
+                        },
+                    },
+                    "mechanism": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {"key": {"type": "string"}},
+                        },
+                    },
+                    "mechanism_synopsis": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {"key": {"type": "string"}},
+                        },
+                    },
+                    "support": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {"key": {"type": "string"}},
+                        },
+                    },
+                },
+            },
+        )
+    },
+)
 class ListMolecularMechanisms(APIView):
     def get(self, request, *args, **kwargs):
         """
