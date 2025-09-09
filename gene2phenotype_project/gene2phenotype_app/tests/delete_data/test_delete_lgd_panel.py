@@ -2,10 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
-from gene2phenotype_app.models import (
-    User,
-    LGDPanel
-)
+from gene2phenotype_app.models import User, LGDPanel
 
 
 class LGDDeletePanelEndpoint(TestCase):
@@ -18,7 +15,6 @@ class LGDDeletePanelEndpoint(TestCase):
         "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
         "gene2phenotype_app/fixtures/disease.json",
         "gene2phenotype_app/fixtures/g2p_stable_id.json",
-        "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
         "gene2phenotype_app/fixtures/lgd_mechanism_evidence.json",
         "gene2phenotype_app/fixtures/lgd_mechanism_synopsis.json",
         "gene2phenotype_app/fixtures/lgd_panel.json",
@@ -35,13 +31,15 @@ class LGDDeletePanelEndpoint(TestCase):
     def setUp(self):
         self.url_delete_panel = reverse("lgd_panel", kwargs={"stable_id": "G2P00006"})
 
-        self.url_delete_panel_invalid_record = reverse("lgd_panel", kwargs={"stable_id": "G2P00123"})
+        self.url_delete_panel_invalid_record = reverse(
+            "lgd_panel", kwargs={"stable_id": "G2P00123"}
+        )
 
-        self.url_delete_single_panel = reverse("lgd_panel", kwargs={"stable_id": "G2P00005"})
+        self.url_delete_single_panel = reverse(
+            "lgd_panel", kwargs={"stable_id": "G2P00005"}
+        )
 
-        self.panel_to_delete = {
-            "name": "Ear"
-        }
+        self.panel_to_delete = {"name": "Ear"}
 
     def test_delete_panel_unauthorised_access(self):
         """
@@ -97,7 +95,9 @@ class LGDDeletePanelEndpoint(TestCase):
         self.assertEqual(response.status_code, 403)
 
         response_data = response.json()
-        self.assertEqual(response_data["error"], "You do not have permission to perform this action.")
+        self.assertEqual(
+            response_data["error"], "You do not have permission to perform this action."
+        )
 
     def test_delete_empty_panel(self):
         """
@@ -121,9 +121,7 @@ class LGDDeletePanelEndpoint(TestCase):
         self.assertEqual(response.status_code, 400)
 
         response_data = response.json()
-        self.assertEqual(
-            response_data["error"], "Please enter a panel name"
-        )
+        self.assertEqual(response_data["error"], "Please enter a panel name")
 
     def test_delete_invalid_panel(self):
         """
@@ -146,7 +144,7 @@ class LGDDeletePanelEndpoint(TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 404)
-    
+
     def test_delete_single_panel(self):
         """
         Test the endpoint to delete panel from a record that has only 1 panel
@@ -243,7 +241,8 @@ class LGDDeletePanelEndpoint(TestCase):
 
         response_data = response.json()
         self.assertEqual(
-            response_data["message"], "Panel 'Ear' successfully deleted for ID 'G2P00006'"
+            response_data["message"],
+            "Panel 'Ear' successfully deleted for ID 'G2P00006'",
         )
 
         # Check lgd_panel table
@@ -252,6 +251,6 @@ class LGDDeletePanelEndpoint(TestCase):
         )
         self.assertEqual(len(lgd_panels), 1)
 
-        # Test history table              
+        # Test history table
         history_records = LGDPanel.history.filter(lgd__stable_id__stable_id="G2P00006")
         self.assertEqual(len(history_records), 1)
