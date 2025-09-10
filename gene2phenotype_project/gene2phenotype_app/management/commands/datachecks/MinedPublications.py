@@ -1,5 +1,5 @@
 from django.core.checks import Error
-from django.db.models import F, OuterRef, Exists
+from django.db.models import F, OuterRef, Exists, Subquery
 
 from gene2phenotype_app.models import (
     MinedPublication,
@@ -50,11 +50,16 @@ def check_mined_publication_status():
     )
 
     # Rows in LGDPublication that are in LGDMinedPublication should have 'curated' status
+    mined_status_subquery = LGDMinedPublication.objects.filter(
+        lgd=OuterRef("lgd"), mined_publication__pmid=OuterRef("publication__pmid")
+    ).values("status")[:1]
+
     list_lgd_publications = (
         LGDPublication.objects.select_related("publication", "lgd")
         .annotate(
             pmid=F("publication__pmid"),
             g2p_id=F("lgd__stable_id__stable_id"),
+            mined_status=Subquery(mined_status_subquery),
         )
         .filter(
             Exists(
@@ -95,7 +100,7 @@ def check_mined_publication_status():
     for obj in list_lgd_publications:
         errors.append(
             Error(
-                f"Record {obj.g2p_id} has publication PMID '{obj.pmid}' with wrong status in mined publications",
+                f"Record {obj.g2p_id} has publication PMID '{obj.pmid}' with wrong status ('{obj.mined_status}') in mined publications",
                 id="gene2phenotype_app.E503",
             )
         )
