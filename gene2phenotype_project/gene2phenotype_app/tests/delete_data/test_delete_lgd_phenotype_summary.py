@@ -164,6 +164,6 @@ class LGDDeletePhenotypeSummary(TestCase):
         self.assertEqual(len(history_records), 1)
         self.assertEqual(history_records[0].is_deleted, 1)
 
-        # Check the record date update triggered history
+        # Check the record date update did not trigger history
         lgd_history = LocusGenotypeDisease.history.all()
-        self.assertEqual(len(lgd_history), 1)
+        self.assertEqual(len(lgd_history), 0)

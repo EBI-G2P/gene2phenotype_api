@@ -220,7 +220,7 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
                 # Update the date of the last update in the record table
                 if success_flag:
                     lgd.date_review = get_date_now()
-                    lgd.save()
+                    lgd.save_without_historical_record()
 
             else:
                 response = Response(
@@ -273,7 +273,7 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
                 # Update the date of the last update in the record table
                 if success_flag:
                     lgd.date_review = get_date_now()
-                    lgd.save()
+                    lgd.save_without_historical_record()
 
             else:
                 response = Response(
@@ -339,7 +339,7 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
                 lgd_phenotype.save()
             # The phenotype was deleted successfully - update the date of last update in the record table
             lgd_obj.date_review = get_date_now()
-            lgd_obj.save()
+            lgd_obj.save_without_historical_record()
             return Response(
                 {
                     "message": f"Phenotype '{accession}' successfully deleted for ID '{stable_id}'"
@@ -452,7 +452,7 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
             # Update the date of the last update in the record table
             if success_flag:
                 lgd.date_review = get_date_now()
-                lgd.save()
+                lgd.save_without_historical_record()
 
         else:
             response = Response(
@@ -515,7 +515,7 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
 
             # The phenotype was deleted successfully - update the date of last update in the record table
             lgd_obj.date_review = get_date_now()
-            lgd_obj.save()
+            lgd_obj.save_without_historical_record()
 
         return Response(
             {"message": f"Phenotype summary successfully deleted for ID '{stable_id}'"},

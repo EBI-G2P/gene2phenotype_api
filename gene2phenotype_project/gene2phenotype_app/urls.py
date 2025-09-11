@@ -378,4 +378,11 @@ urlpatterns = [
         views.RetrieveStableIDsWithSubmissionID.as_view(),
         name="get_gencc_sub",
     ),
+
+    ### Activity logs ###
+    path(
+        "activity_logs/",
+        views.ActivityLogs.as_view(),
+        name="activity_logs"
+    ),
 ]

@@ -57,6 +57,8 @@ class LGDUpdateLGDMechanism(TestCase):
         self.mechanism_data_synopsis = {
             "mechanism_synopsis": [{"name": "destabilising LOF", "support": "evidence"}]
         }
+        # test activity logs after the updates
+        self.url_base_activity_logs = reverse("activity_logs")
 
         # Setup login
         user = User.objects.get(email="user5@test.ac.uk")
@@ -132,6 +134,13 @@ class LGDUpdateLGDMechanism(TestCase):
         self.assertEqual(len(history_records), 1)
         lgd_history = LocusGenotypeDisease.history.all()
         self.assertEqual(len(lgd_history), 1)
+
+        # Query the activity logs
+        url_activity_logs = f"{self.url_base_activity_logs}?stable_id=G2P00001"
+        response_logs = self.client.get(url_activity_logs)
+        self.assertEqual(response_logs.status_code, 200)
+        response_logs_data = response_logs.json()
+        self.assertEqual(response_logs_data["results"][0]["change_type"], "created")
 
     def test_no_permission_update(self):
         """

@@ -204,4 +204,4 @@ class LGDEditCCMEndpoint(TestCase):
         self.assertEqual(len(history_records), 1)
         self.assertEqual(history_records[0].is_deleted, 1)
         history_records_lgd = LocusGenotypeDisease.history.all()
-        self.assertEqual(len(history_records_lgd), 1)
+        self.assertEqual(len(history_records_lgd), 0)

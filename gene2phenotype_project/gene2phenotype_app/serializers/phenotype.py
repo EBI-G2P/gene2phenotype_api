@@ -2,6 +2,7 @@ from rest_framework import serializers
 import re
 
 from ..models import (
+    Attrib,
     OntologyTerm,
     Source,
     LGDPhenotype,
@@ -42,7 +43,7 @@ class PhenotypeOntologyTermSerializer(serializers.ModelSerializer):
         if not re.match(r"HP\:\d+", phenotype_accession) or validated_phenotype is None:
             raise serializers.ValidationError(
                 {
-                    "message": f"Invalid phenotype accession",
+                    "message": "Invalid phenotype accession",
                     "Please check ID": phenotype_accession,
                 }
             )
@@ -55,13 +56,23 @@ class PhenotypeOntologyTermSerializer(serializers.ModelSerializer):
         # Check if phenotype is already in G2P
         try:
             phenotype_obj = OntologyTerm.objects.get(accession=phenotype_accession)
-
         except OntologyTerm.DoesNotExist:
+            # Add new phenotype to ontology table
             try:
                 source_obj = Source.objects.get(name="HPO")
             except Source.DoesNotExist:
                 raise serializers.ValidationError(
-                    {"message": f"Problem fetching the phenotype source 'HPO'"}
+                    {"message": "Problem fetching the phenotype source 'HPO'"}
+                )
+
+            try:
+                group_type_obj = Attrib.objects.get(
+                    value="phenotype",
+                    type__code="ontology_term_group"
+                )
+            except Attrib.DoesNotExist:
+                raise serializers.ValidationError(
+                    {"message": "Invalid attribute 'phenotype'"}
                 )
 
             if "definition" in validated_phenotype:
@@ -72,6 +83,7 @@ class PhenotypeOntologyTermSerializer(serializers.ModelSerializer):
                 term=validated_phenotype["name"],
                 description=phenotype_description,
                 source=source_obj,
+                group_type=group_type_obj,
             )
 
         return phenotype_obj

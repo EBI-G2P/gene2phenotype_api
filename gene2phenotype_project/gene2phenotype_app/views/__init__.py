@@ -1,4 +1,4 @@
-from .base import BaseView, BaseAPIView, BaseAdd, BaseUpdate
+from .base import BaseView, BaseAPIView, BaseAdd, BaseUpdate, CustomPagination
 
 from .panel import (
     PanelCreateView,
@@ -51,7 +51,7 @@ from .user import (
 
 from .publication import PublicationDetail, AddPublication, LGDEditPublications
 
-from .meta import MetaView
+from .meta import MetaView, ActivityLogs
 
 from .locus_genotype_disease import (
     ListMolecularMechanisms,

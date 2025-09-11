@@ -374,7 +374,7 @@ class LGDEditPanel(CustomPermissionAPIView):
         # Check if panel name is valid
         if panel_name_input is None or panel_name_input == "":
             return Response(
-                {"error": f"Please enter a panel name"},
+                {"error": "Please enter a panel name"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -407,7 +407,7 @@ class LGDEditPanel(CustomPermissionAPIView):
             serializer_class.save()
             # Update the 'date_review' of the LocusGenotypeDisease obj
             lgd.date_review = get_date_now()
-            lgd.save()
+            lgd.save_without_historical_record()
             response = Response(
                 {"message": "Panel added to the G2P entry successfully."},
                 status=status.HTTP_201_CREATED,
@@ -429,7 +429,7 @@ class LGDEditPanel(CustomPermissionAPIView):
         # Check if panel name is valid
         if panel is None or panel == "":
             return Response(
-                {"error": f"Please enter a panel name"},
+                {"error": "Please enter a panel name"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         
@@ -477,7 +477,7 @@ class LGDEditPanel(CustomPermissionAPIView):
             lgd_panel_obj.save()
             # The panel was deleted successfully - update the date of last update in the record table
             lgd_obj.date_review = get_date_now()
-            lgd_obj.save()
+            lgd_obj.save_without_historical_record()
             return Response(
                 {
                     "message": f"Panel '{panel}' successfully deleted for ID '{stable_id}'"

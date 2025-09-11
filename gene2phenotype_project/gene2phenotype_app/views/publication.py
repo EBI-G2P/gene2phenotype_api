@@ -292,7 +292,7 @@ class LGDEditPublications(BaseUpdate):
                                 {"error": lgd_phenotype_serializer.errors},
                                 status=status.HTTP_400_BAD_REQUEST,
                             )
-                    except:
+                    except Exception as e:
                         accession = phenotype_data["accession"]
                         return Response(
                             {
@@ -321,7 +321,7 @@ class LGDEditPublications(BaseUpdate):
                         ):
                             # save() is going to call create()
                             lgd_phenotype_summary_serializer.save()
-                    except:
+                    except Exception as e:
                         return Response(
                             {
                                 "error": f"Could not insert phenotype summary for PMID '{phenotype['pmid']}'"
@@ -420,7 +420,7 @@ class LGDEditPublications(BaseUpdate):
 
             # Update the date of the last update in the record table
             lgd.date_review = get_date_now()
-            lgd.save()
+            lgd.save_without_historical_record()
 
             response = Response(
                 {"message": "Publication added to the G2P entry successfully."},
@@ -497,9 +497,9 @@ class LGDEditPublications(BaseUpdate):
 
         try:
             lgd_publication_obj.save()
-        except:
+        except Exception as e:
             return Response(
-                {"error": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
+                {"error": f"Could not delete PMID '{pmid}' for ID '{stable_id}': {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -550,7 +550,7 @@ class LGDEditPublications(BaseUpdate):
 
         # Update the date of the last update of the record
         lgd_obj.date_review = get_date_now()
-        lgd_obj.save()
+        lgd_obj.save_without_historical_record()
 
         return Response(
             {

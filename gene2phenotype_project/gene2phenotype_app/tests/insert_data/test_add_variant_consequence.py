@@ -2,16 +2,17 @@ from django.test import TestCase
 from django.urls import reverse
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
+
 from gene2phenotype_app.models import (
     User,
-    LGDCrossCuttingModifier,
+    LGDVariantGenccConsequence,
     LocusGenotypeDisease,
 )
 
 
-class LGDEditCCMEndpoint(TestCase):
+class LGDEditVariantConsequenceTests(TestCase):
     """
-    Test endpoint to add cross cutting modifiers to a LGD record
+    Test endpoint to add variant consequence to a LGD record
     """
 
     fixtures = [
@@ -19,8 +20,6 @@ class LGDEditCCMEndpoint(TestCase):
         "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
         "gene2phenotype_app/fixtures/disease.json",
         "gene2phenotype_app/fixtures/g2p_stable_id.json",
-        "gene2phenotype_app/fixtures/lgd_mechanism_evidence.json",
-        "gene2phenotype_app/fixtures/lgd_mechanism_synopsis.json",
         "gene2phenotype_app/fixtures/lgd_panel.json",
         "gene2phenotype_app/fixtures/locus_genotype_disease.json",
         "gene2phenotype_app/fixtures/locus.json",
@@ -30,44 +29,47 @@ class LGDEditCCMEndpoint(TestCase):
         "gene2phenotype_app/fixtures/ontology_term.json",
         "gene2phenotype_app/fixtures/source.json",
         "gene2phenotype_app/fixtures/lgd_publication.json",
-        "gene2phenotype_app/fixtures/lgd_cross_cutting_modifier.json",
+        "gene2phenotype_app/fixtures/lgd_variant_consequence.json",
     ]
 
     def setUp(self):
-        self.url_add_ccm = reverse(
-            "lgd_cross_cutting_modifier", kwargs={"stable_id": "G2P00002"}
+        self.url_add_variant = reverse(
+            "lgd_var_consequence", kwargs={"stable_id": "G2P00002"}
         )
-        self.ccm_to_add = {"cross_cutting_modifiers": [{"term": "typically mosaic"}]}
-        self.empty_ccm_to_add = {"cross_cutting_modifiers": []}
+        self.variant_to_add = {
+            "variant_consequences": [{
+                "variant_consequence": "altered_gene_product_structure",
+                "support": "inferred"
+            }]
+        }
+        self.empty_variant_to_add = {"variant_consequences": []}
         # test activity logs after insertion
         self.url_base_activity_logs = reverse("activity_logs")
 
     def test_add_unauthorised_access(self):
         """
-        Test the endpoint to add cross cutting modifiers for non authenticated user
+        Test the endpoint to add variant consequence for non authenticated user
         """
         response = self.client.post(
-            self.url_add_ccm,
-            self.ccm_to_add,
+            self.url_add_variant,
+            self.variant_to_add,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 401)
 
     def test_add_no_permission(self):
         """
-        Test the endpoint to add cross cutting modifiers for user without permission to edit record
+        Test the endpoint to add variant consequence for user without permission to edit record
         """
         # Login
         user = User.objects.get(email="sofia@test.ac.uk")
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
         response = self.client.post(
-            self.url_add_ccm,
-            self.ccm_to_add,
+            self.url_add_variant,
+            self.variant_to_add,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 403)
@@ -77,21 +79,19 @@ class LGDEditCCMEndpoint(TestCase):
             response_data["error"], "No permission to update record 'G2P00002'"
         )
 
-    def test_add_lgd_ccms(self):
+    def test_add_lgd_variant_consequence(self):
         """
-        Test the endpoint to add cross cutting modifiers to a record
+        Test the endpoint to add variant consequence to a record
         """
         # Login
         user = User.objects.get(email="john@test.ac.uk")
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
         response = self.client.post(
-            self.url_add_ccm,
-            self.ccm_to_add,
+            self.url_add_variant,
+            self.variant_to_add,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 201)
@@ -99,17 +99,17 @@ class LGDEditCCMEndpoint(TestCase):
         response_data = response.json()
         self.assertEqual(
             response_data["message"],
-            "Cross cutting modifier added to the G2P entry successfully.",
+            "Variant consequence added to the G2P entry successfully.",
         )
 
         # Check inserted data
-        lgd_ccms = LGDCrossCuttingModifier.objects.filter(
+        lgd_variants = LGDVariantGenccConsequence.objects.filter(
             lgd__stable_id__stable_id="G2P00002", is_deleted=0
         )
-        self.assertEqual(len(lgd_ccms), 3)
+        self.assertEqual(len(lgd_variants), 2)
 
         # Check history tables
-        history_records = LGDCrossCuttingModifier.history.all()
+        history_records = LGDVariantGenccConsequence.history.all()
         self.assertEqual(len(history_records), 1)
         history_records_lgd = LocusGenotypeDisease.history.all()
         self.assertEqual(len(history_records_lgd), 0)
@@ -120,26 +120,21 @@ class LGDEditCCMEndpoint(TestCase):
         self.assertEqual(response_logs.status_code, 200)
         response_logs_data = response_logs.json()
         self.assertEqual(response_logs_data["results"][0]["change_type"], "created")
-        # Query the activity logs for an invalid record
-        url_activity_logs_invalid = f"{self.url_base_activity_logs}?stable_id=G2P00000"
-        response_logs_invalid = self.client.get(url_activity_logs_invalid)
-        self.assertEqual(response_logs_invalid.status_code, 404)
+        self.assertEqual(response_logs_data["count"], 1)
 
-    def test_add_empty_ccm(self):
+    def test_add_empty_variant_consequence(self):
         """
-        Test the endpoint to add empty cross cutting modifiers to a record
+        Test the endpoint to add empty variant consequence to a record
         """
         # Login
         user = User.objects.get(email="john@test.ac.uk")
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
         response = self.client.post(
-            self.url_add_ccm,
-            self.empty_ccm_to_add,
+            self.url_add_variant,
+            self.empty_variant_to_add,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
@@ -147,5 +142,5 @@ class LGDEditCCMEndpoint(TestCase):
         response_data = response.json()
         self.assertEqual(
             response_data["error"],
-            "Empty cross cutting modifier. Please provide valid data.",
+            "Empty variant consequence. Please provide valid data.",
         )

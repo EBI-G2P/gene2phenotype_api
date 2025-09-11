@@ -4,7 +4,8 @@ from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from gene2phenotype_app.models import (
     User,
-    LGDPanel
+    LGDPanel,
+    LocusGenotypeDisease,
 )
 
 
@@ -39,6 +40,9 @@ class LGDAddPanelEndpoint(TestCase):
         self.panel_to_add = {
             "name": "DD"
         }
+
+        # test activity logs after insertion
+        self.url_base_activity_logs = reverse("activity_logs")
 
     def test_add_panel_unauthorised_access(self):
         """
@@ -173,6 +177,16 @@ class LGDAddPanelEndpoint(TestCase):
         )
         self.assertEqual(len(lgd_panels), 2)
 
-        # Test history table              
+        # Test history tables
         history_records = LGDPanel.history.filter(lgd__stable_id__stable_id="G2P00005")
         self.assertEqual(len(history_records), 1)
+        history_records_lgd = LocusGenotypeDisease.history.all()
+        self.assertEqual(len(history_records_lgd), 0)
+
+        # Query the activity logs
+        url_activity_logs = f"{self.url_base_activity_logs}?stable_id=G2P00005"
+        response_logs = self.client.get(url_activity_logs)
+        self.assertEqual(response_logs.status_code, 200)
+        response_logs_data = response_logs.json()
+        self.assertEqual(response_logs_data["results"][0]["change_type"], "created")
+        self.assertEqual(response_logs_data["count"], 1)

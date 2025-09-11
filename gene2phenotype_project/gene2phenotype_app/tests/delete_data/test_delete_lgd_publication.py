@@ -11,6 +11,7 @@ from gene2phenotype_app.models import (
     LGDVariantTypeComment,
     LGDVariantTypeDescription,
     LGDMolecularMechanismEvidence,
+    LocusGenotypeDisease,
 )
 
 
@@ -264,3 +265,5 @@ class LGDDeletePublication(TestCase):
         self.assertEqual(len(history_records_var_type_desc), 2)
         history_records_mechanism_evidence = LGDMolecularMechanismEvidence.history.all()
         self.assertEqual(len(history_records_mechanism_evidence), 1)
+        history_records_lgd = LocusGenotypeDisease.history.all()
+        self.assertEqual(len(history_records_lgd), 0)
