@@ -278,22 +278,22 @@ class ActivityLogs(BaseView):
             )
         )
 
-        history_records_comments = (
-            LGDComment.history.filter(filter_query).values(
-                "history_user__first_name",
-                "history_user__last_name",
-                "history_date",
-                "history_type",
-                "comment",
-                "is_public",
-                "lgd_id__stable_id__stable_id",
-                "is_deleted",
-            )
+        history_records_comments = LGDComment.history.filter(filter_query).values(
+            "history_user__first_name",
+            "history_user__last_name",
+            "history_date",
+            "history_type",
+            "comment",
+            "is_public",
+            "lgd_id__stable_id__stable_id",
+            "is_deleted",
         )
 
-        # Get the main record
+        # Get the main record sorted by history date
         history_records_lgd = (
-            LocusGenotypeDisease.history.filter(filter_query_record).values(
+            LocusGenotypeDisease.history.filter(filter_query_record)
+            .order_by("-history_date")
+            .values(
                 "history_user__first_name",
                 "history_user__last_name",
                 "history_date",
@@ -307,6 +307,10 @@ class ActivityLogs(BaseView):
                 "is_deleted",
             )
         )
+
+        # Updating the date_review has been triggering history rows
+        # This means we have to clean these rows from this results before we report them
+        new_history_records_lgd = self.remove_duplicates_history(history_records_lgd)
 
         # Get the disease info
         history_records_disease = Disease.history.filter(filter_query_disease).values(
@@ -510,7 +514,7 @@ class ActivityLogs(BaseView):
             output_data.append(log_data)
 
         # Get record info
-        for log in history_records_lgd:
+        for log in new_history_records_lgd:
             date_formatted = log.get("history_date").strftime("%Y-%m-%d %H:%M:%S")
             log_data = {}
             log_data["user"] = (
@@ -555,4 +559,50 @@ class ActivityLogs(BaseView):
         if paginated_output is not None:
             return self.get_paginated_response(paginated_output)
 
-        return Response({"results": sorted_output_data, "count": len(sorted_output_data)})
+        return Response(
+            {"results": sorted_output_data, "count": len(sorted_output_data)}
+        )
+
+    def remove_duplicates_history(self, history_records_lgd):
+        """
+        Remove duplicates from the list of LocusGenotypeDisease history records
+        where a duplicate is defined as:
+            - the current element matches the previous element in all fields
+            except 'history_date', 'history_user__first_name' and 'history_user__last_name'.
+        """
+        if not history_records_lgd:
+            return []
+
+        # Keep the first element
+        result = [history_records_lgd[0]]
+        prev = history_records_lgd[0]
+
+        for current in history_records_lgd[1:]:
+            # Compare all keys except date and user
+            filtered_prev = {
+                k: v
+                for k, v in prev.items()
+                if k
+                not in (
+                    "history_date",
+                    "history_user__first_name",
+                    "history_user__last_name",
+                )
+            }
+            filtered_curr = {
+                k: v
+                for k, v in current.items()
+                if k
+                not in (
+                    "history_date",
+                    "history_user__first_name",
+                    "history_user__last_name",
+                )
+            }
+
+            if filtered_prev != filtered_curr:
+                result.append(current)
+                # update the previous only if it is not duplicate
+                prev = current
+
+        return result
