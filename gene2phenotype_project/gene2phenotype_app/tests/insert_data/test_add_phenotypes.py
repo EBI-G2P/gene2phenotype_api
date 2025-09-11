@@ -39,7 +39,10 @@ class LGDEditPhenotypeEndpoint(TestCase):
             "lgd_phenotype", kwargs={"stable_id": "G2P00002"}
         )
         self.phenotype_to_add = {
-            "hpo_terms": [{"accession": "HP:0000118", "publication": 15214012}]
+            "hpo_terms": [
+                {"accession": "HP:0000118", "publication": 15214012},
+                {"accession": "HP:6000692", "publication": 15214012},
+            ]
         }
         self.phenotype_with_summary_to_add = {
             "hpo_terms": [{"accession": "HP:0000118", "publication": 12451214}],
@@ -112,7 +115,7 @@ class LGDEditPhenotypeEndpoint(TestCase):
         lgd_phenotypes = LGDPhenotype.objects.filter(
             lgd__stable_id__stable_id="G2P00002", is_deleted=0
         )
-        self.assertEqual(len(lgd_phenotypes), 4)
+        self.assertEqual(len(lgd_phenotypes), 5)
 
         # Query the activity logs
         url_activity_logs = f"{self.url_base_activity_logs}?stable_id=G2P00002"
@@ -120,6 +123,7 @@ class LGDEditPhenotypeEndpoint(TestCase):
         self.assertEqual(response_logs.status_code, 200)
         response_logs_data = response_logs.json()
         self.assertEqual(response_logs_data["results"][0]["change_type"], "created")
+        self.assertEqual(response_logs_data["count"], 2)
 
     def test_add_lgd_phenotypes_with_summary(self):
         """

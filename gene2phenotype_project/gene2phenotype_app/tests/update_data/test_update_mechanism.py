@@ -553,8 +553,8 @@ class LGDUpdateMechanismEndpoint(TestCase):
         history_records = LocusGenotypeDisease.history.filter(
             stable_id__stable_id="G2P00009"
         )
-        # LGD date_review should be updated 2 times
-        self.assertEqual(len(history_records), 2)
+        # LGD date_review should be updated only once
+        self.assertEqual(len(history_records), 1)
 
     def test_update_mechanism_evidence_success(self):
         """
@@ -622,8 +622,8 @@ class LGDUpdateMechanismEndpoint(TestCase):
         history_records = LocusGenotypeDisease.history.filter(
             stable_id__stable_id="G2P00008"
         )
-        # LGD date_review is updated 2 times
-        self.assertEqual(len(history_records), 2)
+        # LGD date_review is updated only once
+        self.assertEqual(len(history_records), 1)
 
     def test_update_mechanism_synopsis_success(self):
         """

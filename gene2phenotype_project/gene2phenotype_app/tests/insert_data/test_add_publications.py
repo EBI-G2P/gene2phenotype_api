@@ -209,7 +209,7 @@ class LGDEditPublicationsEndpoint(TestCase):
         response_logs = self.client.get(url_activity_logs)
         self.assertEqual(response_logs.status_code, 200)
         response_logs_data = response_logs.json()
-        self.assertEqual(response_logs_data["count"], 9)
+        self.assertEqual(response_logs_data["count"], 7)
         self.assertEqual(response_logs_data["results"][0]["change_type"], "created")
 
     def test_add_lgd_publication_linked_mined_publication(self):

@@ -817,7 +817,7 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
 
         if success_flag:
             lgd.date_review = get_date_now()
-            lgd.save()
+            lgd.save_without_historical_record()
 
         return response
 
@@ -877,22 +877,27 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
                 term=consequence, group_type__value="variant_type"
             )
         except OntologyTerm.DoesNotExist:
-            raise Http404(f"Invalid variant consequence '{consequence}'")
-
-        try:
-            LGDVariantGenccConsequence.objects.filter(
-                lgd=lgd_obj, variant_consequence=consequence_obj, is_deleted=0
-            ).update(is_deleted=1)
-        except:
             return Response(
-                {
-                    "error": f"Could not delete variant consequence '{consequence}' for ID '{stable_id}'"
-                },
-                status=status.HTTP_400_BAD_REQUEST,
+                {"error": f"Invalid variant consequence '{consequence}'"},
+                status=status.HTTP_404_NOT_FOUND,
             )
         else:
+            try:
+                variant_consequence_obj = LGDVariantGenccConsequence.objects.get(
+                    lgd=lgd_obj, variant_consequence=consequence_obj, is_deleted=0
+                )
+            except LGDVariantGenccConsequence.DoesNotExist:
+                return Response(
+                    {"error": f"Could not find variant consequence '{consequence}' for ID '{stable_id}'"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            else:
+                variant_consequence_obj.is_deleted=1
+                variant_consequence_obj.save()
+
             lgd_obj.date_review = get_date_now()
-            lgd_obj.save()
+            lgd_obj.save_without_historical_record()
+
             return Response(
                 {
                     "message": f"Variant consequence '{consequence}' successfully deleted for ID '{stable_id}'"

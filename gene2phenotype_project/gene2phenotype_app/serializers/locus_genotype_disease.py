@@ -719,12 +719,11 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         # Update confidence
         old_confidence = instance.confidence
         instance.confidence = confidence_obj
-
         # Update the 'date_review'
         instance.date_review = get_date_now()
-
         # Save all updates
         instance.save()
+
         user_obj = User.objects.get(email=user)
         if settings.SEND_MAILS is True:
             ConfidenceCustomMail(
@@ -897,11 +896,13 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         'validated_data' example:
             "mechanism_evidence": [{
-                                    "pmid": "1234",
-                                    "description": "This is new evidence for the existing mechanism evidence.",
-                                    "evidence_types": [ { "primary_type": "Function",
-                                                          "secondary_type": [ "Biochemical" ]}
-                                    ]}]
+                "pmid": "1234",
+                "description": "This is new evidence for the existing mechanism evidence.",
+                "evidence_types": [
+                    {"primary_type": "Function",
+                    "secondary_type": ["Biochemical"]}
+                ]
+            }]
         """
 
         for evidence in validated_data:
@@ -968,9 +969,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                             mechanism_evidence_obj.is_deleted = 0
                             mechanism_evidence_obj.save()
 
-        # Update LGD date_review
+        # Update LGD date_review without creating an history row
         lgd_obj.date_review = get_date_now()
-        lgd_obj.save()
+        lgd_obj.save_without_historical_record()
 
     def to_representation(self, instance):
         """

@@ -2,12 +2,16 @@ from django.test import TestCase
 from django.urls import reverse
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
-from gene2phenotype_app.models import (User, LGDPhenotypeSummary, LocusGenotypeDisease)
+from gene2phenotype_app.models import (
+    User,
+    LGDVariantGenccConsequence,
+    LocusGenotypeDisease,
+)
 
 
-class LGDDeletePhenotypeSummary(TestCase):
+class LGDEditVariantConsequenceEndpoint(TestCase):
     """
-    Test endpoint to delete phenotype summary from a record (LGD)
+    Test endpoint to delete variant consequence from a record (LGD)
     """
 
     fixtures = [
@@ -24,19 +28,19 @@ class LGDDeletePhenotypeSummary(TestCase):
         "gene2phenotype_app/fixtures/ontology_term.json",
         "gene2phenotype_app/fixtures/source.json",
         "gene2phenotype_app/fixtures/lgd_publication.json",
-        "gene2phenotype_app/fixtures/lgd_phenotype.json",
-        "gene2phenotype_app/fixtures/lgd_phenotype_summary.json",
-        "gene2phenotype_app/fixtures/source.json",
+        "gene2phenotype_app/fixtures/lgd_variant_consequence.json",
     ]
 
     def setUp(self):
-        self.url_delete = reverse("lgd_phenotype_summary", kwargs={"stable_id": "G2P00002"})
-        self.summary_to_delete = {"summary": "Abnormality of connective tissue and of the musculoskeletal system"}
+        self.url_delete = reverse(
+            "lgd_var_consequence", kwargs={"stable_id": "G2P00002"}
+        )
+        self.consequence_to_delete = {"variant_consequence": "absent gene product"}
 
     def test_invalid_delete(self):
         """
-        Test deleting an invalid phenotype summary from the record (LGD).
-        The provided summary is not linked to the record.
+        Test deleting an invalid variant consequence from the record (LGD).
+        Cannot delete a term that does not exist in G2P.
         """
         # Login
         user = User.objects.get(email="john@test.ac.uk")
@@ -46,43 +50,45 @@ class LGDDeletePhenotypeSummary(TestCase):
 
         response = self.client.patch(
             self.url_delete,
-            {"summary": "summary"},
+            {"variant_consequence": "absent gene products"},
             content_type="application/json",
         )
-        self.assertEqual(response.status_code, 400)
-
-        response_data = response.json()
-        self.assertEqual(
-            response_data["error"], "Phenotype summary is not associated with 'G2P00002'"
-        )
-
-    def test_invalid_input(self):
-        """
-        Test deleting a phenotype summary when providing empty summary.
-        """
-        # Login
-        user = User.objects.get(email="john@test.ac.uk")
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
-
-        response = self.client.patch(
-            self.url_delete,
-            {"summary": ""},
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 404)
 
         response_data = response.json()
         self.assertEqual(
             response_data["error"],
-            "Please provide valid phenotype summary.",
+            "Invalid variant consequence 'absent gene products'",
+        )
+
+    def test_delete_unlinked_variant_consequence(self):
+        """
+        Test deleting an invalid variant consequence from the record (LGD).
+        Cannot delete a consequence if it is not linked to the record.
+        """
+        # Login
+        user = User.objects.get(email="john@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.patch(
+            self.url_delete,
+            {"variant_consequence": "altered gene product structure"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 404)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"],
+            "Could not find variant consequence 'altered gene product structure' for ID 'G2P00002'",
         )
 
     def test_delete_non_superuser(self):
         """
-        Test deleting the phenotype summary for non super user.
-        Only super users can delete phenotype summaries.
+        Test deleting the variant consequence for non super user.
+        Only super users can delete variant consequences.
         """
         # Login
         user = User.objects.get(email="mary@test.ac.uk")
@@ -92,7 +98,7 @@ class LGDDeletePhenotypeSummary(TestCase):
 
         response = self.client.patch(
             self.url_delete,
-            self.summary_to_delete,
+            self.consequence_to_delete,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 403)
@@ -104,7 +110,7 @@ class LGDDeletePhenotypeSummary(TestCase):
 
     def test_delete_no_permission(self):
         """
-        Test deleting the phenotype summary for user without permission to edit the record.
+        Test deleting the variant consequence for user without permission to edit the record.
         """
         # Login
         user = User.objects.get(email="sofia@test.ac.uk")
@@ -114,7 +120,7 @@ class LGDDeletePhenotypeSummary(TestCase):
 
         response = self.client.patch(
             self.url_delete,
-            self.summary_to_delete,
+            self.consequence_to_delete,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 403)
@@ -124,9 +130,9 @@ class LGDDeletePhenotypeSummary(TestCase):
             response_data["error"], "No permission to update record 'G2P00002'"
         )
 
-    def test_lgd_phenotype_summary_delete(self):
+    def test_delete_empty_input(self):
         """
-        Test successfully deleting the phenotype summary from the record (LGD)
+        Test deleting the variant consequence for empty input.
         """
         # Login
         user = User.objects.get(email="john@test.ac.uk")
@@ -134,36 +140,51 @@ class LGDDeletePhenotypeSummary(TestCase):
         access_token = str(refresh.access_token)
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        # Check LGD-phenotype summary before deletion
-        lgd_phenotype_summaries = LGDPhenotypeSummary.objects.filter(
+        response = self.client.patch(
+            self.url_delete,
+            {},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"],
+            "Empty variant consequence. Please provide the 'variant_consequence'.",
+        )
+
+    def test_lgd_variant_consequence_delete(self):
+        """
+        Test deleting the variant consequence from the record (LGD)
+        """
+        # Login
+        user = User.objects.get(email="john@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        # Check LGD-variant consequence before deletion
+        lgd_consequence_list = LGDVariantGenccConsequence.objects.filter(
             lgd__stable_id__stable_id="G2P00002", is_deleted=0
         )
-        self.assertEqual(len(lgd_phenotype_summaries), 1)
+        self.assertEqual(len(lgd_consequence_list), 1)
 
         response = self.client.patch(
             self.url_delete,
-            self.summary_to_delete,
+            self.consequence_to_delete,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
 
-        # Check deleted LGD-phenotype summary
-        lgd_deleted_phenotypes = LGDPhenotypeSummary.objects.filter(
+        # Check deleted LGD-variant consequence
+        lgd_deleted_consequence = LGDVariantGenccConsequence.objects.filter(
             lgd__stable_id__stable_id="G2P00002", is_deleted=1
         )
-        self.assertEqual(len(lgd_deleted_phenotypes), 1)
+        self.assertEqual(len(lgd_deleted_consequence), 1)
 
-        # Check remaining LGD-phenotype summaries
-        lgd_phenotypes = LGDPhenotypeSummary.objects.filter(
-            lgd__stable_id__stable_id="G2P00002", is_deleted=0
-        )
-        self.assertEqual(len(lgd_phenotypes), 0)
-
-        # Test the LGDPhenotype history table
-        history_records = LGDPhenotypeSummary.history.all()
+        # Test the history tables
+        history_records = LGDVariantGenccConsequence.history.all()
         self.assertEqual(len(history_records), 1)
         self.assertEqual(history_records[0].is_deleted, 1)
-
-        # Check the record date update did not trigger history
-        lgd_history = LocusGenotypeDisease.history.all()
-        self.assertEqual(len(lgd_history), 0)
+        history_records_lgd = LocusGenotypeDisease.history.all()
+        self.assertEqual(len(history_records_lgd), 0)
