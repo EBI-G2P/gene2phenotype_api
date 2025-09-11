@@ -23,6 +23,7 @@ from gene2phenotype_app.models import (
     LGDMolecularMechanismEvidence,
     LGDMolecularMechanismSynopsis,
     LGDPhenotypeSummary,
+    LGDComment,
 )
 
 from gene2phenotype_app.serializers import MetaSerializer
@@ -277,6 +278,19 @@ class ActivityLogs(BaseView):
             )
         )
 
+        history_records_comments = (
+            LGDComment.history.filter(filter_query).values(
+                "history_user__first_name",
+                "history_user__last_name",
+                "history_date",
+                "history_type",
+                "comment",
+                "is_public",
+                "lgd_id__stable_id__stable_id",
+                "is_deleted",
+            )
+        )
+
         # Get the main record
         history_records_lgd = (
             LocusGenotypeDisease.history.filter(filter_query_record).values(
@@ -475,6 +489,23 @@ class ActivityLogs(BaseView):
             log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
             log_data["is_deleted"] = log.get("is_deleted")
             log_data["data_type"] = "mechanism_synopsis"
+
+            output_data.append(log_data)
+
+        # Get lgd comments
+        for log in history_records_comments:
+            date_formatted = log.get("history_date").strftime("%Y-%m-%d %H:%M:%S")
+            log_data = {}
+            log_data["user"] = (
+                f"{log.get('history_user__first_name')} {log.get('history_user__last_name')}"
+            )
+            log_data["change_type"] = type_of_change[log.get("history_type")]
+            log_data["date"] = date_formatted
+            log_data["comment"] = log.get("comment")
+            log_data["is_public"] = log.get("is_public")
+            log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
+            log_data["is_deleted"] = log.get("is_deleted")
+            log_data["data_type"] = "record_comment"
 
             output_data.append(log_data)
 
