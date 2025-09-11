@@ -5,6 +5,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from gene2phenotype_app.models import (
     User,
     LGDComment,
+    LocusGenotypeDisease,
 )
 
 
@@ -110,6 +111,13 @@ class LGDEditCommentEndpoint(TestCase):
             lgd__stable_id__stable_id="G2P00005", is_deleted=0
         )
         self.assertEqual(len(lgd_comments), 2)
+
+        # Test the LGDComment history table
+        history_records = LGDComment.history.all()
+        self.assertEqual(len(history_records), 2)
+        # Test the LocusGenotypeDisease history table
+        history_records = LocusGenotypeDisease.history.all()
+        self.assertEqual(len(history_records), 0)
 
     def test_add_empty_comment(self):
         """

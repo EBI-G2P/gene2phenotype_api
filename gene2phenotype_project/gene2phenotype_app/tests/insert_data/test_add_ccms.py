@@ -112,7 +112,7 @@ class LGDEditCCMEndpoint(TestCase):
         history_records = LGDCrossCuttingModifier.history.all()
         self.assertEqual(len(history_records), 1)
         history_records_lgd = LocusGenotypeDisease.history.all()
-        self.assertEqual(len(history_records_lgd), 1)
+        self.assertEqual(len(history_records_lgd), 0)
 
         # Query the activity logs
         url_activity_logs = f"{self.url_base_activity_logs}?stable_id=G2P00002"

@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
-from gene2phenotype_app.models import User, LGDComment
+from gene2phenotype_app.models import User, LGDComment, LocusGenotypeDisease
 
 
 class LGDDeleteComment(TestCase):
@@ -49,11 +49,11 @@ class LGDDeleteComment(TestCase):
         response = self.client.patch(
             self.url_delete, {"comment_id": 1000}, content_type="application/json"
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 404)
 
         response_data = response.json()
         self.assertEqual(
-            response_data["error"], "Cannot delete comment for record 'G2P00002'"
+            response_data["error"], "Cannot find comment for record 'G2P00002'"
         )
 
         response_2 = self.client.patch(
@@ -156,3 +156,6 @@ class LGDDeleteComment(TestCase):
         history_records = LGDComment.history.all()
         self.assertEqual(len(history_records), 1)
         self.assertEqual(history_records[0].is_deleted, 1)
+        # Test the LocusGenotypeDisease history table
+        history_records = LocusGenotypeDisease.history.all()
+        self.assertEqual(len(history_records), 0)

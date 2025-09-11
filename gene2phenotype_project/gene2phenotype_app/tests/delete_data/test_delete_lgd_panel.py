@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
-from gene2phenotype_app.models import User, LGDPanel
+from gene2phenotype_app.models import User, LGDPanel, LocusGenotypeDisease
 
 
 class LGDDeletePanelEndpoint(TestCase):
@@ -251,6 +251,8 @@ class LGDDeletePanelEndpoint(TestCase):
         )
         self.assertEqual(len(lgd_panels), 1)
 
-        # Test history table
+        # Test history tables
         history_records = LGDPanel.history.filter(lgd__stable_id__stable_id="G2P00006")
         self.assertEqual(len(history_records), 1)
+        history_records_lgd = LocusGenotypeDisease.history.filter(stable_id__stable_id="G2P00006")
+        self.assertEqual(len(history_records_lgd), 0)

@@ -995,7 +995,7 @@ class LGDEditCCM(CustomPermissionAPIView):
 
                     # Update LGD date_review
                     lgd.date_review = get_date_now()
-                    lgd.save()
+                    lgd.save_without_historical_record()
 
                     response = Response(
                         {
@@ -1079,7 +1079,7 @@ class LGDEditCCM(CustomPermissionAPIView):
 
             # The cross cutting modifier was deleted successfully - update the date of last update in the record table
             lgd_obj.date_review = get_date_now()
-            lgd_obj.save()
+            lgd_obj.save_without_historical_record()
 
             return Response(
                 {
@@ -1203,7 +1203,7 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
 
         # Update the record date_review, if at least one variant type was added successfully
         lgd.date_review = get_date_now()
-        lgd.save()
+        lgd.save_without_historical_record()
 
         return response
 
@@ -1285,7 +1285,7 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
 
             try:
                 lgd_var_type_obj.save()
-            except:
+            except Exception as e:
                 return Response(
                     {
                         "error": f"Could not delete variant type '{variant_type}' for ID '{stable_id}'"
@@ -1295,7 +1295,7 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
 
         # Update the date_review of the record
         lgd_obj.date_review = get_date_now()
-        lgd_obj.save()
+        lgd_obj.save_without_historical_record()
 
         return Response(
             {
@@ -1410,7 +1410,7 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
             if success_flag:
                 # Update the record date last review
                 lgd.date_review = get_date_now()
-                lgd.save()
+                lgd.save_without_historical_record()
 
         else:
             response = Response(
@@ -1476,7 +1476,7 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
 
             # Update the record date of last review
             lgd_obj.date_review = get_date_now()
-            lgd_obj.save()
+            lgd_obj.save_without_historical_record()
 
             return Response(
                 {
@@ -1599,7 +1599,7 @@ class LGDEditComment(APIView):
         # At least one comment was added successfully - update record date of the last review
         if success_flag:
             lgd.date_review = get_date_now()
-            lgd.save()
+            lgd.save_without_historical_record()
 
         return response
 
@@ -1639,10 +1639,10 @@ class LGDEditComment(APIView):
             lgd_comment = LGDComment.objects.get(
                 lgd=lgd_obj, id=comment_id, is_deleted=0
             )
-        except:
+        except LGDComment.DoesNotExist:
             return Response(
-                {"error": f"Cannot delete comment for record '{stable_id}'"},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"error": f"Cannot find comment for record '{stable_id}'"},
+                status=status.HTTP_404_NOT_FOUND,
             )
         else:
             # Set comment to deleted
@@ -1650,7 +1650,8 @@ class LGDEditComment(APIView):
             lgd_comment.save()
             # Update the date of the last review
             lgd_obj.date_review = get_date_now()
-            lgd_obj.save()
+            lgd_obj.save_without_historical_record()
+
             return Response(
                 {"message": f"Comment successfully deleted for record '{stable_id}'"},
                 status=status.HTTP_200_OK,
