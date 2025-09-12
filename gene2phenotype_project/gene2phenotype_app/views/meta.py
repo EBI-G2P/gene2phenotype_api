@@ -299,6 +299,7 @@ class ActivityLogs(BaseView):
                 "history_date",
                 "history_type",
                 "confidence_id__value",
+                "genotype_id__value",
                 "mechanism_id__value",
                 "mechanism_support_id__value",
                 "disease_id__name",
@@ -523,6 +524,7 @@ class ActivityLogs(BaseView):
             log_data["change_type"] = type_of_change[log.get("history_type")]
             log_data["date"] = date_formatted
             log_data["confidence"] = log.get("confidence_id__value")
+            log_data["genotype"] = log.get("genotype_id__value")
             log_data["mechanism"] = log.get("mechanism_id__value")
             log_data["mechanism_support"] = log.get("mechanism_support_id__value")
             log_data["disease"] = log.get("disease_id__name")
