@@ -63,4 +63,7 @@ from .meta import MetaSerializer
 
 from .gencc_submission import CreateGenCCSubmissionSerializer, GenCCSubmissionSerializer
 
-from .mined_publication import LGDMinedPublicationSerializer
+from .mined_publication import (
+    LGDMinedPublicationSerializer,
+    LGDMinedPublicationListSerializer,
+)
