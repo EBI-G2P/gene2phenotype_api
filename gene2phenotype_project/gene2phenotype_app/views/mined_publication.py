@@ -77,7 +77,7 @@ class LGDEditMinedPublication(BaseUpdate):
 
         if not user_serializer.check_panel_permission(lgd_panels):
             return Response(
-                {"error": f"No permission to edit {stable_id}"},
+                {"error": f"No permission to edit '{stable_id}'"},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -101,20 +101,17 @@ class LGDEditMinedPublication(BaseUpdate):
             # Update each mined publication from the input list
             for lgd_mined_publication in lgd_mined_publications_list:
                 pmid = lgd_mined_publication.get("mined_publication").get("pmid")
-                if not pmid or pmid == "":
-                    return Response(
-                        {"error": "pmid is empty. Please provide valid data."},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
+                mined_publication_obj = None
                 try:
                     mined_publication_obj = MinedPublication.objects.get(pmid=pmid)
                 except MinedPublication.DoesNotExist:
                     return Response(
                         {
-                            "error": f"Provided mined publication {pmid} does not exist. Please provide valid data."
+                            "error": f"Provided mined publication '{pmid}' does not exist. Please provide valid data."
                         },
                         status=status.HTTP_400_BAD_REQUEST,
                     )
+                lgd_mined_publication_obj = None
                 try:
                     lgd_mined_publication_obj = LGDMinedPublication.objects.get(
                         lgd=lgd, mined_publication=mined_publication_obj
@@ -122,7 +119,26 @@ class LGDEditMinedPublication(BaseUpdate):
                 except LGDMinedPublication.DoesNotExist:
                     return Response(
                         {
-                            "error": f"Provided mined publication {pmid} is not linked to the record {stable_id}. Please provide valid data."
+                            "error": f"Provided mined publication '{pmid}' is not linked to the record '{stable_id}'. Please provide valid data."
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                mined_publication_status = lgd_mined_publication.get("status")
+                existing_mined_publication_status = lgd_mined_publication_obj.status
+                if existing_mined_publication_status == mined_publication_status:
+                    return Response(
+                        {
+                            "error": f"For mined publication '{pmid}', status is already '{mined_publication_status}'. Please provide valid data."
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                comment = lgd_mined_publication.get("comment")
+                if mined_publication_status == "rejected" and (
+                    not comment or comment == ""
+                ):
+                    return Response(
+                        {
+                            "error": f"For mined publication '{pmid}', comment can not be empty or null for status '{mined_publication_status}'. Please provide valid data."
                         },
                         status=status.HTTP_400_BAD_REQUEST,
                     )

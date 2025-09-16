@@ -10,14 +10,10 @@ class LGDMinedPublicationSerializer(serializers.ModelSerializer):
     Called by: LocusGenotypeDiseaseSerializer(), LGDMinedPublicationListSerializer()
     """
 
-    pmid = serializers.IntegerField(
-        source="mined_publication.pmid", allow_null=True, required=False
-    )
-    title = serializers.CharField(
-        source="mined_publication.title", allow_null=True, required=False
-    )
-    status = serializers.CharField(required=True)
-    comment = serializers.CharField(required=True)
+    pmid = serializers.IntegerField(source="mined_publication.pmid", required=False)
+    title = serializers.CharField(source="mined_publication.title", required=False)
+    status = serializers.CharField()
+    comment = serializers.CharField(allow_blank=True, allow_null=True, required=False)
 
     def update(self, instance, validated_data):
         """
