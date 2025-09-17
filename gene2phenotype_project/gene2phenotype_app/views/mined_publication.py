@@ -35,7 +35,7 @@ class LGDEditMinedPublication(BaseUpdate):
         Mandatory fields to update mined publication:
                         - pmid
                         - status
-                        - comment
+                        - comment (Mandatory only for status 'rejected')
 
         Input example:
                 {
