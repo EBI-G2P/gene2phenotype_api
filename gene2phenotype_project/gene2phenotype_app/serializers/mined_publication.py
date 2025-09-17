@@ -7,13 +7,34 @@ from ..models import LGDMinedPublication, MinedPublication
 class LGDMinedPublicationSerializer(serializers.ModelSerializer):
     """
     Serializer for the LGDMinedPublication model.
-    Called by: LocusGenotypeDiseaseSerializer()
+    Called by: LocusGenotypeDiseaseSerializer(), LGDMinedPublicationListSerializer()
     """
 
-    pmid = serializers.IntegerField(source="mined_publication.pmid")
-    title = serializers.CharField(source="mined_publication.title")
+    pmid = serializers.IntegerField(source="mined_publication.pmid", required=False)
+    title = serializers.CharField(source="mined_publication.title", required=False)
     status = serializers.CharField()
-    comment = serializers.CharField()
+    comment = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+
+    def update(self, instance, validated_data):
+        """
+        Update an entry in the lgd_mined_publication table.
+
+        Args:
+            instance
+            (dict) validated_data: Validated data to be updated.
+
+        Returns:
+            CurationData: The updated LGDMinedPublication instance.
+        """
+        instance.status = validated_data.get("status")
+        input_comment = validated_data.get("comment")
+        if input_comment == "":
+            instance.comment = None
+        else:
+            instance.comment = input_comment
+        instance.save()
+
+        return instance
 
     def update_status_to_curated(self, lgd_obj, validated_data):
         """
@@ -65,3 +86,12 @@ class LGDMinedPublicationSerializer(serializers.ModelSerializer):
             "status",
             "comment",
         ]
+
+
+class LGDMinedPublicationListSerializer(serializers.Serializer):
+    """
+    Serializer to accept a list of mined publications.
+    Called by: view LGDEditMinedPublication()
+    """
+
+    mined_publications = LGDMinedPublicationSerializer(many=True)

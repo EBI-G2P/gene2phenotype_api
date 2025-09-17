@@ -82,3 +82,5 @@ from .phenotype import (
     LGDEditPhenotypes,
     LGDEditPhenotypeSummary,
 )
+
+from .mined_publication import LGDEditMinedPublication

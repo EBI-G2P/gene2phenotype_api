@@ -235,6 +235,12 @@ urlpatterns = [
         views.LocusGenotypeDiseaseDelete.as_view(),
         name="lgd_delete",
     ),
+     # Update mined publications of LGD record.
+    path(
+        "lgd/<str:stable_id>/mined_publication/",
+        views.LGDEditMinedPublication.as_view(),
+        name="lgd_mined_publication"
+    ),
     # Update disease IDs for LGD records. Action: POST
     path(
         "lgd_disease_updates/",
