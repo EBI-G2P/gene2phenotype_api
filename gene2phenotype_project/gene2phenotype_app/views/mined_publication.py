@@ -42,13 +42,11 @@ class LGDEditMinedPublication(BaseUpdate):
                     "mined_publications": [
                         {
                             "pmid": 36718090,
-                            "title": "SPTSSA variants alter sphingolipid synthesis and cause a complex hereditary spastic paraplegia.",
                             "status": "rejected",
                             "comment": "Not relevant to gene disease association"
                         },
                         {
                             "pmid": 39663403,
-                            "title": "Profound hypotonia in an infant with δ-aminolevulinic acid dehydratase deficient porphyria.",
                             "status": "rejected",
                             "comment": "Not relevant to gene disease association"
                         }
