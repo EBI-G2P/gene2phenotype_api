@@ -27,7 +27,11 @@ class LGDMinedPublicationSerializer(serializers.ModelSerializer):
             CurationData: The updated LGDMinedPublication instance.
         """
         instance.status = validated_data.get("status")
-        instance.comment = validated_data.get("comment")
+        input_comment = validated_data.get("comment")
+        if input_comment == "":
+            instance.comment = None
+        else:
+            instance.comment = input_comment
         instance.save()
 
         return instance
