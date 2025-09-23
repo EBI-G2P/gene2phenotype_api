@@ -289,7 +289,6 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
     """
     Serializer to add new disease.
     """
-
     ontology_terms = DiseaseOntologyTermSerializer(many=True, required=False)
 
     # Add synonyms
@@ -315,9 +314,8 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
         Returns:
                 disease object
         """
-
         disease_name = validated_data.get("name")
-        ontologies_list = validated_data.get("ontology_terms")
+        ontologies_list = validated_data.get("ontology_terms", [])
 
         disease_obj = None
 
@@ -361,7 +359,7 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
                     if source is None:
                         raise serializers.ValidationError(
                             {
-                                "message": f"Invalid ID '{ontology_accession}' please input a valid ID from OMIM or Mondo"
+                                "error": f"Invalid ID '{ontology_accession}' please input a valid ID from OMIM or Mondo"
                             }
                         )
 
@@ -371,14 +369,14 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
                         if mondo_disease is None:
                             raise serializers.ValidationError(
                                 {
-                                    "message": "Invalid Mondo ID",
+                                    "error": "Invalid Mondo ID",
                                     "Please check ID": ontology_accession,
                                 }
                             )
                         elif mondo_disease == "query failed":
                             raise serializers.ValidationError(
                                 {
-                                    "message": f"Cannot query Mondo ID {ontology_accession}"
+                                    "error": f"Cannot query Mondo ID {ontology_accession}"
                                 }
                             )
 
@@ -395,7 +393,7 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
                         if omim_disease == "query failed":
                             raise serializers.ValidationError(
                                 {
-                                    "message": f"Cannot query OMIM ID {ontology_accession}"
+                                    "error": f"Cannot query OMIM ID {ontology_accession}"
                                 }
                             )
 
