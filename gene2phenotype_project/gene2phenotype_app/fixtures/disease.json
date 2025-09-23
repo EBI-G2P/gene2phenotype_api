@@ -84,6 +84,13 @@
         }
     },
     {
+        "model": "gene2phenotype_app.disease",
+        "pk": 13,
+        "fields": {
+            "name": "CEP290-related JOUBERT SYNDROME"
+        }
+    },
+    {
         "model": "gene2phenotype_app.diseaseontologyterm",
         "pk": 1,
         "fields": {

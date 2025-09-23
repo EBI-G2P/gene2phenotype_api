@@ -537,6 +537,18 @@ class LGDUpdateDisease(BaseAdd):
     permission_classes = [IsSuperUser]
 
     def post(self, request):
+        """
+        Method to update the disease ID in the main table locus_genotype_disease.
+
+        The update can be run in two modes:
+            1) It updates each record linked to the disease ID
+            Input example:
+                    [{disease_id: 1, new_disease_id: 2}]
+
+            2) It updates the disease ID for the specific record
+            Input example:
+                    [{disease_id: 1, new_disease_id: 2, stable_id: G2P00001}]
+        """
         data_to_update = request.data
 
         if not isinstance(data_to_update, list):
@@ -551,6 +563,7 @@ class LGDUpdateDisease(BaseAdd):
         for disease_to_update in data_to_update:
             current_disease_id = disease_to_update.get("disease_id")
             new_disease_id = disease_to_update.get("new_disease_id")
+            stable_id_to_update = disease_to_update.get("stable_id", None)
 
             if not current_disease_id or not new_disease_id:
                 errors.append(
@@ -559,9 +572,24 @@ class LGDUpdateDisease(BaseAdd):
                 continue
 
             # Get records that use the disease id
-            lgd_list = LocusGenotypeDisease.objects.filter(
-                disease_id=current_disease_id, is_deleted=0
-            )
+            if not stable_id_to_update:
+                lgd_list = LocusGenotypeDisease.objects.filter(
+                    disease_id=current_disease_id,
+                    is_deleted=0
+                )
+            else:
+                # This list contains only one record
+                lgd_list = LocusGenotypeDisease.objects.filter(
+                    stable_id__stable_id=stable_id_to_update,
+                    disease_id=current_disease_id,
+                    is_deleted=0
+                )
+
+            if not lgd_list:
+                errors.append(
+                    {"error": f"No records associated with disease id {current_disease_id}"}
+                )
+                continue
 
             for lgd_obj in lgd_list:
                 # Check if there is another LGD record linked to the new disease id
@@ -578,7 +606,7 @@ class LGDUpdateDisease(BaseAdd):
                             "error": f"Found a different record with same locus, genotype, disease and mechanism: '{existing_lgd_obj.stable_id.stable_id}'",
                         }
                     )
-                except:
+                except LocusGenotypeDisease.DoesNotExist:
                     # Update record with new disease id
                     lgd_obj.disease_id = new_disease_id
                     lgd_obj.save()
@@ -692,10 +720,10 @@ class UpdateDiseaseOntologyTerms(BaseAdd):
                     try:
                         # Delete the DiseaseOntologyTerm obj
                         disease_ont_obj.delete()
-                    except:
+                    except Exception as e:
                         errors.append(
                             {
-                                "error": f"Could not delete '{ontology_accession}' from disease '{disease_ont_obj.disease.name}'"
+                                "error": f"Could not delete '{ontology_accession}' from disease '{disease_ont_obj.disease.name}': {str(e)}"
                             }
                         )
                     else:
