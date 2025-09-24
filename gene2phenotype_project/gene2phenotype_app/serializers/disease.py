@@ -359,7 +359,7 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
                     if source is None:
                         raise serializers.ValidationError(
                             {
-                                "error": f"Invalid ID '{ontology_accession}' please input a valid ID from OMIM or Mondo"
+                                "error": f"Invalid ID '{ontology_accession}'. Please input a valid ID from OMIM or Mondo"
                             }
                         )
 
@@ -369,14 +369,13 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
                         if mondo_disease is None:
                             raise serializers.ValidationError(
                                 {
-                                    "error": "Invalid Mondo ID",
-                                    "Please check ID": ontology_accession,
+                                    "error": f"Invalid Mondo ID. Please check ID '{ontology_accession}'"
                                 }
                             )
                         elif mondo_disease == "query failed":
                             raise serializers.ValidationError(
                                 {
-                                    "error": f"Cannot query Mondo ID {ontology_accession}"
+                                    "error": f"Cannot query Mondo ID '{ontology_accession}'"
                                 }
                             )
 
@@ -393,7 +392,7 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
                         if omim_disease == "query failed":
                             raise serializers.ValidationError(
                                 {
-                                    "error": f"Cannot query OMIM ID {ontology_accession}"
+                                    "error": f"Cannot query OMIM ID '{ontology_accession}'"
                                 }
                             )
 
