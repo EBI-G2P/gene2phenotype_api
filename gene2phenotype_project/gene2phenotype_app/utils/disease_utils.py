@@ -40,12 +40,6 @@ def clean_string(name):
     new_disease_name = re.sub(r"\s+and\s+", " ", new_disease_name)
     new_disease_name = re.sub(r"\s+or\s+", " ", new_disease_name)
 
-    # remove 'biallelic' and 'autosomal'
-    new_disease_name = re.sub(r"biallelic$", "", new_disease_name)
-    new_disease_name = re.sub(r"autosomal$", "", new_disease_name)
-    new_disease_name = re.sub(r"\(biallelic\)$", "", new_disease_name)
-    new_disease_name = re.sub(r"\(autosomal\)$", "", new_disease_name)
-
     new_disease_name = re.sub(r"type ([xvi]+)$", latin2arab, new_disease_name)
 
     # remove 'type'

@@ -304,9 +304,25 @@ class AddDisease(BaseAdd):
     This view is called by the endpoint that directly adds a disease (add/disease/).
     The create method is in the CreateDiseaseSerializer.
     """
-
     serializer_class = CreateDiseaseSerializer
     permission_classes = [IsSuperUser]
+
+    def create(self, request, *args, **kwargs):
+        """
+        Overwrite the method create() to format the response
+        to include the disease id, otherwise only what's defined
+        in the serializer is returned.
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        disease_obj = serializer.save()
+        return Response(
+            {
+                "id": disease_obj.id,
+                "name": disease_obj.name,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 ### Update data
