@@ -128,13 +128,13 @@ class ActivityLogs(BaseView):
 
         if stable_id:
             try:
-                G2PStableID.objects.get(stable_id=stable_id, is_deleted=0)
+                G2PStableID.objects.get(stable_id=stable_id)
             except G2PStableID.DoesNotExist:
                 self.handle_no_permission("stable_id", stable_id)
 
             try:
                 lgd_obj = LocusGenotypeDisease.objects.get(
-                    stable_id__stable_id=stable_id, is_deleted=0
+                    stable_id__stable_id=stable_id
                 )
             except LocusGenotypeDisease.DoesNotExist:
                 self.handle_no_permission("G2P record", stable_id)
