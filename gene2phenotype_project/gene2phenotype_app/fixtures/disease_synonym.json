@@ -1,0 +1,10 @@
+[
+    {
+        "model": "gene2phenotype_app.diseasesynonym",
+        "pk": 1,
+        "fields": {
+            "synonym": "CONGENITAL DISORDERS OF GLYCOSYLATION TYPE 1",
+            "disease": 1
+        }
+    }
+]
