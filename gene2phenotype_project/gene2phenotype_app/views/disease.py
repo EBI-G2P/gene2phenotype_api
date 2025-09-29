@@ -23,6 +23,7 @@ from gene2phenotype_app.models import (
     OntologyTerm,
     DiseaseOntologyTerm,
     Disease,
+    DiseaseSynonym,
     LocusAttrib,
     GeneDisease,
     LocusGenotypeDisease,
@@ -309,9 +310,8 @@ class AddDisease(BaseAdd):
 
     def create(self, request, *args, **kwargs):
         """
-        Overwrite the method create() to format the response
-        to include the disease id, otherwise only what's defined
-        in the serializer is returned.
+        Overwrite the method create() to format the response to also include the disease id,
+        otherwise it only returns what is defined in the CreateDiseaseSerializer.
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -346,6 +346,7 @@ class UpdateDisease(BaseAdd):
         for disease_data in diseases:
             disease_id = disease_data.get("id")
             new_name = disease_data.get("name")
+            add_synonym = disease_data.get("add_synonym", False)
 
             if not disease_id or not new_name:
                 errors.append({"error": "Both 'id' and 'name' are required."})
@@ -367,10 +368,25 @@ class UpdateDisease(BaseAdd):
                     }
                 )
             else:
-                # Else update disease name and save
+                # Save the current name in variable to add it as synonym
+                current_name = disease.name
+                # Update disease name and save
                 disease.name = new_name
                 disease.save()
                 updated_diseases.append({"id": disease_id, "name": new_name})
+
+                # Add the previous name as synonym
+                if add_synonym:
+                    try:
+                        DiseaseSynonym.objects.get(
+                            synonym=current_name,
+                            disease=disease
+                        )
+                    except DiseaseSynonym.DoesNotExist:
+                        DiseaseSynonym.objects.create(
+                            synonym=current_name,
+                            disease=disease
+                        )
 
         response_data = {}
         if updated_diseases:

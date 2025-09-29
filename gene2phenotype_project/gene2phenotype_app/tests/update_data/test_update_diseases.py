@@ -6,6 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from gene2phenotype_app.models import (
     User,
     Disease,
+    DiseaseSynonym,
 )
 
 
@@ -18,6 +19,7 @@ class UpdateDiseasesEndpoint(TestCase):
         "gene2phenotype_app/fixtures/attribs.json",
         "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
         "gene2phenotype_app/fixtures/disease.json",
+        "gene2phenotype_app/fixtures/disease_synonym.json",
         "gene2phenotype_app/fixtures/g2p_stable_id.json",
         "gene2phenotype_app/fixtures/lgd_mechanism_evidence.json",
         "gene2phenotype_app/fixtures/lgd_mechanism_synopsis.json",
@@ -37,6 +39,9 @@ class UpdateDiseasesEndpoint(TestCase):
             {"id": 3, "name": "MICROPHTHALMIA SYNDROMIC"},
             {"id": 6, "name": "INTELLECTUAL DEVELOPMENTAL DISORDER X-LINKED"},
             {"id": 11, "name": "RAB27A-related Griscelli syndrome"},
+        ]
+        self.diseases_to_update_with_synonym = [
+            {"id": 3, "name": "MICROPHTHALMIA SYNDROMIC", "add_synonym": True},
         ]
         self.incorrect_disease_to_update = [
             {"id": 3000, "name": "MICROPHTHALMIA SYNDROMIC"},
@@ -141,3 +146,33 @@ class UpdateDiseasesEndpoint(TestCase):
         self.assertEqual(disease_obj.name, "MICROPHTHALMIA SYNDROMIC")
         history_records = Disease.history.all()
         self.assertEqual(len(history_records), 2)
+
+    def test_update_disease_with_synonym(self):
+        """
+        Test updating the disease name and save current name as synonym
+        """
+        # Login
+        user = User.objects.get(email="john@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.post(
+            self.url_update, self.diseases_to_update_with_synonym, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["updated"],
+            [
+                {"id": 3, "name": "MICROPHTHALMIA SYNDROMIC"},
+            ],
+        )
+        self.assertNotIn("error", response_data)
+
+        # Test updated records
+        disease_obj = Disease.objects.get(id=3)
+        self.assertEqual(disease_obj.name, "MICROPHTHALMIA SYNDROMIC")
+        disease_synonym_obj = DiseaseSynonym.objects.get(disease=disease_obj)
+        self.assertEqual(disease_synonym_obj.synonym, "MICROPHTHALMIA SYNDROMIC TYPE 9")
