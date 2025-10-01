@@ -254,6 +254,9 @@ def check_synonyms_disease(disease_name: str) -> str:
         "salt and pepper developmental regression syndrome": "amish infantile epilepsy syndrome",
         "metachromatic leukodystrophy": "arylsulfatase a deficiency",
         "pseudohypoparathyroidism, type ia": "albright hereditary osteodystrophy",
+        "laron syndrome": "pituitary dwarfism ii",
+        "chudley-mccullough syndrome": "sensorineural hearing loss with corpus callosum hypoplasia, gray matter heterotopia and arachnoid cysts",
+        "donohue syndrome": "leprechaunism",
     }
 
     try:
