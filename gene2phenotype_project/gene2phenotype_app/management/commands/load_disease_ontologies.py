@@ -57,7 +57,13 @@ class Command(BaseCommand):
             raise CommandError(f"Unsupported file format {data_file}")
 
         # Define the mandatory input headers
-        mandatory_headers = ["g2p id", "G2P disease name", "OMIM", "exact match MONDO", "status"]
+        mandatory_headers = [
+            "g2p id",
+            "G2P disease name",
+            "OMIM",
+            "exact match MONDO",
+            "status",
+        ]
 
         # Get user info
         try:
@@ -67,15 +73,23 @@ class Command(BaseCommand):
 
         # Get disease attrib to insert into ontology
         try:
-            attrib_obj = Attrib.objects.get(value="disease", type__code="ontology_term_group")
+            attrib_obj = Attrib.objects.get(
+                value="disease", type__code="ontology_term_group"
+            )
         except Attrib.DoesNotExist:
-            raise CommandError("Attrib 'disease' type 'ontology_term_group' is missing from attrib table")
-        
+            raise CommandError(
+                "Attrib 'disease' type 'ontology_term_group' is missing from attrib table"
+            )
+
         # Get attrib 'Data source' to insert into disease_ontology
         try:
-            attrib_mapping_obj = Attrib.objects.get(value="Data source", type__code="ontology_mapping")
+            attrib_mapping_obj = Attrib.objects.get(
+                value="Data source", type__code="ontology_mapping"
+            )
         except Attrib.DoesNotExist:
-            raise CommandError("Attrib 'Data source' type 'ontology_mapping' is missing from attrib table")
+            raise CommandError(
+                "Attrib 'Data source' type 'ontology_mapping' is missing from attrib table"
+            )
 
         # Get sources
         g2p_sources = {}
@@ -111,12 +125,17 @@ class Command(BaseCommand):
                 source_ontology_obj = g2p_sources[source]
 
                 # Make sure Mondo always uses the same ID format
-                if source == 'Mondo':
+                if source == "Mondo":
                     ontology_to_add = ontology_to_add.replace("_", ":")
 
                 if disease_name in unique_diseases:
-                    if ontology_to_add != unique_diseases[disease_name]["ontology_to_add"]:
-                        logger.warning(f"Trying to add different ontology to same disease: {disease_name}")
+                    if (
+                        ontology_to_add
+                        != unique_diseases[disease_name]["ontology_to_add"]
+                    ):
+                        logger.warning(
+                            f"Trying to add different ontology to same disease: {disease_name}"
+                        )
                     # Skip this import - it was already imported
                     continue
                 else:
@@ -127,7 +146,9 @@ class Command(BaseCommand):
                 record_disease = None
                 record_disease_obj = None
                 try:
-                    record_obj = LocusGenotypeDisease.objects.get(stable_id__stable_id=g2p_id)
+                    record_obj = LocusGenotypeDisease.objects.get(
+                        stable_id__stable_id=g2p_id
+                    )
                 except LocusGenotypeDisease.DoesNotExist:
                     logger.warning(f"Cannot find record '{g2p_id}'")
                 else:
@@ -139,19 +160,25 @@ class Command(BaseCommand):
                 except Disease.DoesNotExist:
                     if record_disease:
                         # The disease from the file could be missing commas or small characters
-                        record_disease_tmp = record_disease.replace(",", "").replace(".", "").lower()
+                        record_disease_tmp = (
+                            record_disease.replace(",", "").replace(".", "").lower()
+                        )
                         if disease_name.lower() != record_disease_tmp:
-                            logger.warning(f"Cannot find disease '{disease_name}'. Do you mean '{record_disease}'? Skipping '{ontology_to_add}'")
+                            logger.warning(
+                                f"Cannot find disease '{disease_name}'. Do you mean '{record_disease}'? Skipping '{ontology_to_add}'"
+                            )
                             continue
 
-                current_disease_ontologies = DiseaseOntologyTerm.objects.filter(
-                    disease__name=record_disease
-                ).annotate(
-                    ontology_accession_tmp=F("ontology_term__accession")
-                ).values_list("ontology_accession_tmp", flat=True)
+                current_disease_ontologies = (
+                    DiseaseOntologyTerm.objects.filter(disease__name=record_disease)
+                    .annotate(ontology_accession_tmp=F("ontology_term__accession"))
+                    .values_list("ontology_accession_tmp", flat=True)
+                )
 
                 if omim_id not in current_disease_ontologies:
-                    logger.warning(f"{omim_id} not found associated with disease '{disease_name}'. Skipping '{ontology_to_add}'\n")
+                    logger.warning(
+                        f"{omim_id} not found associated with disease '{disease_name}'. Skipping '{ontology_to_add}'\n"
+                    )
                     continue
 
                 # Get the ontology data from the source
@@ -172,19 +199,19 @@ class Command(BaseCommand):
                     ontology_description = ontology_term
 
                 if ontology_id != ontology_to_add:
-                    logger.warning(f"Cannot find ontology '{ontology_to_add}' in {source}")
+                    logger.warning(
+                        f"Cannot find ontology '{ontology_to_add}' in {source}"
+                    )
 
                 try:
-                    ontology_obj = OntologyTerm.objects.get(
-                        accession=ontology_to_add
-                    )
+                    ontology_obj = OntologyTerm.objects.get(accession=ontology_to_add)
                 except OntologyTerm.DoesNotExist:
                     ontology_obj = OntologyTerm(
                         accession=ontology_to_add,
                         term=ontology_term,
                         description=ontology_description,
                         source=source_ontology_obj,
-                        group_type=attrib_obj
+                        group_type=attrib_obj,
                     )
                     ontology_obj._history_user = user_obj
                     ontology_obj.save()
@@ -199,10 +226,14 @@ class Command(BaseCommand):
                     disease_ontology_obj = DiseaseOntologyTerm(
                         ontology_term=ontology_obj,
                         disease=record_disease_obj,
-                        mapped_by_attrib=attrib_mapping_obj
+                        mapped_by_attrib=attrib_mapping_obj,
                     )
                     disease_ontology_obj._history_user = user_obj
                     disease_ontology_obj.save()
-                    print(f"Added ontology '{ontology_to_add}' to disease '{record_disease}'")
+                    print(
+                        f"Added ontology '{ontology_to_add}' to disease '{record_disease}'"
+                    )
                 else:
-                    print(f"Ontology '{ontology_to_add}' already associated with disease '{record_disease}'")
+                    print(
+                        f"Ontology '{ontology_to_add}' already associated with disease '{record_disease}'"
+                    )
