@@ -10,7 +10,7 @@ from gene2phenotype_app.models import (
 )
 
 
-class LGDAddDiseaseEndpoint(TestCase):
+class AddDiseaseEndpoint(TestCase):
     """
     Test endpoint to add a disease
     """
