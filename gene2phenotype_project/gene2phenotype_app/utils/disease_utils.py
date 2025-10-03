@@ -2,9 +2,19 @@
 
 import re
 import requests
+from typing import Optional, Union
 
 
-def latin2arab(match):
+def latin2arab(match: re.Match[str]) -> str:
+    """
+    Convert a matched lowercase roman numeral into its corresponding arabic numeral string.
+
+    Args:
+        match (re.Match[str]): Match object containing a lowercase roman numeral
+
+    Returns:
+        str: The arabic numeral equivalent of the roman numeral
+    """
     latin = match.group(1)
 
     return (
@@ -25,7 +35,17 @@ def latin2arab(match):
     )
 
 
-def clean_string(name):
+def clean_string(name: str) -> str:
+    """
+    Method to normalise and clean a disease name.
+
+    Args:
+        name (str): The original disease name
+
+    Returns:
+        str: A cleaned, tokenized, and normalized disease name where words are
+        sorted alphabetically and separated by single spaces
+    """
     new_disease_name = name.strip()
 
     new_disease_name = new_disease_name.lstrip("?")
@@ -58,7 +78,17 @@ def clean_string(name):
 # Clean OMIM disease name
 # Removes the gene and subtype from the disease name
 # Example: "BLEPHAROCHEILODONTIC SYNDROME 1; BCDS1" -> "blepharocheilodontic syndrome"
-def clean_omim_disease(name):
+def clean_omim_disease(name: str) -> str:
+    """
+    Method to normalise and clean the OMIM disease name.
+    It removes the gene and subtypes from the name.
+
+    Args:
+        name (str): The original OMIM disease name
+
+    Returns:
+        str: A cleaned, lowercase disease name string
+    """
     disease_name = name.split(";")[0]
     disease_name = re.sub(
         r",*\s*(TYPE)*,*\s+([0-9]+[A-Z]{0,2}|[IVX]{0,3})$", "", disease_name
@@ -78,19 +108,18 @@ def clean_omim_disease(name):
     return disease_name.lower().strip()
 
 
-"""
-    Get the ontology info from the disease ID
+def get_ontology(id: str, source: str) -> Union[dict, None]:
+    """
+    Query the Ontology Lookup Service (OLS) API for disease ontology information.
 
     Input:
-            id: disease ID
-            source: source name
+        id (str): The disease identifier to query (e.g. "MONDO:0005148" or "222100")
+        source (str): The ontology source. Supported values are: 'Mondo' and 'OMIM'
     Output:
-            ols response
-            return None if no response or source is invalid
-"""
-
-
-def get_ontology(id, source):
+        dict | None:
+            - A dictionary containing the OLS response `doc` if available
+            - None if the source is invalid or no matching record is found
+    """
     if source.lower() == "mondo":
         url = f"https://www.ebi.ac.uk/ols4/api/search?q={id}&ontology=mondo&exact=1"
 
@@ -103,7 +132,7 @@ def get_ontology(id, source):
     r = requests.get(url, headers={"Content-Type": "application/json"})
 
     if not r.ok:
-        return "query failed"
+        return None
 
     decoded = r.json()
 
@@ -118,17 +147,18 @@ def get_ontology(id, source):
     return name
 
 
-"""
-    To store the ontology ID/term we have to know its source.
+def get_ontology_source(id: str) -> Optional[str]:
+    """
+    Method to determine the ontology source from a disease identifier.
     The source can be OMIM or Mondo.
 
-    Input: disease ID
-    Output: source of the disease ID (Mondo or OMIM)
-            the source name is going to be used to fetch the source id from the db (case sensitive)
-"""
+    Args:
+        id (str): The disease identifier (e.g. "MONDO:0005148" or "222100")
 
-
-def get_ontology_source(id):
+    Returns:
+        Optional[str]:
+            - Returns "Mondo" or "OMIM", or None if the source cannot be determined
+    """
     source = None
 
     if id.startswith("MONDO"):
@@ -224,11 +254,14 @@ def check_synonyms_disease(disease_name: str) -> str:
         "salt and pepper developmental regression syndrome": "amish infantile epilepsy syndrome",
         "metachromatic leukodystrophy": "arylsulfatase a deficiency",
         "pseudohypoparathyroidism, type ia": "albright hereditary osteodystrophy",
+        "laron syndrome": "pituitary dwarfism ii",
+        "chudley-mccullough syndrome": "sensorineural hearing loss with corpus callosum hypoplasia, gray matter heterotopia and arachnoid cysts",
+        "donohue syndrome": "leprechaunism",
     }
 
     try:
         g2p_disease_name = synonyms_list[disease_name]
-    except:
+    except KeyError:
         g2p_disease_name = None
 
     return g2p_disease_name
