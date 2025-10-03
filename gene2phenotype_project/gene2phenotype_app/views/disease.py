@@ -1,12 +1,12 @@
-from rest_framework import permissions, status
-from rest_framework.response import Response
-from rest_framework.decorators import api_view
+import textwrap
 from django.db.models import Q
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.http import Http404
+from rest_framework import permissions, status
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
-import textwrap
 
 
 from gene2phenotype_app.serializers import (

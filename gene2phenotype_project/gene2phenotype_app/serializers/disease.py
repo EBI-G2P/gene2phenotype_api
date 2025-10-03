@@ -83,7 +83,7 @@ class DiseaseOntologyTermSerializer(serializers.ModelSerializer):
             )
         except Attrib.DoesNotExist:
             raise serializers.ValidationError(
-                {"message": f"Cannot find attrib 'Data source'"}
+                {"message": "Cannot find attrib 'Data source'"}
             )
 
         try:
