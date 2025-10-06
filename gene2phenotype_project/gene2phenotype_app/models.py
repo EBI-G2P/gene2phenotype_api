@@ -416,6 +416,7 @@ class LocusIdentifier(models.Model):
 
     class Meta:
         db_table = "locus_identifier"
+        unique_together = ["identifier", "source"]
         indexes = [models.Index(fields=["identifier"])]
 
 
