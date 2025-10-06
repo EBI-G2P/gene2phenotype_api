@@ -400,7 +400,7 @@ class Locus(models.Model):
     start = models.IntegerField(null=False)
     end = models.IntegerField(null=False)
     strand = models.SmallIntegerField(null=False, default=1)
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, unique=True)
 
     class Meta:
         db_table = "locus"
