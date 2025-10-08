@@ -110,6 +110,7 @@ def clean_omim_disease(name: str) -> str:
 
 def validate_disease_name(name: str) -> bool:
     """
+    Validate that the disease name follows the dyadic format.
     """
     flag = True
 
@@ -125,7 +126,7 @@ def validate_disease_name(name: str) -> bool:
 
     if not name_pattern.match(name):
         flag = False
-    
+
     return flag
 
 

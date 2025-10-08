@@ -305,6 +305,7 @@ class AddDisease(BaseAdd):
     This view is called by the endpoint that directly adds a disease (add/disease/).
     The create method is in the CreateDiseaseSerializer.
     """
+
     serializer_class = CreateDiseaseSerializer
     permission_classes = [IsSuperUser]
 
@@ -384,7 +385,9 @@ class UpdateDisease(BaseAdd):
             new_disease_name = new_name.strip()
 
             # Ensure the new name is unique
-            check_disease = Disease.objects.filter(name=new_disease_name).exclude(id=disease_id)
+            check_disease = Disease.objects.filter(name=new_disease_name).exclude(
+                id=disease_id
+            )
             if check_disease:
                 # If new disease name already exists then flag error
                 errors.append(
@@ -413,13 +416,14 @@ class UpdateDisease(BaseAdd):
                     # Update disease name and save
                     disease_obj.name = new_disease_name
                     disease_obj.save()
-                    updated_diseases.append({"id": disease_id, "name": new_disease_name})
+                    updated_diseases.append(
+                        {"id": disease_id, "name": new_disease_name}
+                    )
 
                     # Add the previous name as synonym
                     if add_synonym:
                         DiseaseSynonym.objects.get_or_create(
-                            synonym=current_name,
-                            disease=disease_obj
+                            synonym=current_name, disease=disease_obj
                         )
 
         response_data = {}
@@ -640,20 +644,21 @@ class LGDUpdateDisease(BaseAdd):
             # Get records that use the disease id
             if not stable_id_to_update:
                 lgd_list = LocusGenotypeDisease.objects.filter(
-                    disease_id=current_disease_id,
-                    is_deleted=0
+                    disease_id=current_disease_id, is_deleted=0
                 )
             else:
                 # This list contains only one record
                 lgd_list = LocusGenotypeDisease.objects.filter(
                     stable_id__stable_id=stable_id_to_update,
                     disease_id=current_disease_id,
-                    is_deleted=0
+                    is_deleted=0,
                 )
 
             if not lgd_list:
                 errors.append(
-                    {"error": f"No records associated with disease id {current_disease_id}"}
+                    {
+                        "error": f"No records associated with disease id {current_disease_id}"
+                    }
                 )
                 continue
 

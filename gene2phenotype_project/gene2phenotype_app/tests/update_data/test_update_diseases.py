@@ -37,17 +37,31 @@ class UpdateDiseasesEndpoint(TestCase):
         self.url_update = reverse("update_diseases")
         self.diseases_to_update = [
             {"id": 3, "name": "CT87-related MICROPHTHALMIA SYNDROMIC"},
-            {"id": 6, "name": "GS2-related INTELLECTUAL DEVELOPMENTAL DISORDER X-LINKED"},
+            {
+                "id": 6,
+                "name": "GS2-related INTELLECTUAL DEVELOPMENTAL DISORDER X-LINKED",
+            },
             {"id": 11, "name": "RAB27A-related Griscelli syndrome"},
         ]
         self.diseases_to_update_with_synonym = [
-            {"id": 3, "name": "CT87-related MICROPHTHALMIA SYNDROMIC", "add_synonym": True},
+            {
+                "id": 3,
+                "name": "CT87-related MICROPHTHALMIA SYNDROMIC",
+                "add_synonym": True,
+            },
             {"id": 10, "name": "RAB27A-related Griscelli", "add_synonym": True},
-            {"id": 9, "name": "Hypercholesterolaemia, autosomal dominant", "add_synonym": True}
+            {
+                "id": 9,
+                "name": "Hypercholesterolaemia, autosomal dominant",
+                "add_synonym": True,
+            },
         ]
         self.incorrect_disease_to_update = [
             {"id": 3000, "name": "CT87-related MICROPHTHALMIA SYNDROMIC"},
-            {"id": 6, "name": "GS2-related INTELLECTUAL DEVELOPMENTAL DISORDER X-LINKED"},
+            {
+                "id": 6,
+                "name": "GS2-related INTELLECTUAL DEVELOPMENTAL DISORDER X-LINKED",
+            },
         ]
 
     def test_update_invalid_disease(self):
@@ -125,7 +139,8 @@ class UpdateDiseasesEndpoint(TestCase):
 
         response_data = response.json()
         self.assertEqual(
-            response_data["error"], "Request should be a list of diseases",
+            response_data["error"],
+            "Request should be a list of diseases",
         )
 
     def test_update_diseases(self):
@@ -148,7 +163,10 @@ class UpdateDiseasesEndpoint(TestCase):
             response_data["updated"],
             [
                 {"id": 3, "name": "CT87-related MICROPHTHALMIA SYNDROMIC"},
-                {"id": 6, "name": "GS2-related INTELLECTUAL DEVELOPMENTAL DISORDER X-LINKED"},
+                {
+                    "id": 6,
+                    "name": "GS2-related INTELLECTUAL DEVELOPMENTAL DISORDER X-LINKED",
+                },
             ],
         )
         self.assertEqual(
@@ -180,7 +198,9 @@ class UpdateDiseasesEndpoint(TestCase):
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
         response = self.client.post(
-            self.url_update, self.diseases_to_update_with_synonym, content_type="application/json"
+            self.url_update,
+            self.diseases_to_update_with_synonym,
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
 
@@ -194,12 +214,16 @@ class UpdateDiseasesEndpoint(TestCase):
         self.assertEqual(
             response_data["error"],
             [
-                {"id": 10,
-                 "name": "RAB27A-related Griscelli",
-                 "error": "Disease is associated with multiple records."},
-                 {"id": 9,
-                 "name": "Hypercholesterolaemia, autosomal dominant",
-                 "error": "Invalid disease name 'Hypercholesterolaemia, autosomal dominant'"},
+                {
+                    "id": 10,
+                    "name": "RAB27A-related Griscelli",
+                    "error": "Disease is associated with multiple records.",
+                },
+                {
+                    "id": 9,
+                    "name": "Hypercholesterolaemia, autosomal dominant",
+                    "error": "Invalid disease name 'Hypercholesterolaemia, autosomal dominant'",
+                },
             ],
         )
 
