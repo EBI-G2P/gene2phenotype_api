@@ -331,12 +331,27 @@ class UpdateDisease(BaseAdd):
     http_method_names = ["post", "options"]
     permission_classes = [IsSuperUser]
 
+    @transaction.atomic
     def post(self, request):
-        diseases = request.data  # list of diseases {'id': ..., 'name': ...}
+        """
+        Method to update one or more disease records by ID.
+        Allows superusers to rename diseases and optionally add the previous name
+        as a synonym. Ensures new names are unique and runs all updates within a
+        single database transaction.
+
+        Request body ("add_synonym" is optional):
+            [
+                {"id": 1, "name": "VMA12-related congenital disorder", "add_synonym": true},
+                {"id": 2, "name": "TMEM199-related congenital disorder"}
+            ]
+
+        Returns a list of updated records and any validation errors.
+        """
+        diseases = request.data
 
         if not isinstance(diseases, list):
             return Response(
-                {"error": "Request should be a list"},
+                {"error": "Request should be a list of diseases"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -353,7 +368,7 @@ class UpdateDisease(BaseAdd):
                 continue
 
             # Fetch disease or return 404 if not found
-            disease = get_object_or_404(Disease, id=disease_id)
+            disease_obj = get_object_or_404(Disease, id=disease_id)
 
             # Ensure the new name is unique
             check_disease = Disease.objects.filter(name=new_name).exclude(id=disease_id)
@@ -368,24 +383,30 @@ class UpdateDisease(BaseAdd):
                     }
                 )
             else:
-                # Save the current name in variable to add it as synonym
-                current_name = disease.name
-                # Update disease name and save
-                disease.name = new_name
-                disease.save()
-                updated_diseases.append({"id": disease_id, "name": new_name})
+                # Dot not update the name if disease is associated with multiple records
+                lgd_list = LocusGenotypeDisease.objects.filter(disease=disease_obj)
+                if len(lgd_list) > 1:
+                    errors.append(
+                        {
+                            "id": disease_id,
+                            "name": new_name,
+                            "error": "Disease is associated with multiple records.",
+                        }
+                    )
+                else:
+                    # Disease name is going to be updated
+                    # Save the current name in variable to add it as synonym
+                    current_name = disease_obj.name
+                    # Update disease name and save
+                    disease_obj.name = new_name
+                    disease_obj.save()
+                    updated_diseases.append({"id": disease_id, "name": new_name})
 
-                # Add the previous name as synonym
-                if add_synonym:
-                    try:
-                        DiseaseSynonym.objects.get(
+                    # Add the previous name as synonym
+                    if add_synonym:
+                        DiseaseSynonym.objects.get_or_create(
                             synonym=current_name,
-                            disease=disease
-                        )
-                    except DiseaseSynonym.DoesNotExist:
-                        DiseaseSynonym.objects.create(
-                            synonym=current_name,
-                            disease=disease
+                            disease=disease_obj
                         )
 
         response_data = {}

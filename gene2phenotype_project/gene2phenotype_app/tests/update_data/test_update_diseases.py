@@ -42,6 +42,7 @@ class UpdateDiseasesEndpoint(TestCase):
         ]
         self.diseases_to_update_with_synonym = [
             {"id": 3, "name": "MICROPHTHALMIA SYNDROMIC", "add_synonym": True},
+            {"id": 10, "name": "RAB27A-related Griscelli", "add_synonym": True},
         ]
         self.incorrect_disease_to_update = [
             {"id": 3000, "name": "MICROPHTHALMIA SYNDROMIC"},
@@ -85,9 +86,9 @@ class UpdateDiseasesEndpoint(TestCase):
         )
         self.assertEqual(response.status_code, 403)
 
-    def test_invalid_input_format(self):
+    def test_invalid_input(self):
         """
-        Test updating diseases with an invalid input format
+        Test updating diseases with an invalid input
         """
         # Login
         user = User.objects.get(email="john@test.ac.uk")
@@ -104,6 +105,26 @@ class UpdateDiseasesEndpoint(TestCase):
         self.assertEqual(
             response_data["error"],
             [{"error": "Both 'id' and 'name' are required."}],
+        )
+
+    def test_invalid_input_format(self):
+        """
+        Test updating diseases with an invalid input format
+        """
+        # Login
+        user = User.objects.get(email="john@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.post(
+            self.url_update, {"id": "", "name": ""}, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"], "Request should be a list of diseases",
         )
 
     def test_update_diseases(self):
@@ -169,7 +190,14 @@ class UpdateDiseasesEndpoint(TestCase):
                 {"id": 3, "name": "MICROPHTHALMIA SYNDROMIC"},
             ],
         )
-        self.assertNotIn("error", response_data)
+        self.assertEqual(
+            response_data["error"],
+            [
+                {"id": 10,
+                 "name": "RAB27A-related Griscelli",
+                 "error": "Disease is associated with multiple records."},
+            ],
+        )
 
         # Test updated records
         disease_obj = Disease.objects.get(id=3)
