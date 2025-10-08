@@ -30,7 +30,7 @@ from gene2phenotype_app.models import (
     DiseaseExternal,
 )
 
-from ..utils import clean_omim_disease
+from ..utils import clean_omim_disease, validate_disease_name
 from .base import BaseAPIView, BaseAdd, IsSuperUser
 
 
@@ -367,19 +367,32 @@ class UpdateDisease(BaseAdd):
                 errors.append({"error": "Both 'id' and 'name' are required."})
                 continue
 
+            if not validate_disease_name(new_name):
+                errors.append(
+                    {
+                        "id": disease_id,
+                        "name": new_name,
+                        "error": f"Invalid disease name '{new_name}'",
+                    }
+                )
+                continue
+
             # Fetch disease or return 404 if not found
             disease_obj = get_object_or_404(Disease, id=disease_id)
 
+            # Ensure the new disease does not include leading or trailing whitespaces
+            new_disease_name = new_name.strip()
+
             # Ensure the new name is unique
-            check_disease = Disease.objects.filter(name=new_name).exclude(id=disease_id)
+            check_disease = Disease.objects.filter(name=new_disease_name).exclude(id=disease_id)
             if check_disease:
                 # If new disease name already exists then flag error
                 errors.append(
                     {
                         "id": disease_id,
-                        "name": new_name,
+                        "name": new_disease_name,
                         "existing_id": check_disease[0].id,
-                        "error": f"A disease with the name '{new_name}' already exists.",
+                        "error": f"A disease with the name '{new_disease_name}' already exists.",
                     }
                 )
             else:
@@ -389,7 +402,7 @@ class UpdateDisease(BaseAdd):
                     errors.append(
                         {
                             "id": disease_id,
-                            "name": new_name,
+                            "name": new_disease_name,
                             "error": "Disease is associated with multiple records.",
                         }
                     )
@@ -398,9 +411,9 @@ class UpdateDisease(BaseAdd):
                     # Save the current name in variable to add it as synonym
                     current_name = disease_obj.name
                     # Update disease name and save
-                    disease_obj.name = new_name
+                    disease_obj.name = new_disease_name
                     disease_obj.save()
-                    updated_diseases.append({"id": disease_id, "name": new_name})
+                    updated_diseases.append({"id": disease_id, "name": new_disease_name})
 
                     # Add the previous name as synonym
                     if add_synonym:

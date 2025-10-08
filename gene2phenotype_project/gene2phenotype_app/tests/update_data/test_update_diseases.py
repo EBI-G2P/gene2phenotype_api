@@ -36,17 +36,18 @@ class UpdateDiseasesEndpoint(TestCase):
     def setUp(self):
         self.url_update = reverse("update_diseases")
         self.diseases_to_update = [
-            {"id": 3, "name": "MICROPHTHALMIA SYNDROMIC"},
-            {"id": 6, "name": "INTELLECTUAL DEVELOPMENTAL DISORDER X-LINKED"},
+            {"id": 3, "name": "CT87-related MICROPHTHALMIA SYNDROMIC"},
+            {"id": 6, "name": "GS2-related INTELLECTUAL DEVELOPMENTAL DISORDER X-LINKED"},
             {"id": 11, "name": "RAB27A-related Griscelli syndrome"},
         ]
         self.diseases_to_update_with_synonym = [
-            {"id": 3, "name": "MICROPHTHALMIA SYNDROMIC", "add_synonym": True},
+            {"id": 3, "name": "CT87-related MICROPHTHALMIA SYNDROMIC", "add_synonym": True},
             {"id": 10, "name": "RAB27A-related Griscelli", "add_synonym": True},
+            {"id": 9, "name": "Hypercholesterolaemia, autosomal dominant", "add_synonym": True}
         ]
         self.incorrect_disease_to_update = [
-            {"id": 3000, "name": "MICROPHTHALMIA SYNDROMIC"},
-            {"id": 6, "name": "INTELLECTUAL DEVELOPMENTAL DISORDER X-LINKED"},
+            {"id": 3000, "name": "CT87-related MICROPHTHALMIA SYNDROMIC"},
+            {"id": 6, "name": "GS2-related INTELLECTUAL DEVELOPMENTAL DISORDER X-LINKED"},
         ]
 
     def test_update_invalid_disease(self):
@@ -146,8 +147,8 @@ class UpdateDiseasesEndpoint(TestCase):
         self.assertEqual(
             response_data["updated"],
             [
-                {"id": 3, "name": "MICROPHTHALMIA SYNDROMIC"},
-                {"id": 6, "name": "INTELLECTUAL DEVELOPMENTAL DISORDER X-LINKED"},
+                {"id": 3, "name": "CT87-related MICROPHTHALMIA SYNDROMIC"},
+                {"id": 6, "name": "GS2-related INTELLECTUAL DEVELOPMENTAL DISORDER X-LINKED"},
             ],
         )
         self.assertEqual(
@@ -164,7 +165,7 @@ class UpdateDiseasesEndpoint(TestCase):
 
         # Test updated records
         disease_obj = Disease.objects.get(id=3)
-        self.assertEqual(disease_obj.name, "MICROPHTHALMIA SYNDROMIC")
+        self.assertEqual(disease_obj.name, "CT87-related MICROPHTHALMIA SYNDROMIC")
         history_records = Disease.history.all()
         self.assertEqual(len(history_records), 2)
 
@@ -187,7 +188,7 @@ class UpdateDiseasesEndpoint(TestCase):
         self.assertEqual(
             response_data["updated"],
             [
-                {"id": 3, "name": "MICROPHTHALMIA SYNDROMIC"},
+                {"id": 3, "name": "CT87-related MICROPHTHALMIA SYNDROMIC"},
             ],
         )
         self.assertEqual(
@@ -196,11 +197,14 @@ class UpdateDiseasesEndpoint(TestCase):
                 {"id": 10,
                  "name": "RAB27A-related Griscelli",
                  "error": "Disease is associated with multiple records."},
+                 {"id": 9,
+                 "name": "Hypercholesterolaemia, autosomal dominant",
+                 "error": "Invalid disease name 'Hypercholesterolaemia, autosomal dominant'"},
             ],
         )
 
         # Test updated records
         disease_obj = Disease.objects.get(id=3)
-        self.assertEqual(disease_obj.name, "MICROPHTHALMIA SYNDROMIC")
+        self.assertEqual(disease_obj.name, "CT87-related MICROPHTHALMIA SYNDROMIC")
         disease_synonym_obj = DiseaseSynonym.objects.get(disease=disease_obj)
         self.assertEqual(disease_synonym_obj.synonym, "MICROPHTHALMIA SYNDROMIC TYPE 9")
