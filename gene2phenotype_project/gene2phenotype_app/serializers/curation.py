@@ -487,11 +487,11 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 # Validate the input data
                 if publication_serializer.is_valid(raise_exception=True):
                     # save and create publication obj
-                    publication_obj = publication_serializer.save()
-
+                    publication_serializer.save()
                 publications_list.append(publication_data)
             except serializers.ValidationError as e:
-                raise serializers.ValidationError({"error": str(e)})
+                error_message = e.detail["error"]
+                raise serializers.ValidationError({"error": error_message})
         ####################
 
         ### Disease ###
@@ -532,7 +532,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             # If not, add ontology terms to disease
             for ontology in cross_references:
                 try:
-                    disease_ontology_obj = DiseaseOntologyTerm.objects.get(
+                    DiseaseOntologyTerm.objects.get(
                         disease=disease_obj,
                         ontology_term__accession=ontology["accession"],
                     )
@@ -541,7 +541,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                         data=ontology, context={"disease": disease_obj}
                     )
                     if disease_ontology_serializer.is_valid(raise_exception=True):
-                        disease_ontology_obj = disease_ontology_serializer.save()
+                        disease_ontology_serializer.save()
 
         except Disease.DoesNotExist:
             # The CreateDiseaseSerializer is going to validate the data
@@ -555,7 +555,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
                     # save and create
                     disease_obj = disease_serializer.save()
             except serializers.ValidationError as e:
-                raise serializers.ValidationError({"error": str(e)})
+                error_message = e.detail["error"]
+                raise serializers.ValidationError({"error": error_message})
         ###############
 
         # Get mechanism value from controlled vocabulary table for molecular mechanism
@@ -672,7 +673,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
                         # save() is going to call create()
                         lgd_mechanism_evidence_serializer.save()
                 except serializers.ValidationError as e:
-                    raise serializers.ValidationError({"error": str(e)})
+                    error_message = e.detail["error"]
+                    raise serializers.ValidationError({"error": error_message})
         # #################################################################
 
         ### Phenotypes ###
@@ -706,7 +708,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
                         # save() is going to call create()
                         lgd_phenotype_serializer.save()
                 except serializers.ValidationError as e:
-                    raise serializers.ValidationError({"error": str(e)})
+                    error_message = e.detail["error"]
+                    raise serializers.ValidationError({"error": error_message})
 
             # Add the summary: linked to the lgd_id and publication_id
             if "summary" in phenotype_pmid and phenotype_pmid["summary"] != "":
@@ -725,7 +728,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
                         # save() is going to call create()
                         lgd_phenotype_summary_serializer.save()
                 except serializers.ValidationError as e:
-                    raise serializers.ValidationError({"error": str(e)})
+                    error_message = e.detail["error"]
+                    raise serializers.ValidationError({"error": error_message})
 
         ### Cross cutting modifier ###
         # "cross_cutting_modifier" is an array of strings
@@ -741,7 +745,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
                     # save() is going to call create()
                     lgd_ccm_serializer.save()
             except serializers.ValidationError as e:
-                raise serializers.ValidationError({"error": str(e)})
+                error_message = e.detail["error"]
+                raise serializers.ValidationError({"error": error_message})
 
         ### Variant (GenCC) consequences ###
         # Example: 'variant_consequences': [{'variant_consequence': 'altered_gene_product_level', 'support': 'inferred'}]
@@ -756,7 +761,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
                     # save() is going to call create()
                     lgd_var_cons_serializer.save()
             except serializers.ValidationError as e:
-                raise serializers.ValidationError({"error": str(e)})
+                error_message = e.detail["error"]
+                raise serializers.ValidationError({"error": error_message})
 
         ### Variant types ###
         # Example: {'comment': 'This is a frameshift', 'inherited': false, 'de_novo': false,
