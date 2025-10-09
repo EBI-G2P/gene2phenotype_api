@@ -8,7 +8,8 @@ from .datachecks import (
     mutation_consequence_constraint,
     check_mined_publication_status,
     check_cross_references,
-    check_disease_name
+    check_disease_name,
+    get_similar_records,
 )
 
 logger = logging.getLogger(__name__)
@@ -45,8 +46,13 @@ class Command(BaseCommand):
         for error in disease_name_errors:
             logger.error(error)
 
+        ### The following checks are non critical: level = WARNING ###
+        # Check for similar records
+        similar_records = get_similar_records()
+        for error in similar_records:
+            logger.warning(error)
+
         # Run the disease cross references check
-        # This check is non critical: level = WARNING
         disease_cr_errors = check_cross_references()
         for error in disease_cr_errors:
             logger.warning(error)
