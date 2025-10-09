@@ -1,15 +1,7 @@
 from django.core.checks import Error
 from django.db.models import F
-from difflib import SequenceMatcher
-import re
 
 from gene2phenotype_app.models import LocusGenotypeDisease
-
-from gene2phenotype_app.utils import (
-    clean_string,
-    clean_omim_disease,
-    check_synonyms_disease,
-)
 
 
 def get_similar_records():
