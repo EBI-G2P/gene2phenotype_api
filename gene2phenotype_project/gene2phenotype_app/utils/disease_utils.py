@@ -121,7 +121,6 @@ def validate_disease_name(name: str) -> bool:
         r"[A-Z0-9]+(?:-[A-Z0-9]+)*-related\s*"
         # disease part
         r"[A-Za-z0-9 ,:;’'“”\-\(\)\/\.]+$",
-        re.IGNORECASE,
     )
 
     if not name_pattern.match(name):
