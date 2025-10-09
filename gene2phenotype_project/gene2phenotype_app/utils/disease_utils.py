@@ -205,6 +205,7 @@ def check_synonyms_disease(disease_name: str) -> str:
         "alkuraya-kucinskas syndrome": "brain atrophy, dandy walker and contractures",
         "wieacker-wolff syndrome": "arthrogryposis multiplex congenita and intellectual disability",
         "peeling skin with leukonychia, acral punctate keratoses, cheilitis, and knuckle pads": "plack syndrome",
+        "peeling skin-leukonuchia-acral punctate keratoses-cheilitis-knuckle pads syndrome": "plack syndrome",
         "bone mineral density quantitative trait locus 18": "osteoporosis with fractures",
         "macs syndrome": "macrocephaly, alopecia, cutis laxa, and scoliosis tall forehead, sparse hair, skin hyperextensibility, and scoliosis",
         "acces syndrome": "congenital anomalies with or without aplasia cutis congenita and ectrodactyly and variable developmental delay",
@@ -257,6 +258,10 @@ def check_synonyms_disease(disease_name: str) -> str:
         "laron syndrome": "pituitary dwarfism ii",
         "chudley-mccullough syndrome": "sensorineural hearing loss with corpus callosum hypoplasia, gray matter heterotopia and arachnoid cysts",
         "donohue syndrome": "leprechaunism",
+        "scheie syndrome": "mucopolysaccharidosis",
+        "prolonged electroretinal response suppression 1": "bradyopsia",
+        "prolonged electroretinal response suppression 2": "bradyopsia",
+        "retinal degeneration": "rod-cone dystrophy",
     }
 
     try:

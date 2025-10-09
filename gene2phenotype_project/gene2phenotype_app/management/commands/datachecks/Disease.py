@@ -42,6 +42,10 @@ def check_cross_references():
         if synonyms_g2p_name and synonyms_g2p_name == new_disease_name.lower():
             continue
 
+        # Check for deafness
+        if "deafness" in new_disease_name and "hearing loss" in term_without_type:
+            continue
+
         # Calculate the string similarity
         score = SequenceMatcher(
             None, clean_disease_name.lower(), clean_term.lower()
