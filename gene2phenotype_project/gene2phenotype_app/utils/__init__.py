@@ -4,6 +4,7 @@ from .disease_utils import (
     clean_omim_disease,
     get_ontology_source,
     check_synonyms_disease,
+    validate_disease_name,
 )
 from .publication_utils import get_publication, get_authors, clean_title
 from .locus_utils import validate_gene

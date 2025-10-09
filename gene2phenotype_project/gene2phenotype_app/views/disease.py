@@ -30,7 +30,7 @@ from gene2phenotype_app.models import (
     DiseaseExternal,
 )
 
-from ..utils import clean_omim_disease
+from ..utils import clean_omim_disease, validate_disease_name
 from .base import BaseAPIView, BaseAdd, IsSuperUser
 
 
@@ -305,6 +305,7 @@ class AddDisease(BaseAdd):
     This view is called by the endpoint that directly adds a disease (add/disease/).
     The create method is in the CreateDiseaseSerializer.
     """
+
     serializer_class = CreateDiseaseSerializer
     permission_classes = [IsSuperUser]
 
@@ -331,12 +332,27 @@ class UpdateDisease(BaseAdd):
     http_method_names = ["post", "options"]
     permission_classes = [IsSuperUser]
 
+    @transaction.atomic
     def post(self, request):
-        diseases = request.data  # list of diseases {'id': ..., 'name': ...}
+        """
+        Method to update one or more disease records by ID.
+        Allows superusers to rename diseases and optionally add the previous name
+        as a synonym. Ensures new names are unique and runs all updates within a
+        single database transaction.
+
+        Request body ("add_synonym" is optional):
+            [
+                {"id": 1, "name": "VMA12-related congenital disorder", "add_synonym": true},
+                {"id": 2, "name": "TMEM199-related congenital disorder"}
+            ]
+
+        Returns a list of updated records and any validation errors.
+        """
+        diseases = request.data
 
         if not isinstance(diseases, list):
             return Response(
-                {"error": "Request should be a list"},
+                {"error": "Request should be a list of diseases"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -352,40 +368,62 @@ class UpdateDisease(BaseAdd):
                 errors.append({"error": "Both 'id' and 'name' are required."})
                 continue
 
+            if not validate_disease_name(new_name):
+                errors.append(
+                    {
+                        "id": disease_id,
+                        "name": new_name,
+                        "error": f"Invalid disease name '{new_name}'",
+                    }
+                )
+                continue
+
             # Fetch disease or return 404 if not found
-            disease = get_object_or_404(Disease, id=disease_id)
+            disease_obj = get_object_or_404(Disease, id=disease_id)
+
+            # Ensure the new disease does not include leading or trailing whitespaces
+            new_disease_name = new_name.strip()
 
             # Ensure the new name is unique
-            check_disease = Disease.objects.filter(name=new_name).exclude(id=disease_id)
+            check_disease = Disease.objects.filter(name=new_disease_name).exclude(
+                id=disease_id
+            )
             if check_disease:
                 # If new disease name already exists then flag error
                 errors.append(
                     {
                         "id": disease_id,
-                        "name": new_name,
+                        "name": new_disease_name,
                         "existing_id": check_disease[0].id,
-                        "error": f"A disease with the name '{new_name}' already exists.",
+                        "error": f"A disease with the name '{new_disease_name}' already exists.",
                     }
                 )
             else:
-                # Save the current name in variable to add it as synonym
-                current_name = disease.name
-                # Update disease name and save
-                disease.name = new_name
-                disease.save()
-                updated_diseases.append({"id": disease_id, "name": new_name})
+                # Dot not update the name if disease is associated with multiple records
+                lgd_list = LocusGenotypeDisease.objects.filter(disease=disease_obj)
+                if len(lgd_list) > 1:
+                    errors.append(
+                        {
+                            "id": disease_id,
+                            "name": new_disease_name,
+                            "error": "Disease is associated with multiple records.",
+                        }
+                    )
+                else:
+                    # Disease name is going to be updated
+                    # Save the current name in variable to add it as synonym
+                    current_name = disease_obj.name
+                    # Update disease name and save
+                    disease_obj.name = new_disease_name
+                    disease_obj.save()
+                    updated_diseases.append(
+                        {"id": disease_id, "name": new_disease_name}
+                    )
 
-                # Add the previous name as synonym
-                if add_synonym:
-                    try:
-                        DiseaseSynonym.objects.get(
-                            synonym=current_name,
-                            disease=disease
-                        )
-                    except DiseaseSynonym.DoesNotExist:
-                        DiseaseSynonym.objects.create(
-                            synonym=current_name,
-                            disease=disease
+                    # Add the previous name as synonym
+                    if add_synonym:
+                        DiseaseSynonym.objects.get_or_create(
+                            synonym=current_name, disease=disease_obj
                         )
 
         response_data = {}
@@ -606,20 +644,21 @@ class LGDUpdateDisease(BaseAdd):
             # Get records that use the disease id
             if not stable_id_to_update:
                 lgd_list = LocusGenotypeDisease.objects.filter(
-                    disease_id=current_disease_id,
-                    is_deleted=0
+                    disease_id=current_disease_id, is_deleted=0
                 )
             else:
                 # This list contains only one record
                 lgd_list = LocusGenotypeDisease.objects.filter(
                     stable_id__stable_id=stable_id_to_update,
                     disease_id=current_disease_id,
-                    is_deleted=0
+                    is_deleted=0,
                 )
 
             if not lgd_list:
                 errors.append(
-                    {"error": f"No records associated with disease id {current_disease_id}"}
+                    {
+                        "error": f"No records associated with disease id {current_disease_id}"
+                    }
                 )
                 continue
 

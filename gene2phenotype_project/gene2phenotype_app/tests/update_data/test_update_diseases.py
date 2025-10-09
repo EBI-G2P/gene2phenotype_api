@@ -36,16 +36,32 @@ class UpdateDiseasesEndpoint(TestCase):
     def setUp(self):
         self.url_update = reverse("update_diseases")
         self.diseases_to_update = [
-            {"id": 3, "name": "MICROPHTHALMIA SYNDROMIC"},
-            {"id": 6, "name": "INTELLECTUAL DEVELOPMENTAL DISORDER X-LINKED"},
+            {"id": 3, "name": "CT87-related MICROPHTHALMIA SYNDROMIC"},
+            {
+                "id": 6,
+                "name": "GS2-related INTELLECTUAL DEVELOPMENTAL DISORDER X-LINKED",
+            },
             {"id": 11, "name": "RAB27A-related Griscelli syndrome"},
         ]
         self.diseases_to_update_with_synonym = [
-            {"id": 3, "name": "MICROPHTHALMIA SYNDROMIC", "add_synonym": True},
+            {
+                "id": 3,
+                "name": "CT87-related MICROPHTHALMIA SYNDROMIC",
+                "add_synonym": True,
+            },
+            {"id": 10, "name": "RAB27A-related Griscelli", "add_synonym": True},
+            {
+                "id": 9,
+                "name": "Hypercholesterolaemia, autosomal dominant",
+                "add_synonym": True,
+            },
         ]
         self.incorrect_disease_to_update = [
-            {"id": 3000, "name": "MICROPHTHALMIA SYNDROMIC"},
-            {"id": 6, "name": "INTELLECTUAL DEVELOPMENTAL DISORDER X-LINKED"},
+            {"id": 3000, "name": "CT87-related MICROPHTHALMIA SYNDROMIC"},
+            {
+                "id": 6,
+                "name": "GS2-related INTELLECTUAL DEVELOPMENTAL DISORDER X-LINKED",
+            },
         ]
 
     def test_update_invalid_disease(self):
@@ -85,9 +101,9 @@ class UpdateDiseasesEndpoint(TestCase):
         )
         self.assertEqual(response.status_code, 403)
 
-    def test_invalid_input_format(self):
+    def test_invalid_input(self):
         """
-        Test updating diseases with an invalid input format
+        Test updating diseases with an invalid input
         """
         # Login
         user = User.objects.get(email="john@test.ac.uk")
@@ -104,6 +120,27 @@ class UpdateDiseasesEndpoint(TestCase):
         self.assertEqual(
             response_data["error"],
             [{"error": "Both 'id' and 'name' are required."}],
+        )
+
+    def test_invalid_input_format(self):
+        """
+        Test updating diseases with an invalid input format
+        """
+        # Login
+        user = User.objects.get(email="john@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.post(
+            self.url_update, {"id": "", "name": ""}, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"],
+            "Request should be a list of diseases",
         )
 
     def test_update_diseases(self):
@@ -125,8 +162,11 @@ class UpdateDiseasesEndpoint(TestCase):
         self.assertEqual(
             response_data["updated"],
             [
-                {"id": 3, "name": "MICROPHTHALMIA SYNDROMIC"},
-                {"id": 6, "name": "INTELLECTUAL DEVELOPMENTAL DISORDER X-LINKED"},
+                {"id": 3, "name": "CT87-related MICROPHTHALMIA SYNDROMIC"},
+                {
+                    "id": 6,
+                    "name": "GS2-related INTELLECTUAL DEVELOPMENTAL DISORDER X-LINKED",
+                },
             ],
         )
         self.assertEqual(
@@ -143,7 +183,7 @@ class UpdateDiseasesEndpoint(TestCase):
 
         # Test updated records
         disease_obj = Disease.objects.get(id=3)
-        self.assertEqual(disease_obj.name, "MICROPHTHALMIA SYNDROMIC")
+        self.assertEqual(disease_obj.name, "CT87-related MICROPHTHALMIA SYNDROMIC")
         history_records = Disease.history.all()
         self.assertEqual(len(history_records), 2)
 
@@ -158,7 +198,9 @@ class UpdateDiseasesEndpoint(TestCase):
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
         response = self.client.post(
-            self.url_update, self.diseases_to_update_with_synonym, content_type="application/json"
+            self.url_update,
+            self.diseases_to_update_with_synonym,
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
 
@@ -166,13 +208,27 @@ class UpdateDiseasesEndpoint(TestCase):
         self.assertEqual(
             response_data["updated"],
             [
-                {"id": 3, "name": "MICROPHTHALMIA SYNDROMIC"},
+                {"id": 3, "name": "CT87-related MICROPHTHALMIA SYNDROMIC"},
             ],
         )
-        self.assertNotIn("error", response_data)
+        self.assertEqual(
+            response_data["error"],
+            [
+                {
+                    "id": 10,
+                    "name": "RAB27A-related Griscelli",
+                    "error": "Disease is associated with multiple records.",
+                },
+                {
+                    "id": 9,
+                    "name": "Hypercholesterolaemia, autosomal dominant",
+                    "error": "Invalid disease name 'Hypercholesterolaemia, autosomal dominant'",
+                },
+            ],
+        )
 
         # Test updated records
         disease_obj = Disease.objects.get(id=3)
-        self.assertEqual(disease_obj.name, "MICROPHTHALMIA SYNDROMIC")
+        self.assertEqual(disease_obj.name, "CT87-related MICROPHTHALMIA SYNDROMIC")
         disease_synonym_obj = DiseaseSynonym.objects.get(disease=disease_obj)
         self.assertEqual(disease_synonym_obj.synonym, "MICROPHTHALMIA SYNDROMIC TYPE 9")
