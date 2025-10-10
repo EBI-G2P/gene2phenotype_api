@@ -31,6 +31,12 @@ class LGDAddCurationEndpoint(TestCase):
 
     def setUp(self):
         self.url_add_curation = reverse("add_curation_data")
+        # Setup login
+        self.user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(self.user)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = str(
+            refresh.access_token
+        )
 
     def test_publish_incorrect_genotype(self):
         """
@@ -119,14 +125,6 @@ class LGDAddCurationEndpoint(TestCase):
             }
         }
 
-        # Login
-        user = User.objects.get(email="user5@test.ac.uk")
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
-        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
-
         response = self.client.post(
             self.url_add_curation, data_to_add, content_type="application/json"
         )
@@ -153,6 +151,110 @@ class LGDAddCurationEndpoint(TestCase):
         self.assertEqual(
             response_data_publish["error"],
             "Invalid genotype 'biallelic_autosomal' for locus 'SRY'",
+        )
+
+    def test_publish_invalid_disease(self):
+        """
+        Test the curation endpoint when the disease name is invalid.
+        First, call the endpoint to add the curation data - it is possible to save the data
+        even when the disease is invalid.
+        And finally try to publish the data - it is not possible to publish the data.
+        """
+        # Define the input data structure
+        data_to_add = {
+            "json_data": {
+                "allelic_requirement": "monoallelic_Y_hemizygous",
+                "confidence": "refuted",
+                "cross_cutting_modifier": [],
+                "disease": {
+                    "cross_references": [
+                        {
+                            "disease_name": "46,xx sex reversal",
+                            "identifier": "MONDO:0100250",
+                            "original_disease_name": "46,xx sex reversal",
+                            "source": "Mondo",
+                        }
+                    ],
+                    "disease_name": "SRY-related SRY-related 46,xx sex reversal",
+                },
+                "locus": "SRY",
+                "mechanism_evidence": [],
+                "mechanism_synopsis": [
+                    {"name": "assembly-mediated GOF", "support": "inferred"}
+                ],
+                "molecular_mechanism": {
+                    "name": "gain of function",
+                    "support": "inferred",
+                },
+                "panels": ["Developmental disorders"],
+                "phenotypes": [],
+                "private_comment": "This is a private comment",
+                "public_comment": "This a public comment",
+                "publications": [
+                    {
+                        "affectedIndividuals": 2,
+                        "ancestries": "test",
+                        "authors": "Makar AB, McMartin KE, Palese M, Tephly TR.",
+                        "comment": "test comment",
+                        "consanguineous": "no",
+                        "families": 2,
+                        "pmid": "1",
+                        "source": "G2P",
+                        "title": "Formate assay in body fluids: application in methanol poisoning.",
+                        "year": 1975,
+                    }
+                ],
+                "session_name": "test invalid disease",
+                "variant_consequences": [
+                    {
+                        "support": "inferred",
+                        "variant_consequence": "decreased_gene_product_level",
+                    }
+                ],
+                "variant_descriptions": [
+                    {"description": "test variant description", "publication": "1"}
+                ],
+                "variant_types": [
+                    {
+                        "comment": "Important variant",
+                        "de_novo": True,
+                        "inherited": True,
+                        "nmd_escape": True,
+                        "primary_type": "protein_changing",
+                        "secondary_type": "missense_variant",
+                        "supporting_papers": ["1"],
+                        "unknown_inheritance": False,
+                    }
+                ],
+            }
+        }
+
+        response = self.client.post(
+            self.url_add_curation, data_to_add, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["message"],
+            "Data saved successfully for session name 'test invalid disease'",
+        )
+
+        # Prepare the URL to publish the record
+        url_publish = reverse(
+            "publish_record", kwargs={"stable_id": response_data["result"]}
+        )
+
+        # Call the endpoint to publish
+        response_publish = self.client.post(
+            url_publish, content_type="application/json"
+        )
+        self.assertEqual(response_publish.status_code, 400)
+
+        response_data_publish = response_publish.json()
+        self.assertEqual(
+            response_data_publish["error"],
+            "Invalid disease name 'SRY-related SRY-related 46,xx sex reversal'",
         )
 
     def test_publish_insufficient_publications(self):
@@ -240,14 +342,6 @@ class LGDAddCurationEndpoint(TestCase):
             }
         }
 
-        # Login
-        user = User.objects.get(email="user5@test.ac.uk")
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
-        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
-
         # Save the curation draft
         response = self.client.post(
             self.url_add_curation, data_to_add, content_type="application/json"
@@ -275,6 +369,68 @@ class LGDAddCurationEndpoint(TestCase):
         self.assertEqual(
             response_data_publish["error"],
             "Confidence 'definitive' requires more than one publication as evidence",
+        )
+
+    def test_publish_missing_data(self):
+        """
+        Test the curation endpoint without providing mandatory data.
+        """
+        # Define the input data structure
+        data_to_add = {
+            "json_data": {
+                "allelic_requirement": "",
+                "confidence": "definitive",
+                "cross_cutting_modifier": ["potential secondary finding"],
+                "disease": {
+                    "cross_references": [],
+                    "disease_name": "",
+                },
+                "locus": "SRY",
+                "mechanism_evidence": [],
+                "mechanism_synopsis": [],
+                "molecular_mechanism": {
+                    "name": "",
+                    "support": "",
+                },
+                "panels": [],
+                "phenotypes": [],
+                "private_comment": "",
+                "public_comment": "",
+                "publications": [],
+                "session_name": "Test mandatory data",
+                "variant_consequences": [],
+                "variant_descriptions": [],
+                "variant_types": [],
+            }
+        }
+
+        # Save the curation draft
+        response = self.client.post(
+            self.url_add_curation, data_to_add, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["message"],
+            "Data saved successfully for session name 'Test mandatory data'",
+        )
+
+        # Prepare the URL to publish the record
+        url_publish = reverse(
+            "publish_record", kwargs={"stable_id": response_data["result"]}
+        )
+
+        # Call the endpoint to publish
+        response_publish = self.client.post(
+            url_publish, content_type="application/json"
+        )
+        self.assertEqual(response_publish.status_code, 400)
+
+        response_data_publish = response_publish.json()
+        self.assertEqual(
+            response_data_publish["error"],
+            "The following mandatory fields are missing: disease, publication, panel, allelic_requirement, molecular_mechanism, variant_consequences",
         )
 
     def test_publish_success(self):
@@ -360,14 +516,6 @@ class LGDAddCurationEndpoint(TestCase):
                 ],
             }
         }
-
-        # Login
-        user = User.objects.get(email="user5@test.ac.uk")
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
-        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
         # Save the curation draft
         response = self.client.post(

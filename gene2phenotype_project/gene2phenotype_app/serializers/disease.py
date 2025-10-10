@@ -14,7 +14,12 @@ from ..models import (
     GeneDisease,
 )
 
-from ..utils import clean_string, get_ontology, get_ontology_source
+from ..utils import (
+    clean_string,
+    get_ontology,
+    get_ontology_source,
+    validate_disease_name,
+)
 
 
 class DiseaseOntologyTermSerializer(serializers.ModelSerializer):
@@ -289,6 +294,7 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
     """
     Serializer to add new disease.
     """
+
     ontology_terms = DiseaseOntologyTermSerializer(many=True, required=False)
 
     # Add synonyms
@@ -319,6 +325,12 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
 
         disease_obj = None
 
+        # Check if disease name is valid
+        if not validate_disease_name(disease_name):
+            raise serializers.ValidationError(
+                {"error": f"Invalid disease name '{disease_name}'"}
+            )
+
         # Clean disease name
         cleaned_input_disease_name = clean_string(str(disease_name))
         # Check if name already exists
@@ -335,8 +347,13 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
 
         if disease_obj is None:
             # TODO: give disease suggestions
-
             disease_obj = Disease.objects.create(name=disease_name)
+
+        # Get attributes
+        attrib_disease = Attrib.objects.get(
+            value="disease", type__code="ontology_term_group"
+        )
+        attrib = Attrib.objects.get(value="Data source", type__code="ontology_mapping")
 
         # Check if ontology is in db
         # The disease ontology is saved in the db as attrib type 'disease'
@@ -344,14 +361,12 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
             ontology_accession = ontology["ontology_term"]["accession"]
             ontology_term = ontology["ontology_term"]["term"]
             ontology_desc = ontology["ontology_term"]["description"]
-            disease_ontology_obj = None
 
             if ontology_accession is not None and ontology_term is not None:
                 try:
                     ontology_obj = OntologyTerm.objects.get(
                         accession=ontology_accession
                     )
-
                 except OntologyTerm.DoesNotExist:
                     # Check if ontology is from OMIM or Mondo
                     source = get_ontology_source(ontology_accession)
@@ -404,10 +419,6 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
                             ontology_desc = omim_disease["description"][0]
 
                     source = Source.objects.get(name=source)
-                    # Get attrib 'disease'
-                    attrib_disease = Attrib.objects.get(
-                        value="disease", type__code="ontology_term_group"
-                    )
 
                     ontology_obj = OntologyTerm.objects.create(
                         accession=ontology_accession,
@@ -417,24 +428,12 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
                         group_type=attrib_disease,
                     )
 
-                attrib = Attrib.objects.get(
-                    value="Data source", type__code="ontology_mapping"
+                # Create disease-ontology
+                DiseaseOntologyTerm.objects.get_or_create(
+                    disease=disease_obj,
+                    ontology_term=ontology_obj,
+                    mapped_by_attrib=attrib,
                 )
-
-                try:
-                    # Check if disease-ontology is stored in G2P
-                    disease_ontology_obj = DiseaseOntologyTerm.objects.get(
-                        disease=disease_obj,
-                        ontology_term=ontology_obj,
-                        mapped_by_attrib=attrib,
-                    )
-                except DiseaseOntologyTerm.DoesNotExist:
-                    # Insert disease-ontology
-                    disease_ontology_obj = DiseaseOntologyTerm.objects.create(
-                        disease=disease_obj,
-                        ontology_term=ontology_obj,
-                        mapped_by_attrib=attrib,
-                    )
 
         return disease_obj
 
