@@ -22,6 +22,7 @@ from gene2phenotype_app.models import (
     LGDMolecularMechanismEvidence,
     LGDPhenotype,
     LGDPublication,
+    LGDMinedPublication,
     LGDCrossCuttingModifier,
     LGDPanel,
     LGDComment,
@@ -669,6 +670,21 @@ def PanelDownload(request, name):
         else:
             lgd_publication_data[data["lgd__id"]].append(str(data["publication__pmid"]))
 
+    # Preload mined publications
+    # Return the publications that haven't been curated or rejected yet
+    lgd_mined_publication_data = {} # key = lgd_id; value = pmid
+    queryset_lgd_mined_publication = (
+        LGDMinedPublication.objects.filter(status="mined")
+        .select_related("lgd__id", "mined_publication__pmid")
+        .values("lgd__id", "mined_publication__pmid")
+    )
+
+    for data in queryset_lgd_mined_publication:
+        if data["lgd__id"] not in lgd_mined_publication_data:
+            lgd_mined_publication_data[data["lgd__id"]] = [str(data["mined_publication__pmid"])]
+        else:
+            lgd_mined_publication_data[data["lgd__id"]].append(str(data["mined_publication__pmid"]))
+
     # Preload cross cutting modifier
     lgd_ccm_data = {}  # key = lgd_id; value = pmid
     queryset_lgd_ccm = (
@@ -742,6 +758,7 @@ def PanelDownload(request, name):
             "molecular mechanism evidence",
             "phenotypes",
             "publications",
+            "additional mined publications",
             "panel",
             "comments",
             "date of last review",
@@ -873,6 +890,7 @@ def PanelDownload(request, name):
             molecular_mechanism_evidence = ""
             phenotypes = ""
             publications = ""
+            mined_publications = ""
             ccm = ""
             panels = ""
             comments = ""
@@ -972,6 +990,10 @@ def PanelDownload(request, name):
             if lgd_id in lgd_publication_data:
                 publications = "; ".join(sorted(lgd_publication_data[lgd_id]))
 
+            # Get preloaded mined publications for this g2p entry
+            if lgd_id in lgd_mined_publication_data:
+                mined_publications = "; ".join(sorted(lgd_mined_publication_data[lgd_id]))
+
             # Get preloaded cross cutting modifier for this g2p entry
             if lgd_id in lgd_ccm_data:
                 ccm = "; ".join(lgd_ccm_data[lgd_id])
@@ -1008,6 +1030,7 @@ def PanelDownload(request, name):
                     molecular_mechanism_evidence,
                     phenotypes,
                     publications,
+                    mined_publications,
                     panels,
                     comments,
                     lgd.date_review,
