@@ -18,7 +18,17 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = "Check for issues in the data"
 
-    def handle(self, *args, **kwargs):
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--include_warnings",
+            required=False,
+            action='store_true',
+            help="Include non-critical data checks",
+        )
+
+    def handle(self, *args, **options):
+        include_warnings = options["include_warnings"]
+
         print("Running data checks...")
 
         publication_families_errors = check_publication_families()
@@ -46,15 +56,18 @@ class Command(BaseCommand):
         for error in disease_name_errors:
             logger.error(error)
 
-        ### The following checks are non critical: level = WARNING ###
-        # Check for similar records
-        similar_records = get_similar_records()
-        for error in similar_records:
-            logger.warning(error)
-
-        # Run the disease cross references check
-        disease_cr_errors = check_cross_references()
-        for error in disease_cr_errors:
-            logger.warning(error)
-
         print("Running data checks... done")
+
+        ### The following checks are non critical: level = WARNING ###
+        if include_warnings:
+            print("\nRunning non-critical data checks...")
+            # Check for similar records
+            similar_records = get_similar_records()
+            for error in similar_records:
+                logger.warning(error)
+
+            # Run the disease cross references check
+            disease_cr_errors = check_cross_references()
+            for error in disease_cr_errors:
+                logger.warning(error)
+            print("Running non-critical data checks... done")
