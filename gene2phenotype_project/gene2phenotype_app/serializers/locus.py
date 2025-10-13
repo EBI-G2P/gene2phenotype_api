@@ -228,9 +228,9 @@ class LocusGeneSerializer(LocusSerializer):
 
         return result_data
 
-    def badonyi_score(self):
+    def gene_scores(self):
         """
-        Retrieve the Badonyi scores for the current gene, organizing the results
+        Retrieve Badonyi probabilities and gnomAD constraint metrics scores for the current gene, organizing the results
         in a dictionary where each key is the score's attribute (description_attrib.value)
         and the value is the score rounded to three decimal places.
 
@@ -241,11 +241,11 @@ class LocusGeneSerializer(LocusSerializer):
         """
 
         result_data = {}
-        badonyi_stats_objs = GeneStats.objects.filter(gene=self.id)
+        gene_stats_list = GeneStats.objects.filter(gene=self.id)
 
-        for badonyi_obj in badonyi_stats_objs:
-            key = badonyi_obj.description_attrib.value
-            result_data[key] = round(badonyi_obj.score, 3)
+        for gene_stat_obj in gene_stats_list:
+            key = gene_stat_obj.description_attrib.value
+            result_data[key] = round(gene_stat_obj.score, 3)
 
         return result_data
 

@@ -227,7 +227,7 @@ class GeneFunction(BaseAPIView):
         Returns a dictionary with the following:
                 gene_symbol (string);
                 function (dict): gene product function from UniProt;
-                gene_stats (dict): gene scores from the Badonyi probabilities
+                gene_stats (dict): gene scores (Badonyi probabilities and gnomAD constraint metrics scores)
         """
         attrib_type = AttribType.objects.filter(code="locus_type")
         attrib = Attrib.objects.filter(type=attrib_type.first().id, value="gene")
@@ -247,7 +247,7 @@ class GeneFunction(BaseAPIView):
 
         serializer = LocusGeneSerializer
         summmary = serializer.function(queryset.first())
-        gene_stats = serializer.badonyi_score(queryset.first())
+        gene_stats = serializer.gene_scores(queryset.first())
         response_data = {
             "gene_symbol": queryset.first().name,
             "function": summmary,
