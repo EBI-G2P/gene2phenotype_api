@@ -51,6 +51,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         data_file = options["data_file"]
         input_email = options["email"]
+        output_file = "invalid_g2p_ids.txt"
 
         if not os.path.isfile(data_file):
             raise CommandError(f"Invalid file {data_file}")
@@ -69,7 +70,7 @@ class Command(BaseCommand):
 
         invalid_g2p_ids = set()
 
-        with open(data_file, newline="") as fh_file:
+        with open(data_file, newline="") as fh_file, open(output_file, "w") as wr:
             data_reader = csv.DictReader(fh_file)
 
             # Check headers
@@ -88,7 +89,7 @@ class Command(BaseCommand):
                     logger.warning(f"Invalid PMID or G2P IDs in row {str(row)}")
                     continue
 
-                list_g2p_ids = g2p_ids.split(";")
+                list_g2p_ids = re.split(r"[;,]", g2p_ids)
                 # to make sure we don't try to insert duplicates
                 final_list_g2p_ids = set()
 
@@ -124,6 +125,7 @@ class Command(BaseCommand):
                                 f"Invalid G2P ID '{new_g2p_id}'. Skipping import."
                             )
                             invalid_g2p_ids.add(new_g2p_id)
+                            wr.write(new_g2p_id+"\n")
                             continue
 
                         final_list_g2p_ids.add(new_g2p_id)
@@ -157,3 +159,5 @@ class Command(BaseCommand):
                             logger.warning(
                                 f"{new_g2p_id}-{pmid} already exists. Skipping import."
                             )
+
+        print("\n---\nNumber of invalid G2P IDs:", len(invalid_g2p_ids))
