@@ -49,8 +49,8 @@ class TestLoadMinedPublicationsCommand(TestCase):
                 "--data_file", self.tempfile.name,
                 "--email", self.user_email
             )
-        self.assertTrue(any("Invalid G2P ID G2P00003. Skipping import." in msg for msg in cm.output))
-        self.assertTrue(any("Invalid G2P ID G2P12346. Skipping import." in msg for msg in cm.output))
+        self.assertTrue(any("Invalid G2P ID 'G2P00003'. Skipping import." in msg for msg in cm.output))
+        self.assertTrue(any("Invalid G2P ID 'G2P12346'. Skipping import." in msg for msg in cm.output))
 
         # Check database
         mined_publications = MinedPublication.objects.all()

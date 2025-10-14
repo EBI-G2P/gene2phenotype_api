@@ -95,7 +95,8 @@ class Command(BaseCommand):
                 except MinedPublication.DoesNotExist:
                     response = get_publication(int(pmid))
                     if response["hitCount"] == 0:
-                        raise CommandError(f"Invalid PMID {pmid}")
+                        logger.warning(f"Invalid PMID '{pmid}'. Skipping import.")
+                        continue
                     title = clean_title(response["result"]["title"])
 
                     # Insert mined publication
@@ -107,7 +108,7 @@ class Command(BaseCommand):
 
                 # Clean the IDs, just in case the ID includes the disease name
                 for g2p_id in list_g2p_ids:
-                    new_g2p_id = re.sub(":.*", "", g2p_id)
+                    new_g2p_id = re.sub(":.*", "", g2p_id).strip()
 
                     if new_g2p_id not in final_list_g2p_ids:
                         # Get the LocusGenotypeDisease for the G2P ID
@@ -118,7 +119,7 @@ class Command(BaseCommand):
                         except LocusGenotypeDisease.DoesNotExist:
                             # The record could have been merged or deleted
                             logger.warning(
-                                f"Invalid G2P ID {new_g2p_id}. Skipping import."
+                                f"Invalid G2P ID '{new_g2p_id}'. Skipping import."
                             )
                             continue
 
