@@ -67,6 +67,8 @@ class Command(BaseCommand):
         except User.DoesNotExist:
             raise CommandError(f"Invalid user {input_email}")
 
+        invalid_g2p_ids = set()
+
         with open(data_file, newline="") as fh_file:
             data_reader = csv.DictReader(fh_file)
 
@@ -106,11 +108,11 @@ class Command(BaseCommand):
                     mined_publication_obj._history_user = user_obj
                     mined_publication_obj.save()
 
-                # Clean the IDs, just in case the ID includes the disease name
                 for g2p_id in list_g2p_ids:
-                    new_g2p_id = re.sub(":.*", "", g2p_id).strip()
+                    # Clean the IDs
+                    new_g2p_id = re.sub("\*+", "", g2p_id).strip().replace(".", "").replace("\"", "")
 
-                    if new_g2p_id not in final_list_g2p_ids:
+                    if new_g2p_id not in final_list_g2p_ids and new_g2p_id not in invalid_g2p_ids:
                         # Get the LocusGenotypeDisease for the G2P ID
                         try:
                             lgd_obj = LocusGenotypeDisease.objects.get(
@@ -121,6 +123,7 @@ class Command(BaseCommand):
                             logger.warning(
                                 f"Invalid G2P ID '{new_g2p_id}'. Skipping import."
                             )
+                            invalid_g2p_ids.add(new_g2p_id)
                             continue
 
                         final_list_g2p_ids.add(new_g2p_id)
