@@ -268,7 +268,7 @@ class PublishRecord(APIView):
             stable_id (string)
 
         Returns:
-                Response message
+            Response message
         """
         user = self.request.user
 

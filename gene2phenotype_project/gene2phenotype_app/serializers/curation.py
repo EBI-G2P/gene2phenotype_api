@@ -132,7 +132,6 @@ class CurationDataSerializer(serializers.ModelSerializer):
         Args:
             (CurationData obj) data: data to be validated
         """
-
         json_data = data.json_data
         missing_data = []
 
@@ -180,7 +179,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             locus_obj = Locus.objects.get(name=json_data["locus"])
         except Locus.DoesNotExist:
             raise serializers.ValidationError(
-                {"message": f"Invalid locus {json_data['locus']}"}
+                {"error": f"Invalid locus '{json_data['locus']}'"}
             )
 
         # Check if allelic requirement is valid
@@ -204,6 +203,17 @@ class CurationDataSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {
                     "error": f"Invalid genotype '{json_data['allelic_requirement']}' for locus '{locus_obj.name}'"
+                }
+            )
+
+        # Check if record has enough data to be published
+        if (json_data["confidence"] == "limited" and len(json_data["publications"]) == 1 and
+            json_data["molecular_mechanism"]["name"] == "undetermined" and len(json_data["variant_consequences"]) == 1 and
+            json_data["variant_consequences"][0]["variant_consequence"] == "uncertain" and not json_data["variant_types"]):
+
+            raise serializers.ValidationError(
+                {
+                    "error": "Insufficient evidence to publish record"
                 }
             )
 

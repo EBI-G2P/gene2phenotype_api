@@ -561,3 +561,86 @@ class LGDAddCurationEndpoint(TestCase):
             lgd_publication=lgd_publications[0], is_deleted=0
         )
         self.assertEqual(len(lgd_publication_comments), 1)
+
+    def test_publish_duplicate_record(self):
+        """
+        Test publishing a record that already exists in the db
+        """
+        # Define the input data structure
+        data_to_add = {
+            "json_data": {
+                "allelic_requirement": "biallelic_autosomal",
+                "confidence": "limited",
+                "cross_cutting_modifier": ["potential secondary finding"],
+                "disease": {
+                    "cross_references": [
+                    ],
+                    "disease_name": "CEP290-related JOUBERT SYNDROME TYPE 5",
+                },
+                "locus": "CEP290",
+                "mechanism_evidence": [],
+                "mechanism_synopsis": [],
+                "molecular_mechanism": {
+                    "name": "loss of function",
+                    "support": "inferred",
+                },
+                "panels": ["Developmental disorders"],
+                "phenotypes": [],
+                "private_comment": "test comment",
+                "public_comment": "test comment public",
+                "publications": [
+                    {
+                        "affectedIndividuals": 2,
+                        "ancestries": "test",
+                        "authors": "Makar AB, McMartin KE, Palese M, Tephly TR.",
+                        "comment": "test comment",
+                        "consanguineous": "no",
+                        "families": 2,
+                        "pmid": "3897232",
+                        "source": "G2P",
+                        "title": "Acetyl coenzyme A: alpha-glucosaminide N-acetyltransferase. Evidence for a transmembrane acetylation mechanism.",
+                        "year": 1985,
+                    }
+                ],
+                "session_name": "Test C",
+                "variant_consequences": [
+                    {
+                        "support": "inferred",
+                        "variant_consequence": "decreased_gene_product_level",
+                    }
+                ],
+                "variant_descriptions": [
+                    {"description": "test description", "publication": "3897232"}
+                ],
+                "variant_types": [],
+            }
+        }
+
+        # Save the curation draft
+        response = self.client.post(
+            self.url_add_curation, data_to_add, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["message"],
+            "Data saved successfully for session name 'Test C'",
+        )
+
+        # Prepare the URL to publish the record
+        url_publish = reverse(
+            "publish_record", kwargs={"stable_id": response_data["result"]}
+        )
+
+        # Call the endpoint to publish
+        response_publish = self.client.post(
+            url_publish, content_type="application/json"
+        )
+        self.assertEqual(response_publish.status_code, 400)
+
+        response_data_publish = response_publish.json()
+        self.assertEqual(
+            response_data_publish["error"],
+            "Found another record with same locus, genotype, disease and molecular mechanism. Please check G2P ID 'G2P00001'",
+        )
