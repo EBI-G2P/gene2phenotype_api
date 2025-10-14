@@ -110,7 +110,7 @@ class Command(BaseCommand):
 
                 for g2p_id in list_g2p_ids:
                     # Clean the IDs
-                    new_g2p_id = re.sub("\*+", "", g2p_id).strip().replace(".", "").replace("\"", "")
+                    new_g2p_id = re.sub(r'[\*."`]+', '', g2p_id).strip()
 
                     if new_g2p_id not in final_list_g2p_ids and new_g2p_id not in invalid_g2p_ids:
                         # Get the LocusGenotypeDisease for the G2P ID
