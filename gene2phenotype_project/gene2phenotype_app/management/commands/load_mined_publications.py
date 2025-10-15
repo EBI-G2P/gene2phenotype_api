@@ -89,7 +89,7 @@ class Command(BaseCommand):
                     logger.warning(f"Invalid PMID or G2P IDs in row {str(row)}")
                     continue
 
-                list_g2p_ids = re.split(r"[;,]", g2p_ids)
+                list_g2p_ids = g2p_ids.split(";")
                 # to make sure we don't try to insert duplicates
                 final_list_g2p_ids = set()
 
@@ -101,6 +101,12 @@ class Command(BaseCommand):
                         logger.warning(f"Invalid PMID '{pmid}'. Skipping import.")
                         continue
                     title = clean_title(response["result"]["title"])
+                    year = response["result"]["pubYear"]
+
+                    # TODO: review
+                    if int(year) <= 2010:
+                        logger.warning(f"Skipping old PMID '{pmid}' ({year})")
+                        continue
 
                     # Insert mined publication
                     mined_publication_obj = MinedPublication(
@@ -111,7 +117,7 @@ class Command(BaseCommand):
 
                 for g2p_id in list_g2p_ids:
                     # Clean the IDs
-                    new_g2p_id = re.sub(r'[\*."`]+', '', g2p_id).strip()
+                    new_g2p_id = re.sub(r'[\*."`)]+', '', g2p_id).strip()
 
                     if new_g2p_id not in final_list_g2p_ids and new_g2p_id not in invalid_g2p_ids:
                         # Get the LocusGenotypeDisease for the G2P ID
