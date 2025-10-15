@@ -111,7 +111,10 @@ class Command(BaseCommand):
 
                     # Insert mined publication
                     mined_publication_obj = MinedPublication(
-                        pmid=int(pmid), title=title, date_upload=get_date_now()
+                        pmid=int(pmid),
+                        title=title,
+                        year=year,
+                        date_upload=get_date_now(),
                     )
                     mined_publication_obj._history_user = user_obj
                     mined_publication_obj.save()
@@ -124,9 +127,12 @@ class Command(BaseCommand):
 
                 for g2p_id in list_g2p_ids:
                     # Clean the IDs
-                    new_g2p_id = re.sub(r'[\*."`)]+', '', g2p_id).strip()
+                    new_g2p_id = re.sub(r'[\*."`)]+', "", g2p_id).strip()
 
-                    if new_g2p_id not in final_list_g2p_ids and new_g2p_id not in invalid_g2p_ids:
+                    if (
+                        new_g2p_id not in final_list_g2p_ids
+                        and new_g2p_id not in invalid_g2p_ids
+                    ):
                         # Get the LocusGenotypeDisease for the G2P ID
                         try:
                             lgd_obj = LocusGenotypeDisease.objects.get(
@@ -138,7 +144,7 @@ class Command(BaseCommand):
                                 f"Invalid G2P ID '{new_g2p_id}'. Skipping import."
                             )
                             invalid_g2p_ids.add(new_g2p_id)
-                            wr.write(new_g2p_id+"\n")
+                            wr.write(new_g2p_id + "\n")
                             continue
 
                         final_list_g2p_ids.add(new_g2p_id)
