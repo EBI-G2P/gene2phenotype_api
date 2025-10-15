@@ -777,6 +777,7 @@ class MinedPublication(models.Model):
     id = models.AutoField(primary_key=True)
     pmid = models.IntegerField(null=False, unique=True)
     title = models.CharField(max_length=500, null=False)
+    year = models.IntegerField(null=True)
     date_upload = models.DateTimeField(null=False)
     history = HistoricalRecords()
 
