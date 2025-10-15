@@ -16,6 +16,8 @@ class TestLoadMinedPublicationsCommand(TestCase):
         "gene2phenotype_app/fixtures/g2p_stable_id.json",
         "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
         "gene2phenotype_app/fixtures/locus_genotype_disease.json",
+        "gene2phenotype_app/fixtures/mined_publication.json",
+        "gene2phenotype_app/fixtures/lgd_mined_publication.json",
         "gene2phenotype_app/fixtures/ontology_term.json",
         "gene2phenotype_app/fixtures/source.json",
         "gene2phenotype_app/fixtures/locus.json",
@@ -54,11 +56,11 @@ class TestLoadMinedPublicationsCommand(TestCase):
 
         # Check database
         mined_publications = MinedPublication.objects.all()
-        self.assertEqual(len(mined_publications), 3)
+        self.assertEqual(len(mined_publications), 5)
         history_mined_publications = MinedPublication.history.all()
         self.assertEqual(len(history_mined_publications), 3)
         lgd_mined_publications = LGDMinedPublication.objects.all()
-        self.assertEqual(len(lgd_mined_publications), 3)
+        self.assertEqual(len(lgd_mined_publications), 5)
         history_lgd_mined_publications = LGDMinedPublication.history.all()
         self.assertEqual(len(history_lgd_mined_publications), 3)
 

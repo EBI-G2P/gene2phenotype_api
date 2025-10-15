@@ -69,6 +69,7 @@ class Command(BaseCommand):
             raise CommandError(f"Invalid user {input_email}")
 
         invalid_g2p_ids = set()
+        filter_year = 2010
 
         with open(data_file, newline="") as fh_file, open(output_file, "w") as wr:
             data_reader = csv.DictReader(fh_file)
@@ -104,7 +105,7 @@ class Command(BaseCommand):
                     year = response["result"]["pubYear"]
 
                     # TODO: review
-                    if int(year) <= 2010:
+                    if int(year) <= filter_year:
                         logger.warning(f"Skipping old PMID '{pmid}' ({year})")
                         continue
 
@@ -114,6 +115,12 @@ class Command(BaseCommand):
                     )
                     mined_publication_obj._history_user = user_obj
                     mined_publication_obj.save()
+                else:
+                    # The mined publication is in g2p but the date could still be old
+                    # Check the year of the publication and skip if it's older than 'filter_year'
+                    if mined_publication_obj.year < filter_year:
+                        logger.warning(f"Skipping old PMID '{pmid}' ({year})")
+                        continue
 
                 for g2p_id in list_g2p_ids:
                     # Clean the IDs
