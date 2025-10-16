@@ -3,6 +3,7 @@ import logging
 import re
 import os.path
 
+from django.db.models import Count, F
 from django.core.management.base import BaseCommand, CommandError
 
 from ...utils import get_publication, clean_title, get_date_now
@@ -71,6 +72,8 @@ class Command(BaseCommand):
         invalid_g2p_ids = set()
         filter_year = 2010
 
+        all_records, publication_counts = self.get_all_record_publications()
+
         with open(data_file, newline="") as fh_file, open(output_file, "w") as wr:
             data_reader = csv.DictReader(fh_file)
 
@@ -104,10 +107,12 @@ class Command(BaseCommand):
                     title = clean_title(response["result"]["title"])
                     year = response["result"]["pubYear"]
 
+                    # Filter the publications
                     # TODO: review
-                    if int(year) <= filter_year:
-                        logger.warning(f"Skipping old PMID '{pmid}' ({year})")
-                        continue
+                    # Filter by date
+                    # if int(year) <= filter_year:
+                    #     logger.warning(f"Skipping old PMID '{pmid}' ({year})")
+                    #     continue
 
                     # Insert mined publication
                     mined_publication_obj = MinedPublication(
@@ -118,12 +123,12 @@ class Command(BaseCommand):
                     )
                     mined_publication_obj._history_user = user_obj
                     mined_publication_obj.save()
-                else:
+                # else:
                     # The mined publication is in g2p but the date could still be old
                     # Check the year of the publication and skip if it's older than 'filter_year'
-                    if mined_publication_obj.year < filter_year:
-                        logger.warning(f"Skipping old PMID '{pmid}' ({year})")
-                        continue
+                    # if mined_publication_obj.year < filter_year:
+                    #     logger.warning(f"Skipping old PMID '{pmid}' ({year})")
+                    #     continue
 
                 for g2p_id in list_g2p_ids:
                     # Clean the IDs
@@ -135,19 +140,28 @@ class Command(BaseCommand):
                     ):
                         # Get the LocusGenotypeDisease for the G2P ID
                         try:
-                            lgd_obj = LocusGenotypeDisease.objects.get(
-                                stable_id__stable_id=new_g2p_id, is_deleted=0
-                            )
-                        except LocusGenotypeDisease.DoesNotExist:
+                            lgd_obj = all_records[new_g2p_id]
+                        except KeyError:
                             # The record could have been merged or deleted
                             logger.warning(
                                 f"Invalid G2P ID '{new_g2p_id}'. Skipping import."
                             )
                             invalid_g2p_ids.add(new_g2p_id)
-                            wr.write(new_g2p_id + "\n")
+                            wr.write(new_g2p_id.replace(",", " ") + "\n")
                             continue
 
                         final_list_g2p_ids.add(new_g2p_id)
+
+                        # Check number of publications linked to the record
+                        # n_publications = 0
+                        # if new_g2p_id in publication_counts:
+                        #     n_publications = publication_counts[new_g2p_id]
+
+                        # if n_publications >= 10 and int(mined_publication_obj.year) < 2020:
+                        #     logger.warning(
+                        #         f"G2P ID '{new_g2p_id}' with {n_publications} publications. Skipping import."
+                        #     )
+                        #     continue
 
                         # Check if LGDMinedPublication already exists
                         try:
@@ -179,4 +193,29 @@ class Command(BaseCommand):
                                 f"{new_g2p_id}-{pmid} already exists. Skipping import."
                             )
 
-        print("\n---\nNumber of invalid G2P IDs:", len(invalid_g2p_ids))
+    def get_all_record_publications(self):
+        """
+        Get all records and associated number of publications.
+        """
+        all_records = {}
+        publication_counts = {}
+
+        lgd_publication_data = (
+            LGDPublication.objects.filter(is_deleted=0)
+                .annotate(g2p_id=F("lgd__stable_id__stable_id"))
+                .values("g2p_id")
+                .annotate(publication_count=Count("publication", distinct=True))
+                .order_by("g2p_id")
+            )
+
+        for c in lgd_publication_data:
+            publication_counts[c['g2p_id']] = c['publication_count']
+
+        g2p_records_data = (
+            LocusGenotypeDisease.objects.filter(is_deleted=0).select_related("stable_id")
+        )
+
+        for record in g2p_records_data:
+            all_records[record.stable_id.stable_id] = record
+        
+        return all_records, publication_counts
