@@ -52,13 +52,13 @@ class TestLoadMinedPublicationsCommand(TestCase):
                 "--email", self.user_email
             )
         self.assertTrue(any("Invalid G2P ID 'G2P00003'. Skipping import." in msg for msg in cm.output))
-        self.assertTrue(any("Skipping old PMID '7868125' (1995)" in msg for msg in cm.output))
+        self.assertTrue(any("Invalid G2P ID 'G2P12346'. Skipping import." in msg for msg in cm.output))
 
         # Check database
         mined_publications = MinedPublication.objects.all()
-        self.assertEqual(len(mined_publications), 5)
+        self.assertEqual(len(mined_publications), 6)
         history_mined_publications = MinedPublication.history.all()
-        self.assertEqual(len(history_mined_publications), 3)
+        self.assertEqual(len(history_mined_publications), 4)
         lgd_mined_publications = LGDMinedPublication.objects.all()
         self.assertEqual(len(lgd_mined_publications), 5)
         history_lgd_mined_publications = LGDMinedPublication.history.all()
