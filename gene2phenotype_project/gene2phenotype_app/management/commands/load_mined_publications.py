@@ -70,10 +70,38 @@ class Command(BaseCommand):
             raise CommandError(f"Invalid user {input_email}")
 
         invalid_g2p_ids = set()
-        filter_year = 2010
+        g2p_records_skip = {}
+        # filter_year = 2000
 
         all_records, publication_counts = self.get_all_record_publications()
 
+        # Pre-process the file
+        with open(data_file, newline="") as fh:
+            data_reader = csv.DictReader(fh)
+
+            # Check headers
+            if not all(
+                column in data_reader.fieldnames for column in mandatory_headers
+            ):
+                raise CommandError(
+                    f"Missing data. Mandatory fields are: {mandatory_headers}"
+                )
+
+            for row in data_reader:
+                pmid = row["PMID"].strip()
+                g2p_ids = row["G2P_IDs"].strip()
+                list_g2p_ids = g2p_ids.split(";")
+
+                for g2p_id in list_g2p_ids:
+                    # Clean the IDs
+                    new_g2p_id = re.sub(r'[\*."`)]+', "", g2p_id).strip()
+
+                    if new_g2p_id not in g2p_records_skip:
+                        g2p_records_skip[new_g2p_id] = 1
+                    else:
+                        g2p_records_skip[new_g2p_id] += 1
+
+        # Open the file again to import the data
         with open(data_file, newline="") as fh_file, open(output_file, "w") as wr:
             data_reader = csv.DictReader(fh_file)
 
@@ -134,6 +162,12 @@ class Command(BaseCommand):
                     # Clean the IDs
                     new_g2p_id = re.sub(r'[\*."`)]+', "", g2p_id).strip()
 
+                    if g2p_records_skip[new_g2p_id] >= 100:
+                        logger.warning(
+                            f"G2P ID '{new_g2p_id}' has >= 100 mined publications. Skipping import."
+                        )
+                        continue
+
                     if (
                         new_g2p_id not in final_list_g2p_ids
                         and new_g2p_id not in invalid_g2p_ids
@@ -157,9 +191,10 @@ class Command(BaseCommand):
                         # if new_g2p_id in publication_counts:
                         #     n_publications = publication_counts[new_g2p_id]
 
-                        # if n_publications >= 10 and int(mined_publication_obj.year) < 2020:
+                        # confidence = lgd_obj.confidence.value
+                        # if n_publications >= 10 and (confidence == "definitive" or confidence == "strong") and int(mined_publication_obj.year) < 2020:
                         #     logger.warning(
-                        #         f"G2P ID '{new_g2p_id}' with {n_publications} publications. Skipping import."
+                        #         f"G2P ID '{new_g2p_id}' (definitive) with {n_publications} publications. Skipping import."
                         #     )
                         #     continue
 
