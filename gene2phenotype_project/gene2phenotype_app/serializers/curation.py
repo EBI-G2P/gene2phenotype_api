@@ -450,30 +450,19 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         ### Publications ###
         for publication in data.json_data["publications"]:
-            if publication["families"] is None:
-                families = None
-                consanguinity = None
-                ancestries = None
-                affected_individuals = None
-            else:
-                families = publication["families"]
-                consanguinity = publication["consanguineous"]
-                ancestries = publication["ancestries"]
-                affected_individuals = publication["affectedIndividuals"]
-
             if publication["comment"] is None or publication["comment"] == "":
                 comment = None
             else:
-                comment = {"comment": publication["comment"], "is_public": 1}
+                comment = {"comment": publication["comment"], "is_public": 0}
 
             # format the publication data according to the expected format in PublicationSerializer
             publication_data = {
                 "pmid": publication["pmid"],
                 "comment": comment,
-                "number_of_families": families,
-                "consanguinity": consanguinity,
-                "ancestry": ancestries,
-                "affected_individuals": affected_individuals,
+                "number_of_families": publication["families"],
+                "consanguinity": publication["consanguineous"],
+                "ancestry": publication["ancestries"],
+                "affected_individuals": publication["affectedIndividuals"],
             }
 
             # Get or create publications
