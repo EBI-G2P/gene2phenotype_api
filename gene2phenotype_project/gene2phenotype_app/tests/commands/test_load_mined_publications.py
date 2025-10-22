@@ -16,6 +16,8 @@ class TestLoadMinedPublicationsCommand(TestCase):
         "gene2phenotype_app/fixtures/g2p_stable_id.json",
         "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
         "gene2phenotype_app/fixtures/locus_genotype_disease.json",
+        "gene2phenotype_app/fixtures/mined_publication.json",
+        "gene2phenotype_app/fixtures/lgd_mined_publication.json",
         "gene2phenotype_app/fixtures/ontology_term.json",
         "gene2phenotype_app/fixtures/source.json",
         "gene2phenotype_app/fixtures/locus.json",
@@ -30,9 +32,9 @@ class TestLoadMinedPublicationsCommand(TestCase):
         self.tempfile = tempfile.NamedTemporaryFile(mode="w+", suffix=".csv", delete=False)
         writer = csv.writer(self.tempfile, delimiter=",")
         writer.writerow(["PMID", "G2P_IDs"])
-        writer.writerow(["3897232", "G2P00001;G2P00002"])
-        writer.writerow(["7866404", "G2P00003"])
-        writer.writerow(["7866411", "G2P00006"])
+        writer.writerow(["24021844", "G2P00001;G2P00002"])
+        writer.writerow(["36880535", "G2P00003"])
+        writer.writerow(["33572982", "G2P00006"])
         writer.writerow(["7868125", "G2P12346"])
         self.tempfile.flush()
         self.tempfile.close()
@@ -49,16 +51,16 @@ class TestLoadMinedPublicationsCommand(TestCase):
                 "--data_file", self.tempfile.name,
                 "--email", self.user_email
             )
-        self.assertTrue(any("Invalid G2P ID G2P00003. Skipping import." in msg for msg in cm.output))
-        self.assertTrue(any("Invalid G2P ID G2P12346. Skipping import." in msg for msg in cm.output))
+        self.assertTrue(any("Invalid G2P ID 'G2P00003'. Skipping import." in msg for msg in cm.output))
+        self.assertTrue(any("Invalid G2P ID 'G2P12346'. Skipping import." in msg for msg in cm.output))
 
         # Check database
         mined_publications = MinedPublication.objects.all()
-        self.assertEqual(len(mined_publications), 4)
+        self.assertEqual(len(mined_publications), 6)
         history_mined_publications = MinedPublication.history.all()
         self.assertEqual(len(history_mined_publications), 4)
         lgd_mined_publications = LGDMinedPublication.objects.all()
-        self.assertEqual(len(lgd_mined_publications), 3)
+        self.assertEqual(len(lgd_mined_publications), 5)
         history_lgd_mined_publications = LGDMinedPublication.history.all()
         self.assertEqual(len(history_lgd_mined_publications), 3)
 
