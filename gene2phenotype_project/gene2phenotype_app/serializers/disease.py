@@ -128,7 +128,6 @@ class DiseaseSerializer(serializers.ModelSerializer):
     This serializer returns the ontology terms associated with the disease
     and synonyms names.
     """
-
     name = serializers.CharField()
     ontology_terms = serializers.SerializerMethodField()
     synonyms = serializers.SerializerMethodField()
@@ -152,7 +151,7 @@ class DiseaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Disease
-        fields = ["name", "ontology_terms", "synonyms"]
+        fields = ["id", "name", "ontology_terms", "synonyms"]
 
 
 class DiseaseDetailSerializer(DiseaseSerializer):

@@ -127,6 +127,7 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         )
 
         expected_data_disease = {
+            "id": 2,
             "name": "CEP290-related JOUBERT SYNDROME TYPE 5",
             "ontology_terms": [
                 {
