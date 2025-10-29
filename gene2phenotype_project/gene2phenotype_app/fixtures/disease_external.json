@@ -91,6 +91,15 @@
     },
     {
         "model": "gene2phenotype_app.diseaseexternal",
+        "pk": 11,
+        "fields": {
+            "disease": "congenital disorder of glycosylation type 1E",
+            "identifier": "MONDO:0012123",
+            "source": 3
+        }
+    },
+    {
+        "model": "gene2phenotype_app.diseaseexternal",
         "pk": 249,
         "fields": {
             "disease": "Joubert syndrome 15",

@@ -1,6 +1,6 @@
 import textwrap
 from django.db.models import Q
-from django.db import transaction
+from django.db import transaction, DatabaseError, IntegrityError
 from django.shortcuts import get_object_or_404
 from django.http import Http404
 from rest_framework import permissions, status
@@ -481,7 +481,7 @@ class DiseaseUpdateReferences(BaseAdd):
         return [permissions.IsAuthenticated()]
 
     @transaction.atomic
-    def post(self, request, name):
+    def post(self, request, id):
         """
         The post method creates an association between the disease and a list of cross references (external disease IDs).
         We want to whole process to be done in one db transaction.
@@ -511,7 +511,7 @@ class DiseaseUpdateReferences(BaseAdd):
                 ]
             }
         """
-        disease_obj = get_object_or_404(Disease, name=name)
+        disease_obj = get_object_or_404(Disease, id=id)
 
         # DiseaseOntologyTermListSerializer accepts a list of disease ontologies
         disease_ont_list = DiseaseOntologyTermListSerializer(data=request.data)
@@ -564,7 +564,7 @@ class DiseaseUpdateReferences(BaseAdd):
 
         return response
 
-    def delete(self, request, name):
+    def delete(self, request, id):
         """
         This method deletes the disease cross reference
 
@@ -573,7 +573,7 @@ class DiseaseUpdateReferences(BaseAdd):
                 "accession": "MONDO:0008693"
             }
         """
-        disease_obj = get_object_or_404(Disease, name=name)
+        disease_obj = get_object_or_404(Disease, id=id)
 
         if "accession" not in request.data:
             return Response(
@@ -589,21 +589,21 @@ class DiseaseUpdateReferences(BaseAdd):
                 disease=disease_obj.id, ontology_term__accession=accession
             )
         except DiseaseOntologyTerm.DoesNotExist:
-            raise Http404(f"Cannot find '{accession}' for disease '{name}'")
+            raise Http404(f"Cannot find '{accession}' for disease ID '{id}'")
         else:
             try:
                 disease_ont_obj.delete()
-            except:
+            except (DatabaseError, IntegrityError) as e:
                 return Response(
                     {
-                        "error": f"Could not delete '{accession}' deleted successfully from disease '{name}'"
+                        "error": f"Could not delete '{accession}' from disease ID '{id}': {str(e)}"
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             else:
                 response = Response(
                     {
-                        "message": f"'{accession}' deleted successfully from disease '{name}'"
+                        "message": f"'{accession}' deleted successfully from disease ID '{id}'"
                     },
                     status=status.HTTP_200_OK,
                 )

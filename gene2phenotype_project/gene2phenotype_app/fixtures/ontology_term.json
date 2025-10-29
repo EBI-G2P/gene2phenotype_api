@@ -482,5 +482,16 @@
             "source": 4,
             "group_type": 51
         }
+    },
+    {
+        "model": "gene2phenotype_app.ontologyterm",
+        "pk": 46,
+        "fields": {
+            "accession": "601110",
+            "term": "CONGENITAL DISORDER OF GLYCOSYLATION, TYPE Id",
+            "description": "CONGENITAL DISORDER OF GLYCOSYLATION, TYPE Id",
+            "source": 4,
+            "group_type": 51
+        }
     }
 ]
