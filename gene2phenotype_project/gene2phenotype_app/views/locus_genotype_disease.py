@@ -1715,7 +1715,6 @@ class LocusGenotypeDiseaseDelete(APIView):
     """
     Delete a LGD record
     """
-
     http_method_names = ["patch", "options"]
     serializer_class = LocusGenotypeDiseaseSerializer
     permission_classes = [permissions.IsAuthenticated, IsSuperUser]
@@ -1728,6 +1727,21 @@ class LocusGenotypeDiseaseDelete(APIView):
         it sets the flag 'is_deleted' to 1.
         To keep the transaction in the history tables, the update is done by calling save().
         """
+        input_data = request.data
+        comment = None
+
+        # Validate input data
+        if not input_data or not isinstance(input_data, dict) or "comment" not in input_data:
+            return Response(
+                {
+                    "error": "Invalid input data. Please provide a comment why record is being deleted."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Save comment text
+        comment = input_data["comment"]
+        # Get user
         user = request.user
 
         stable_id_obj = get_object_or_404(
@@ -1755,6 +1769,8 @@ class LocusGenotypeDiseaseDelete(APIView):
         # Delete the stable id used by the LGD record
         stable_id_obj.is_deleted = 1
         stable_id_obj.is_live = 0
+        stable_id_obj.comment = comment
+        # Save updates
         stable_id_obj.save()
 
         return Response(
