@@ -384,6 +384,16 @@ class UpdateDisease(BaseAdd):
             # Ensure the new disease does not include leading or trailing whitespaces
             new_disease_name = new_name.strip()
 
+            if new_disease_name == disease_obj.name:
+                errors.append(
+                    {
+                        "id": disease_id,
+                        "name": new_disease_name,
+                        "error": "Disease name is already up to date.",
+                    }
+                )
+                continue
+
             # Ensure the new name is unique
             check_disease = Disease.objects.filter(name=new_disease_name).exclude(
                 id=disease_id

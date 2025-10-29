@@ -63,6 +63,12 @@ class UpdateDiseasesEndpoint(TestCase):
                 "name": "GS2-related INTELLECTUAL DEVELOPMENTAL DISORDER X-LINKED",
             },
         ]
+        self.equal_disease = [
+            {
+                "id": 2,
+                "name": "CEP290-related JOUBERT SYNDROME TYPE 5",
+            },
+        ]
 
     def test_update_invalid_disease(self):
         """
@@ -120,6 +126,35 @@ class UpdateDiseasesEndpoint(TestCase):
         self.assertEqual(
             response_data["error"],
             [{"error": "Both 'id' and 'name' are required."}],
+        )
+
+    def test_update_same_name(self):
+        """
+        Test updating disease to the same name
+        """
+        # Login
+        user = User.objects.get(email="john@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.post(
+            self.url_update,
+            self.equal_disease,
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"],
+            [
+                {
+                    "id": 2,
+                    'name': 'CEP290-related JOUBERT SYNDROME TYPE 5',
+                    "error": "Disease name is already up to date."
+                }
+            ],
         )
 
     def test_invalid_input_format(self):
