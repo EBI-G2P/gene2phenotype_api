@@ -68,9 +68,59 @@ class LGDDeleteLGDEndpoint(TestCase):
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
         response = self.client.patch(
-            self.url_delete_lgd, content_type="application/json"
+            self.url_delete_lgd,
+            {"comment": "Incorrect record"},
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, 403)
+
+    def test_lgd_delete_missing(self):
+        """
+        Test deleting the record (LGD) without providing a comment
+        """
+
+        # Login
+        user = User.objects.get(email="john@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.patch(
+            self.url_delete_lgd, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"],
+            "Comment is missing. Please provide a comment why record is being deleted.",
+        )
+
+    def test_lgd_delete_invalid(self):
+        """
+        Test deleting the record (LGD) with invalid comment
+        """
+
+        # Login
+        user = User.objects.get(email="john@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.patch(
+            self.url_delete_lgd,
+            ["This record is outdated"],
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"],
+            "Invalid input data.",
+        )
 
     def test_lgd_delete_no_superuser(self):
         """
@@ -94,7 +144,6 @@ class LGDDeleteLGDEndpoint(TestCase):
         """
         Test deleting the record (LGD) with correct user
         """
-
         # Login
         user = User.objects.get(email="john@test.ac.uk")
         refresh = RefreshToken.for_user(user)
@@ -104,7 +153,9 @@ class LGDDeleteLGDEndpoint(TestCase):
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
         response = self.client.patch(
-            self.url_delete_lgd, content_type="application/json"
+            self.url_delete_lgd,
+            {"comment": "Poorly annotated"},
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
 
@@ -112,6 +163,7 @@ class LGDDeleteLGDEndpoint(TestCase):
         g2p_stable_id_obj = G2PStableID.objects.get(stable_id="G2P00002")
         self.assertEqual(g2p_stable_id_obj.is_live, False)
         self.assertEqual(g2p_stable_id_obj.is_deleted, 1)
+        self.assertEqual(g2p_stable_id_obj.comment, "Poorly annotated")
         lgd_obj = LocusGenotypeDisease.objects.get(stable_id=g2p_stable_id_obj.id)
         self.assertEqual(lgd_obj.is_deleted, 1)
         lgd_panel_obj = LGDPanel.objects.get(lgd=lgd_obj.id)
