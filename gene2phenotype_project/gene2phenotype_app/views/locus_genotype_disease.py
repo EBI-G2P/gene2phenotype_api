@@ -1730,10 +1730,18 @@ class LocusGenotypeDiseaseDelete(APIView):
         input_data = request.data
 
         # Validate input data
-        if not input_data or not isinstance(input_data, dict) or "comment" not in input_data:
+        if not isinstance(input_data, dict):
             return Response(
                 {
-                    "error": "Invalid input data. Please provide a comment why record is being deleted."
+                    "error": "Invalid input data."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not input_data or "comment" not in input_data:
+            return Response(
+                {
+                    "error": "Comment is missing. Please provide a comment why record is being deleted."
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )

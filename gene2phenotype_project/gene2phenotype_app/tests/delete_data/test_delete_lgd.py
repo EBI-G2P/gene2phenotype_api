@@ -94,7 +94,7 @@ class LGDDeleteLGDEndpoint(TestCase):
         response_data = response.json()
         self.assertEqual(
             response_data["error"],
-            "Invalid input data. Please provide a comment why record is being deleted.",
+            "Comment is missing. Please provide a comment why record is being deleted.",
         )
 
     def test_lgd_delete_invalid(self):
@@ -119,7 +119,7 @@ class LGDDeleteLGDEndpoint(TestCase):
         response_data = response.json()
         self.assertEqual(
             response_data["error"],
-            "Invalid input data. Please provide a comment why record is being deleted.",
+            "Invalid input data.",
         )
 
     def test_lgd_delete_no_superuser(self):
