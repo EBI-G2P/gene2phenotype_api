@@ -1728,7 +1728,6 @@ class LocusGenotypeDiseaseDelete(APIView):
         To keep the transaction in the history tables, the update is done by calling save().
         """
         input_data = request.data
-        comment = None
 
         # Validate input data
         if not input_data or not isinstance(input_data, dict) or "comment" not in input_data:
