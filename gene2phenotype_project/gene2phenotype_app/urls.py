@@ -99,7 +99,7 @@ urlpatterns = [
     # Endpoint to update disease cross references
     # It has to be included before the other /disease/ endpoints
     path(
-        "disease/<path:name>/cross_references/",
+        "disease/<path:id>/cross_references/",
         views.DiseaseUpdateReferences.as_view(),
         name="update_disease_references",
     ),
