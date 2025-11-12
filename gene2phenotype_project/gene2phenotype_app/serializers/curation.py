@@ -208,7 +208,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             )
 
         # Check if G2P record (LGD) is already published
-        # TODO update this check
+        # Same record has the same gene, disease, genotype and mechanism
         try:
             lgd_obj = LocusGenotypeDisease.objects.get(
                 locus__name=json_data["locus"],
@@ -222,7 +222,25 @@ class CurationDataSerializer(serializers.ModelSerializer):
                     "error": f"Found another record with same locus, genotype, disease and molecular mechanism. Please check G2P ID '{lgd_obj.stable_id.stable_id}'"
                 }
             )
+
         except LocusGenotypeDisease.DoesNotExist:
+            # Check if similar records is already published
+            # Similar record has the same gene, disease and genotype and the new mechanism is undetermined
+            if json_data["molecular_mechanism"]["name"] == "undetermined":
+                similar_records = LocusGenotypeDisease.objects.filter(
+                    locus__name=json_data["locus"],
+                    genotype__value=json_data["allelic_requirement"],
+                    disease__name=json_data["disease"]["disease_name"],
+                ).select_related("stable_id")
+
+                if similar_records.exists():
+                    ids = [record.stable_id.stable_id for record in similar_records]
+                    raise serializers.ValidationError(
+                    {
+                        "error": f"Found similar record(s) with same locus, genotype and disease. Please check G2P ID(s) '{', '.join(ids)}'"
+                    }
+                )
+
             return locus_obj
 
     def convert_to_dict(self, data):
