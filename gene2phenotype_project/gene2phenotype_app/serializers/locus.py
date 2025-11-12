@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db.models import Q
 from typing import Optional
 from datetime import date
 
@@ -11,13 +12,6 @@ from ..models import (
     GeneStats,
     LocusGenotypeDisease,
 )
-
-from ..utils import validate_gene
-
-"""
-    Locus represents a gene, variant or region.
-    In a first phase, G2P records are associated with genes.
-"""
 
 
 class LocusSerializer(serializers.ModelSerializer):
@@ -108,7 +102,17 @@ class LocusGeneSerializer(LocusSerializer):
         """
         if user.is_authenticated:
             lgd_select = (
-                LocusGenotypeDisease.objects.filter(locus=self.id, is_deleted=0)
+                LocusGenotypeDisease.objects.filter(
+                    locus=self.id,
+                    is_deleted=0,
+                    lgdpanel__is_deleted=0,
+                    )
+                .filter(
+                    Q(lgdvariantgenccconsequence__is_deleted=0) |
+                    Q(lgdvariantgenccconsequence__isnull=True),
+                    Q(lgdvarianttype__is_deleted=0) |
+                    Q(lgdvarianttype__isnull=True),
+                )
                 .select_related("disease", "genotype", "confidence", "mechanism")
                 .prefetch_related(
                     "lgd_panel",
@@ -122,7 +126,16 @@ class LocusGeneSerializer(LocusSerializer):
         else:
             lgd_select = (
                 LocusGenotypeDisease.objects.filter(
-                    locus=self.id, is_deleted=0, lgdpanel__panel__is_visible=1
+                    locus=self.id,
+                    is_deleted=0,
+                    lgdpanel__is_deleted=0,
+                    lgdpanel__panel__is_visible=1,
+                )
+                .filter(
+                    Q(lgdvariantgenccconsequence__is_deleted=0) |
+                    Q(lgdvariantgenccconsequence__isnull=True),
+                    Q(lgdvarianttype__is_deleted=0) |
+                    Q(lgdvarianttype__isnull=True),
                 )
                 .select_related("disease", "genotype", "confidence", "mechanism")
                 .prefetch_related(

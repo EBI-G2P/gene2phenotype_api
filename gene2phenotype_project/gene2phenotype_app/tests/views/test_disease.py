@@ -107,7 +107,11 @@ class DiseaseSummaryTests(TestCase):
         "gene2phenotype_app/fixtures/attribs.json",
         "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
         "gene2phenotype_app/fixtures/g2p_stable_id.json",
+        "gene2phenotype_app/fixtures/publication.json",
         "gene2phenotype_app/fixtures/lgd_panel.json",
+        "gene2phenotype_app/fixtures/lgd_publication.json",
+        "gene2phenotype_app/fixtures/lgd_variant_type.json",
+        "gene2phenotype_app/fixtures/lgd_variant_consequence.json",
         "gene2phenotype_app/fixtures/user_panels.json",
         "gene2phenotype_app/fixtures/locus_genotype_disease.json",
         "gene2phenotype_app/fixtures/locus.json",
@@ -144,6 +148,33 @@ class DiseaseSummaryTests(TestCase):
             }
         ]
         self.assertEqual(list(response.data["records_summary"]), expected_data)
+
+    def test_get_disease_complete(self):
+        """
+        Test the response of the disease summary endpoint with deleted variants in the output
+        """
+        self.url_disease = reverse(
+            "disease_summary", kwargs={"id": "RAB27A-related Griscelli syndrome"}
+        )
+
+        response = self.client.get(self.url_disease)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data["disease"], "RAB27A-related Griscelli syndrome"
+        )
+
+        expected_data = {
+            "locus": "RAB27A",
+            "genotype": "biallelic_autosomal",
+            "confidence": "definitive",
+            "panels": ["Cardiac"],
+            "variant_consequence": ["absent gene product"],
+            "variant_type": ['inframe_insertion', 'intron_variant'],
+            "molecular_mechanism": "loss of function",
+            "stable_id": "G2P00002",
+        }
+        self.assertEqual(list(response.data["records_summary"])[0], expected_data)
 
     def test_not_found(self):
         """
