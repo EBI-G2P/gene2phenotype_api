@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.db import IntegrityError
+from django.db.models import Q
 from typing import Optional
 from datetime import date
 
@@ -159,7 +160,18 @@ class PanelDetailSerializer(serializers.ModelSerializer):
         """
         if user.is_authenticated:
             lgd_panels_selected = (
-                LGDPanel.objects.select_related(
+                LGDPanel.objects.filter(
+                    panel=panel.id,
+                    is_deleted=0,
+                    lgd__is_deleted=0,
+                )
+                .filter(
+                    Q(lgd__lgdvariantgenccconsequence__is_deleted=0) |
+                    Q(lgd__lgdvariantgenccconsequence__isnull=True),
+                    Q(lgd__lgdvarianttype__is_deleted=0) |
+                    Q(lgd__lgdvarianttype__isnull=True),
+                )
+                .select_related(
                     "lgd",
                     "lgd__locus",
                     "lgd__disease",
@@ -171,12 +183,20 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                     "lgd__lgd_variant_gencc_consequence", "lgd__lgd_variant_type"
                 )
                 .order_by("-lgd__date_review")
-                .filter(panel=panel.id, is_deleted=0, lgd__is_deleted=0)
             )
         else:
             lgd_panels_selected = (
                 LGDPanel.objects.filter(
-                    panel=panel.id, is_deleted=0, lgd__is_deleted=0, panel__is_visible=1
+                    panel=panel.id,
+                    is_deleted=0,
+                    lgd__is_deleted=0,
+                    panel__is_visible=1,
+                )
+                .filter(
+                    Q(lgd__lgdvariantgenccconsequence__is_deleted=0) |
+                    Q(lgd__lgdvariantgenccconsequence__isnull=True),
+                    Q(lgd__lgdvarianttype__is_deleted=0) |
+                    Q(lgd__lgdvarianttype__isnull=True),
                 )
                 .select_related(
                     "lgd",

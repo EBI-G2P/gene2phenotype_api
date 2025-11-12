@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db.models import Q
 from typing import Any, Optional
 from datetime import date
 import re
@@ -184,7 +185,17 @@ class DiseaseDetailSerializer(DiseaseSerializer):
         """
         if user.is_authenticated:
             lgd_select = (
-                LocusGenotypeDisease.objects.filter(disease=id, is_deleted=0)
+                LocusGenotypeDisease.objects.filter(
+                    disease=id,
+                    is_deleted=0,
+                    lgdpanel__is_deleted=0,
+                )
+                .filter(
+                    Q(lgdvariantgenccconsequence__is_deleted=0) |
+                    Q(lgdvariantgenccconsequence__isnull=True),
+                    Q(lgdvarianttype__is_deleted=0) |
+                    Q(lgdvarianttype__isnull=True),
+                )
                 .select_related("locus", "genotype", "confidence", "mechanism")
                 .prefetch_related(
                     "lgd_panel",
@@ -199,7 +210,16 @@ class DiseaseDetailSerializer(DiseaseSerializer):
         else:
             lgd_select = (
                 LocusGenotypeDisease.objects.filter(
-                    disease=id, is_deleted=0, lgdpanel__panel__is_visible=1
+                    disease=id,
+                    is_deleted=0,
+                    lgdpanel__panel__is_visible=1,
+                    lgdpanel__is_deleted=0,
+                )
+                .filter(
+                    Q(lgdvariantgenccconsequence__is_deleted=0) |
+                    Q(lgdvariantgenccconsequence__isnull=True),
+                    Q(lgdvarianttype__is_deleted=0) |
+                    Q(lgdvarianttype__isnull=True),
                 )
                 .select_related("locus", "genotype", "confidence", "mechanism")
                 .prefetch_related(

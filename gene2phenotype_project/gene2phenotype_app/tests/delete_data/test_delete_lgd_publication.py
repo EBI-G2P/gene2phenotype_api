@@ -233,7 +233,7 @@ class LGDDeletePublication(TestCase):
             publication__pmid=15214012,
             is_deleted=1,
         )
-        self.assertEqual(len(lgd_variant_type), 2)
+        self.assertEqual(len(lgd_variant_type), 3)
 
         lgd_variant_description = LGDVariantTypeDescription.objects.filter(
             lgd__stable_id__stable_id="G2P00002",

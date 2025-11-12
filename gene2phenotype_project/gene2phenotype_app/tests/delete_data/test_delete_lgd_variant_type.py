@@ -191,7 +191,7 @@ class LGDEditVariantTypesEndpoint(TestCase):
         lgd_deleted_variants = LGDVariantType.objects.filter(
             lgd__stable_id__stable_id="G2P00002", is_deleted=1
         )
-        self.assertEqual(len(lgd_deleted_variants), 1)
+        self.assertEqual(len(lgd_deleted_variants), 2)
 
         # Check remaining LGD-variant types
         lgd_variants = LGDVariantType.objects.filter(
