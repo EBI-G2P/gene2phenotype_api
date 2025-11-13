@@ -187,6 +187,16 @@ class IsSuperUser(BasePermission):
         return True
 
 
+class CheckPublishPermission(BasePermission):
+    """Deny access if the user is in the specified group."""
+    def has_permission(self, request, view):
+        group_name = "junior_curators"
+        if request.user.is_authenticated:
+            if request.user.groups.filter(name=group_name).exists():
+                return False
+        return True
+
+
 class CustomPagination(PageNumberPagination):
     """
     Custom method to define the number of results per page
