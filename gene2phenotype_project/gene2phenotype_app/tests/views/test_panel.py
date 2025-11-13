@@ -117,23 +117,39 @@ class PanelSummaryEndpointTests(TestCase):
         "gene2phenotype_app/fixtures/locus.json",
         "gene2phenotype_app/fixtures/sequence.json",
         "gene2phenotype_app/fixtures/disease.json",
+        "gene2phenotype_app/fixtures/publication.json",
         "gene2phenotype_app/fixtures/ontology_term.json",
         "gene2phenotype_app/fixtures/source.json",
         "gene2phenotype_app/fixtures/locus_genotype_disease.json",
         "gene2phenotype_app/fixtures/lgd_panel.json",
+        "gene2phenotype_app/fixtures/lgd_publication.json",
+        "gene2phenotype_app/fixtures/lgd_variant_type.json",
+        "gene2phenotype_app/fixtures/lgd_variant_consequence.json",
         "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
     ]
 
     def setUp(self):
-        self.url_panels = reverse("panel_summary", kwargs={"name": "DD"})
+        self.url_panel_dd = reverse("panel_summary", kwargs={"name": "DD"})
+        self.url_panel_cardiac = reverse("panel_summary", kwargs={"name": "Cardiac"})
 
-    def test_get_panel_summary(self):
+    def test_get_dd_panel_summary(self):
         """
         Get the summary for a visible panel.
         """
-        response = self.client.get(self.url_panels)
+        response = self.client.get(self.url_panel_dd)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data.get("records_summary")), 1)
+    
+    def test_get_cardiac_panel_summary(self):
+        """
+        Get the summary for a visible panel.
+        """
+        response = self.client.get(self.url_panel_cardiac)
+        self.assertEqual(response.status_code, 200)
+        records_summary = response.data.get("records_summary")
+        self.assertEqual(len(records_summary), 1)
+        self.assertEqual(len(list(records_summary)[0]["variant_type"]), 2)
+        self.assertEqual(len(list(records_summary)[0]["variant_consequence"]), 1)
 
 
 class PanelDownloadEndpointTests(TestCase):
