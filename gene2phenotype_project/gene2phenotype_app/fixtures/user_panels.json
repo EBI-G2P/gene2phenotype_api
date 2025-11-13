@@ -120,6 +120,22 @@
         }
     },
     {
+        "model": "gene2phenotype_app.user",
+        "pk": 9,
+        "fields": {
+            "password": "pbkdf2_sha256$870000$OskKMLKUNQs4skp4zhCxcG$Y/7K1VSVggBTWNC2Y7oyKgf3y1pWWZN9Ht+MbNM1nP8=",
+            "is_staff": false,
+            "is_active": true,
+            "username": "test_user_elisa",
+            "email": "elisa@test.ac.uk",
+            "is_deleted": false,
+            "is_superuser": 0,
+            "first_name": "Elisa",
+            "last_name": "Stevens",
+            "groups": [1]
+        }
+    },
+    {
         "model": "gene2phenotype_app.panel",
         "pk": 1,
         "fields": {
@@ -323,6 +339,15 @@
         "fields": {
             "user": 8,
             "panel": 5,
+            "is_deleted": 0
+        }
+    },
+    {
+        "model": "gene2phenotype_app.userpanel",
+        "pk": 19,
+        "fields": {
+            "user": 9,
+            "panel": 1,
             "is_deleted": 0
         }
     }
