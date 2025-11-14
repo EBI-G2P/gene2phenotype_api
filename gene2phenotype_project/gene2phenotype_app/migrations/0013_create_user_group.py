@@ -7,7 +7,10 @@ def create_restricted_group(apps, schema_editor):
     Group = apps.get_model('auth', 'Group')
     
     # Create the group if it doesn't exist
-    Group.objects.get_or_create(name='junior_curators')
+    Group.objects.get_or_create(name='junior_curator')
+    Group.objects.get_or_create(name='expert_curator')
+    Group.objects.get_or_create(name='curation_admin')
+    Group.objects.get_or_create(name='clinical_lead')
 
 class Migration(migrations.Migration):
 
