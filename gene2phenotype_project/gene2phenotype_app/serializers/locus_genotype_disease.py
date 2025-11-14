@@ -206,7 +206,12 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         2. "curated" - extracted publication which was curated
         3. "rejected" - extracted publication which was rejected by curators
         """
-        queryset = LGDMinedPublication.objects.filter(lgd_id=id)
+        queryset = (
+            LGDMinedPublication.objects
+            .filter(lgd_id=id)
+            .select_related("mined_publication")
+            .order_by("-mined_publication__year", "-mined_publication__pmid"))
+
         return LGDMinedPublicationSerializer(queryset, many=True).data
 
     def get_phenotypes(self, id: int) -> list[dict[str, Any]]:
