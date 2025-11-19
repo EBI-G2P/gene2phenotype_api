@@ -4,7 +4,7 @@ from .base import (
     BaseAdd,
     BaseUpdate,
     CustomPagination,
-    CheckPublishPermission,
+    IsNotJuniorCurator,
 )
 
 from .panel import (

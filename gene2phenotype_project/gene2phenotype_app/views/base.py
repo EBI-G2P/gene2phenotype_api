@@ -183,8 +183,10 @@ class IsSuperUser(BasePermission):
         return True
 
 
-class CheckPublishPermission(BasePermission):
-    """Deny access if the user is in the specified group."""
+class IsNotJuniorCurator(BasePermission):
+    """
+    Deny access if the user is in the junior curator group.
+    """
 
     def has_permission(self, request, view):
         group_name = "junior_curator"
