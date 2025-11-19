@@ -41,9 +41,7 @@ class BaseView(generics.ListAPIView):
     def handle_deleted_record(self, old_stable_id):
         """Method to return a message indicating the records has been deleted"""
         return Response(
-            {
-                "message": f"{old_stable_id} is no longer available."
-            },
+            {"message": f"{old_stable_id} is no longer available."},
             status=status.HTTP_410_GONE,
         )
 
@@ -81,13 +79,11 @@ class BaseAPIView(APIView):
             },
             status=status.HTTP_410_GONE,
         )
-    
+
     def handle_deleted_record(self, old_stable_id):
         """Method to return a message indicating the records has been deleted"""
         return Response(
-            {
-                "message": f"{old_stable_id} is no longer available."
-            },
+            {"message": f"{old_stable_id} is no longer available."},
             status=status.HTTP_410_GONE,
         )
 
@@ -187,8 +183,24 @@ class IsSuperUser(BasePermission):
         return True
 
 
+class IsNotJuniorCurator(BasePermission):
+    """
+    Deny access if the user is in the junior curator group.
+    """
+
+    def has_permission(self, request, view):
+        group_name = "junior_curator"
+        if (
+            request.user.is_authenticated
+            and request.user.groups.filter(name=group_name).exists()
+        ):
+            return False
+        return True
+
+
 class CustomPagination(PageNumberPagination):
     """
     Custom method to define the number of results per page
     """
+
     page_size = 20

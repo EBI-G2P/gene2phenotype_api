@@ -11,7 +11,7 @@ from gene2phenotype_app.serializers import CurationDataSerializer
 
 from gene2phenotype_app.models import G2PStableID, CurationData, LocusGenotypeDisease
 
-from .base import BaseView, BaseAdd, BaseUpdate
+from .base import BaseView, BaseAdd, BaseUpdate, IsNotJuniorCurator
 
 
 ### Curation data
@@ -256,7 +256,7 @@ class UpdateCurationData(BaseUpdate):
 class PublishRecord(APIView):
     http_method_names = ["post", "head"]
     serializer_class = CurationDataSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsNotJuniorCurator]
 
     def post(self, request, stable_id):
         """

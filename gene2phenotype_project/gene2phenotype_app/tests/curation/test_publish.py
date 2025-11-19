@@ -18,6 +18,7 @@ class LGDAddCurationEndpoint(TestCase):
     fixtures = [
         "gene2phenotype_app/fixtures/g2p_stable_id.json",
         "gene2phenotype_app/fixtures/user_panels.json",
+        "gene2phenotype_app/fixtures/auth_groups.json",
         "gene2phenotype_app/fixtures/curation_data.json",
         "gene2phenotype_app/fixtures/sequence.json",
         "gene2phenotype_app/fixtures/locus.json",
@@ -31,8 +32,16 @@ class LGDAddCurationEndpoint(TestCase):
 
     def setUp(self):
         self.url_add_curation = reverse("add_curation_data")
-        # Setup login
+
+    def login_user(self):
         self.user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(self.user)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = str(
+            refresh.access_token
+        )
+
+    def login_junior_user(self):
+        self.user = User.objects.get(email="elisa@test.ac.uk")
         refresh = RefreshToken.for_user(self.user)
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = str(
             refresh.access_token
@@ -45,6 +54,7 @@ class LGDAddCurationEndpoint(TestCase):
         even when the genotype is incorrect.
         And finally try to publish the data - it is not possible to publish the data.
         """
+        self.login_user()
         # Define the input data structure
         data_to_add = {
             "json_data": {
@@ -160,6 +170,7 @@ class LGDAddCurationEndpoint(TestCase):
         even when the disease is invalid.
         And finally try to publish the data - it is not possible to publish the data.
         """
+        self.login_user()
         # Define the input data structure
         data_to_add = {
             "json_data": {
@@ -262,6 +273,7 @@ class LGDAddCurationEndpoint(TestCase):
         Test the curation endpoint when the number of publications
         is not enough for the confidence value.
         """
+        self.login_user()
         # Define the input data structure
         data_to_add = {
             "json_data": {
@@ -375,6 +387,7 @@ class LGDAddCurationEndpoint(TestCase):
         """
         Test the curation endpoint without providing mandatory data.
         """
+        self.login_user()
         # Define the input data structure
         data_to_add = {
             "json_data": {
@@ -437,6 +450,7 @@ class LGDAddCurationEndpoint(TestCase):
         """
         Test successful call to publish a record
         """
+        self.login_user()
         # Define the input data structure
         data_to_add = {
             "json_data": {
@@ -566,6 +580,7 @@ class LGDAddCurationEndpoint(TestCase):
         """
         Test trying to publish a record that is too similar to already published record
         """
+        self.login_user()
         # Define the input data structure
         data_to_add = {
             "json_data": {
@@ -659,6 +674,7 @@ class LGDAddCurationEndpoint(TestCase):
         """
         Test trying to publish a record that is already published
         """
+        self.login_user()
         # Define the input data structure
         data_to_add = {
             "json_data": {
@@ -746,4 +762,98 @@ class LGDAddCurationEndpoint(TestCase):
         self.assertEqual(
             response_data_publish["error"],
             "Found another record with same locus, genotype, disease and molecular mechanism. Please check G2P ID 'G2P00001'",
+        )
+
+    def test_publish_duplicate_record(self):
+        """
+        Test publishing a record for a 'junior curator' user
+        """
+        self.login_junior_user()
+        # Define the input data structure
+        data_to_add = {
+            "json_data": {
+                "allelic_requirement": "biallelic_autosomal",
+                "confidence": "limited",
+                "cross_cutting_modifier": ["potential secondary finding"],
+                "disease": {
+                    "cross_references": [],
+                    "disease_name": "CEP290-related JOUBERT SYNDROME test",
+                },
+                "locus": "CEP290",
+                "mechanism_evidence": [],
+                "mechanism_synopsis": [],
+                "molecular_mechanism": {
+                    "name": "loss of function",
+                    "support": "inferred",
+                },
+                "panels": ["Developmental disorders"],
+                "phenotypes": [],
+                "private_comment": "test comment",
+                "public_comment": "test comment public",
+                "publications": [
+                    {
+                        "affectedIndividuals": 1,
+                        "ancestries": "test",
+                        "authors": "Makar AB, McMartin KE, Palese M, Tephly TR.",
+                        "comment": "test comment",
+                        "consanguineous": "no",
+                        "families": 1,
+                        "pmid": "1",
+                        "source": "G2P",
+                        "title": "Formate assay in body fluids: application in methanol poisoning.",
+                        "year": 1975,
+                    }
+                ],
+                "session_name": "Test E",
+                "variant_consequences": [
+                    {
+                        "support": "inferred",
+                        "variant_consequence": "decreased_gene_product_level",
+                    }
+                ],
+                "variant_descriptions": [
+                    {"description": "test description", "publication": "1"}
+                ],
+                "variant_types": [
+                    {
+                        "comment": "test comment",
+                        "de_novo": True,
+                        "inherited": True,
+                        "nmd_escape": False,
+                        "primary_type": "protein_changing",
+                        "secondary_type": "missense_variant",
+                        "supporting_papers": ["1"],
+                        "unknown_inheritance": False,
+                    }
+                ],
+            }
+        }
+
+        # Save the curation draft
+        response = self.client.post(
+            self.url_add_curation, data_to_add, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["message"],
+            "Data saved successfully for session name 'Test E'",
+        )
+
+        # Prepare the URL to publish the record
+        url_publish = reverse(
+            "publish_record", kwargs={"stable_id": response_data["result"]}
+        )
+
+        # Call the endpoint to publish
+        response_publish = self.client.post(
+            url_publish, content_type="application/json"
+        )
+        self.assertEqual(response_publish.status_code, 403)
+
+        response_data_publish = response_publish.json()
+        self.assertEqual(
+            response_data_publish["detail"],
+            "You do not have permission to perform this action.",
         )

@@ -1,4 +1,11 @@
-from .base import BaseView, BaseAPIView, BaseAdd, BaseUpdate, CustomPagination
+from .base import (
+    BaseView,
+    BaseAPIView,
+    BaseAdd,
+    BaseUpdate,
+    CustomPagination,
+    IsNotJuniorCurator,
+)
 
 from .panel import (
     PanelCreateView,
