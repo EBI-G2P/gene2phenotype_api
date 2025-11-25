@@ -71,7 +71,6 @@ class Command(BaseCommand):
 
         invalid_g2p_ids = set()
         g2p_records_skip = {}
-        # filter_year = 2000
 
         all_records, publication_counts = self.get_all_record_publications()
 
@@ -135,13 +134,6 @@ class Command(BaseCommand):
                     title = clean_title(response["result"]["title"])
                     year = response["result"]["pubYear"]
 
-                    # Filter the publications
-                    # TODO: review
-                    # Filter by date
-                    # if int(year) <= filter_year:
-                    #     logger.warning(f"Skipping old PMID '{pmid}' ({year})")
-                    #     continue
-
                     # Insert mined publication
                     mined_publication_obj = MinedPublication(
                         pmid=int(pmid),
@@ -151,22 +143,10 @@ class Command(BaseCommand):
                     )
                     mined_publication_obj._history_user = user_obj
                     mined_publication_obj.save()
-                # else:
-                    # The mined publication is in g2p but the date could still be old
-                    # Check the year of the publication and skip if it's older than 'filter_year'
-                    # if mined_publication_obj.year < filter_year:
-                    #     logger.warning(f"Skipping old PMID '{pmid}' ({year})")
-                    #     continue
 
                 for g2p_id in list_g2p_ids:
                     # Clean the IDs
                     new_g2p_id = re.sub(r'[\*."`)]+', "", g2p_id).strip()
-
-                    if g2p_records_skip[new_g2p_id] >= 100:
-                        logger.warning(
-                            f"G2P ID '{new_g2p_id}' has >= 100 mined publications. Skipping import."
-                        )
-                        continue
 
                     if (
                         new_g2p_id not in final_list_g2p_ids
@@ -185,18 +165,6 @@ class Command(BaseCommand):
                             continue
 
                         final_list_g2p_ids.add(new_g2p_id)
-
-                        # Check number of publications linked to the record
-                        # n_publications = 0
-                        # if new_g2p_id in publication_counts:
-                        #     n_publications = publication_counts[new_g2p_id]
-
-                        # confidence = lgd_obj.confidence.value
-                        # if n_publications >= 10 and (confidence == "definitive" or confidence == "strong") and int(mined_publication_obj.year) < 2020:
-                        #     logger.warning(
-                        #         f"G2P ID '{new_g2p_id}' (definitive) with {n_publications} publications. Skipping import."
-                        #     )
-                        #     continue
 
                         # Check if LGDMinedPublication already exists
                         try:
