@@ -799,6 +799,12 @@ class LGDMinedPublication(models.Model):
     class Meta:
         db_table = "lgd_mined_publication"
         unique_together = ["lgd", "mined_publication"]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(status__in=["rejected", "curated", "mined"]),
+                name="status_valid",
+            ),
+        ]
         indexes = [
             models.Index(fields=["lgd"]),
             models.Index(fields=["mined_publication"]),

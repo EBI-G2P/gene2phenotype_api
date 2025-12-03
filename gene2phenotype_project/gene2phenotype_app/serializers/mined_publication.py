@@ -38,14 +38,6 @@ class LGDMinedPublicationSerializer(serializers.ModelSerializer):
         Returns:
             CurationData: The updated LGDMinedPublication instance.
         """
-        valid_statuses = ["mined", "curated", "rejected"]
-        if validated_data.get("status") not in valid_statuses:
-            raise serializers.ValidationError(
-                {
-                    "error": f"Invalid status. Valid statuses are: {', '.join(valid_statuses)}"
-                }
-            )
-
         instance.status = validated_data.get("status")
         input_comment = validated_data.get("comment")
         if input_comment == "":
