@@ -10,6 +10,7 @@ from ..models import (
     User,
     LocusGenotypeDisease,
     Locus,
+    LocusAttrib,
     DiseaseOntologyTerm,
     CVMolecularMechanism,
     Publication,
@@ -384,9 +385,9 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         date_created = get_date_now()
         date_reviewed = date_created
-        session_name = json_data.get("session_name")
+        session_name = json_data["session_name"]
         stable_id = G2PStableIDSerializer.create_stable_id()
-        gene_symbol = json_data.get("locus")
+        gene_symbol = json_data["locus"]
 
         if session_name is None or session_name == "":
             session_name = stable_id.stable_id
@@ -395,7 +396,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         if CurationData.objects.filter(session_name=session_name).exists():
             raise serializers.ValidationError(
                 {
-                    "message": f"Curation data with the session name '{session_name}' already exists. Please change the session name and try again."
+                    "error": f"Curation data with the session name '{session_name}' already exists. Please change the session name and try again."
                 }
             )
 
@@ -404,7 +405,23 @@ class CurationDataSerializer(serializers.ModelSerializer):
             user_obj = User.objects.get(email=user_email)
         except User.DoesNotExist:
             raise serializers.ValidationError(
-                {"message": f"User '{user_email}' does not exist."}
+                {"error": f"Invalid user '{user_email}'"}
+            )
+
+        # Check if gene symbol is valid
+        try:
+            locus_obj = Locus.objects.get(name=gene_symbol)
+        except Locus.DoesNotExist:
+            try:
+                locus_attrib_obj = LocusAttrib.objects.get(value=gene_symbol)
+            except LocusAttrib.DoesNotExist:
+                locus_obj = None
+            else:
+                locus_obj = locus_attrib_obj.locus
+
+        if not locus_obj:
+            raise serializers.ValidationError(
+                {"error": f"Invalid gene '{gene_symbol}'"}
             )
 
         try:
@@ -412,7 +429,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 session_name=session_name,
                 json_data=json_data,
                 stable_id=stable_id,
-                gene_symbol=gene_symbol,
+                gene_symbol=locus_obj.name,
                 date_created=date_created,
                 date_last_update=date_reviewed,
                 user=user_obj,
@@ -420,7 +437,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         except Exception as e:
             raise serializers.ValidationError(
                 {
-                    "message": f"Failed to create curation data '{session_name}': {str(e)}"
+                    "error": f"Failed to create curation data '{session_name}': {str(e)}"
                 }
             )
 
@@ -439,8 +456,28 @@ class CurationDataSerializer(serializers.ModelSerializer):
         Returns:
             CurationData: The updated CurationData instance.
         """
+        # Get the gene symbol from the updated json data
+        gene_symbol = validated_data["json_data"]["locus"]
+        if gene_symbol != instance.gene_symbol:
+            # Check if gene symbol is valid
+            try:
+                locus_obj = Locus.objects.get(name=gene_symbol)
+            except Locus.DoesNotExist:
+                try:
+                    locus_attrib_obj = LocusAttrib.objects.get(value=gene_symbol)
+                except Locus.DoesNotExist:
+                    locus_obj = None
+                else:
+                    locus_obj = locus_attrib_obj.locus
 
-        instance.json_data = validated_data.get("json_data")
+            if not locus_obj:
+                raise serializers.ValidationError(
+                    {"error": f"Invalid gene '{gene_symbol}'"}
+                )
+
+            instance.gene_symbol = locus_obj.name
+
+        instance.json_data = validated_data["json_data"]
         instance.date_last_update = get_date_now()
         instance.save()
 

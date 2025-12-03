@@ -14,6 +14,10 @@ class LGDUpdateCurationEndpoint(TestCase):
         "gene2phenotype_app/fixtures/g2p_stable_id.json",
         "gene2phenotype_app/fixtures/user_panels.json",
         "gene2phenotype_app/fixtures/curation_data.json",
+        "gene2phenotype_app/fixtures/locus.json",
+        "gene2phenotype_app/fixtures/sequence.json",
+        "gene2phenotype_app/fixtures/source.json",
+        "gene2phenotype_app/fixtures/attribs.json",
     ]
 
     def setUp(self):
