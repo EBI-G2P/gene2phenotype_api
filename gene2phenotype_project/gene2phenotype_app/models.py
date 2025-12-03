@@ -804,6 +804,10 @@ class LGDMinedPublication(models.Model):
                 condition=Q(status__in=["rejected", "curated", "mined"]),
                 name="status_valid",
             ),
+            models.CheckConstraint(
+                condition=Q(score__in=["high", "medium", "low", "disputed", None]),
+                name="score_valid",
+            ),
         ]
         indexes = [
             models.Index(fields=["lgd"]),
