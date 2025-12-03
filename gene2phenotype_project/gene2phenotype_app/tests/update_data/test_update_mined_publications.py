@@ -211,6 +211,11 @@ class LGDDeletePanelEndpoint(TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"],
+            "Invalid status. Valid statuses are: mined, curated, rejected",
+        )
 
     def test_update_same_status(self):
         """

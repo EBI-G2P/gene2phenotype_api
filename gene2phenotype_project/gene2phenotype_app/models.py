@@ -792,16 +792,12 @@ class LGDMinedPublication(models.Model):
     mined_publication = models.ForeignKey("MinedPublication", on_delete=models.PROTECT)
     status = models.CharField(max_length=50, null=False)
     comment = models.TextField(null=True, default=None)
+    score = models.CharField(max_length=50, null=True, default=None)
+    score_comment = models.TextField(null=True, default=None)
     history = HistoricalRecords()
 
     class Meta:
         db_table = "lgd_mined_publication"
-        constraints = [
-            models.CheckConstraint(
-                check=Q(status__in=["rejected", "curated", "mined"]),
-                name="status_valid",
-            ),
-        ]
         unique_together = ["lgd", "mined_publication"]
         indexes = [
             models.Index(fields=["lgd"]),

@@ -212,7 +212,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             .select_related("mined_publication")
             .order_by("-mined_publication__year", "-mined_publication__pmid"))
 
-        return LGDMinedPublicationSerializer(queryset, many=True).data
+        return LGDMinedPublicationSerializer(
+            queryset, many=True, context={"user": self.context.get("user")}
+        ).data
 
     def get_phenotypes(self, id: int) -> list[dict[str, Any]]:
         """
