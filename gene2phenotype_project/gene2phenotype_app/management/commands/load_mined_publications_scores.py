@@ -19,6 +19,12 @@ do not insert rows into history tables.
 Supported input file: json
 This file is the output file of the Gemini analysis.
 
+Supported score values:
+- high
+- medium
+- low
+- disputed
+
 How to run the command:
 python manage.py load_mined_publications_scores --data_file <json data file> --email <user account email>
 """
