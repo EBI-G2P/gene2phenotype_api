@@ -14,6 +14,10 @@ class LGDAddCurationEndpoint(TestCase):
         "gene2phenotype_app/fixtures/g2p_stable_id.json",
         "gene2phenotype_app/fixtures/user_panels.json",
         "gene2phenotype_app/fixtures/curation_data.json",
+        "gene2phenotype_app/fixtures/locus.json",
+        "gene2phenotype_app/fixtures/sequence.json",
+        "gene2phenotype_app/fixtures/source.json",
+        "gene2phenotype_app/fixtures/attribs.json",
     ]
 
     def setUp(self):
@@ -303,3 +307,86 @@ class LGDAddCurationEndpoint(TestCase):
             response_data["error"]["message"][0],
             "To save a draft, the minimum requirement is a locus entry. Please save this draft with locus information",
         )
+
+    def test_add_curation_old_locus(self):
+        """
+        Test call to add curation endpoint with an old gene symbol
+        """
+        # Define the complex data structure
+        curation_to_add = {
+            "json_data": {
+                "allelic_requirement": "",
+                "confidence": "",
+                "cross_cutting_modifier": [],
+                "disease": {"cross_references": [], "disease_name": ""},
+                "locus": "BETA-5",
+                "mechanism_evidence": [],
+                "mechanism_synopsis": [],
+                "molecular_mechanism": {"name": "", "support": ""},
+                "panels": [],
+                "phenotypes": [],
+                "private_comment": "",
+                "public_comment": "",
+                "publications": [],
+                "session_name": "test old locus",
+                "variant_consequences": [],
+                "variant_descriptions": [],
+                "variant_types": [],
+            }
+        }
+
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.post(
+            self.url_add_curation, curation_to_add, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        curation_obj = CurationData.objects.get(session_name="test old locus")
+        self.assertEqual("TUBB4A", curation_obj.gene_symbol)
+
+    def test_add_curation_invalid_locus(self):
+        """
+        Test call to add curation endpoint with an invalid gene symbol
+        """
+        # Define the complex data structure
+        curation_to_add = {
+            "json_data": {
+                "allelic_requirement": "",
+                "confidence": "",
+                "cross_cutting_modifier": [],
+                "disease": {"cross_references": [], "disease_name": ""},
+                "locus": "BETA-INVALID",
+                "mechanism_evidence": [],
+                "mechanism_synopsis": [],
+                "molecular_mechanism": {"name": "", "support": ""},
+                "panels": [],
+                "phenotypes": [],
+                "private_comment": "",
+                "public_comment": "",
+                "publications": [],
+                "session_name": "invalid locus session",
+                "variant_consequences": [],
+                "variant_descriptions": [],
+                "variant_types": [],
+            }
+        }
+
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.post(
+            self.url_add_curation, curation_to_add, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
