@@ -80,7 +80,7 @@ from .gencc_submission import (
     GenCCSubmissionCreateView,
     GenCCSubmissionView,
     StableIDsWithLaterReviewDateView,
-    RetrieveStableIDsWithSubmissionID,
+    GenCCDeletedRecords,
 )
 
 from .phenotype import (

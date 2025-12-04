@@ -14,12 +14,6 @@ from gene2phenotype_app.serializers import (
 
 @extend_schema(exclude=True)
 class GenCCSubmissionCreateView(generics.CreateAPIView):
-    """Creates the GenCC submission record
-
-    Args:
-        generics (CreateAPIView): Create API view
-    """
-
     serializer_class = CreateGenCCSubmissionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -40,10 +34,9 @@ class GenCCSubmissionCreateView(generics.CreateAPIView):
 
 @extend_schema(exclude=True)
 class GenCCSubmissionView(APIView):
-    """Fetches unsubmitted stable ids"""
-
     def get(self, request: Request) -> Response:
-        """Gets the unsubmitted stable ids
+        """
+        Gets the records that have not been submitted to GenCC yet.
 
         Returns:
             Response: Response containing the status and the serializer.data
@@ -55,41 +48,37 @@ class GenCCSubmissionView(APIView):
 
 
 @extend_schema(exclude=True)
-class StableIDsWithLaterReviewDateView(APIView):
-    """Fetches Stable IDs that has been updated since the last GenCC submission"""
-
+class GenCCDeletedRecords(APIView):
     def get(self, request: Request) -> Response:
-        """Gets the Stable IDs that were reviewed later
+        """
+        Gets the records that have been submitted to GenCC but are now deleted in G2P.
 
         Returns:
-            Response: Response object containing the
-             stable_ids as a list
-             the count of stable_ids that fit this criteria
-             status
+            Response: Response object containing
+             - ids: dict with stable_id as key and submission_id as value
+             - count: number of IDs
         """
-        stable_ids = GenCCSubmissionSerializer.fetch_stable_ids_with_later_review_date()
+        deleted_ids = GenCCSubmissionSerializer.fetch_list_of_deleted_stable_id()
         return Response(
-            {"ids": list(stable_ids), "count": len(list(stable_ids))},
+            {"ids": deleted_ids, "count": len(list(deleted_ids))},
             status=status.HTTP_200_OK,
         )
 
 
 @extend_schema(exclude=True)
-class RetrieveStableIDsWithSubmissionID(APIView):
-    """Retrieve Stable ID with the Submission ID"""
-
-    def get(self, request: Request, submission_id: str) -> Response:
-        """Gets the stable id with the submission id
-
-        Args:
-            request (Request): HttpRequest
-            submission_id (str): Submission id
+class StableIDsWithLaterReviewDateView(APIView):
+    def get(self, request: Request) -> Response:
+        """
+        Fetches records that have been updated in G2P since the last GenCC submission.
+        It returns the GenCC ID used for the G2P submission and the G2P ID.
 
         Returns:
-            Response: Response object containing the
-             stable_ids as a list
+            Response: Response object containing
+             - ids: dict with stable_id as key and submission_id as value
+             - count: number of IDs
         """
-
-        stable_id = GenCCSubmissionSerializer.get_stable_ids(submission_id)
-
-        return Response(stable_id, status=status.HTTP_200_OK)
+        stable_ids = GenCCSubmissionSerializer.fetch_stable_ids_with_later_review_date()
+        return Response(
+            {"ids": stable_ids, "count": len(list(stable_ids))},
+            status=status.HTTP_200_OK,
+        )
