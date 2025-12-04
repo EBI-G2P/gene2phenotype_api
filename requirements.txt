@@ -3,7 +3,7 @@ attrs==25.3.0
 certifi==2025.11.12
 charset-normalizer==3.4.4
 deepdiff==8.6.1
-Django==5.1.14
+Django==5.1.15
 django-mail-templated==2.6.5
 django-simple-history==3.10.1
 djangorestframework==3.16.1
