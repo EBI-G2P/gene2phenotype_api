@@ -18,13 +18,14 @@ class GenCCSubmissionCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request: Request) -> Response:
-        """Post method to create GenCC submission
+        """
+        Create one or more GenCC submissions.
 
         Args:
-            request (Request): HttpRequest object
+            request (Request): The incoming request containing a list of GenCC submission objects.
 
         Returns:
-            Response: Response object confirming the bulk creation is completed
+            Response: Empty body with HTTP 201 status if creation succeeds.
         """
         serializer = CreateGenCCSubmissionSerializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
@@ -36,10 +37,10 @@ class GenCCSubmissionCreateView(generics.CreateAPIView):
 class GenCCSubmissionView(APIView):
     def get(self, request: Request) -> Response:
         """
-        Gets the records that have not been submitted to GenCC yet.
+        Retrieve G2P IDs that have not yet been submitted to GenCC.
 
         Returns:
-            Response: Response containing the status and the serializer.data
+            Response: A JSON list of id strings.
         """
         unused_ids = GenCCSubmissionSerializer.fetch_list_of_unsubmitted_stable_id()
         serializer = G2PStableIDSerializer(unused_ids, many=True)
@@ -60,7 +61,7 @@ class GenCCDeletedRecords(APIView):
         """
         deleted_ids = GenCCSubmissionSerializer.fetch_list_of_deleted_stable_id()
         return Response(
-            {"ids": deleted_ids, "count": len(list(deleted_ids))},
+            {"ids": deleted_ids, "count": len(deleted_ids)},
             status=status.HTTP_200_OK,
         )
 

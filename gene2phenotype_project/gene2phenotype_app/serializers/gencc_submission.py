@@ -11,11 +11,11 @@ from ..models import (
     LGDPanel,
 )
 
-class GenCCSubmissionListSerializer(serializers.ListSerializer):
-    """GenCCSubmissionListSerializer"""
 
+class GenCCSubmissionListSerializer(serializers.ListSerializer):
     def validate(self, data: list) -> list:
-        """Validation of the data
+        """
+        Method to validate multiple GenCCSubmission objects
 
         Args:
             data (list): The list data
@@ -27,7 +27,7 @@ class GenCCSubmissionListSerializer(serializers.ListSerializer):
             list: Returns the validated list
         """
         for item in data:
-            stable_id_value = item.pop("g2p_stable_id")
+            stable_id_value = item.get("g2p_stable_id")
             try:
                 g2p_stable = G2PStableID.objects.get(stable_id=stable_id_value)
             except ObjectDoesNotExist:
@@ -35,24 +35,24 @@ class GenCCSubmissionListSerializer(serializers.ListSerializer):
                     f"G2PStableID with stable_id '{stable_id_value}' does not exist."
                 )
             item["g2p_stable_id"] = g2p_stable
+
         return data
 
-    def create(self, validated_data: list) -> GenCCSubmission:
-        """For bulk creation
+    def create(self, validated_data: list) -> list[GenCCSubmission]:
+        """
+        Method to create multiple GenCCSubmission objects
 
         Args:
             validated_data (list): list of validated data
 
         Returns:
-            GenCCSubmission:  created GenCCSubmission object
+            GenCCSubmission: list of created GenCCSubmission objects
         """
         instances = [GenCCSubmission(**item) for item in validated_data]
         return GenCCSubmission.objects.bulk_create(instances)
 
 
 class CreateGenCCSubmissionSerializer(serializers.ModelSerializer):
-    """Serializer for the GenCCSubmission"""
-
     g2p_stable_id = serializers.CharField()
 
     def create(self, validated_data: dict[str, Any]) -> GenCCSubmission:
@@ -85,7 +85,7 @@ class GenCCSubmissionSerializer(serializers.ModelSerializer):
         Only returns live stable IDs whose records are in public panels.
 
         Returns:
-            QuerySet: A queryset
+            QuerySet[G2PStableID]: A queryset
         """
         public_records = LGDPanel.objects.filter(panel__is_visible=1).values_list(
             "lgd_id__stable_id", flat=True
@@ -107,15 +107,15 @@ class GenCCSubmissionSerializer(serializers.ModelSerializer):
         final_list = {}
 
         deleted_records_queryset = GenCCSubmission.objects.filter(
-                g2p_stable_id__is_live=0
-            ).values(
-                "g2p_stable_id__stable_id",
-                "submission_id",
-            )
-    
+            g2p_stable_id__is_live=0
+        ).values(
+            "g2p_stable_id__stable_id",
+            "submission_id",
+        )
+
         for record in deleted_records_queryset:
             final_list[record["g2p_stable_id__stable_id"]] = record["submission_id"]
-        
+
         return final_list
 
     @staticmethod
@@ -124,8 +124,7 @@ class GenCCSubmissionSerializer(serializers.ModelSerializer):
         final_list = {}
 
         latest_submission_date = (
-            GenCCSubmission.objects
-            .filter(g2p_stable_id=OuterRef("g2p_stable_id"))
+            GenCCSubmission.objects.filter(g2p_stable_id=OuterRef("g2p_stable_id"))
             .order_by()
             .values("g2p_stable_id")
             .annotate(latest=Max("date_of_submission"))
@@ -133,8 +132,7 @@ class GenCCSubmissionSerializer(serializers.ModelSerializer):
         )
 
         queryset = (
-            GenCCSubmission.objects
-            .annotate(
+            GenCCSubmission.objects.annotate(
                 latest_date=Subquery(latest_submission_date)
             )
             .filter(
