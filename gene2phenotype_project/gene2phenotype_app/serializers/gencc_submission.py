@@ -87,7 +87,7 @@ class GenCCSubmissionSerializer(serializers.ModelSerializer):
         Returns:
             QuerySet[G2PStableID]: A queryset
         """
-        public_records = LGDPanel.objects.filter(panel__is_visible=1).values_list(
+        public_records = LGDPanel.objects.filter(panel__is_visible=True).values_list(
             "lgd_id__stable_id", flat=True
         )
 
@@ -95,8 +95,9 @@ class GenCCSubmissionSerializer(serializers.ModelSerializer):
             has_submission=Exists(
                 GenCCSubmission.objects.filter(g2p_stable_id=OuterRef("id"))
             )
-        ).filter(has_submission=False, is_live=1, id__in=public_records)
+        ).filter(has_submission=False, is_live=True, id__in=public_records)
 
+    @staticmethod
     def fetch_list_of_deleted_stable_id() -> dict:
         """
         Fetch list of records that have been submitted to GenCC but are now deleted.
@@ -107,7 +108,7 @@ class GenCCSubmissionSerializer(serializers.ModelSerializer):
         final_list = {}
 
         deleted_records_queryset = GenCCSubmission.objects.filter(
-            g2p_stable_id__is_live=0
+            g2p_stable_id__is_live=False
         ).values(
             "g2p_stable_id__stable_id",
             "submission_id",
