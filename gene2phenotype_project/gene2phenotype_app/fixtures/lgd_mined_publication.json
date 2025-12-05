@@ -6,7 +6,9 @@
             "lgd": 1,
             "mined_publication": 1,
             "status": "mined",
-            "comment": null
+            "comment": null,
+            "score": null,
+            "score_comment": null
         }
     },
     {
@@ -16,7 +18,9 @@
             "lgd": 2,
             "mined_publication": 2,
             "status": "mined",
-            "comment": null
+            "comment": null,
+            "score": null,
+            "score_comment": null
         }
     }
 ]
