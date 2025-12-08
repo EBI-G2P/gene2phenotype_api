@@ -220,3 +220,15 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
             },
         }
         self.assertEqual(response.data["molecular_mechanism"], expected_data_mechanism)
+
+        expected_data_mined_publication = [
+            {
+                "pmid": 7866404,
+                "title": "Autosomal dominant spondylarthropathy due to a type II procollagen gene (COL2A1) point mutation.",
+                "status": "mined",
+                "comment": None,
+                "score": None,
+                "score_comment": None,
+            }
+        ]
+        self.assertEqual(response.data["mined_publications"], expected_data_mined_publication)
