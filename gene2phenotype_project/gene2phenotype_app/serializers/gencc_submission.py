@@ -98,12 +98,12 @@ class GenCCSubmissionSerializer(serializers.ModelSerializer):
         ).filter(has_submission=False, is_live=True, id__in=public_records)
 
     @staticmethod
-    def fetch_list_of_deleted_stable_id() -> dict:
+    def fetch_list_of_deleted_stable_id() -> dict[str, str]:
         """
         Fetch list of records that have been submitted to GenCC but are now deleted.
 
         Returns:
-            dict: Dictionary with stable_id as key and submission_id as value
+            dict[str, str]: Dictionary with stable_id as key and submission_id as value
         """
         final_list = {}
 
@@ -120,7 +120,7 @@ class GenCCSubmissionSerializer(serializers.ModelSerializer):
         return final_list
 
     @staticmethod
-    def fetch_stable_ids_with_later_review_date() -> dict:
+    def fetch_stable_ids_with_later_review_date() -> dict[str, str]:
         """Fetches the records that has been updated since the last GenCC submission"""
         final_list = {}
 
