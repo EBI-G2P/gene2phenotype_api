@@ -116,11 +116,11 @@ def validate_disease_name(name: str) -> bool:
 
     name_pattern = re.compile(
         # forbid duplicate ocurrences of gene-related
-        r"^(?!.*-related\s*[A-Z0-9]+(?:-[A-Z0-9]+)*-related\b)"
+        r"^(?!.*-related\s*[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*-related\b)"
         # gene part
-        r"[A-Z0-9]+(?:-[A-Z0-9]+)*-related\s*"
+        r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*-related\s*"
         # disease part
-        r"[A-Za-z0-9 ,:;’'“”\-\(\)\/\.]+$",
+        r"[A-Za-z0-9 ,:;’'“”()./\-]+$"
     )
 
     if not name_pattern.match(name):
