@@ -380,9 +380,9 @@ urlpatterns = [
         name="later_review_date",
     ),
     path(
-        "submissions/<str:submission_id>/",
-        views.RetrieveStableIDsWithSubmissionID.as_view(),
-        name="get_gencc_sub",
+        "gencc_deleted_records/",
+        views.GenCCDeletedRecords.as_view(),
+        name="gencc_deleted_records",
     ),
 
     ### Activity logs ###

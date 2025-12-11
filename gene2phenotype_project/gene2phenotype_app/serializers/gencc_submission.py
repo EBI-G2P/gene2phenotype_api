@@ -1,16 +1,21 @@
-from rest_framework import serializers
-from ..models import GenCCSubmission, G2PStableID, LocusGenotypeDisease
-from django.db.models import OuterRef, Exists
 from typing import Any
+from rest_framework import serializers
+from django.db.models import OuterRef, Exists, Max, F, Subquery
 from django.db.models.query import QuerySet
 from django.core.exceptions import ObjectDoesNotExist
 
+from ..models import (
+    GenCCSubmission,
+    G2PStableID,
+    LocusGenotypeDisease,
+    LGDPanel,
+)
+
 
 class GenCCSubmissionListSerializer(serializers.ListSerializer):
-    """GenCCSubmissionListSerializer"""
-
     def validate(self, data: list) -> list:
-        """Validation of the data
+        """
+        Method to validate multiple GenCCSubmission objects
 
         Args:
             data (list): The list data
@@ -22,7 +27,7 @@ class GenCCSubmissionListSerializer(serializers.ListSerializer):
             list: Returns the validated list
         """
         for item in data:
-            stable_id_value = item.pop("g2p_stable_id")
+            stable_id_value = item.get("g2p_stable_id")
             try:
                 g2p_stable = G2PStableID.objects.get(stable_id=stable_id_value)
             except ObjectDoesNotExist:
@@ -30,24 +35,24 @@ class GenCCSubmissionListSerializer(serializers.ListSerializer):
                     f"G2PStableID with stable_id '{stable_id_value}' does not exist."
                 )
             item["g2p_stable_id"] = g2p_stable
+
         return data
 
-    def create(self, validated_data: list) -> GenCCSubmission:
-        """For bulk creation
+    def create(self, validated_data: list) -> list[GenCCSubmission]:
+        """
+        Method to create multiple GenCCSubmission objects
 
         Args:
             validated_data (list): list of validated data
 
         Returns:
-            GenCCSubmission:  created GenCCSubmission object
+            GenCCSubmission: list of created GenCCSubmission objects
         """
         instances = [GenCCSubmission(**item) for item in validated_data]
         return GenCCSubmission.objects.bulk_create(instances)
 
 
 class CreateGenCCSubmissionSerializer(serializers.ModelSerializer):
-    """Serializer for the GenCCSubmission"""
-
     g2p_stable_id = serializers.CharField()
 
     def create(self, validated_data: dict[str, Any]) -> GenCCSubmission:
@@ -75,40 +80,82 @@ class CreateGenCCSubmissionSerializer(serializers.ModelSerializer):
 class GenCCSubmissionSerializer(serializers.ModelSerializer):
     @staticmethod
     def fetch_list_of_unsubmitted_stable_id() -> QuerySet[G2PStableID]:
-        """Fetch List of unsubmitted stable id from the G2PStableID by comparing whats in the GenCCSubmission table
+        """
+        Fetch list of unsubmitted G2P ids by comparing the IDs from the gencc_submission table.
+        Only returns live stable IDs whose records are in public panels.
 
         Returns:
-            QuerySet: A queryset
+            QuerySet[G2PStableID]: A queryset
         """
+        public_records = LGDPanel.objects.filter(panel__is_visible=True).values_list(
+            "lgd_id__stable_id", flat=True
+        )
+
         return G2PStableID.objects.annotate(
             has_submission=Exists(
                 GenCCSubmission.objects.filter(g2p_stable_id=OuterRef("id"))
             )
-        ).filter(has_submission=False, is_live=1)
+        ).filter(has_submission=False, is_live=True, id__in=public_records)
 
     @staticmethod
-    def fetch_stable_ids_with_later_review_date() -> QuerySet[G2PStableID]:
-        """Fetches the stable ID that has been updated since the last GenCC submission"""
-        return GenCCSubmission.objects.filter(
-            Exists(
-                LocusGenotypeDisease.objects.filter(
-                    stable_id=OuterRef("g2p_stable_id_id"),
-                    date_review__gt=OuterRef("date_of_submission"),
-                )
-            ),
-            g2p_stable_id__is_live=1,
-        ).values_list("submission_id", flat=True)
-
-    @staticmethod
-    def get_stable_ids(submission_id: str) -> QuerySet[G2PStableID]:
-        """Get stable ids associated with the submission id
-
-        Args:
-            submission_id (str): Submission id
+    def fetch_list_of_deleted_stable_id() -> dict[str, str]:
+        """
+        Fetch list of records that have been submitted to GenCC but are now deleted.
 
         Returns:
-            QuerySet: Returns G2P stable id objects
+            dict[str, str]: Dictionary with stable_id as key and submission_id as value
         """
-        return GenCCSubmission.objects.filter(submission_id=submission_id).values_list(
-            "g2p_stable_id__stable_id", flat=True
+        final_list = {}
+
+        deleted_records_queryset = GenCCSubmission.objects.filter(
+            g2p_stable_id__is_live=False
+        ).values(
+            "g2p_stable_id__stable_id",
+            "submission_id",
         )
+
+        for record in deleted_records_queryset:
+            final_list[record["g2p_stable_id__stable_id"]] = record["submission_id"]
+
+        return final_list
+
+    @staticmethod
+    def fetch_stable_ids_with_later_review_date() -> dict[str, str]:
+        """Fetches the records that has been updated since the last GenCC submission"""
+        final_list = {}
+
+        latest_submission_date = (
+            GenCCSubmission.objects.filter(g2p_stable_id=OuterRef("g2p_stable_id"))
+            .order_by()
+            .values("g2p_stable_id")
+            .annotate(latest=Max("date_of_submission"))
+            .values("latest")[:1]
+        )
+
+        queryset = (
+            GenCCSubmission.objects.annotate(
+                latest_date=Subquery(latest_submission_date)
+            )
+            .filter(
+                g2p_stable_id__is_live=True,
+                date_of_submission=F("latest_date"),
+            )
+            .annotate(
+                has_new_review=Exists(
+                    LocusGenotypeDisease.objects.filter(
+                        stable_id=OuterRef("g2p_stable_id_id"),
+                        date_review__gt=OuterRef("date_of_submission"),
+                    )
+                )
+            )
+            .filter(has_new_review=True)
+            .values(
+                "g2p_stable_id__stable_id",
+                "submission_id",
+            )
+        )
+
+        for record in queryset:
+            final_list[record["g2p_stable_id__stable_id"]] = record["submission_id"]
+
+        return final_list
