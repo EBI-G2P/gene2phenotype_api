@@ -103,7 +103,7 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
                     "pmid": 3897232,
                     "title": "Acetyl coenzyme A: alpha-glucosaminide N-acetyltransferase. Evidence for a transmembrane acetylation mechanism.",
                     "authors": "Bame KJ, Rome LH.",
-                    "year": "1985",
+                    "year": 1985,
                 },
                 "number_of_families": None,
                 "consanguinity": None,
@@ -117,6 +117,7 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         expected_data_mined_publication = [
             {
                 "pmid": 7866404,
+                "year": 1994,
                 "title": "Autosomal dominant spondylarthropathy due to a type II procollagen gene (COL2A1) point mutation.",
                 "status": "mined",
                 "comment": None,
@@ -191,7 +192,7 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
                     "pmid": 3897232,
                     "title": "Acetyl coenzyme A: alpha-glucosaminide N-acetyltransferase. Evidence for a transmembrane acetylation mechanism.",
                     "authors": "Bame KJ, Rome LH.",
-                    "year": "1985",
+                    "year": 1985,
                 },
                 "number_of_families": None,
                 "consanguinity": None,
@@ -224,6 +225,7 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         expected_data_mined_publication = [
             {
                 "pmid": 7866404,
+                "year": 1994,
                 "title": "Autosomal dominant spondylarthropathy due to a type II procollagen gene (COL2A1) point mutation.",
                 "status": "mined",
                 "comment": None,
