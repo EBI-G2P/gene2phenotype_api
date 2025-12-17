@@ -71,7 +71,7 @@ class PublicationSerializer(serializers.ModelSerializer):
     pmid = serializers.IntegerField()
     title = serializers.CharField(read_only=True)
     authors = serializers.CharField(read_only=True)
-    year = serializers.CharField(read_only=True)
+    year = serializers.IntegerField(read_only=True)
 
     def create(self, validated_data):
         """

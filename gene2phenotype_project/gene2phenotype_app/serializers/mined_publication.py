@@ -10,6 +10,7 @@ class LGDMinedPublicationSerializer(serializers.ModelSerializer):
     Called by: LocusGenotypeDiseaseSerializer(), LGDMinedPublicationListSerializer()
     """
     pmid = serializers.IntegerField(source="mined_publication.pmid", required=False)
+    year = serializers.IntegerField(source="mined_publication.year", required=False)
     title = serializers.CharField(source="mined_publication.title", required=False)
     status = serializers.CharField()
     comment = serializers.CharField(allow_blank=True, allow_null=True, required=False)
@@ -94,6 +95,7 @@ class LGDMinedPublicationSerializer(serializers.ModelSerializer):
         model = LGDMinedPublication
         fields = [
             "pmid",
+            "year",
             "title",
             "status",
             "comment",
