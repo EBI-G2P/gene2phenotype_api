@@ -8,7 +8,7 @@ django-mail-templated==2.6.5
 django-simple-history==3.11.0
 djangorestframework==3.16.1
 djangorestframework-simplejwt==5.5.1
-drf-spectacular==0.28.0
+drf-spectacular==0.29.0
 idna==3.11
 jsonschema==4.25.1
 jsonschema-specifications==2025.9.1
