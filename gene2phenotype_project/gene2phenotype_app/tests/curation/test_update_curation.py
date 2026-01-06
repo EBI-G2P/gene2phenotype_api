@@ -369,7 +369,7 @@ class LGDUpdateCurationEndpoint(TestCase):
 
         response_data = response.json()
         self.assertEqual(
-            response_data["error"]["message"][0],
+            response_data["error"][0],
             "You do not have permission to curate on these panels: 'Demo'",
         )
 
@@ -449,7 +449,7 @@ class LGDUpdateCurationEndpoint(TestCase):
 
         response_data = response.json()
         self.assertEqual(
-            response_data["error"]["message"][0],
+            response_data["error"][0],
             "To save a draft, the minimum requirement is a locus entry. Please save this draft with locus information",
         )
 

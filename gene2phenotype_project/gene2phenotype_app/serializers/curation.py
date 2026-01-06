@@ -80,7 +80,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         ):
             raise serializers.ValidationError(
                 {
-                    "message": "To save a draft, the minimum requirement is a locus entry. Please save this draft with locus information"
+                    "error": "To save a draft, the minimum requirement is a locus entry. Please save this draft with locus information"
                 }
             )
 
@@ -91,7 +91,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         if curation_entry and session_name != curation_entry.session_name:
             raise serializers.ValidationError(
                 {
-                    "message": f"Data already under curation. Please check session '{curation_entry.session_name}'"
+                    "error": f"Data already under curation. Please check session '{curation_entry.session_name}'"
                 }
             )
 
@@ -110,7 +110,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 unauthorized_panels_str = "', '".join(unauthorized_panels)
                 raise serializers.ValidationError(
                     {
-                        "message": f"You do not have permission to curate on these panels: '{unauthorized_panels_str}'"
+                        "error": f"You do not have permission to curate on these panels: '{unauthorized_panels_str}'"
                     }
                 )
 
@@ -181,7 +181,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             locus_obj = Locus.objects.get(name=json_data["locus"])
         except Locus.DoesNotExist:
             raise serializers.ValidationError(
-                {"message": f"Invalid locus {json_data['locus']}"}
+                {"error": f"Invalid locus {json_data['locus']}"}
             )
 
         # Check if allelic requirement is valid
@@ -325,20 +325,20 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 if lgd_obj.first().is_deleted == 0:
                     raise serializers.ValidationError(
                         {
-                            "message": f"Data already submited to G2P '{lgd_obj.stable_id.stable_id}'"
+                            "error": f"Data already submited to G2P '{lgd_obj.stable_id.stable_id}'"
                         }
                     )
                 else:
                     raise serializers.ValidationError(
                         {
-                            "message": f"This is an old G2P record '{lgd_obj.stable_id.stable_id}'"
+                            "error": f"This is an old G2P record '{lgd_obj.stable_id.stable_id}'"
                         }
                     )
 
         else:
             raise serializers.ValidationError(
                 {
-                    "message": "To publish a curated record, locus, allelic requirement, disease and molecular mechanism are necessary"
+                    "error": "To publish a curated record, locus, allelic requirement, disease and molecular mechanism are necessary"
                 }
             )
 

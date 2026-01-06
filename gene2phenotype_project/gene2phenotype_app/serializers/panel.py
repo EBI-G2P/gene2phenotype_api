@@ -43,7 +43,7 @@ class PanelCreateSerializer(serializers.ModelSerializer):
         name = attrs.get("name")
         if Panel.objects.filter(name=name, is_visible=1).exists():
             raise serializers.ValidationError(
-                {"message": "Can not create an existing panel"}
+                {"error": "Can not create an existing panel"}
             )
 
         return attrs
@@ -66,12 +66,12 @@ class PanelCreateSerializer(serializers.ModelSerializer):
             panel = Panel.objects.get(name=name)
 
             if panel.is_visible:
-                raise serializers.ValidationError({"message": f"{name} exists!"})
+                raise serializers.ValidationError({"error": f"{name} exists!"})
 
             if not panel.is_visible:
                 raise serializers.ValidationError(
                     {
-                        "message": f"{name} exist. It is only visible to authenticated users"
+                        "error": f"{name} exist. It is only visible to authenticated users"
                     }
                 )
 
@@ -83,7 +83,7 @@ class PanelCreateSerializer(serializers.ModelSerializer):
                 return panel
             except IntegrityError as e:
                 raise serializers.ValidationError(
-                    {"message": f"Database error: {str(e)}"}
+                    {"error": f"Database error: {str(e)}"}
                 )
 
     class Meta:
@@ -338,7 +338,7 @@ class LGDPanelSerializer(serializers.ModelSerializer):
 
         if not panel_obj.exists():
             raise serializers.ValidationError(
-                {"message": f"Invalid panel name '{panel_name}'"}
+                {"error": f"Invalid panel name '{panel_name}'"}
             )
 
         try:
@@ -356,7 +356,7 @@ class LGDPanelSerializer(serializers.ModelSerializer):
             if lgd_panel_obj.is_deleted == 0:
                 raise serializers.ValidationError(
                     {
-                        "message": f"G2P entry {lgd.stable_id.stable_id} is already linked to panel {panel_name}"
+                        "error": f"G2P entry {lgd.stable_id.stable_id} is already linked to panel {panel_name}"
                     }
                 )
             else:

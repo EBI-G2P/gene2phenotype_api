@@ -114,6 +114,26 @@ class LGDUpdateLGDConfidence(TestCase):
             "G2P record 'G2P00001' already has confidence value definitive",
         )
 
+    def test_update_invalid_value(self):
+        """
+        Test updating the confidence to an invalid value
+        """
+        input_data = {"confidence": "definitives"}
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = self.access_token
+
+        response = self.client.put(
+            self.url_lgd_confidence, input_data, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"],
+            "Invalid confidence value definitives",
+        )
+
     def test_valid_update(self):
         """
         Test successfully updating the record confidence

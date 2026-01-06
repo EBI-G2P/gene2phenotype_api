@@ -764,7 +764,7 @@ class LGDAddCurationEndpoint(TestCase):
             "Found another record with same locus, genotype, disease and molecular mechanism. Please check G2P ID 'G2P00001'",
         )
 
-    def test_publish_duplicate_record(self):
+    def test_publish_record_junior_user(self):
         """
         Test publishing a record for a 'junior curator' user
         """
