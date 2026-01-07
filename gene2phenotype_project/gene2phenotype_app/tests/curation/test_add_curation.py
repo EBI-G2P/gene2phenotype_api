@@ -390,3 +390,8 @@ class LGDAddCurationEndpoint(TestCase):
             self.url_add_curation, curation_to_add, content_type="application/json"
         )
         self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"], "Invalid gene 'BETA-INVALID'",
+        )
