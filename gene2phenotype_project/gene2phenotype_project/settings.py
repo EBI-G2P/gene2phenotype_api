@@ -104,6 +104,8 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Custom exception handler: 'details' is replaced by 'error' in the response
+    "EXCEPTION_HANDLER": "gene2phenotype_app.exceptions.custom_exception_handler",
 }
 
 SPECTACULAR_SETTINGS = {

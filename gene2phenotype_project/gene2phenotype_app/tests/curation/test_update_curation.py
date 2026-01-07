@@ -322,7 +322,7 @@ class LGDUpdateCurationEndpoint(TestCase):
 
         response_data = response.json()
         self.assertEqual(
-            response_data["detail"], "Could not find 'Entry' for ID 'G2P00004'"
+            response_data["error"], "Could not find 'Entry' for ID 'G2P00004'"
         )
 
     def test_update_curation_unauthorised_panel(self):

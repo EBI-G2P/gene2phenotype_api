@@ -77,7 +77,7 @@ class LGDUpdateLGDMechanism(TestCase):
         self.assertEqual(response.status_code, 404)
 
         response_data = response.json()
-        self.assertEqual(response_data["detail"], "Mechanism data is missing")
+        self.assertEqual(response_data["error"], "Mechanism data is missing")
 
     def test_unauthorised_access(self):
         """

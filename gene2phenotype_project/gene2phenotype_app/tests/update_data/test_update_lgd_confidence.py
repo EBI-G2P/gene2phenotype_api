@@ -188,5 +188,5 @@ class LGDUpdateLGDConfidence(TestCase):
 
         response_data = response.json()
         self.assertEqual(
-            response_data["detail"], "Could not find 'Entry' for ID 'G2P00007'"
+            response_data["error"], "Could not find 'Entry' for ID 'G2P00007'"
         )

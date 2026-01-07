@@ -9,6 +9,112 @@ from gene2phenotype_app.models import (
 )
 
 
+class CreatePanelEndpoint(TestCase):
+    """
+    Test endpoint to create panels
+    """
+
+    fixtures = [
+        "gene2phenotype_app/fixtures/attribs.json",
+        "gene2phenotype_app/fixtures/g2p_stable_id.json",
+        "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
+        "gene2phenotype_app/fixtures/disease.json",
+        "gene2phenotype_app/fixtures/lgd_panel.json",
+        "gene2phenotype_app/fixtures/locus_genotype_disease.json",
+        "gene2phenotype_app/fixtures/locus.json",
+        "gene2phenotype_app/fixtures/publication.json",
+        "gene2phenotype_app/fixtures/sequence.json",
+        "gene2phenotype_app/fixtures/user_panels.json",
+        "gene2phenotype_app/fixtures/ontology_term.json",
+        "gene2phenotype_app/fixtures/source.json",
+        "gene2phenotype_app/fixtures/lgd_publication.json",
+    ]
+
+    def setUp(self):
+        self.url_add_panel = reverse("panel_create")
+
+        self.panel_to_add = {
+            "name": "DD",
+            "description": "Developmental disorders",
+            "is_visible": True
+        }
+
+        self.private_panel_to_add = {
+            "name": "Ear",
+            "description": "Ear disorders",
+            "is_visible": False
+        }
+
+        self.new_panel_to_add = {
+            "name": "Mitochondrial",
+            "description": "Mitochondrial disorders",
+            "is_visible": True
+        }
+
+    def test_add_duplicate_panel(self):
+        """
+        Test the endpoint to add panel that already exists
+        """
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        # Add DD panel which already exists and it's public
+        response = self.client.post(
+            self.url_add_panel,
+            self.panel_to_add,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(response_data["error"], ["The panel 'DD' already exists."])
+
+        # Add Ear panel which already exists and it's private
+        response_private = self.client.post(
+            self.url_add_panel,
+            self.private_panel_to_add,
+            content_type="application/json",
+        )
+        self.assertEqual(response_private.status_code, 400)
+
+        response_data = response_private.json()
+        self.assertEqual(response_data["error"], ["The panel 'Ear' already exists."])
+
+    def test_create_panel(self):
+        """
+        Test the endpoint to add new panel successfully
+        """
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        # Add new Mitochondrial panel
+        response = self.client.post(
+            self.url_add_panel,
+            self.new_panel_to_add,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 201)
+
+        expected_response = {
+            "name": "Mitochondrial",
+            "description": "Mitochondrial disorders",
+            "is_visible": True
+        }
+
+        response_data = response.json()
+        self.assertEqual(response_data, expected_response)
+
+
 class LGDAddPanelEndpoint(TestCase):
     """
     Test endpoint to add panel to a LGD record
@@ -39,6 +145,10 @@ class LGDAddPanelEndpoint(TestCase):
 
         self.panel_to_add = {
             "name": "DD"
+        }
+
+        self.panel_to_add_existing = {
+            "name": "Ear"
         }
 
         # test activity logs after insertion
@@ -126,6 +236,31 @@ class LGDAddPanelEndpoint(TestCase):
         )
         self.assertEqual(response.status_code, 404)
 
+        response_data = response.json()
+        self.assertEqual(response_data["error"], "No Panel matches the given query.")
+
+    def test_add_existing_lgd_panel(self):
+        """
+        Test the endpoint to add panel to an g2p record that already has the panel
+        """
+        # Login
+        user = User.objects.get(email="user1@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.post(
+            self.url_add_panel,
+            self.panel_to_add_existing,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(response_data["error"], "G2P entry G2P00005 is already linked to panel Ear")
+
     def test_add_panel_invalid_record(self):
         """
         Test the endpoint to add panel to an invalid lgd record
@@ -146,6 +281,9 @@ class LGDAddPanelEndpoint(TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 404)
+
+        response_data = response.json()
+        self.assertEqual(response_data["error"], "No LocusGenotypeDisease matches the given query.")
 
     def test_add_panel_success(self):
         """

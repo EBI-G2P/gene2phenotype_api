@@ -88,7 +88,7 @@ class UpdateDiseasesEndpoint(TestCase):
         self.assertEqual(response.status_code, 404)
 
         response_data = response.json()
-        self.assertEqual(response_data["detail"], "No Disease matches the given query.")
+        self.assertEqual(response_data["error"], "No Disease matches the given query.")
 
     def test_no_permission(self):
         """

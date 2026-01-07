@@ -130,7 +130,7 @@ class LGDUpdateMechanismEndpoint(TestCase):
         self.assertEqual(response.status_code, 404)
 
         response_data = response.json()
-        self.assertEqual(response_data["detail"], "Mechanism data is missing")
+        self.assertEqual(response_data["error"], "Mechanism data is missing")
 
     def test_update_not_undetermined(self):
         """
@@ -186,7 +186,7 @@ class LGDUpdateMechanismEndpoint(TestCase):
         self.assertEqual(response.status_code, 404)
         response_data = response.json()
         self.assertEqual(
-            response_data["detail"],
+            response_data["error"],
             "Mechanism evidence is missing",
         )
 
@@ -216,7 +216,7 @@ class LGDUpdateMechanismEndpoint(TestCase):
         self.assertEqual(response.status_code, 404)
         response_data = response.json()
         self.assertEqual(
-            response_data["detail"],
+            response_data["error"],
             "Mechanism evidence is missing",
         )
 

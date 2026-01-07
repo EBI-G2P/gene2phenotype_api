@@ -136,7 +136,7 @@ class LGDDeletePublication(TestCase):
 
         response_data = response.json()
         self.assertEqual(
-            response_data["detail"], "No Publication matches the given query."
+            response_data["error"], "No Publication matches the given query."
         )
 
     def test_delete_unlinked_publication(self):
