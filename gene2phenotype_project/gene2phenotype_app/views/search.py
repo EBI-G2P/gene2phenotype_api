@@ -66,6 +66,27 @@ from .base import BaseView, CustomPagination
         Skin
 
 
+    - `mechanism`
+      Filters results to a specific molecular mechanism.
+
+      Accepted values include:
+
+
+        dominant negative
+        gain of function
+        loss of function
+        undetermined
+        undetermined non-loss-of-function
+
+
+    - `variant_consequence`
+      Filters results to a specific variant consequence.
+      The consequence can be provided either as a Sequence Ontology term or accession.
+
+      Accepted values can be found at:
+      https://www.ebi.ac.uk/gene2phenotype/about/terminology#variant-consequence-section
+
+
     When more than 20 records are available, results are paginated.
 
     **Example Requests**
@@ -80,6 +101,9 @@ from .base import BaseView, CustomPagination
 
     - Search gene within a specific panel:
         `/search/?type=gene&query=FBN1&panel=DD`
+
+    - Search gene filtering by molecular mechanism and variant consequence:
+        `/search/?type=gene&query=FBN1&mechanism=loss of function&variant_consequence=SO:0002317`
     """),
     parameters=[
         OpenApiParameter(
