@@ -27,6 +27,7 @@ class SearchTests(TestCase):
         "gene2phenotype_app/fixtures/ontology_term.json",
         "gene2phenotype_app/fixtures/lgd_publication.json",
         "gene2phenotype_app/fixtures/lgd_phenotype.json",
+        "gene2phenotype_app/fixtures/lgd_variant_consequence.json",
         "gene2phenotype_app/fixtures/curation_data.json",
     ]
 
@@ -40,6 +41,17 @@ class SearchTests(TestCase):
                 "disease": "CEP290-related JOUBERT SYNDROME TYPE 5",
                 "mechanism": "loss of function",
                 "panel": ["DD", "Eye"],
+                "confidence": "definitive",
+            }
+        ]
+        self.expected_data_mpi = [
+            {
+                "stable_id": "G2P00009",
+                "gene": "MPI",
+                "genotype": "biallelic_autosomal",
+                "disease": "MPI-related congenital disorder of glycosylation",
+                "mechanism": "undetermined",
+                "panel": ["Eye"],
                 "confidence": "definitive",
             }
         ]
@@ -391,3 +403,52 @@ class SearchTests(TestCase):
             }
         ]
         self.assertEqual(response.data["results"], expected_data)
+
+    def test_search_with_mechanism(self):
+        """
+        Test the response when searching a gene and filtering by mechanism
+        """
+        url_search_mechanism = f"{self.base_url_search}?query=CEP290&mechanism=loss of function"
+        response = self.client.get(url_search_mechanism)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["next"], None)
+        self.assertEqual(response.data["previous"], None)
+        self.assertEqual(response.data["results"], self.expected_data)
+
+    def test_search_with_mechanism_not_found(self):
+        """
+        Test the response when searching a gene and filtering by mechanism that does not match
+        """
+        url_search_mechanism_not_found = f"{self.base_url_search}?query=CEP290&mechanism=undetermined"
+        response_not_found = self.client.get(url_search_mechanism_not_found)
+
+        self.assertEqual(response_not_found.status_code, 404)
+        self.assertEqual(response_not_found.data["error"], "No matching results found for: CEP290")
+
+    def test_search_with_variant_consequence(self):
+        """
+        Test the response when searching a gene and filtering by variant consequence
+        """
+        url_search_variant_consequence = f"{self.base_url_search}?query=MPI&variant_consequence=absent gene product"
+        response = self.client.get(url_search_variant_consequence)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["next"], None)
+        self.assertEqual(response.data["previous"], None)
+        self.assertEqual(response.data["results"], self.expected_data_mpi)
+
+    def test_search_with_variant_consequence_accession(self):
+        """
+        Test the response when searching a gene and filtering by variant consequence (SO accession)
+        """
+        url_search_variant_consequence = f"{self.base_url_search}?query=MPI&variant_consequence=SO:0002317"
+        response = self.client.get(url_search_variant_consequence)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["next"], None)
+        self.assertEqual(response.data["previous"], None)
+        self.assertEqual(response.data["results"], self.expected_data_mpi)

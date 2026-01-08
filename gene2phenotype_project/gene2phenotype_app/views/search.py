@@ -1,3 +1,5 @@
+from functools import reduce
+from operator import or_
 from rest_framework.response import Response
 from django.db.models import Q, F
 import textwrap, re
@@ -157,9 +159,13 @@ class SearchView(BaseView):
 
     def get_queryset(self):
         user = self.request.user
-        search_type = self.request.query_params.get("type", None)
-        search_query = self.request.query_params.get("query", None)
-        search_panel = self.request.query_params.get("panel", None)
+        params = self.request.query_params
+
+        search_type = params.get("type", None)
+        search_query = params.get("query", None)
+        search_panel = params.get("panel", None)
+        search_mechanism = params.get("mechanism", None)
+        search_variant_consequence = params.get("variant_consequence", None)
 
         if not search_query:
             return LocusGenotypeDisease.objects.none()
@@ -172,200 +178,157 @@ class SearchView(BaseView):
         # Remove leading whitespaces, newline and tab characters from the beginning and end of the query text
         search_query = search_query.lstrip().rstrip()
 
-        base_locus = Q(locus__name=search_query, is_deleted=0)
-        base_locus_2 = Q(
-            locus__locusidentifier__isnull=False,
-            locus__locusidentifier__identifier=search_query,
-            is_deleted=0,
+        # Base constraint - exclude deleted records
+        base_deleted = Q(is_deleted=0)
+
+        # Additional options constraints
+        options_query = Q()
+
+        if search_panel:
+            options_query &= Q(lgdpanel__panel__name=search_panel)
+
+        if search_mechanism:
+            options_query &= Q(mechanism__value=search_mechanism)
+
+        if search_variant_consequence:
+            if search_variant_consequence.startswith("SO:"):
+                options_query &= Q(
+                    lgdvariantgenccconsequence__variant_consequence__accession=search_variant_consequence,
+                    lgdvariantgenccconsequence__isnull=False,
+                    lgdvariantgenccconsequence__is_deleted=0,
+                )
+            else:
+                options_query &= Q(
+                    lgdvariantgenccconsequence__variant_consequence__term=search_variant_consequence,
+                    lgdvariantgenccconsequence__isnull=False,
+                    lgdvariantgenccconsequence__is_deleted=0,
+                )
+
+        base_locus = or_q(
+            Q(locus__name=search_query),
+            Q(
+                locus__locusidentifier__isnull=False,
+                locus__locusidentifier__identifier=search_query,
+            ),
+            Q(
+                locus__locusattrib__isnull=False,
+                locus__locusattrib__value=search_query,
+                locus__locusattrib__is_deleted=0,
+            ),
         )
-        base_locus_3 = Q(
-            locus__locusattrib__isnull=False,
-            locus__locusattrib__value=search_query,
-            locus__locusattrib__is_deleted=0,
+
+        base_disease = or_q(
+            Q(disease__name__regex=rf"(?i)(?<![\w]){search_query}(?![\w])"),
+            Q(
+                disease__diseasesynonym__synonym__regex=rf"(?i)(?<![\w]){search_query}(?![\w])"
+            ),
+            Q(disease__diseaseontologyterm__ontology_term__accession=search_query),
         )
-        base_disease = Q(
-            disease__name__regex=rf"(?i)(?<![\w]){search_query}(?![\w])", is_deleted=0
+
+        base_phenotype = or_q(
+            Q(
+                lgdphenotype__phenotype__term__regex=rf"(?i)(?<![\w]){search_query}(?![\w])",
+                lgdphenotype__isnull=False,
+                lgdphenotype__is_deleted=0,
+            ),
+            Q(
+                lgdphenotype__phenotype__accession=search_query,
+                lgdphenotype__isnull=False,
+                lgdphenotype__is_deleted=0,
+            ),
         )
-        base_disease_2 = Q(
-            disease__diseasesynonym__synonym__regex=rf"(?i)(?<![\w]){search_query}(?![\w])",
-            is_deleted=0,
-        )
-        base_disease_3 = Q(
-            disease__diseaseontologyterm__ontology_term__accession=search_query,
-            is_deleted=0,
-        )
-        base_phenotype = Q(
-            lgdphenotype__phenotype__term__regex=rf"(?i)(?<![\w]){search_query}(?![\w])",
-            lgdphenotype__isnull=False,
-            is_deleted=0,
-        )
-        base_phenotype_2 = Q(
-            lgdphenotype__phenotype__accession=search_query,
-            lgdphenotype__isnull=False,
-            is_deleted=0,
-        )
-        base_g2p_id = Q(stable_id__stable_id=search_query, is_deleted=0)
+
+        base_g2p_id = Q(stable_id__stable_id=search_query)
 
         queryset = LocusGenotypeDisease.objects.none()
 
         # Generic search
         if not search_type:
-            if search_panel:
-                # First search by gene
+            # First search by gene
+            queryset = (
+                LocusGenotypeDisease.objects.filter(
+                    base_deleted & options_query & base_locus
+                )
+                .order_by("locus__name", "disease__name")
+                .distinct()
+            )
+
+            # If the search by gene didn't return results, try the other types
+            if not queryset.exists():
                 queryset = (
                     LocusGenotypeDisease.objects.filter(
-                        base_locus & Q(lgdpanel__panel__name=search_panel)
-                        | base_locus_2 & Q(lgdpanel__panel__name=search_panel)
-                        | base_locus_3 & Q(lgdpanel__panel__name=search_panel)
+                        base_deleted
+                        & options_query
+                        & (base_disease | base_phenotype | base_g2p_id)
                     )
                     .order_by("locus__name", "disease__name")
                     .distinct()
                 )
-
-                # If the search by gene didn't return results, try the other types
-                if not queryset.exists():
-                    queryset = (
-                        LocusGenotypeDisease.objects.filter(
-                            base_disease & Q(lgdpanel__panel__name=search_panel)
-                            | base_disease_2 & Q(lgdpanel__panel__name=search_panel)
-                            | base_disease_3 & Q(lgdpanel__panel__name=search_panel)
-                            | base_phenotype & Q(lgdpanel__panel__name=search_panel)
-                            | base_phenotype_2 & Q(lgdpanel__panel__name=search_panel)
-                            | base_g2p_id & Q(lgdpanel__panel__name=search_panel)
-                        )
-                        .order_by("locus__name", "disease__name")
-                        .distinct()
-                    )
-            else:
-                # Searching all panels
-                # First search by gene
-                queryset = (
-                    LocusGenotypeDisease.objects.filter(
-                        base_locus | base_locus_2 | base_locus_3
-                    )
-                    .order_by("locus__name", "disease__name")
-                    .distinct()
-                )
-
-                # If the search by gene didn't return results, try the other types
-                if not queryset.exists():
-                    queryset = (
-                        LocusGenotypeDisease.objects.filter(
-                            base_disease
-                            | base_disease_2
-                            | base_disease_3
-                            | base_phenotype
-                            | base_phenotype_2
-                            | base_g2p_id
-                        )
-                        .order_by("locus__name", "disease__name")
-                        .distinct()
-                    )
 
             if not queryset.exists():
                 self.handle_no_permission("results", search_query)
 
         elif search_type == "gene":
-            if search_panel:
-                queryset = (
-                    LocusGenotypeDisease.objects.filter(
-                        base_locus & Q(lgdpanel__panel__name=search_panel)
-                        | base_locus_2 & Q(lgdpanel__panel__name=search_panel)
-                        | base_locus_3 & Q(lgdpanel__panel__name=search_panel)
-                    )
-                    .order_by("locus__name", "disease__name")
-                    .distinct()
+            queryset = (
+                LocusGenotypeDisease.objects.filter(
+                    base_deleted & options_query & base_locus
                 )
-            else:
-                queryset = (
-                    LocusGenotypeDisease.objects.filter(
-                        base_locus | base_locus_2 | base_locus_3
-                    )
-                    .order_by("locus__name", "disease__name")
-                    .distinct()
-                )
+                .order_by("locus__name", "disease__name")
+                .distinct()
+            )
 
             if not queryset.exists():
                 self.handle_no_permission("Gene", search_query)
 
         elif search_type == "disease":
-            if search_panel:
-                queryset = (
-                    LocusGenotypeDisease.objects.filter(
-                        base_disease & Q(lgdpanel__panel__name=search_panel)
-                        | base_disease_2 & Q(lgdpanel__panel__name=search_panel)
-                        | base_disease_3 & Q(lgdpanel__panel__name=search_panel)
-                    )
-                    .order_by("locus__name", "disease__name")
-                    .distinct()
+            queryset = (
+                LocusGenotypeDisease.objects.filter(
+                    base_deleted & options_query & base_disease
                 )
-            else:
-                queryset = (
-                    LocusGenotypeDisease.objects.filter(
-                        base_disease | base_disease_2 | base_disease_3
-                    )
-                    .order_by("locus__name", "disease__name")
-                    .distinct()
-                )
+                .order_by("locus__name", "disease__name")
+                .distinct()
+            )
 
             if not queryset.exists():
                 self.handle_no_permission("Disease", search_query)
 
         elif search_type == "phenotype":
-            if search_panel:
-                queryset = (
-                    LocusGenotypeDisease.objects.filter(
-                        base_phenotype & Q(lgdpanel__panel__name=search_panel)
-                        | base_phenotype_2 & Q(lgdpanel__panel__name=search_panel)
-                    )
-                    .order_by("locus__name", "disease__name")
-                    .distinct()
+            queryset = (
+                LocusGenotypeDisease.objects.filter(
+                    base_deleted & options_query & base_phenotype
                 )
-            else:
-                queryset = (
-                    LocusGenotypeDisease.objects.filter(
-                        base_phenotype | base_phenotype_2
-                    )
-                    .order_by("locus__name", "disease__name")
-                    .distinct()
-                )
+                .order_by("locus__name", "disease__name")
+                .distinct()
+            )
 
             if not queryset.exists():
                 self.handle_no_permission("Phenotype", search_query)
 
         elif search_type == "stable_id":
-            if search_panel:
-                queryset = (
-                    LocusGenotypeDisease.objects.filter(
-                        base_g2p_id & Q(lgdpanel__panel__name=search_panel)
-                    )
-                    .order_by("locus__name", "disease__name")
-                    .distinct()
+            queryset = (
+                LocusGenotypeDisease.objects.filter(
+                    base_deleted & options_query & base_g2p_id
                 )
-            else:
-                queryset = (
-                    LocusGenotypeDisease.objects.filter(base_g2p_id)
-                    .order_by("locus__name", "disease__name")
-                    .distinct()
-                )
+                .order_by("locus__name", "disease__name")
+                .distinct()
+            )
 
             if not queryset.exists():
                 self.handle_no_permission("stable_id", search_query)
 
         elif search_type == "draft" and user.is_authenticated:
+            # to extend the queryset being annotated when it is draft,
+            # we want to return username so curator can see who is curating
+            # also add the curator email, incase of the notification
             queryset = (
                 CurationData.objects.filter(gene_symbol=search_query)
                 .order_by("stable_id__stable_id")
                 .distinct()
-            )
-
-            # to extend the queryset being annotated when it is draft,
-            # want to return username so curator can see who is curating
-            # adding the curator email, incase of the notification.
-            queryset = queryset.annotate(
-                first_name=F("user_id__first_name"),
-                last_name=F("user_id__last_name"),
-                user_email=F("user__email"),
+                .annotate(
+                    first_name=F("user_id__first_name"),
+                    last_name=F("user_id__last_name"),
+                    user_email=F("user__email"),
+                )
             )
 
             for obj in queryset:
@@ -434,7 +397,7 @@ class SearchView(BaseView):
                     match = re.search(r"G2P\d{5,}", g2p_obj.comment)
                     return self.handle_merged_record(search_query, match.group())
                 else:
-                # No comment or comment with other description is considered to be simply deleted
+                    # No comment or comment with other description is considered to be simply deleted
                     return self.handle_deleted_record(search_query)
 
         queryset = self.get_queryset()
@@ -485,3 +448,8 @@ class SearchView(BaseView):
             return self.get_paginated_response(paginated_output)
 
         return Response({"results": list_output, "count": len(list_output)})
+
+
+def or_q(*qs: Q) -> Q:
+    """Combine a list of Q objects using OR operator"""
+    return reduce(or_, qs)
