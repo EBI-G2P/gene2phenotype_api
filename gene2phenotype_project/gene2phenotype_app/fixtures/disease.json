@@ -91,6 +91,13 @@
         }
     },
     {
+        "model": "gene2phenotype_app.disease",
+        "pk": 14,
+        "fields": {
+            "name": "MPI-related congenital disorder of glycosylation"
+        }
+    },
+    {
         "model": "gene2phenotype_app.diseaseontologyterm",
         "pk": 1,
         "fields": {
