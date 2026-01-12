@@ -31,7 +31,7 @@ class LGDDeletePhenotypeSummary(TestCase):
 
     def setUp(self):
         self.url_delete = reverse("lgd_phenotype_summary", kwargs={"stable_id": "G2P00002"})
-        self.summary_to_delete = {"summary": "Abnormality of connective tissue and of the musculoskeletal system"}
+        self.summary_to_delete = {"summary_id": 1}
 
     def test_invalid_delete(self):
         """
@@ -46,7 +46,7 @@ class LGDDeletePhenotypeSummary(TestCase):
 
         response = self.client.patch(
             self.url_delete,
-            {"summary": "summary"},
+            {"summary_id": 2},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
@@ -76,7 +76,7 @@ class LGDDeletePhenotypeSummary(TestCase):
         response_data = response.json()
         self.assertEqual(
             response_data["error"],
-            "Please provide valid phenotype summary.",
+            "Missing input key 'summary_id'",
         )
 
     def test_delete_non_superuser(self):
@@ -146,6 +146,11 @@ class LGDDeletePhenotypeSummary(TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["message"], "Phenotype summary successfully deleted for record 'G2P00002'"
+        )
 
         # Check deleted LGD-phenotype summary
         lgd_deleted_phenotypes = LGDPhenotypeSummary.objects.filter(
