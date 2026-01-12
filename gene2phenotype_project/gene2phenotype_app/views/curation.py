@@ -65,19 +65,17 @@ class AddCurationData(BaseAdd):
 
         serializer = self.serializer_class(data=request.data, context={"user": user})
 
-        if serializer.is_valid():
-            instance = serializer.save()
-            return Response(
-                {
-                    "message": f"Data saved successfully for session name '{instance.session_name}'",
-                    "result": f"{instance.stable_id.stable_id}",
-                },
-                status=status.HTTP_200_OK,
-            )
-        else:
-            return Response(
-                {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-            )
+        # If data is invalid, return error message from the serializer
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+
+        return Response(
+            {
+                "message": f"Data saved successfully for session name '{instance.session_name}'",
+                "result": f"{instance.stable_id.stable_id}",
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 @extend_schema(exclude=True)
@@ -218,6 +216,12 @@ class UpdateCurationData(BaseUpdate):
         input_data = json.dumps(request.data)
         input_json_data = json.loads(input_data)
 
+        if "json_data" not in input_json_data:
+            return Response(
+                {"error": "Invalid data format: 'json_data' is missing"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         # Validate the JSON data against the schema
         try:
             validate(instance=input_json_data["json_data"], schema=schema)
@@ -237,19 +241,15 @@ class UpdateCurationData(BaseUpdate):
             context={"user": user, "session_name": curation_obj.session_name},
         )
 
-        if serializer.is_valid():
-            instance = serializer.save()
-            return Response(
-                {
-                    "message": f"Data updated successfully for session name '{instance.session_name}'"
-                },
-                status=status.HTTP_200_OK,
-            )
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
 
-        else:
-            return Response(
-                {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-            )
+        return Response(
+            {
+                "message": f"Data updated successfully for session name '{instance.session_name}'"
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 @extend_schema(exclude=True)

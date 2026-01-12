@@ -49,6 +49,28 @@ class AddDiseaseEndpoint(TestCase):
                 }
             ],
         }
+        self.add_disease_with_invalid_ontology = {
+            "name": "STRA6-related syndromic microphthalmia 2",
+            "ontology_terms": [
+                {
+                    "accession": "MONDO:00000000000",
+                    "term": "syndrome",
+                    "description": None,
+                    "source": "Mondo",
+                }
+            ],
+        }
+        self.add_disease_with_invalid_ontology_source = {
+            "name": "STRA6-related moebius syndrome",
+            "ontology_terms": [
+                {
+                    "accession": "Orphanet:570",
+                    "term": "Moebius syndrome",
+                    "description": None,
+                    "source": "Orphanet",
+                }
+            ],
+        }
 
     def test_add_no_permission(self):
         """
@@ -147,4 +169,48 @@ class AddDiseaseEndpoint(TestCase):
         response_data = response.json()
         self.assertEqual(
             response_data["name"], ["disease with this name already exists."]
+        )
+
+    def test_add_disease_with_invalid_ontology(self):
+        """
+        Test the endpoint to add a disease with an invalid ontology
+        """
+        # Login
+        user = User.objects.get(email="john@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.post(
+            self.url_add_disease,
+            self.add_disease_with_invalid_ontology,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"], "Invalid Mondo ID. Please check ID 'MONDO:00000000000'"
+        )
+
+    def test_add_disease_with_invalid_ontology_source(self):
+        """
+        Test the endpoint to add a disease with an invalid ontology source
+        """
+        # Login
+        user = User.objects.get(email="john@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.post(
+            self.url_add_disease,
+            self.add_disease_with_invalid_ontology_source,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"], "Invalid ID 'Orphanet:570'. Please input a valid ID from OMIM or Mondo"
         )

@@ -764,7 +764,101 @@ class LGDAddCurationEndpoint(TestCase):
             "Found another record with same locus, genotype, disease and molecular mechanism. Please check G2P ID 'G2P00001'",
         )
 
-    def test_publish_duplicate_record(self):
+    def test_publish_old_record(self):
+        """
+        Test trying to publish a record that is the same as a deleted record
+        """
+        self.login_user()
+        # Define the input data structure
+        data_to_add = {
+            "json_data": {
+                "allelic_requirement": "biallelic_autosomal",
+                "confidence": "limited",
+                "cross_cutting_modifier": [],
+                "disease": {
+                    "cross_references": [],
+                    "disease_name": "STRA6-related Griscelli Type 2",
+                },
+                "locus": "STRA6",
+                "mechanism_evidence": [],
+                "mechanism_synopsis": [],
+                "molecular_mechanism": {
+                    "name": "loss of function",
+                    "support": "inferred",
+                },
+                "panels": ["Developmental disorders"],
+                "phenotypes": [],
+                "private_comment": "test comment",
+                "public_comment": "test comment public",
+                "publications": [
+                    {
+                        "affectedIndividuals": 1,
+                        "ancestries": "test",
+                        "authors": "Makar AB, McMartin KE, Palese M, Tephly TR.",
+                        "comment": "test comment",
+                        "consanguineous": "no",
+                        "families": 1,
+                        "pmid": "1",
+                        "source": "G2P",
+                        "title": "Formate assay in body fluids: application in methanol poisoning.",
+                        "year": 1975,
+                    }
+                ],
+                "session_name": "Test publish old record",
+                "variant_consequences": [
+                    {
+                        "support": "inferred",
+                        "variant_consequence": "decreased_gene_product_level",
+                    }
+                ],
+                "variant_descriptions": [
+                    {"description": "test description", "publication": "1"}
+                ],
+                "variant_types": [
+                    {
+                        "comment": "test comment",
+                        "de_novo": True,
+                        "inherited": True,
+                        "nmd_escape": False,
+                        "primary_type": "protein_changing",
+                        "secondary_type": "missense_variant",
+                        "supporting_papers": ["1"],
+                        "unknown_inheritance": False,
+                    }
+                ],
+            }
+        }
+
+        # Save the curation draft
+        response = self.client.post(
+            self.url_add_curation, data_to_add, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["message"],
+            "Data saved successfully for session name 'Test publish old record'",
+        )
+
+        # Prepare the URL to publish the record
+        url_publish = reverse(
+            "publish_record", kwargs={"stable_id": response_data["result"]}
+        )
+
+        # Call the endpoint to publish
+        response_publish = self.client.post(
+            url_publish, content_type="application/json"
+        )
+        self.assertEqual(response_publish.status_code, 400)
+
+        response_data_publish = response_publish.json()
+        self.assertEqual(
+            response_data_publish["error"],
+            "The locus, genotype, disease and molecular mechanism match an old record: 'G2P00003'",
+        )
+
+    def test_publish_record_junior_user(self):
         """
         Test publishing a record for a 'junior curator' user
         """

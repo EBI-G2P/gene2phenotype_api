@@ -104,6 +104,9 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Custom exception handler: for the 404 status code replace 'detail' by 'error' in the response
+    # Rule is defined in gene2phenotype_app/exceptions.py
+    "EXCEPTION_HANDLER": "gene2phenotype_app.exceptions.custom_exception_handler",
 }
 
 SPECTACULAR_SETTINGS = {

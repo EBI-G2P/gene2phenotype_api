@@ -80,7 +80,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         ):
             raise serializers.ValidationError(
                 {
-                    "message": "To save a draft, the minimum requirement is a locus entry. Please save this draft with locus information"
+                    "error": "To save a draft, the minimum requirement is a locus entry. Please save this draft with locus information"
                 }
             )
 
@@ -91,7 +91,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         if curation_entry and session_name != curation_entry.session_name:
             raise serializers.ValidationError(
                 {
-                    "message": f"Data already under curation. Please check session '{curation_entry.session_name}'"
+                    "error": f"Data already under curation. Please check session '{curation_entry.session_name}'"
                 }
             )
 
@@ -110,7 +110,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 unauthorized_panels_str = "', '".join(unauthorized_panels)
                 raise serializers.ValidationError(
                     {
-                        "message": f"You do not have permission to curate on these panels: '{unauthorized_panels_str}'"
+                        "error": f"You do not have permission to curate on these panels: '{unauthorized_panels_str}'"
                     }
                 )
 
@@ -181,7 +181,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             locus_obj = Locus.objects.get(name=json_data["locus"])
         except Locus.DoesNotExist:
             raise serializers.ValidationError(
-                {"message": f"Invalid locus {json_data['locus']}"}
+                {"error": f"Invalid locus {json_data['locus']}"}
             )
 
         # Check if allelic requirement is valid
@@ -218,11 +218,18 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 mechanism__value=json_data["molecular_mechanism"]["name"],
             )
 
-            raise serializers.ValidationError(
-                {
-                    "error": f"Found another record with same locus, genotype, disease and molecular mechanism. Please check G2P ID '{lgd_obj.stable_id.stable_id}'"
-                }
-            )
+            if lgd_obj.is_deleted == 1:
+                raise serializers.ValidationError(
+                            {
+                                "error": f"The locus, genotype, disease and molecular mechanism match an old record: '{lgd_obj.stable_id.stable_id}'"
+                            }
+                        )
+            else:
+                raise serializers.ValidationError(
+                    {
+                        "error": f"Found another record with same locus, genotype, disease and molecular mechanism. Please check G2P ID '{lgd_obj.stable_id.stable_id}'"
+                    }
+                )
 
         except LocusGenotypeDisease.DoesNotExist:
             # Check if similar records is already published
@@ -290,57 +297,6 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
             if not result:
                 return curation_data
-
-    def check_entry(self, input_json_data):
-        """
-        Check the validity of the provided JSON data for publishing a curated entry.
-
-        Args:
-            input_json_data (dict): JSON data to be checked.
-
-        Raises:
-            serializers.ValidationError: If the JSON data is invalid for publishing.
-        Future:
-            This is for the publish and will be done differently
-        """
-
-        input_dictionary = input_json_data
-
-        locus = input_dictionary["locus"]
-        allelic_requirement = input_dictionary["allelic_requirement"]
-        disease = input_dictionary["disease"]["disease_name"]
-        mechanism = input_dictionary["molecular_mechanism"]["name"]
-
-        if locus and allelic_requirement and disease and mechanism:
-            # Get LGD: deleted entries are also returned
-            # If LGD is deleted then we should warn the curator
-            lgd_obj = LocusGenotypeDisease.objects.filter(
-                locus__name=locus,
-                genotype__value=allelic_requirement,
-                disease__name=disease,
-                mechanism__value=mechanism,
-            )
-
-            if len(lgd_obj) > 0:
-                if lgd_obj.first().is_deleted == 0:
-                    raise serializers.ValidationError(
-                        {
-                            "message": f"Data already submited to G2P '{lgd_obj.stable_id.stable_id}'"
-                        }
-                    )
-                else:
-                    raise serializers.ValidationError(
-                        {
-                            "message": f"This is an old G2P record '{lgd_obj.stable_id.stable_id}'"
-                        }
-                    )
-
-        else:
-            raise serializers.ValidationError(
-                {
-                    "message": "To publish a curated record, locus, allelic requirement, disease and molecular mechanism are necessary"
-                }
-            )
 
     def get_entry_info_from_json_data(self, json_data):
         """

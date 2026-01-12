@@ -41,17 +41,17 @@ class PanelCreateSerializer(serializers.ModelSerializer):
             Request: A validated request object
         """
         name = attrs.get("name")
-        if Panel.objects.filter(name=name, is_visible=1).exists():
+
+        if Panel.objects.filter(name=name).exists():
             raise serializers.ValidationError(
-                {"message": "Can not create an existing panel"}
+                {"error": f"The panel '{name}' already exists."}
             )
 
         return attrs
 
     def create(self, validated_data):
         """
-        Creation of the panel if panel does not exist
-        Updating the panel if is_visible = 0
+        Creation of the panel if panel does not exist.
 
         Args:
             validated_data (dict): validated request object
@@ -62,18 +62,15 @@ class PanelCreateSerializer(serializers.ModelSerializer):
         name = validated_data.get("name")
         description = validated_data.get("description")
         is_visible = validated_data.get("is_visible")
+
         try:
             panel = Panel.objects.get(name=name)
 
-            if panel.is_visible:
-                raise serializers.ValidationError({"message": f"{name} exists!"})
-
-            if not panel.is_visible:
-                raise serializers.ValidationError(
-                    {
-                        "message": f"{name} exist. It is only visible to authenticated users"
-                    }
-                )
+            raise serializers.ValidationError(
+                {
+                    "error": f"The panel '{name}' already exists."
+                }
+            )
 
         except Panel.DoesNotExist:
             try:
@@ -83,7 +80,7 @@ class PanelCreateSerializer(serializers.ModelSerializer):
                 return panel
             except IntegrityError as e:
                 raise serializers.ValidationError(
-                    {"message": f"Database error: {str(e)}"}
+                    {"error": f"Database error: {str(e)}"}
                 )
 
     class Meta:
@@ -338,7 +335,7 @@ class LGDPanelSerializer(serializers.ModelSerializer):
 
         if not panel_obj.exists():
             raise serializers.ValidationError(
-                {"message": f"Invalid panel name '{panel_name}'"}
+                {"error": f"Invalid panel name '{panel_name}'"}
             )
 
         try:
@@ -356,7 +353,7 @@ class LGDPanelSerializer(serializers.ModelSerializer):
             if lgd_panel_obj.is_deleted == 0:
                 raise serializers.ValidationError(
                     {
-                        "message": f"G2P entry {lgd.stable_id.stable_id} is already linked to panel {panel_name}"
+                        "error": f"G2P entry {lgd.stable_id.stable_id} is already linked to panel {panel_name}"
                     }
                 )
             else:
