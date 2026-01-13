@@ -470,11 +470,11 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
         it sets the flag 'is_deleted' to 1.
         """
         user = self.request.user
-        summary = request.data.get("summary")
+        summary_id = request.data.get("summary_id")
 
-        if not summary or summary == "":
+        if not summary_id:
             return Response(
-                {"error": "Please provide valid phenotype summary."},
+                {"error": "Missing input key 'summary_id'"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -500,7 +500,7 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
         # Different rows mean the lgd-phenotype summary is associated with multiple publications
         # We have to delete all rows
         phenotype_summary_list = LGDPhenotypeSummary.objects.filter(
-            lgd=lgd_obj, summary=summary, is_deleted=0
+            lgd=lgd_obj, id=summary_id, is_deleted=0
         )
 
         if not phenotype_summary_list:
@@ -518,7 +518,7 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
             lgd_obj.save_without_historical_record()
 
         return Response(
-            {"message": f"Phenotype summary successfully deleted for ID '{stable_id}'"},
+            {"message": f"Phenotype summary successfully deleted for record '{stable_id}'"},
             status=status.HTTP_200_OK,
         )
 
