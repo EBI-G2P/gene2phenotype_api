@@ -557,7 +557,7 @@ class LGDAddCurationEndpoint(TestCase):
         response_data_publish = response_publish.json()
         self.assertEqual(
             response_data_publish["message"],
-            "Record 'G2P00010' published successfully",
+            "Record 'G2P00011' published successfully",
         )
 
         # Check inserted data
@@ -950,4 +950,27 @@ class LGDAddCurationEndpoint(TestCase):
         self.assertEqual(
             response_data_publish["detail"],
             "You do not have permission to perform this action.",
+        )
+
+    def test_publish_automatic_record(self):
+        """
+        Test trying to publish a record that was created automatically
+        """
+        self.login_user()
+
+        # Prepare the URL to publish the record
+        url_publish = reverse(
+            "publish_record", kwargs={"stable_id": "G2P00010"}
+        )
+
+        # Call the endpoint to publish
+        response_publish = self.client.post(
+            url_publish, content_type="application/json"
+        )
+        self.assertEqual(response_publish.status_code, 400)
+
+        response_data_publish = response_publish.json()
+        self.assertEqual(
+            response_data_publish["error"],
+            "Cannot publish record 'G2P00010': status is 'automatic'. Please update the record before publishing.",
         )

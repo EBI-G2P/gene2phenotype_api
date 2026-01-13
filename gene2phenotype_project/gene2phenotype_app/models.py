@@ -37,6 +37,7 @@ class CurationData(models.Model):
     session_name = models.CharField(max_length=100, null=False, unique=True)
     json_data = models.JSONField(null=False)
     gene_symbol = models.CharField(max_length=50, null=False, default=None)
+    status = models.CharField(max_length=50, default="manual") # manual or automatic
     history = HistoricalRecords()
 
     class Meta:

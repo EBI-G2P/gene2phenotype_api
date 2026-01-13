@@ -20,6 +20,12 @@ class LGDGetCurationDraftEndpoint(TestCase):
         self.url_get_curation = reverse(
             "curation_details", kwargs={"stable_id": "G2P00004"}
         )
+        self.url_get_invalid_curation = reverse(
+            "curation_details", kwargs={"stable_id": "G2P04444"}
+        )
+        self.url_get_no_curation = reverse(
+            "curation_details", kwargs={"stable_id": "G2P00001"}
+        )
 
     def test_get_curation_success(self):
         """
@@ -40,8 +46,48 @@ class LGDGetCurationDraftEndpoint(TestCase):
 
     def test_get_curation_unauthorised_access(self):
         """
-        Test call to get curation draft endpoint without authentication
+        Test call to get curation draft without authentication
         """
 
         response = self.client.get(self.url_get_curation)
         self.assertEqual(response.status_code, 401)
+
+    def test_get_curation_invalid(self):
+        """
+        Test call to get curation draft for an invalid stable id
+        """
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.get(self.url_get_invalid_curation)
+        self.assertEqual(response.status_code, 404)
+
+        response = response.json()
+        self.assertEqual(
+            response["error"], "No G2PStableID matches the given query."
+        )
+
+    def test_get_no_curation(self):
+        """
+        Test call to get curation draft that doesn't exist
+        """
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.get(self.url_get_no_curation)
+        self.assertEqual(response.status_code, 404)
+
+        response = response.json()
+        self.assertEqual(
+            response["error"], "No matching Entry found for: G2P00001"
+        )

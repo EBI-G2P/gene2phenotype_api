@@ -182,7 +182,7 @@ class LGDAddCurationEndpoint(TestCase):
 
         response_data = response.json()
         self.assertEqual(
-            response_data["error"][0],
+            response_data["error"],
             "Data already under curation. Please check session 'test session'",
         )
 
@@ -228,7 +228,7 @@ class LGDAddCurationEndpoint(TestCase):
 
         response_data = response.json()
         self.assertEqual(
-            response_data["error"][0],
+            response_data["error"],
             "You do not have permission to curate on these panels: 'Demo'",
         )
 
@@ -304,7 +304,7 @@ class LGDAddCurationEndpoint(TestCase):
 
         response_data = response.json()
         self.assertEqual(
-            response_data["error"][0],
+            response_data["error"],
             "To save a draft, the minimum requirement is a locus entry. Please save this draft with locus information",
         )
 

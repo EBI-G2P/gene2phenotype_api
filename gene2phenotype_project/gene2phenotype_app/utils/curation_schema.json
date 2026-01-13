@@ -113,8 +113,8 @@
                 "required": ["supporting_papers"]
             }
         },
-        "variant_description": {
-            "description": "Variant description",
+        "variant_descriptions": {
+            "description": "Variant description associated with this curation record",
             "type" : "array",
             "items": {
                 "type": "object",
@@ -128,8 +128,8 @@
                 }
             }
         },
-        "variant_consequence": {
-            "description": "Variant consequence associated with this description",
+        "variant_consequences": {
+            "description": "Variant consequence associated with this curation record",
             "type": "array",
             "items":{
                 "type": "object",
@@ -232,12 +232,12 @@
             },
             "required": ["disease_name"]
         },
-        "panel": {
+        "panels": {
             "type": "array",
             "items": {
                 "type": "string"
             }
-        }, 
+        },
         "confidence": {
             "description": "Confidence level",
             "type": "string"
@@ -251,5 +251,8 @@
             "type": "string"
         }
     },
-    "required": ["locus"]
+    "required": ["locus"],
+    "additionalProperties": {
+        "type": "string"
+    }
 }
