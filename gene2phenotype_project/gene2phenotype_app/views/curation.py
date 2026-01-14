@@ -35,8 +35,6 @@ class AddCurationData(BaseAdd):
         """
         user = request.user
         input_data = request.data
-        # # Default status is 'manual' if not provided
-        # curation_status = input_data.get("status", "manual")
 
         if "json_data" not in input_data:
             return Response(

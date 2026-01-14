@@ -344,6 +344,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             CurationData: The newly created CurationData instance.
         """
         json_data = validated_data.get("json_data")
+        # Default status is 'manual' if not provided
         curation_status = validated_data.get("status", "manual")
 
         date_created = get_date_now()
