@@ -189,7 +189,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             locus_obj = Locus.objects.get(name=json_data["locus"])
         except Locus.DoesNotExist:
             raise serializers.ValidationError(
-                {"error": f"Invalid locus {json_data['locus']}"}
+                {"error": f"Invalid gene {json_data['locus']}"}
             )
 
         # Check if allelic requirement is valid

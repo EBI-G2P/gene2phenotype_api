@@ -23,11 +23,19 @@ class LGDAddCurationEndpoint(TestCase):
     def setUp(self):
         self.url_add_curation = reverse("add_curation_data")
 
+    def login_user(self):
+        self.user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(self.user)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = str(
+            refresh.access_token
+        )
+
     def test_add_curation_success(self):
         """
         Test successful call to add curation endpoint
         """
-        # Define the complex data structure
+        self.login_user()
+
         curation_to_add = {
             "json_data": {
                 "allelic_requirement": "biallelic_autosomal",
@@ -118,14 +126,6 @@ class LGDAddCurationEndpoint(TestCase):
             }
         }
 
-        # Login
-        user = User.objects.get(email="user5@test.ac.uk")
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
-        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
-
         response = self.client.post(
             self.url_add_curation, curation_to_add, content_type="application/json"
         )
@@ -144,6 +144,8 @@ class LGDAddCurationEndpoint(TestCase):
         """
         Test successful call to add an automatic curation draft
         """
+        self.login_user()
+
         curation_to_add = {
             "json_data": {
                 "allelic_requirement": "biallelic_autosomal",
@@ -195,6 +197,7 @@ class LGDAddCurationEndpoint(TestCase):
                 ],
                 "private_comment": "test comment",
                 "public_comment": "test comment",
+                "extra_comment": "",
                 "publications": [
                     {
                         "affectedIndividuals": 1,
@@ -235,14 +238,6 @@ class LGDAddCurationEndpoint(TestCase):
             "status": "automatic",
         }
 
-        # Login
-        user = User.objects.get(email="user5@test.ac.uk")
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
-        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
-
         response = self.client.post(
             self.url_add_curation, curation_to_add, content_type="application/json"
         )
@@ -254,7 +249,9 @@ class LGDAddCurationEndpoint(TestCase):
             "Data saved successfully for session name 'test automatic session'",
         )
 
-        curation_entries = CurationData.objects.filter(session_name="test automatic session")
+        curation_entries = CurationData.objects.filter(
+            session_name="test automatic session"
+        )
         self.assertEqual(len(curation_entries), 1)
         self.assertEqual(curation_entries[0].status, "automatic")
 
@@ -262,7 +259,8 @@ class LGDAddCurationEndpoint(TestCase):
         """
         Test call to add curation endpoint with existing curation
         """
-        # Define the complex data structure
+        self.login_user()
+
         curation_to_add = {
             "json_data": {
                 "allelic_requirement": "",
@@ -285,14 +283,6 @@ class LGDAddCurationEndpoint(TestCase):
             }
         }
 
-        # Login
-        user = User.objects.get(email="user5@test.ac.uk")
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
-        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
-
         response = self.client.post(
             self.url_add_curation, curation_to_add, content_type="application/json"
         )
@@ -304,11 +294,54 @@ class LGDAddCurationEndpoint(TestCase):
             "Data already under curation. Please check session 'test session'",
         )
 
+    def test_add_curation_duplicate_session_name(self):
+        """
+        Test adding a curation draft with existing session name
+        """
+        self.login_user()
+
+        curation_to_add = {
+            "json_data": {
+                "allelic_requirement": "",
+                "confidence": "",
+                "cross_cutting_modifier": [],
+                "disease": {
+                    "cross_references": [],
+                    "disease_name": "SRY-related syndrome",
+                },
+                "locus": "SRY",
+                "mechanism_evidence": [],
+                "mechanism_synopsis": [],
+                "molecular_mechanism": {"name": "", "support": ""},
+                "panels": [],
+                "phenotypes": [],
+                "private_comment": "",
+                "public_comment": "",
+                "publications": [],
+                "session_name": "test session SRY",
+                "variant_consequences": [],
+                "variant_descriptions": [],
+                "variant_types": [],
+            }
+        }
+
+        response = self.client.post(
+            self.url_add_curation, curation_to_add, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"],
+            "Curation data with the session name 'test session SRY' already exists. Please change the session name and try again.",
+        )
+
     def test_add_curation_unauthorised_panel(self):
         """
         Test call to add curation endpoint with unauthorised panel
         """
-        # Define the complex data structure
+        self.login_user()
+
         curation_to_add = {
             "json_data": {
                 "allelic_requirement": "",
@@ -331,14 +364,6 @@ class LGDAddCurationEndpoint(TestCase):
             }
         }
 
-        # Login
-        user = User.objects.get(email="user5@test.ac.uk")
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
-        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
-
         response = self.client.post(
             self.url_add_curation, curation_to_add, content_type="application/json"
         )
@@ -354,21 +379,14 @@ class LGDAddCurationEndpoint(TestCase):
         """
         Test call to add curation endpoint with invalid request body
         """
-        # Define the complex data structure
+        self.login_user()
+
         curation_to_add = {
             "json_data": {
                 "locus": "CEP290",
                 "disease": "CEP290-related bardet-biedl syndrome",
             }
         }
-
-        # Login
-        user = User.objects.get(email="user5@test.ac.uk")
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
-        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
         response = self.client.post(
             self.url_add_curation, curation_to_add, content_type="application/json"
@@ -384,7 +402,8 @@ class LGDAddCurationEndpoint(TestCase):
         """
         Test call to add curation endpoint with empty locus field
         """
-        # Define the complex data structure
+        self.login_user()
+
         curation_to_add = {
             "json_data": {
                 "allelic_requirement": "",
@@ -407,14 +426,6 @@ class LGDAddCurationEndpoint(TestCase):
             }
         }
 
-        # Login
-        user = User.objects.get(email="user5@test.ac.uk")
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
-        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
-
         response = self.client.post(
             self.url_add_curation, curation_to_add, content_type="application/json"
         )
@@ -430,7 +441,8 @@ class LGDAddCurationEndpoint(TestCase):
         """
         Test call to add curation endpoint with an old gene symbol
         """
-        # Define the complex data structure
+        self.login_user()
+
         curation_to_add = {
             "json_data": {
                 "allelic_requirement": "",
@@ -453,14 +465,6 @@ class LGDAddCurationEndpoint(TestCase):
             }
         }
 
-        # Login
-        user = User.objects.get(email="user5@test.ac.uk")
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
-        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
-
         response = self.client.post(
             self.url_add_curation, curation_to_add, content_type="application/json"
         )
@@ -473,7 +477,8 @@ class LGDAddCurationEndpoint(TestCase):
         """
         Test call to add curation endpoint with an invalid gene symbol
         """
-        # Define the complex data structure
+        self.login_user()
+
         curation_to_add = {
             "json_data": {
                 "allelic_requirement": "",
@@ -496,14 +501,6 @@ class LGDAddCurationEndpoint(TestCase):
             }
         }
 
-        # Login
-        user = User.objects.get(email="user5@test.ac.uk")
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
-        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
-
         response = self.client.post(
             self.url_add_curation, curation_to_add, content_type="application/json"
         )
@@ -511,5 +508,49 @@ class LGDAddCurationEndpoint(TestCase):
 
         response_data = response.json()
         self.assertEqual(
-            response_data["error"], "Invalid gene 'BETA-INVALID'",
+            response_data["error"],
+            "Invalid gene 'BETA-INVALID'",
         )
+
+    def test_add_curation_no_session_name(self):
+        """
+        Test adding a curation draft without a session name.
+        """
+        self.login_user()
+
+        curation_to_add = {
+            "json_data": {
+                "allelic_requirement": "monoallelic_autosomal",
+                "confidence": "strong",
+                "cross_cutting_modifier": [],
+                "disease": {
+                    "cross_references": [],
+                    "disease_name": "BAAT-related hypercholanemia familial",
+                },
+                "locus": "BAAT",
+                "mechanism_evidence": [],
+                "mechanism_synopsis": [],
+                "molecular_mechanism": {"name": "", "support": ""},
+                "panels": [],
+                "phenotypes": [],
+                "private_comment": "",
+                "public_comment": "",
+                "publications": [],
+                "session_name": "",
+                "variant_consequences": [],
+                "variant_descriptions": [],
+                "variant_types": [],
+            }
+        }
+
+        response = self.client.post(
+            self.url_add_curation, curation_to_add, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        expected_response = {
+            "message": "Data saved successfully for session name 'G2P00011'",
+            "result": "G2P00011",
+        }
+        response_data = response.json()
+        self.assertEqual(response_data, expected_response)
