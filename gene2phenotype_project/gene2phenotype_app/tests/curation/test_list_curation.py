@@ -43,3 +43,4 @@ class LGDListCurationDraftsEndpoint(TestCase):
 
         response = self.client.get(self.url_list_curation)
         self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.data["error"], "Authentication credentials were not provided.")
