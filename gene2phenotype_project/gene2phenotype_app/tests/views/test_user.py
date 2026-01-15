@@ -28,13 +28,12 @@ class UserPanelEndpointTests(TestCase):
         self.url_user_panels = reverse("user_panels")
 
         user = User.objects.get(email="user5@test.ac.uk")
-
         access_token = login(user)
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
     def test_get_user_panels(self):
         """
-        Test the response of the User endpoint
+        Test the endpoint that retrieves the list of panels the current user can edit.
         """
 
         response = self.client.get(self.url_user_panels)
@@ -199,3 +198,65 @@ class LoginLogoutTest(TestCase):
 
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.data["error"], "Account disabled. Please contact Admin at g2p-help@ebi.ac.uk")
+
+class ChangePasswordTest(TestCase):
+    fixtures = ["gene2phenotype_app/fixtures/user_panels.json"]
+
+    def setUp(self):
+        self.url_change_password = reverse("change_password")
+        self.url_verify_email = reverse("verify_email")
+
+        user = User.objects.get(email="user5@test.ac.uk")
+        access_token = login(user)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+    def test_change_password_success(self):
+        """
+        Test changing password with correct old password
+        """
+        change_password_data = {
+            "old_password": "test_user5",
+            "password": "new_test_user5",
+            "password2": "new_test_user5",
+        }
+
+        response_change_password = self.client.post(
+            self.url_change_password,
+            change_password_data,
+            content_type="application/json",
+        )
+
+        self.assertEqual(response_change_password.status_code, 201)
+
+    def test_change_password_failure(self):
+        """
+        Test changing password with incorrect old password
+        """
+        change_password_data = {
+            "old_password": "test_user",
+            "password": "new_test_user5",
+            "password2": "new_test_user5",
+        }
+
+        response_change_password = self.client.post(
+            self.url_change_password,
+            change_password_data,
+            content_type="application/json",
+        )
+
+        self.assertEqual(response_change_password.status_code, 400)
+
+    def test_verify_email_success(self):
+        """
+        Test verifying email for password reset with correct email
+        """
+        response = self.client.post(
+            self.url_verify_email,
+            {"email": "user5@test.ac.uk"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("id", response.data)
+        self.assertIn("email", response.data)
+        self.assertIn("token", response.data)
