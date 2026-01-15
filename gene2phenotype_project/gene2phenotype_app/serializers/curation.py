@@ -43,7 +43,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
     Serializer for CurationData model
     """
 
-    def validate(self, data):
+    def validate_to_save(self, data):
         """
         Validate the input data for curation.
 
@@ -64,8 +64,6 @@ class CurationDataSerializer(serializers.ModelSerializer):
             serializers.ValidationError: If the data is already under curation or
             if the user does not have permission to curate on certain panels.
         """
-
-        session_name = self.context.get("session_name")
         # making a deep copy of data so any changes made are only applied to data_copy
         data_copy = copy.deepcopy(data)
         data_dict = self.convert_to_dict(data_copy)
@@ -84,16 +82,26 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 }
             )
 
+        session_name = data_dict["json_data"]["session_name"]
         # Check if JSON is already in the table
         curation_entry = self.compare_curation_data(data_dict, user_obj.id)
 
-        # Throw error if data is already stored in table associated with another curation entry
-        if curation_entry and session_name != curation_entry.session_name:
-            raise serializers.ValidationError(
-                {
-                    "error": f"Data already under curation. Please check session '{curation_entry.session_name}'"
-                }
-            )
+        # This method is called by both create and update methods
+        # In case of update, check if the curation_entry found is the same as the one being updated
+        if curation_entry:
+            if session_name == curation_entry.session_name:
+                raise serializers.ValidationError(
+                    {
+                        "error": f"No updates to save for session '{curation_entry.session_name}'"
+                    }
+                )
+            else:
+                # Throw error if data is already stored in table associated with another curation entry
+                raise serializers.ValidationError(
+                    {
+                        "error": f"Data already under curation. Please check session '{curation_entry.session_name}'"
+                    }
+                )
 
         if (
             "panels" in data_dict["json_data"]
@@ -181,7 +189,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             locus_obj = Locus.objects.get(name=json_data["locus"])
         except Locus.DoesNotExist:
             raise serializers.ValidationError(
-                {"error": f"Invalid locus {json_data['locus']}"}
+                {"error": f"Invalid gene {json_data['locus']}"}
             )
 
         # Check if allelic requirement is valid
@@ -270,8 +278,6 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         return data
 
-    # using the Deepdiff module to compare JSON data
-    # TODO: this still needs to be worked on when we have fixed the user permission issue
     def compare_curation_data(self, input_json_data, user_obj):
         """
         Function to compare provided JSON data against JSON data stored in CurationData instances
@@ -301,6 +307,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
     def get_entry_info_from_json_data(self, json_data):
         """
         Extracts specific information from a given JSON data structure.
+        This method is used by the search functionality to extract relevant fields for display.
 
         This method parses the provided `json_data` dictionary to extract the following fields:
         - "genotype": Retrieved from the "allelic_requirement" key.
@@ -336,8 +343,9 @@ class CurationDataSerializer(serializers.ModelSerializer):
         Returns:
             CurationData: The newly created CurationData instance.
         """
-
         json_data = validated_data.get("json_data")
+        # Default status is 'manual' if not provided
+        curation_status = validated_data.get("status", "manual")
 
         date_created = get_date_now()
         date_reviewed = date_created
@@ -389,6 +397,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 date_created=date_created,
                 date_last_update=date_reviewed,
                 user=user_obj,
+                status=curation_status,
             )
         except Exception as e:
             raise serializers.ValidationError(
@@ -403,7 +412,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         """
         Update an entry in the curation table.
-        It replaces the json data object with the latest data and updates the 'date_last_update'.
+        It replaces the json data object with the latest data, updates the 'date_last_update'
+        and sets the status to 'manual'.
 
         Args:
             instance
@@ -421,7 +431,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             except Locus.DoesNotExist:
                 try:
                     locus_attrib_obj = LocusAttrib.objects.get(value=gene_symbol)
-                except Locus.DoesNotExist:
+                except LocusAttrib.DoesNotExist:
                     locus_obj = None
                 else:
                     locus_obj = locus_attrib_obj.locus
@@ -435,6 +445,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         instance.json_data = validated_data["json_data"]
         instance.date_last_update = get_date_now()
+        instance.status = "manual"
         instance.save()
 
         return instance
@@ -813,4 +824,4 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CurationData
-        fields = ["json_data"]
+        fields = ["json_data", "status"]

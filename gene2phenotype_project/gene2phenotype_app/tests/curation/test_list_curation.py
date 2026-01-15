@@ -34,7 +34,7 @@ class LGDListCurationDraftsEndpoint(TestCase):
         response = self.client.get(self.url_list_curation)
         self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(response.data.get("count"), 1)
+        self.assertEqual(response.data.get("count"), 2)
 
     def test_list_curation_unauthorised_access(self):
         """

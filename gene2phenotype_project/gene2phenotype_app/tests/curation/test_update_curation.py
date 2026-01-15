@@ -29,10 +29,19 @@ class LGDUpdateCurationEndpoint(TestCase):
             "update_curation", kwargs={"stable_id": "G2P00123"}
         )
 
+    def login_user(self):
+        self.user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(self.user)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = str(
+            refresh.access_token
+        )
+
     def test_update_curation_success(self):
         """
         Test successful call to update curation endpoint
         """
+        self.login_user()
+
         # Define the complex data structure
         curation_to_update = {
             "json_data": {
@@ -124,14 +133,6 @@ class LGDUpdateCurationEndpoint(TestCase):
             }
         }
 
-        # Login
-        user = User.objects.get(email="user5@test.ac.uk")
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
-        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
-
         response = self.client.put(
             self.url_update_curation,
             curation_to_update,
@@ -158,6 +159,8 @@ class LGDUpdateCurationEndpoint(TestCase):
         Test call to update curation endpoint with existing curation
         Updating existing curation with no changes is allowed
         """
+        self.login_user()
+
         # Define the complex data structure
         curation_to_update = {
             "json_data": {
@@ -181,25 +184,17 @@ class LGDUpdateCurationEndpoint(TestCase):
             }
         }
 
-        # Login
-        user = User.objects.get(email="user5@test.ac.uk")
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
-        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
-
         response = self.client.put(
             self.url_update_curation,
             curation_to_update,
             content_type="application/json",
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 400)
 
         response_data = response.json()
         self.assertEqual(
-            response_data["message"],
-            "Data updated successfully for session name 'test session'",
+            response_data["error"],
+            "No updates to save for session 'test session'",
         )
 
         # Check curation_data table
@@ -208,7 +203,7 @@ class LGDUpdateCurationEndpoint(TestCase):
 
         # Test history table
         history_records = CurationData.history.filter(stable_id__stable_id="G2P00004")
-        self.assertEqual(len(history_records), 1)
+        self.assertEqual(len(history_records), 0)
 
     def test_update_curation_no_permission(self):
         """
@@ -329,6 +324,8 @@ class LGDUpdateCurationEndpoint(TestCase):
         """
         Test call to update curation endpoint with unauthorised panel
         """
+        self.login_user()
+
         # Define the complex data structure
         curation_to_update = {
             "json_data": {
@@ -352,14 +349,6 @@ class LGDUpdateCurationEndpoint(TestCase):
             }
         }
 
-        # Login
-        user = User.objects.get(email="user5@test.ac.uk")
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
-        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
-
         response = self.client.put(
             self.url_update_curation,
             curation_to_update,
@@ -369,7 +358,7 @@ class LGDUpdateCurationEndpoint(TestCase):
 
         response_data = response.json()
         self.assertEqual(
-            response_data["error"][0],
+            response_data["error"],
             "You do not have permission to curate on these panels: 'Demo'",
         )
 
@@ -377,6 +366,8 @@ class LGDUpdateCurationEndpoint(TestCase):
         """
         Test call to update curation endpoint with invalid request body
         """
+        self.login_user()
+
         # Define the complex data structure
         curation_to_update = {
             "json_data": {
@@ -384,14 +375,6 @@ class LGDUpdateCurationEndpoint(TestCase):
                 "disease": "CEP290-related bardet-biedl syndrome",
             }
         }
-
-        # Login
-        user = User.objects.get(email="user5@test.ac.uk")
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
-        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
         response = self.client.put(
             self.url_update_curation,
@@ -405,10 +388,38 @@ class LGDUpdateCurationEndpoint(TestCase):
             "JSON data does not follow the required format.", response_data["error"]
         )
 
+    def test_update_curation_missing_json(self):
+        """
+        Test call to update curation endpoint with missing key 'json_data'
+        """
+        self.login_user()
+
+        # Define the complex data structure
+        curation_to_update = {
+            "data": {
+                "locus": "CEP290",
+                "disease": "CEP290-related bardet-biedl syndrome",
+            }
+        }
+
+        response = self.client.put(
+            self.url_update_curation,
+            curation_to_update,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"], "Invalid data format: 'json_data' is missing"
+        )
+
     def test_update_curation_empty_locus(self):
         """
         Test call to update curation endpoint with empty locus field
         """
+        self.login_user()
+
         # Define the complex data structure
         curation_to_update = {
             "json_data": {
@@ -432,14 +443,6 @@ class LGDUpdateCurationEndpoint(TestCase):
             }
         }
 
-        # Login
-        user = User.objects.get(email="user5@test.ac.uk")
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
-        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
-
         response = self.client.put(
             self.url_update_curation,
             curation_to_update,
@@ -449,7 +452,7 @@ class LGDUpdateCurationEndpoint(TestCase):
 
         response_data = response.json()
         self.assertEqual(
-            response_data["error"][0],
+            response_data["error"],
             "To save a draft, the minimum requirement is a locus entry. Please save this draft with locus information",
         )
 
@@ -458,6 +461,8 @@ class LGDUpdateCurationEndpoint(TestCase):
         Test to update invalid curation
         Cannot update a curation that does not exist
         """
+        self.login_user()
+
         # Define the complex data structure
         curation_to_update = {
             "json_data": {
@@ -480,14 +485,6 @@ class LGDUpdateCurationEndpoint(TestCase):
                 "variant_types": [],
             }
         }
-
-        # Login
-        user = User.objects.get(email="user5@test.ac.uk")
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-
-        # Authenticate by setting cookie on the test client
-        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
         response = self.client.put(
             self.url_update_invalid_curation,

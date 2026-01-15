@@ -26,8 +26,25 @@ class AddCurationData(BaseAdd):
 
         Returns:
             A Response object with appropriate status and message.
+        
+        Input example:
+        {
+            "json_data": {...},
+            "status": "automatic"  # optional, default is 'manual'
+        }
         """
-        user = self.request.user
+        user = request.user
+        input_data = request.data
+
+        if "json_data" not in input_data:
+            return Response(
+                {"error": "Invalid data format: 'json_data' is missing"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # json format accepts null values but in python these values are represented as 'None'
+        # dumps() converts 'None' to 'null' before json validation
+        input_json_data = json.loads(json.dumps(input_data["json_data"]))
 
         json_file_path = settings.BASE_DIR.joinpath(
             "gene2phenotype_app", "utils", "curation_schema.json"
@@ -40,30 +57,22 @@ class AddCurationData(BaseAdd):
                 {"error": "Schema file not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        # json format accepts null values but in python these values are represented as 'None'
-        # dumps() converts 'None' to 'null' before json validation
-        input_data = json.dumps(request.data)
-        input_json_data = json.loads(input_data)
-
-        if "json_data" not in input_json_data:
-            return Response(
-                {"error": "Invalid data format: 'json_data' is missing"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         # Validate the JSON data against the schema
         try:
-            validate(instance=input_json_data["json_data"], schema=schema)
+            validate(instance=input_json_data, schema=schema)
         except jsonschema.exceptions.ValidationError as e:
             return Response(
                 {
-                    "error": "JSON data does not follow the required format. Required format is"
+                    "error": "JSON data does not follow the required format. "
                     + str(e)
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer = self.serializer_class(data=request.data, context={"user": user})
+        # Check if json is already present for this user
+        self.serializer_class(context={"user": user}).validate_to_save(input_data)
+
+        serializer = self.serializer_class(data=input_data, context={"user": user})
 
         # If data is invalid, return error message from the serializer
         serializer.is_valid(raise_exception=True)
@@ -195,7 +204,7 @@ class UpdateCurationData(BaseUpdate):
         Args:
             stable_id (string)
         """
-        user = self.request.user
+        user = request.user
 
         # Get curation entry to be updated
         curation_obj = self.get_queryset().first()
@@ -228,11 +237,14 @@ class UpdateCurationData(BaseUpdate):
         except jsonschema.exceptions.ValidationError as e:
             return Response(
                 {
-                    "error": "JSON data does not follow the required format. Required format is"
+                    "error": "JSON data does not follow the required format. "
                     + str(e)
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        # Check if json is already present for this user
+        self.serializer_class(context={"user": user}).validate_to_save(request.data)
 
         # Update data - it replaces the data
         serializer = CurationDataSerializer(
@@ -270,7 +282,7 @@ class PublishRecord(APIView):
         Returns:
                 Response message
         """
-        user = self.request.user
+        user = request.user
 
         try:
             # Get curation record
@@ -278,8 +290,17 @@ class PublishRecord(APIView):
                 stable_id__stable_id=stable_id, user__email=user
             )
 
+            # Cannot publish if status is 'automatic'
+            if curation_obj.status == "automatic":
+                return Response(
+                    {
+                        "error": f"Cannot publish record '{stable_id}': status is 'automatic'. Please update the record before publishing."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             # Check if there is enough data to publish the record
-            locus_obj = self.serializer_class().validate_to_publish(curation_obj)
+            self.serializer_class().validate_to_publish(curation_obj)
 
             # Publish record
             try:

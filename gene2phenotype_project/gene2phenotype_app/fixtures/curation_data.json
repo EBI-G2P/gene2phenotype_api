@@ -33,7 +33,46 @@
       },
       "gene_symbol": "CEP290",
       "user_id": 5,
-      "stable_id": 4
+      "stable_id": 4,
+      "status": "manual"
+    }
+  },
+  {
+    "model": "gene2phenotype_app.curationdata",
+    "pk": 2,
+    "fields": {
+      "date_created": "2026-01-11T14:10:21Z",
+      "date_last_update": "2026-01-11T14:10:21Z",
+      "session_name": "test session SRY",
+      "json_data": {
+        "allelic_requirement": "monoallelic_Y_hemizygous",
+        "confidence": "limited",
+        "cross_cutting_modifier": [],
+        "disease": {
+          "cross_references": [],
+          "disease_name": ""
+        },
+        "locus": "SRY",
+        "mechanism_evidence": [],
+        "mechanism_synopsis": [],
+        "molecular_mechanism": {
+          "name": "",
+          "support": ""
+        },
+        "panels": [],
+        "phenotypes": [],
+        "private_comment": "",
+        "public_comment": "",
+        "publications": [],
+        "session_name": "test session SRY",
+        "variant_consequences": [],
+        "variant_descriptions": [],
+        "variant_types": []
+      },
+      "gene_symbol": "SRY",
+      "user_id": 5,
+      "stable_id": 10,
+      "status": "automatic"
     }
   }
 ]
