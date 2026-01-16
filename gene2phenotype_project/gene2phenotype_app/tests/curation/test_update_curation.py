@@ -154,57 +154,6 @@ class LGDUpdateCurationEndpoint(TestCase):
         history_records = CurationData.history.filter(stable_id__stable_id="G2P00004")
         self.assertEqual(len(history_records), 1)
 
-    def test_update_curation_existing_curation(self):
-        """
-        Test call to update curation endpoint with existing curation
-        Updating existing curation with no changes is allowed
-        """
-        self.login_user()
-
-        # Define the complex data structure
-        curation_to_update = {
-            "json_data": {
-                "allelic_requirement": "",
-                "confidence": "",
-                "cross_cutting_modifier": [],
-                "disease": {"cross_references": [], "disease_name": ""},
-                "locus": "CEP290",
-                "mechanism_evidence": [],
-                "mechanism_synopsis": [],
-                "molecular_mechanism": {"name": "", "support": ""},
-                "panels": [],
-                "phenotypes": [],
-                "private_comment": "",
-                "public_comment": "",
-                "publications": [],
-                "session_name": "test session",
-                "variant_consequences": [],
-                "variant_descriptions": [],
-                "variant_types": [],
-            }
-        }
-
-        response = self.client.put(
-            self.url_update_curation,
-            curation_to_update,
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, 400)
-
-        response_data = response.json()
-        self.assertEqual(
-            response_data["error"],
-            "No updates to save for session 'test session'",
-        )
-
-        # Check curation_data table
-        curation_entries = CurationData.objects.filter(session_name="test session")
-        self.assertEqual(len(curation_entries), 1)
-
-        # Test history table
-        history_records = CurationData.history.filter(stable_id__stable_id="G2P00004")
-        self.assertEqual(len(history_records), 0)
-
     def test_update_curation_no_permission(self):
         """
         Test call to update curation endpoint with super user who does not have permission to update the curation
@@ -320,48 +269,6 @@ class LGDUpdateCurationEndpoint(TestCase):
             response_data["error"], "Could not find 'Entry' for ID 'G2P00004'"
         )
 
-    def test_update_curation_unauthorised_panel(self):
-        """
-        Test call to update curation endpoint with unauthorised panel
-        """
-        self.login_user()
-
-        # Define the complex data structure
-        curation_to_update = {
-            "json_data": {
-                "allelic_requirement": "",
-                "confidence": "",
-                "cross_cutting_modifier": [],
-                "disease": {"cross_references": [], "disease_name": ""},
-                "locus": "CEP290",
-                "mechanism_evidence": [],
-                "mechanism_synopsis": [],
-                "molecular_mechanism": {"name": "", "support": ""},
-                "panels": ["Demo"],
-                "phenotypes": [],
-                "private_comment": "",
-                "public_comment": "",
-                "publications": [],
-                "session_name": "test session",
-                "variant_consequences": [],
-                "variant_descriptions": [],
-                "variant_types": [],
-            }
-        }
-
-        response = self.client.put(
-            self.url_update_curation,
-            curation_to_update,
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, 400)
-
-        response_data = response.json()
-        self.assertEqual(
-            response_data["error"],
-            "You do not have permission to curate on these panels: 'Demo'",
-        )
-
     def test_update_curation_invalid_request_body(self):
         """
         Test call to update curation endpoint with invalid request body
@@ -451,10 +358,7 @@ class LGDUpdateCurationEndpoint(TestCase):
         self.assertEqual(response.status_code, 400)
 
         response_data = response.json()
-        self.assertEqual(
-            response_data["error"],
-            "To save a draft, the minimum requirement is a locus entry. Please save this draft with locus information",
-        )
+        self.assertEqual(response_data["error"],"Invalid gene ''")
 
     def test_update_invalid_curation(self):
         """

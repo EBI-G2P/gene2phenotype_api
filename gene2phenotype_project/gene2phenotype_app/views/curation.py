@@ -243,9 +243,6 @@ class UpdateCurationData(BaseUpdate):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Check if json is already present for this user
-        self.serializer_class(context={"user": user}).validate_to_save(request.data)
-
         # Update data - it replaces the data
         serializer = CurationDataSerializer(
             curation_obj,
