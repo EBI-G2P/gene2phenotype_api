@@ -86,22 +86,13 @@ class CurationDataSerializer(serializers.ModelSerializer):
         # Check if JSON is already in the table
         curation_entry = self.compare_curation_data(data_dict, user_obj.id)
 
-        # This method is called by both create and update methods
-        # In case of update, check if the curation_entry found is the same as the one being updated
-        if curation_entry:
-            if session_name == curation_entry.session_name:
-                raise serializers.ValidationError(
-                    {
-                        "error": f"No updates to save for session '{curation_entry.session_name}'"
-                    }
-                )
-            else:
-                # Throw error if data is already stored in table associated with another curation entry
-                raise serializers.ValidationError(
-                    {
-                        "error": f"Data already under curation. Please check session '{curation_entry.session_name}'"
-                    }
-                )
+        # Throw error if data is already stored in table associated with another curation entry
+        if curation_entry and session_name != curation_entry.session_name:
+            raise serializers.ValidationError(
+                {
+                    "error": f"Data already under curation. Please check session '{curation_entry.session_name}'"
+                }
+            )
 
         if (
             "panels" in data_dict["json_data"]
