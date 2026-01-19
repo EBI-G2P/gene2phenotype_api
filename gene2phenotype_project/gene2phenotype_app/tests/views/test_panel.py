@@ -95,6 +95,7 @@ class PanelDetailsEndpointTests(TestCase):
         url_panel_ear = reverse("panel_details", kwargs={"name": "Ear"})
         response = self.client.get(url_panel_ear)
         self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.data["error"], "No permission to access Panel Ear")
 
     def test_invalid_panel(self):
         """
@@ -103,7 +104,7 @@ class PanelDetailsEndpointTests(TestCase):
         url_panel_ear = reverse("panel_details", kwargs={"name": "Ears"})
         response = self.client.get(url_panel_ear)
         self.assertEqual(response.status_code, 404)
-
+        self.assertEqual(response.data["error"], "No matching Panel found for: Ears")
 
 class PanelSummaryEndpointTests(TestCase):
     """

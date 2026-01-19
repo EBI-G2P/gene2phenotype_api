@@ -18,7 +18,7 @@
         "model": "gene2phenotype_app.user",
         "pk": 2,
         "fields": {
-            "password": "pbkdf2_sha256$720000$iaqz7Y3di11zEhnMU2oR15$OkyarfvlSmJzlgt3ZEgElJGGpg34dKc78e/463qI/l4=",
+            "password": "pbkdf2_sha256$1000000$iYlN4pPKxtNlwU0OpPj0tb$bnQZBWVVdl6jSjtzqxmEG09rTiQhWeJS292eU+VL7iU=",
             "is_staff": false,
             "is_active": true,
             "username": "test_user2",

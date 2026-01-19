@@ -5,7 +5,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from drf_spectacular.utils import extend_schema
-from datetime import timedelta, datetime
+from datetime import datetime
 from django.conf import settings
 from django.utils import timezone
 from django.db.models import F
@@ -272,7 +272,7 @@ class VerifyEmailView(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         """
-        Post method for V]verification of email for password reset.
+        Post method for verification of email for password reset.
 
         Args:
             request (Request): the HTTP request object
