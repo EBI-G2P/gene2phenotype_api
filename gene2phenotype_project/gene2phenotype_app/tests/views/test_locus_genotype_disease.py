@@ -29,6 +29,7 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         "gene2phenotype_app/fixtures/lgd_publication.json",
         "gene2phenotype_app/fixtures/lgd_comment.json",
         "gene2phenotype_app/fixtures/lgd_phenotype.json",
+        "gene2phenotype_app/fixtures/lgd_phenotype_summary.json",
         "gene2phenotype_app/fixtures/lgd_publication_comment.json",
         "gene2phenotype_app/fixtures/mined_publication.json",
         "gene2phenotype_app/fixtures/lgd_mined_publication.json",
@@ -36,6 +37,7 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
 
     def setUp(self):
         self.url_list_lgd = reverse("lgd", kwargs={"stable_id": "G2P00001"})
+        self.url_list_lgd_2 = reverse("lgd", kwargs={"stable_id": "G2P00002"})
         self.url_lgd_deleted = reverse("lgd", kwargs={"stable_id": "G2P00003"})
         self.url_lgd_invalid = reverse("lgd", kwargs={"stable_id": "G2P00000"})
         self.url_lgd_merged = reverse("lgd", kwargs={"stable_id": "G2P00007"})
@@ -233,4 +235,52 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
                 "score_comment": None,
             }
         ]
-        self.assertEqual(response.data["mined_publications"], expected_data_mined_publication)
+        self.assertEqual(
+            response.data["mined_publications"], expected_data_mined_publication
+        )
+
+    def test_lgd_detail_authenticated_phenotypes(self):
+        """
+        Test the locus genotype disease display for authenticated users.
+        Check if phenotype summary is correctly displayed.
+        """
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.get(self.url_list_lgd_2)
+        self.assertEqual(response.status_code, 200)
+
+        expected_data_phenotypes = [
+            {
+                "term": "Abnormality of connective tissue",
+                "accession": "HP:0003549",
+                "publications": [15214012],
+            },
+            {
+                "term": "Abnormality of the musculoskeletal system",
+                "accession": "HP:0033127",
+                "publications": [15214012],
+            },
+            {
+                "term": "Urinary tract neoplasm",
+                "accession": "HP:0010786",
+                "publications": [15214012],
+            },
+        ]
+        self.assertEqual(list(response.data["phenotypes"]), expected_data_phenotypes)
+
+        expected_phenotype_summary = [
+            {
+                "id": 1,
+                "summary": "Abnormality of connective tissue and of the musculoskeletal system",
+                "publication": 15214012,
+            }
+        ]
+        self.assertEqual(
+            list(response.data["phenotype_summary"]), expected_phenotype_summary
+        )

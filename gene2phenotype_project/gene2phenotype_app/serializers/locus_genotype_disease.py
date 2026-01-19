@@ -261,7 +261,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             summary_text = summary_obj.summary
 
             data[summary_text] = {
-                "id": summary_text.id,
+                "id": summary_obj.id,
                 "summary": summary_text,
                 "publication": summary_obj.publication.pmid,
             }
