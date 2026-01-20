@@ -344,8 +344,9 @@ class SearchView(BaseView):
             # to extend the queryset being annotated when it is draft,
             # we want to return username so curator can see who is curating
             # also add the curator email, incase of the notification
+            # Should search for only manual curations
             queryset = (
-                CurationData.objects.filter(gene_symbol=search_query)
+                CurationData.objects.filter(gene_symbol=search_query, status="manual")
                 .order_by("stable_id__stable_id")
                 .distinct()
                 .annotate(

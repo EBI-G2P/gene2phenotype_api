@@ -6,6 +6,7 @@ from jsonschema import validate, exceptions
 from django.conf import settings
 from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema
+from django.db.models import Q, F
 
 from gene2phenotype_app.serializers import CurationDataSerializer
 
@@ -26,7 +27,7 @@ class AddCurationData(BaseAdd):
 
         Returns:
             A Response object with appropriate status and message.
-        
+
         Input example:
         {
             "json_data": {...},
@@ -62,10 +63,7 @@ class AddCurationData(BaseAdd):
             validate(instance=input_json_data, schema=schema)
         except jsonschema.exceptions.ValidationError as e:
             return Response(
-                {
-                    "error": "JSON data does not follow the required format. "
-                    + str(e)
-                },
+                {"error": "JSON data does not follow the required format. " + str(e)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -94,15 +92,39 @@ class ListCurationEntries(BaseView):
 
     def get_queryset(self):
         """
-        Retrieve the queryset of CurationData objects for the specific user.
+        Retrieve the queryset of CurationData objects filtered according to the provided optional query parameters.
+        Supported query parameters (optional):
+            - type (Supported values - "manual", "automatic")
+            - scope (Supported values - "all")
+        If no query params are provided, retrieve "manual" curations of specific user
 
         Returns:
             Queryset of CurationData objects.
         """
         user = self.request.user
+        params = self.request.query_params
+        scope_param = params.get("scope", None)
+        # By default, retrieve "manual" curations
+        status_param = params.get("type", "manual")
 
-        queryset = CurationData.objects.filter(user__email=user, user__is_active=1)
+        query_filter = Q(status=status_param)
 
+        if scope_param is None:
+            # If "scope" is not provided, retrieve specific user curations
+            query_filter &= Q(user__email=user, user__is_active=1)
+        elif scope_param == "all":
+            # If "scope" is "all", retrieve curations of all users (no filter applied)
+            pass
+
+        queryset = (
+            CurationData.objects.filter(query_filter)
+            .annotate(
+                first_name=F("user_id__first_name"),
+                last_name=F("user_id__last_name"),
+                user_email=F("user__email"),
+            )
+            .order_by("-date_created")
+        )
         return queryset
 
     def list(self, request, *args, **kwargs):
@@ -112,6 +134,15 @@ class ListCurationEntries(BaseView):
         Returns:
             Response containing the list of CurationData objects with specified fields.
         """
+        scope_param = request.query_params.get("scope", None)
+
+        # Validate "scope" query paramater
+        if scope_param and scope_param != "all":
+            return Response(
+                {"error": "Invalid value provided for query parameter 'scope'"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         queryset = self.get_queryset()
         list_data = []
         for data in queryset:
@@ -119,6 +150,10 @@ class ListCurationEntries(BaseView):
                 "locus": data.json_data["locus"],
                 "session_name": data.session_name,
                 "stable_id": data.stable_id.stable_id,
+                "type": data.status,
+                "curator_first_name": data.first_name,
+                "curator_last_name": data.last_name,
+                "curator_email": data.user_email,
                 "created_on": data.date_created.strftime("%Y-%m-%d %H:%M"),
                 "last_update": data.date_last_update.strftime("%Y-%m-%d %H:%M"),
             }
@@ -141,6 +176,10 @@ class CurationDataDetail(BaseView):
         # Get the entry if the user matches
         queryset = CurationData.objects.filter(
             stable_id=g2p_stable_id, user__email=user
+        ).annotate(
+            first_name=F("user_id__first_name"),
+            last_name=F("user_id__last_name"),
+            user_email=F("user__email"),
         )
 
         if not queryset.exists():
@@ -162,6 +201,10 @@ class CurationDataDetail(BaseView):
                     - created_on
                     - last_updated_on
                     - data (json data under curation)
+                    - type
+                    - curator_first_name
+                    - curator_last_name
+                    - curator_email
         """
         curation_data_obj = self.get_queryset().first()
 
@@ -171,6 +214,10 @@ class CurationDataDetail(BaseView):
             "created_on": curation_data_obj.date_created,
             "last_updated_on": curation_data_obj.date_last_update,
             "data": curation_data_obj.json_data,
+            "type": curation_data_obj.status,
+            "curator_first_name": curation_data_obj.first_name,
+            "curator_last_name": curation_data_obj.last_name,
+            "curator_email": curation_data_obj.user_email,
         }
         return Response(response_data)
 
@@ -236,10 +283,7 @@ class UpdateCurationData(BaseUpdate):
             validate(instance=input_json_data["json_data"], schema=schema)
         except jsonschema.exceptions.ValidationError as e:
             return Response(
-                {
-                    "error": "JSON data does not follow the required format. "
-                    + str(e)
-                },
+                {"error": "JSON data does not follow the required format. " + str(e)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

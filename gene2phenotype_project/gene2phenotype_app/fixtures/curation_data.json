@@ -74,5 +74,81 @@
       "stable_id": 10,
       "status": "automatic"
     }
+  },
+  {
+    "model": "gene2phenotype_app.curationdata",
+    "pk": 3,
+    "fields": {
+      "date_created": "2026-01-11T14:10:21Z",
+      "date_last_update": "2026-01-11T14:10:21Z",
+      "session_name": "new session STRA6",
+      "json_data": {
+        "allelic_requirement": "",
+        "confidence": "",
+        "cross_cutting_modifier": [],
+        "disease": {
+          "cross_references": [],
+          "disease_name": ""
+        },
+        "locus": "STRA6",
+        "mechanism_evidence": [],
+        "mechanism_synopsis": [],
+        "molecular_mechanism": {
+          "name": "",
+          "support": ""
+        },
+        "panels": [],
+        "phenotypes": [],
+        "private_comment": "",
+        "public_comment": "",
+        "publications": [],
+        "session_name": "new session STRA6",
+        "variant_consequences": [],
+        "variant_descriptions": [],
+        "variant_types": []
+      },
+      "gene_symbol": "STRA6",
+      "user_id": 4,
+      "stable_id": 11,
+      "status": "manual"
+    }
+  },
+  {
+    "model": "gene2phenotype_app.curationdata",
+    "pk": 4,
+    "fields": {
+      "date_created": "2026-01-13T14:10:21Z",
+      "date_last_update": "2026-01-13T14:10:21Z",
+      "session_name": "test session MPI",
+      "json_data": {
+        "allelic_requirement": "monoallelic_Y_hemizygous",
+        "confidence": "limited",
+        "cross_cutting_modifier": [],
+        "disease": {
+          "cross_references": [],
+          "disease_name": ""
+        },
+        "locus": "MPI",
+        "mechanism_evidence": [],
+        "mechanism_synopsis": [],
+        "molecular_mechanism": {
+          "name": "",
+          "support": ""
+        },
+        "panels": [],
+        "phenotypes": [],
+        "private_comment": "",
+        "public_comment": "",
+        "publications": [],
+        "session_name": "test session MPI",
+        "variant_consequences": [],
+        "variant_descriptions": [],
+        "variant_types": []
+      },
+      "gene_symbol": "MPI",
+      "user_id": 4,
+      "stable_id": 12,
+      "status": "automatic"
+    }
   }
 ]
