@@ -18,7 +18,7 @@ def check_mined_publication_status():
             mined_pmid=F("mined_publication__pmid"),
             g2p_id=F("lgd__stable_id__stable_id"),
         )
-        .filter(status="curated")
+        .filter(status="curated", lgd__is_deleted=0)
         .exclude(
             Exists(
                 LGDPublication.objects.filter(
@@ -46,6 +46,7 @@ def check_mined_publication_status():
                 )
             ),
             status="rejected",
+            lgd__is_deleted=0,
         )
     )
 
@@ -69,6 +70,7 @@ def check_mined_publication_status():
                 )
             ),
             is_deleted=0,
+            lgd__is_deleted=0,
         )
         .exclude(
             Exists(
