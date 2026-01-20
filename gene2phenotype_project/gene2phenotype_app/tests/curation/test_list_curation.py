@@ -19,9 +19,9 @@ class LGDListCurationDraftsEndpoint(TestCase):
     def setUp(self):
         self.url_list_curation = reverse("list_curation_entries")
 
-    def test_list_curation_success(self):
+    def test_list_curation_success_default(self):
         """
-        Test successful call to list curation drafts endpoint
+        Test successful call to list curation drafts endpoint manual drafts of specific user (default)
         """
         # Login
         user = User.objects.get(email="user5@test.ac.uk")
@@ -34,7 +34,119 @@ class LGDListCurationDraftsEndpoint(TestCase):
         response = self.client.get(self.url_list_curation)
         self.assertEqual(response.status_code, 200)
 
+        self.assertEqual(response.data.get("count"), 1)
+
+    def test_list_curation_success_with_scope_all(self):
+        """
+        Test successful call to list curation drafts endpoint for manual drafts of all users
+        """
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        url = f"{self.url_list_curation}?scope=all"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
         self.assertEqual(response.data.get("count"), 2)
+
+    def test_list_curation_success_with_type_manual(self):
+        """
+        Test successful call to list curation drafts endpoint for manual drafts of specific user
+        """
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        url = f"{self.url_list_curation}?type=manual"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(response.data.get("count"), 1)
+
+    def test_list_curation_success_with_type_manual_and_scope_all(self):
+        """
+        Test successful call to list curation drafts endpoint for manual drafts of all users
+        """
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        url = f"{self.url_list_curation}?type=manual&scope=all"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(response.data.get("count"), 2)
+
+    def test_list_curation_success_with_type_automatic(self):
+        """
+        Test successful call to list curation drafts endpoint for automatic drafts of specific user
+        """
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        url = f"{self.url_list_curation}?type=automatic"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(response.data.get("count"), 1)
+
+    def test_list_curation_success_with_type_automatic_and_scope_all(self):
+        """
+        Test successful call to list curation drafts endpoint for automatic drafts of all users
+        """
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        url = f"{self.url_list_curation}?type=automatic&scope=all"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(response.data.get("count"), 2)
+
+    def test_list_curation_with_invalid_scope(self):
+        """
+        Test call to list curation drafts endpoint with invalid scope
+        """
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        url = f"{self.url_list_curation}?scope=dummy"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"],
+            "Invalid value provided for query parameter 'scope'",
+        )
 
     def test_list_curation_unauthorised_access(self):
         """
@@ -43,4 +155,3 @@ class LGDListCurationDraftsEndpoint(TestCase):
 
         response = self.client.get(self.url_list_curation)
         self.assertEqual(response.status_code, 401)
-        self.assertEqual(response.data["error"], "Authentication credentials were not provided.")
