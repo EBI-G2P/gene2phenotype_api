@@ -21,7 +21,8 @@ class LGDListCurationDraftsEndpoint(TestCase):
 
     def test_list_curation_success_default(self):
         """
-        Test successful call to list curation drafts endpoint manual drafts of specific user (default)
+        Test successful call to list curation drafts endpoint without query parameters
+        Should retrieve manual drafts of specific user (default)
         """
         # Login
         user = User.objects.get(email="user5@test.ac.uk")
@@ -35,10 +36,12 @@ class LGDListCurationDraftsEndpoint(TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(response.data.get("count"), 1)
+        self.assertEqual(response.data.get("results")[0].type, "manual")
 
     def test_list_curation_success_with_scope_all(self):
         """
-        Test successful call to list curation drafts endpoint for manual drafts of all users
+        Test successful call to list curation drafts endpoint with 'scope' = 'all'
+        Should retrieve manual drafts of all users
         """
         # Login
         user = User.objects.get(email="user5@test.ac.uk")
@@ -53,10 +56,14 @@ class LGDListCurationDraftsEndpoint(TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(response.data.get("count"), 2)
+        self.assertTrue(
+            all(item.type == "manual" for item in response.data.get("results"))
+        )
 
     def test_list_curation_success_with_type_manual(self):
         """
-        Test successful call to list curation drafts endpoint for manual drafts of specific user
+        Test successful call to list curation drafts endpoint with 'type' = 'manual'
+        Should retrieve manual drafts of specific user
         """
         # Login
         user = User.objects.get(email="user5@test.ac.uk")
@@ -71,10 +78,12 @@ class LGDListCurationDraftsEndpoint(TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(response.data.get("count"), 1)
+        self.assertEqual(response.data.get("results")[0].type, "manual")
 
     def test_list_curation_success_with_type_manual_and_scope_all(self):
         """
-        Test successful call to list curation drafts endpoint for manual drafts of all users
+        Test successful call to list curation drafts endpoint with 'type' = 'manual' and 'scope' = 'all'
+        Should retrieve manual drafts of all users
         """
         # Login
         user = User.objects.get(email="user5@test.ac.uk")
@@ -89,10 +98,14 @@ class LGDListCurationDraftsEndpoint(TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(response.data.get("count"), 2)
+        self.assertTrue(
+            all(item.type == "manual" for item in response.data.get("results"))
+        )
 
     def test_list_curation_success_with_type_automatic(self):
         """
-        Test successful call to list curation drafts endpoint for automatic drafts of specific user
+        Test successful call to list curation drafts endpoint with 'type' = 'automatic'
+        Should retrieve automatic drafts of specific user
         """
         # Login
         user = User.objects.get(email="user5@test.ac.uk")
@@ -107,10 +120,12 @@ class LGDListCurationDraftsEndpoint(TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(response.data.get("count"), 1)
+        self.assertEqual(response.data.get("results")[0].type, "automatic")
 
     def test_list_curation_success_with_type_automatic_and_scope_all(self):
         """
-        Test successful call to list curation drafts endpoint for automatic drafts of all users
+        Test successful call to list curation drafts endpoint with 'type' = 'automatic' and 'scope' = 'all'
+        Should retrieve automatic drafts of all users
         """
         # Login
         user = User.objects.get(email="user5@test.ac.uk")
@@ -125,10 +140,13 @@ class LGDListCurationDraftsEndpoint(TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(response.data.get("count"), 2)
+        self.assertTrue(
+            all(item.type == "automatic" for item in response.data.get("results"))
+        )
 
     def test_list_curation_with_invalid_scope(self):
         """
-        Test call to list curation drafts endpoint with invalid scope
+        Test call to list curation drafts endpoint with invalid 'scope' value
         """
         # Login
         user = User.objects.get(email="user5@test.ac.uk")
