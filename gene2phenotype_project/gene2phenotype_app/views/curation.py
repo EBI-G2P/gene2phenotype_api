@@ -176,6 +176,10 @@ class CurationDataDetail(BaseView):
         # Get the entry if the user matches
         queryset = CurationData.objects.filter(
             stable_id=g2p_stable_id, user__email=user
+        ).annotate(
+            first_name=F("user_id__first_name"),
+            last_name=F("user_id__last_name"),
+            user_email=F("user__email"),
         )
 
         if not queryset.exists():
@@ -197,6 +201,10 @@ class CurationDataDetail(BaseView):
                     - created_on
                     - last_updated_on
                     - data (json data under curation)
+                    - type
+                    - curator_first_name
+                    - curator_last_name
+                    - curator_email
         """
         curation_data_obj = self.get_queryset().first()
 
@@ -206,6 +214,10 @@ class CurationDataDetail(BaseView):
             "created_on": curation_data_obj.date_created,
             "last_updated_on": curation_data_obj.date_last_update,
             "data": curation_data_obj.json_data,
+            "type": curation_data_obj.status,
+            "curator_first_name": curation_data_obj.first_name,
+            "curator_last_name": curation_data_obj.last_name,
+            "curator_email": curation_data_obj.user_email,
         }
         return Response(response_data)
 

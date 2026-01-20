@@ -43,6 +43,8 @@ class LGDGetCurationDraftEndpoint(TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(response.data.get("session_name"), "test session")
+        self.assertEqual(response.data.get("type"), "manual")
+        self.assertEqual(response.data.get("curator_email"), "user5@test.ac.uk")
 
     def test_get_curation_unauthorised_access(self):
         """
@@ -68,9 +70,7 @@ class LGDGetCurationDraftEndpoint(TestCase):
         self.assertEqual(response.status_code, 404)
 
         response = response.json()
-        self.assertEqual(
-            response["error"], "No G2PStableID matches the given query."
-        )
+        self.assertEqual(response["error"], "No G2PStableID matches the given query.")
 
     def test_get_no_curation(self):
         """
@@ -88,6 +88,4 @@ class LGDGetCurationDraftEndpoint(TestCase):
         self.assertEqual(response.status_code, 404)
 
         response = response.json()
-        self.assertEqual(
-            response["error"], "No matching Entry found for: G2P00001"
-        )
+        self.assertEqual(response["error"], "No matching Entry found for: G2P00001")
