@@ -196,9 +196,7 @@ class SearchTests(TestCase):
         response = self.client.get(url_search_id)
 
         self.assertEqual(response.status_code, 410)
-        self.assertEqual(
-            response.data["message"], "G2P00003 is no longer available."
-        )
+        self.assertEqual(response.data["message"], "G2P00003 is no longer available.")
 
     def test_search_g2p_id_merged(self):
         """
@@ -263,6 +261,27 @@ class SearchTests(TestCase):
 
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.data["error"], "No matching draft found for: CDH1")
+
+    def test_search_draft_not_found_manual(self):
+        """
+        Test the response when searching a draft which is not of status 'manual'
+        """
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        url_search_id = f"{self.base_url_search}?type=draft&query=MPI"
+        response = self.client.get(url_search_id)
+
+        # The search endpoint searches for only manual curations
+        # But for this test, there are only automatic curations for given query
+        # So, the endpoint should return an error
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.data["error"], "No matching draft found for: MPI")
 
     def test_search_all(self):
         """
@@ -408,7 +427,9 @@ class SearchTests(TestCase):
         """
         Test the response when searching a gene and filtering by mechanism
         """
-        url_search_mechanism = f"{self.base_url_search}?query=CEP290&mechanism=loss of function"
+        url_search_mechanism = (
+            f"{self.base_url_search}?query=CEP290&mechanism=loss of function"
+        )
         response = self.client.get(url_search_mechanism)
 
         self.assertEqual(response.status_code, 200)
@@ -421,17 +442,23 @@ class SearchTests(TestCase):
         """
         Test the response when searching a gene and filtering by mechanism that does not match
         """
-        url_search_mechanism_not_found = f"{self.base_url_search}?query=CEP290&mechanism=undetermined"
+        url_search_mechanism_not_found = (
+            f"{self.base_url_search}?query=CEP290&mechanism=undetermined"
+        )
         response_not_found = self.client.get(url_search_mechanism_not_found)
 
         self.assertEqual(response_not_found.status_code, 404)
-        self.assertEqual(response_not_found.data["error"], "No matching results found for: CEP290")
+        self.assertEqual(
+            response_not_found.data["error"], "No matching results found for: CEP290"
+        )
 
     def test_search_with_variant_consequence(self):
         """
         Test the response when searching a gene and filtering by variant consequence
         """
-        url_search_variant_consequence = f"{self.base_url_search}?query=MPI&variant_consequence=absent gene product"
+        url_search_variant_consequence = (
+            f"{self.base_url_search}?query=MPI&variant_consequence=absent gene product"
+        )
         response = self.client.get(url_search_variant_consequence)
 
         self.assertEqual(response.status_code, 200)
@@ -444,7 +471,9 @@ class SearchTests(TestCase):
         """
         Test the response when searching a gene and filtering by variant consequence (SO accession)
         """
-        url_search_variant_consequence = f"{self.base_url_search}?query=MPI&variant_consequence=SO:0002317"
+        url_search_variant_consequence = (
+            f"{self.base_url_search}?query=MPI&variant_consequence=SO:0002317"
+        )
         response = self.client.get(url_search_variant_consequence)
 
         self.assertEqual(response.status_code, 200)
