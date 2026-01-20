@@ -36,7 +36,7 @@ class LGDListCurationDraftsEndpoint(TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(response.data.get("count"), 1)
-        self.assertEqual(response.data.get("results")[0].type, "manual")
+        self.assertEqual(response.data.get("results")[0]["type"], "manual")
 
     def test_list_curation_success_with_scope_all(self):
         """
@@ -57,7 +57,7 @@ class LGDListCurationDraftsEndpoint(TestCase):
 
         self.assertEqual(response.data.get("count"), 2)
         self.assertTrue(
-            all(item.type == "manual" for item in response.data.get("results"))
+            all(item["type"] == "manual" for item in response.data.get("results"))
         )
 
     def test_list_curation_success_with_type_manual(self):
@@ -78,7 +78,7 @@ class LGDListCurationDraftsEndpoint(TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(response.data.get("count"), 1)
-        self.assertEqual(response.data.get("results")[0].type, "manual")
+        self.assertEqual(response.data.get("results")[0]["type"], "manual")
 
     def test_list_curation_success_with_type_manual_and_scope_all(self):
         """
@@ -99,7 +99,7 @@ class LGDListCurationDraftsEndpoint(TestCase):
 
         self.assertEqual(response.data.get("count"), 2)
         self.assertTrue(
-            all(item.type == "manual" for item in response.data.get("results"))
+            all(item["type"] == "manual" for item in response.data.get("results"))
         )
 
     def test_list_curation_success_with_type_automatic(self):
@@ -120,7 +120,7 @@ class LGDListCurationDraftsEndpoint(TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(response.data.get("count"), 1)
-        self.assertEqual(response.data.get("results")[0].type, "automatic")
+        self.assertEqual(response.data.get("results")[0]["type"], "automatic")
 
     def test_list_curation_success_with_type_automatic_and_scope_all(self):
         """
@@ -141,7 +141,7 @@ class LGDListCurationDraftsEndpoint(TestCase):
 
         self.assertEqual(response.data.get("count"), 2)
         self.assertTrue(
-            all(item.type == "automatic" for item in response.data.get("results"))
+            all(item["type"] == "automatic" for item in response.data.get("results"))
         )
 
     def test_list_curation_with_invalid_scope(self):
