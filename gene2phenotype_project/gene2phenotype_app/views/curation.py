@@ -115,11 +115,6 @@ class ListCurationEntries(BaseView):
         elif scope_param == "all":
             # If "scope" is "all", retrieve curations of all users (no filter applied)
             pass
-        else:
-            return Response(
-                {"error": "Invalid value provided for query parameter 'scope'"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
         queryset = (
             CurationData.objects.filter(query_filter)
@@ -139,6 +134,15 @@ class ListCurationEntries(BaseView):
         Returns:
             Response containing the list of CurationData objects with specified fields.
         """
+        scope_param = request.query_params.get("scope", None)
+
+        # Validate "scope" query paramater
+        if scope_param and scope_param != "all":
+            return Response(
+                {"error": "Invalid value provided for query parameter 'scope'"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         queryset = self.get_queryset()
         list_data = []
         for data in queryset:

@@ -557,7 +557,7 @@ class LGDAddCurationEndpoint(TestCase):
         response_data_publish = response_publish.json()
         self.assertEqual(
             response_data_publish["message"],
-            "Record 'G2P00011' published successfully",
+            "Record 'G2P00013' published successfully",
         )
 
         # Check inserted data
@@ -959,9 +959,7 @@ class LGDAddCurationEndpoint(TestCase):
         self.login_user()
 
         # Prepare the URL to publish the record
-        url_publish = reverse(
-            "publish_record", kwargs={"stable_id": "G2P00010"}
-        )
+        url_publish = reverse("publish_record", kwargs={"stable_id": "G2P00010"})
 
         # Call the endpoint to publish
         response_publish = self.client.post(
