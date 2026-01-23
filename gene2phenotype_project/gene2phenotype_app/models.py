@@ -806,7 +806,7 @@ class LGDMinedPublication(models.Model):
                 name="status_valid",
             ),
             models.CheckConstraint(
-                condition=Q(score__in=["high", "medium", "low", "disputed", None]),
+                condition=Q(score__in=["high", "medium", "low", "disputed", "N/A", None]),
                 name="score_valid",
             ),
         ]

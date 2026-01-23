@@ -24,6 +24,7 @@ Supported score values:
 - medium
 - low
 - disputed
+- N/A (no access to publication)
 
 How to run the command:
 python manage.py load_mined_publications_scores --data_file <json data file> --email <user account email>
@@ -71,17 +72,22 @@ class Command(BaseCommand):
             for record_data in data_reader:
                 g2p_id = record_data["id"]
                 for publication in record_data["publications"]:
-                    if publication["status"] and publication["status"] != "incomplete":
+                    if publication["status"]:
                         pmid = publication["id"]
                         score = publication["status"]
-                        score_comment = publication["comment"]
-                        full_text = publication["fulltext"]
                         n_scores += 1
 
-                        if full_text:
-                            score_comment += " (Score based on full text)"
+                        if publication["status"] == "incomplete":
+                            score = "N/A" # Overwrite score for incomplete publications
+                            score_comment = "No access to this publication"
                         else:
-                            score_comment += " (Score based on abstract only)"
+                            score_comment = publication["comment"]
+                            full_text = publication["fulltext"]
+
+                            if full_text:
+                                score_comment += " (Score based on full text)"
+                            else:
+                                score_comment += " (Score based on abstract only)"
 
                         try:
                             lgd_mined_pub_obj = LGDMinedPublication.objects.get(
@@ -100,6 +106,6 @@ class Command(BaseCommand):
                                 lgd_mined_pub_obj._history_user = user_obj
                                 lgd_mined_pub_obj.save()
                                 n_scores_updated += 1
-        
+
         print(f"\nTotal scores in the input file: {n_scores}")
         print(f"Total scores updated in the database: {n_scores_updated}\n")
