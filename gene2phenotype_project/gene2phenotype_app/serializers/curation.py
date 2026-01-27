@@ -45,17 +45,16 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
     def validate_to_save(self, data):
         """
-        Validate the input data for curation.
+        Validate the input data to add or save a curation draft.
 
-        Validation extension step:
-            This step is called in AddCurationData of the views.py
-            The steps of the validation for the save is
-                - Locus is the minimum requirement needed to save a draft
-                - Draft does not already exist as a draft
-                - User has permissions to curate on the selected panel
+        Validation steps:
+            - Locus is the minimum requirement needed to save a draft
+            - Draft does not already exist as a draft
+            - User has permissions to curate on the selected panels
 
         Args:
-            data: The data to be validated.
+            data: The data to be validated. Input format:
+                {'json_data': {...}, 'status': 'manual'} OR {'json_data': {...}}
 
         Returns:
             The validated data.
@@ -290,6 +289,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             # remove session_name field from input json and compare input json with existing curation json
             input_json_data["json_data"].pop("session_name", None)
             data_json.pop("session_name", None)
+
             result = DeepDiff(input_json_data["json_data"], data_json)
 
             if not result:
