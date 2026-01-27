@@ -24,7 +24,9 @@ class LGDUpdateCurationEndpoint(TestCase):
         self.url_update_curation = reverse(
             "update_curation", kwargs={"stable_id": "G2P00004"}
         )
-
+        self.url_update_curation_2 = reverse(
+            "update_curation", kwargs={"stable_id": "G2P00010"}
+        )
         self.url_update_invalid_curation = reverse(
             "update_curation", kwargs={"stable_id": "G2P00123"}
         )
@@ -327,7 +329,6 @@ class LGDUpdateCurationEndpoint(TestCase):
         """
         self.login_user()
 
-        # Define the complex data structure
         curation_to_update = {
             "json_data": {
                 "allelic_requirement": "",
@@ -358,7 +359,45 @@ class LGDUpdateCurationEndpoint(TestCase):
         self.assertEqual(response.status_code, 400)
 
         response_data = response.json()
-        self.assertEqual(response_data["error"],"Invalid gene ''")
+        self.assertEqual(response_data["error"], "To save a draft, the minimum requirement is a locus entry. Please save this draft with locus information")
+
+    def test_update_curation_invalid_locus(self):
+        """
+        Test call to update curation endpoint with invalid locus field
+        """
+        self.login_user()
+
+        curation_to_update = {
+            "json_data": {
+                "allelic_requirement": "",
+                "confidence": "",
+                "cross_cutting_modifier": [],
+                "disease": {"cross_references": [], "disease_name": ""},
+                "locus": "BAAT-21",
+                "mechanism_evidence": [],
+                "mechanism_synopsis": [],
+                "molecular_mechanism": {"name": "", "support": ""},
+                "panels": [],
+                "phenotypes": [],
+                "private_comment": "",
+                "public_comment": "",
+                "publications": [],
+                "session_name": "test session",
+                "variant_consequences": [],
+                "variant_descriptions": [],
+                "variant_types": [],
+            }
+        }
+
+        response = self.client.put(
+            self.url_update_curation,
+            curation_to_update,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(response_data["error"], "Invalid gene 'BAAT-21'")
 
     def test_update_invalid_curation(self):
         """
@@ -396,3 +435,49 @@ class LGDUpdateCurationEndpoint(TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 404)
+
+    def test_update_curation_duplicate(self):
+        """
+        Test to update curation that would create a duplicate entry
+        G2P ID G2P00010 has session name 'test session SRY', this test
+        tries to update the json content to be the same as session 'test session' (G2P00004)
+        """
+        self.login_user()
+
+        curation_to_update = {
+            "json_data": {
+                "allelic_requirement": "",
+                "confidence": "",
+                "cross_cutting_modifier": [],
+                "disease": {
+                    "cross_references": [],
+                    "disease_name": ""
+                    },
+                "locus": "CEP290",
+                "mechanism_evidence": [],
+                "mechanism_synopsis": [],
+                "molecular_mechanism": {
+                    "name": "",
+                    "support": ""
+                    },
+                "panels": [],
+                "phenotypes": [],
+                "private_comment": "",
+                "public_comment": "",
+                "publications": [],
+                "session_name": "test session SRY",
+                "variant_consequences": [],
+                "variant_descriptions": [],
+                "variant_types": []
+            }
+        }
+
+        response = self.client.put(
+            self.url_update_curation_2,
+            curation_to_update,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(response_data["error"], "Data already under curation. Please check session 'test session'")
