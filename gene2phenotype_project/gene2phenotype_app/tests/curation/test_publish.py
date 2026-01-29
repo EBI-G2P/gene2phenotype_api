@@ -557,7 +557,7 @@ class LGDAddCurationEndpoint(TestCase):
         response_data_publish = response_publish.json()
         self.assertEqual(
             response_data_publish["message"],
-            "Record 'G2P00013' published successfully",
+            "Record 'G2P00015' published successfully",
         )
 
         # Check inserted data

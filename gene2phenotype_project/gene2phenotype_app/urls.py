@@ -9,53 +9,28 @@ def perform_create(self, serializer):
 
 # specify URL Path for rest_framework
 urlpatterns = [
-    path(
-        "schema/",
-        SpectacularAPIView.as_view(),
-        name="schema"
-    ),
+    path("schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
         "",
         SpectacularSwaggerView.as_view(
-            template_name="swagger-ui.html",
-            url_name="schema"
+            template_name="swagger-ui.html", url_name="schema"
         ),
         name="swagger-ui",
     ),
     path(
-        "lgd/<str:stable_id>/",
-        views.LocusGenotypeDiseaseDetail.as_view(),
-        name="lgd"
+        "lgd/<str:stable_id>/", views.LocusGenotypeDiseaseDetail.as_view(), name="lgd"
     ),
-    path("search/",
-         views.SearchView.as_view(),
-         name="search"
-    ),
-    path("panels/",
-         views.PanelList.as_view(),
-         name="list_panels"
-    ),
-    path("panel/<str:name>/",
-         views.PanelDetail.as_view(),
-         name="panel_details"
-    ),
+    path("search/", views.SearchView.as_view(), name="search"),
+    path("panels/", views.PanelList.as_view(), name="list_panels"),
+    path("panel/<str:name>/", views.PanelDetail.as_view(), name="panel_details"),
     path(
         "panel/<str:name>/summary/",
         views.PanelRecordsSummary.as_view(),
         name="panel_summary",
     ),
-    path("panel/<str:name>/download/",
-         views.PanelDownload,
-         name="panel_download"
-    ),
-    path("user/panels/",
-         views.UserPanels.as_view(),
-         name="user_panels"
-    ),
-    path("attribs/",
-         views.AttribTypeList.as_view(),
-         name="list_attrib_type"
-    ),
+    path("panel/<str:name>/download/", views.PanelDownload, name="panel_download"),
+    path("user/panels/", views.UserPanels.as_view(), name="user_panels"),
+    path("attribs/", views.AttribTypeList.as_view(), name="list_attrib_type"),
     path(
         "attribs/description/",
         views.AttribTypeDescriptionList.as_view(),
@@ -76,10 +51,7 @@ urlpatterns = [
         views.VariantTypesList.as_view(),
         name="list_variant_types",
     ),
-    path("gene/<str:name>/",
-         views.LocusGene.as_view(),
-         name="locus_gene"
-    ),
+    path("gene/<str:name>/", views.LocusGene.as_view(), name="locus_gene"),
     path(
         "gene/<str:name>/summary/",
         views.LocusGeneSummary.as_view(),
@@ -95,7 +67,6 @@ urlpatterns = [
         views.GeneDiseaseView.as_view(),
         name="locus_gene_disease",
     ),
-
     # Endpoint to update disease cross references
     # It has to be included before the other /disease/ endpoints
     path(
@@ -108,45 +79,21 @@ urlpatterns = [
         views.DiseaseSummary.as_view(),
         name="disease_summary",
     ),
-    path("disease/<path:id>/",
-         views.DiseaseDetail.as_view(),
-         name="disease_details"
-    ),
+    path("disease/<path:id>/", views.DiseaseDetail.as_view(), name="disease_details"),
     path(
-        "publication/<str:pmids>/",
-        views.PublicationDetail,
-        name="publication_details"
+        "publication/<str:pmids>/", views.PublicationDetail, name="publication_details"
     ),
-    path(
-        "phenotype/<str:hpo_list>/",
-        views.PhenotypeDetail,
-        name="phenotype_details"
-    ),
-
+    path("phenotype/<str:hpo_list>/", views.PhenotypeDetail, name="phenotype_details"),
     # Endpoint to fetch disease from external sources (OMIM/Mondo)
     path(
         "external_disease/<str:ext_ids>/",
         views.ExternalDisease,
         name="external_disease",
     ),
-
     ### Endpoints to add data ###
-    path(
-        "add/disease/",
-        views.AddDisease.as_view(),
-        name="add_disease"
-    ),
-    path(
-        "add/phenotype/",
-        views.AddPhenotype.as_view(),
-        name="add_phenotype"
-    ),
-    path(
-        "add/publication/",
-        views.AddPublication.as_view(),
-        name="add_publication"
-    ),
-
+    path("add/disease/", views.AddDisease.as_view(), name="add_disease"),
+    path("add/phenotype/", views.AddPhenotype.as_view(), name="add_phenotype"),
+    path("add/publication/", views.AddPublication.as_view(), name="add_publication"),
     ### Endpoints to update/add/delete the G2P record (LGD) ###
     path(
         "lgd/<str:stable_id>/update_confidence/",
@@ -162,11 +109,7 @@ urlpatterns = [
     ),
     # Add or delete panel from LGD record.
     # Actions: PATCH (to delete one panel), POST (to add one panel)
-    path(
-        "lgd/<str:stable_id>/panel/",
-        views.LGDEditPanel.as_view(),
-        name="lgd_panel"
-    ),
+    path("lgd/<str:stable_id>/panel/", views.LGDEditPanel.as_view(), name="lgd_panel"),
     # Add or delete publication(s) from LGD record.
     # Actions: PATCH (to delete one publication), POST (to add multiple publications)
     path(
@@ -235,11 +178,11 @@ urlpatterns = [
         views.LocusGenotypeDiseaseDelete.as_view(),
         name="lgd_delete",
     ),
-     # Update mined publications of LGD record.
+    # Update mined publications of LGD record.
     path(
         "lgd/<str:stable_id>/mined_publication/",
         views.LGDEditMinedPublication.as_view(),
-        name="lgd_mined_publication"
+        name="lgd_mined_publication",
     ),
     # Update disease IDs for LGD records. Action: POST
     path(
@@ -247,43 +190,31 @@ urlpatterns = [
         views.LGDUpdateDisease.as_view(),
         name="lgd_disease_updates",
     ),
-
     ### Endpoints to update other data ###
     # Update disease names in bulk
-    path(
-        "update/diseases/",
-        views.UpdateDisease.as_view(),
-        name="update_diseases"
-    ),
+    path("update/diseases/", views.UpdateDisease.as_view(), name="update_diseases"),
     # Update ontology terms in bulk
     path(
         "update/disease_ontology_terms/",
         views.UpdateDiseaseOntologyTerms.as_view(),
         name="update_ontology_terms",
     ),
-
     ### Endpoints to merge or split LGD records ###
-    path(
-        "merge_records/",
-        views.MergeRecords,
-        name="merge_records"
-    ),
-
+    path("merge_records/", views.MergeRecords, name="merge_records"),
     ### Curation endpoints ###
+    path("add/curation/", views.AddCurationData.as_view(), name="add_curation_data"),
     path(
-        "add/curation/",
-        views.AddCurationData.as_view(),
-        name="add_curation_data"
-    ),
-    path(
-        "curations/",
-        views.ListCurationEntries.as_view(),
-        name="list_curation_entries"
+        "curations/", views.ListCurationEntries.as_view(), name="list_curation_entries"
     ),
     path(
         "curation/<str:stable_id>/",
         views.CurationDataDetail.as_view(),
         name="curation_details",
+    ),
+    path(
+        "curation/<str:stable_id>/claim/",
+        views.ClaimCurationData.as_view(),
+        name="claim_curation",
     ),
     path(
         "curation/<str:stable_id>/update/",
@@ -301,73 +232,31 @@ urlpatterns = [
         views.PublishRecord.as_view(),
         name="publish_record",
     ),
-
     ### User management ###
+    path("create/user/", views.CreateUserView.as_view(), name="create_user"),
+    path("add_user/panel/", views.AddUserToPanelView.as_view(), name="add_user_panel"),
+    path("profile/", views.ManageUserView.as_view(), name="profile"),
     path(
-        "create/user/",
-        views.CreateUserView.as_view(),
-        name="create_user"
-    ),
-    path(
-        "add_user/panel/",
-        views.AddUserToPanelView.as_view(),
-        name="add_user_panel"
-    ),
-    path(
-        "profile/",
-        views.ManageUserView.as_view(),
-        name="profile"
-    ),
-    path(
-        "change_password/",
-        views.ChangePasswordView.as_view(),
-        name="change_password"
+        "change_password/", views.ChangePasswordView.as_view(), name="change_password"
     ),
     path(
         "reset_password/<uid>/<token>/",
         views.ResetPasswordView.as_view(),
         name="reset_password",
     ),
+    path("verify/email/", views.VerifyEmailView.as_view(), name="verify_email"),
+    path("login/", views.LoginView.as_view(), name="_login"),
+    path("logout/", views.LogOutView.as_view(), name="logout"),
     path(
-        "verify/email/",
-        views.VerifyEmailView.as_view(),
-        name="verify_email"
+        "token/refresh/", views.CustomTokenRefreshView.as_view(), name="token_refresh"
     ),
-    path(
-        "login/",
-        views.LoginView.as_view(),
-        name="_login"
-    ),
-    path(
-        "logout/",
-        views.LogOutView.as_view(),
-        name="logout"
-    ),
-    path(
-        "token/refresh/",
-        views.CustomTokenRefreshView.as_view(),
-        name="token_refresh"
-    ),
-
     ### Panels management ###
-    path(
-        "create/panel/",
-        views.PanelCreateView.as_view(),
-        name="panel_create"
-    ),
-
+    path("create/panel/", views.PanelCreateView.as_view(), name="panel_create"),
     ### Meta information ###
-    path(
-        "reference_data/",
-        views.MetaView.as_view(),
-        name="get_reference_data"
-    ),
-
+    path("reference_data/", views.MetaView.as_view(), name="get_reference_data"),
     ### GenCC submission  ###
     path(
-        "gencc_create/",
-        views.GenCCSubmissionCreateView.as_view(),
-        name="create_gencc"
+        "gencc_create/", views.GenCCSubmissionCreateView.as_view(), name="create_gencc"
     ),
     path(
         "unsubmitted_stable_ids/",
@@ -384,11 +273,6 @@ urlpatterns = [
         views.GenCCDeletedRecords.as_view(),
         name="gencc_deleted_records",
     ),
-
     ### Activity logs ###
-    path(
-        "activity_logs/",
-        views.ActivityLogs.as_view(),
-        name="activity_logs"
-    ),
+    path("activity_logs/", views.ActivityLogs.as_view(), name="activity_logs"),
 ]

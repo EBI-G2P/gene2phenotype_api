@@ -5,5 +5,12 @@
     "fields": {
       "name": "junior_curator"
     }
+  },
+  {
+    "model": "auth.group",
+    "pk": 2,
+    "fields": {
+      "name": "g2p_admin"
+    }
   }
 ]
