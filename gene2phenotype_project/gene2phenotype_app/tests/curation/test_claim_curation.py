@@ -47,8 +47,9 @@ class LGDClaimCurationEndpoint(TestCase):
         """
         self.login_user()
 
-        response = self.client.put(
+        response = self.client.patch(
             self.url_claim_curation_1,
+            data=None,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
@@ -69,8 +70,9 @@ class LGDClaimCurationEndpoint(TestCase):
         """
         self.login_user()
 
-        response = self.client.put(
+        response = self.client.patch(
             self.url_claim_curation_2,
+            data=None,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
@@ -91,8 +93,9 @@ class LGDClaimCurationEndpoint(TestCase):
         """
         self.login_user()
 
-        response = self.client.put(
+        response = self.client.patch(
             self.url_claim_invalid_curation,
+            data=None,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 404)
@@ -108,8 +111,9 @@ class LGDClaimCurationEndpoint(TestCase):
         """
         self.login_user()
 
-        response = self.client.put(
+        response = self.client.patch(
             self.url_claim_other_user_curation,
+            data=None,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
