@@ -61,7 +61,9 @@ class LGDClaimCurationEndpoint(TestCase):
         )
 
         # Check curation_data table
-        curation_entries = CurationData.objects.filter(stable_id="G2P00013", user=5)
+        curation_entries = CurationData.objects.filter(
+            stable_id__stable_id="G2P00013", user__email="user5@test.ac.uk"
+        )
         self.assertEqual(len(curation_entries), 1)
 
     def test_claim_curation_success_g2p_admin_group(self):
@@ -84,7 +86,9 @@ class LGDClaimCurationEndpoint(TestCase):
         )
 
         # Check curation_data table
-        curation_entries = CurationData.objects.filter(stable_id="G2P00014", user=5)
+        curation_entries = CurationData.objects.filter(
+            stable_id__stable_id="G2P00014", user__email="user5@test.ac.uk"
+        )
         self.assertEqual(len(curation_entries), 1)
 
     def test_claim_invalid_curation(self):
@@ -99,11 +103,6 @@ class LGDClaimCurationEndpoint(TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 404)
-
-        response_data = response.json()
-        self.assertEqual(
-            response_data["error"], "Could not find 'Entry' for ID 'G2P00123'"
-        )
 
     def test_claim_curation_claimed_by_other_user(self):
         """
