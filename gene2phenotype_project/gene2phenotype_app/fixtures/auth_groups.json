@@ -8,7 +8,28 @@
   },
   {
     "model": "auth.group",
-    "pk": 2,
+    "pk": 5,
+    "fields": {
+      "name": "expert_curator"
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 6,
+    "fields": {
+      "name": "curation_admin"
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 7,
+    "fields": {
+      "name": "clinical_lead"
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 8,
     "fields": {
       "name": "g2p_admin"
     }
