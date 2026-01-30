@@ -31,11 +31,11 @@ class LGDClaimCurationEndpoint(TestCase):
         )
 
         self.url_claim_other_user_curation = reverse(
-            "claim_curation", kwargs={"stable_id": "G2P00010"}
+            "claim_curation", kwargs={"stable_id": "G2P00011"}
         )
 
         self.url_claim_same_user_curation = reverse(
-            "claim_curation", kwargs={"stable_id": "G2P00001"}
+            "claim_curation", kwargs={"stable_id": "G2P00004"}
         )
 
     def login_user(self):
@@ -124,7 +124,7 @@ class LGDClaimCurationEndpoint(TestCase):
         response_data = response.json()
         self.assertEqual(
             response_data["error"],
-            "Curation draft with G2P Stable ID 'G2P00010' already claimed by another user.",
+            "Curation draft with G2P Stable ID 'G2P00011' already claimed by another user.",
         )
 
     def test_claim_curation_claimed_by_same_user(self):
@@ -143,5 +143,5 @@ class LGDClaimCurationEndpoint(TestCase):
         response_data = response.json()
         self.assertEqual(
             response_data["error"],
-            "Curation draft with G2P Stable ID 'G2P00001' already claimed by same user.",
+            "Curation draft with G2P Stable ID 'G2P00004' already claimed by same user.",
         )
