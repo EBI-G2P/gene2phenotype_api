@@ -34,6 +34,10 @@ class LGDClaimCurationEndpoint(TestCase):
             "claim_curation", kwargs={"stable_id": "G2P00010"}
         )
 
+        self.url_claim_same_user_curation = reverse(
+            "claim_curation", kwargs={"stable_id": "G2P00001"}
+        )
+
     def login_user(self):
         self.user = User.objects.get(email="user5@test.ac.uk")
         refresh = RefreshToken.for_user(self.user)
@@ -121,4 +125,23 @@ class LGDClaimCurationEndpoint(TestCase):
         self.assertEqual(
             response_data["error"],
             "Curation draft with G2P Stable ID 'G2P00010' already claimed by another user.",
+        )
+
+    def test_claim_curation_claimed_by_same_user(self):
+        """
+        Test call to claim curation endpoint for curation which is already claimed by same user
+        """
+        self.login_user()
+
+        response = self.client.patch(
+            self.url_claim_same_user_curation,
+            data=None,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"],
+            "Curation draft with G2P Stable ID 'G2P00001' already claimed by same user.",
         )

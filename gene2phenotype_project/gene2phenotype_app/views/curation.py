@@ -260,6 +260,15 @@ class ClaimCurationData(BaseUpdate):
         curation_user_obj = User.objects.get(email=curation_obj.user)
         allowed_groups = ["junior_curator", "g2p_admin"]
 
+        # Validate if curation is already claimed by same user
+        if user_obj == curation_user_obj:
+            return Response(
+                {
+                    "error": f"Curation draft with G2P Stable ID '{stable_id}' already claimed by same user."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         # Validate if curation is claimed by another user who is not part of junior_curator or g2p_admin groups
         if not curation_user_obj.groups.filter(name__in=allowed_groups).exists():
             return Response(
