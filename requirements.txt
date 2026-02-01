@@ -10,7 +10,7 @@ djangorestframework==3.16.1
 djangorestframework-simplejwt==5.5.1
 drf-spectacular==0.29.0
 idna==3.11
-jsonschema==4.25.1
+jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
 mysqlclient==2.1.1
 ordered-set==4.1.0
