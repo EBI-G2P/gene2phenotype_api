@@ -10,7 +10,12 @@ from django.db.models import Q, F
 
 from gene2phenotype_app.serializers import CurationDataSerializer
 
-from gene2phenotype_app.models import G2PStableID, CurationData, LocusGenotypeDisease
+from gene2phenotype_app.models import (
+    G2PStableID,
+    CurationData,
+    LocusGenotypeDisease,
+    User,
+)
 
 from .base import BaseView, BaseAdd, BaseUpdate, IsNotJuniorCurator
 
@@ -220,6 +225,69 @@ class CurationDataDetail(BaseView):
             "curator_email": curation_data_obj.user_email,
         }
         return Response(response_data)
+
+
+@extend_schema(exclude=True)
+class ClaimCurationData(BaseUpdate):
+    http_method_names = ["patch", "options"]
+    serializer_class = CurationDataSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        stable_id = self.kwargs["stable_id"]
+
+        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
+        queryset = CurationData.objects.filter(stable_id=g2p_stable_id)
+
+        if not queryset.exists():
+            self.handle_no_permission("Entry", stable_id)
+        else:
+            return queryset
+
+    def patch(self, request, stable_id):
+        """
+        Update user for the specific G2P ID.
+
+        Args:
+            stable_id (str): The stable ID to update.
+        """
+        user = request.user
+        user_obj = get_object_or_404(User, email=user, is_active=1)
+
+        # Get curation entry to be updated
+        curation_obj = self.get_queryset().first()
+
+        curation_user_obj = User.objects.get(email=curation_obj.user)
+        allowed_groups = ["junior_curator", "g2p_admin"]
+
+        # Validate if curation is already claimed by same user
+        if user_obj == curation_user_obj:
+            return Response(
+                {
+                    "error": f"Curation draft with G2P Stable ID '{stable_id}' already claimed by same user."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validate if curation is claimed by another user who is not part of junior_curator or g2p_admin groups
+        if not curation_user_obj.groups.filter(name__in=allowed_groups).exists():
+            return Response(
+                {
+                    "error": f"Curation draft with G2P Stable ID '{stable_id}' already claimed by another user."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Update user
+        curation_obj.user = user_obj
+        curation_obj.save()
+
+        return Response(
+            {
+                "message": f"Curation draft with G2P Stable ID '{stable_id}' claimed successfully."
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 @extend_schema(exclude=True)

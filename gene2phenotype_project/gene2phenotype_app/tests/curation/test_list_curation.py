@@ -55,7 +55,7 @@ class LGDListCurationDraftsEndpoint(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(response.data.get("count"), 2)
+        self.assertEqual(response.data.get("count"), 3)
         self.assertTrue(
             all(item["type"] == "manual" for item in response.data.get("results"))
         )
@@ -97,7 +97,7 @@ class LGDListCurationDraftsEndpoint(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(response.data.get("count"), 2)
+        self.assertEqual(response.data.get("count"), 3)
         self.assertTrue(
             all(item["type"] == "manual" for item in response.data.get("results"))
         )
@@ -139,7 +139,7 @@ class LGDListCurationDraftsEndpoint(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(response.data.get("count"), 2)
+        self.assertEqual(response.data.get("count"), 3)
         self.assertTrue(
             all(item["type"] == "automatic" for item in response.data.get("results"))
         )

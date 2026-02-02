@@ -1,354 +1,370 @@
 [
-    {
-        "model": "gene2phenotype_app.user",
-        "pk": 1,
-        "fields": {
-            "password": "pbkdf2_sha256$720000$0k4DsHeXy2xI1czeahgFE8$5zaRcE9orXAf3oMH9b5v4xAwK1WtCsOI893H/7Uy8S0=",
-            "is_staff": false,
-            "is_active": true,
-            "username": "test_user1",
-            "email": "user1@test.ac.uk",
-            "is_deleted": false,
-            "is_superuser": 0,
-            "first_name": "Test",
-            "last_name": "User1"
-        }
-    },
-    {
-        "model": "gene2phenotype_app.user",
-        "pk": 2,
-        "fields": {
-            "password": "pbkdf2_sha256$1000000$iYlN4pPKxtNlwU0OpPj0tb$bnQZBWVVdl6jSjtzqxmEG09rTiQhWeJS292eU+VL7iU=",
-            "is_staff": false,
-            "is_active": true,
-            "username": "test_user2",
-            "email": "user2@test.ac.uk",
-            "is_deleted": true,
-            "is_superuser": 0,
-            "first_name": "Test",
-            "last_name": "User2"
-        }
-    },
-    {
-        "model": "gene2phenotype_app.user",
-        "pk": 3,
-        "fields": {
-            "password": "pbkdf2_sha256$720000$iZL1O7xIUhZYHTJ6g8Vkg0$N47r3fthBDJWgQAVzqxOqXsmAj+pIT3N8jTbMcJDN3g=",
-            "is_staff": false,
-            "is_active": true,
-            "username": "test_user3",
-            "email": "user3@test.ac.uk",
-            "is_deleted": false,
-            "is_superuser": 0,
-            "first_name": "Test",
-            "last_name": "User3"
-        }
-    },
-    {
-        "model": "gene2phenotype_app.user",
-        "pk": 4,
-        "fields": {
-            "password": "pbkdf2_sha256$720000$lNUtl4QeLK8QaTJ2J6FJei$NQsTN1+LP6PqJMxC0dKEqSaeeTEbFiE0vtWaia1Ufik=",
-            "is_staff": false,
-            "is_active": false,
-            "username": "test_user4",
-            "email": "user4@test.ac.uk",
-            "is_deleted": false,
-            "is_superuser": 1,
-            "first_name": "Test",
-            "last_name": "User4"
-        }
-    },
-    {
-        "model": "gene2phenotype_app.user",
-        "pk": 5,
-        "fields": {
-            "password": "pbkdf2_sha256$870000$HrfXdrZCGZiSBa4yXvbsWA$3lbG4QNEMHuLsLkcJDE9/tiYdinAwoFGYdvOBigUp0A=",
-            "is_staff": true,
-            "is_active": true,
-            "username": "test_user5",
-            "email": "user5@test.ac.uk",
-            "is_deleted": false,
-            "is_superuser": 1,
-            "first_name": "Test",
-            "last_name": "User5"
-        }
-    },
-    {
-        "model": "gene2phenotype_app.user",
-        "pk": 6,
-        "fields": {
-            "password": "pbkdf2_sha256$720000$w5I3Bm9k1tX10ZHYbkyXiB$MAOsldxIofWkGpKIVTvgpBp3hWGBfCCwrpuRedueshE=",
-            "is_staff": false,
-            "is_active": true,
-            "username": "test_user_john",
-            "email": "john@test.ac.uk",
-            "is_deleted": false,
-            "is_superuser": 1,
-            "first_name": "John",
-            "last_name": "Doe"
-        }
-    },
-    {
-        "model": "gene2phenotype_app.user",
-        "pk": 7,
-        "fields": {
-            "password": "pbkdf2_sha256$720000$w5I3Bm9k1tX10ZHYbkyXiB$MAOsldxIofWkGpKIVTvgpBp3hWGBfCCwrpuRedueshE=",
-            "is_staff": false,
-            "is_active": true,
-            "username": "test_user_mary",
-            "email": "mary@test.ac.uk",
-            "is_deleted": false,
-            "is_superuser": 0,
-            "first_name": "Mary",
-            "last_name": "Smith"
-        }
-    },
-    {
-        "model": "gene2phenotype_app.user",
-        "pk": 8,
-        "fields": {
-            "password": "pbkdf2_sha256$870000$FI4cYx4hwv7dME29LzC8pA$LFLkoVMRscGOaAj7qkEYCt/Uw9SXzCEzpZG2muJJi8w=",
-            "is_staff": false,
-            "is_active": true,
-            "username": "test_user_sofia",
-            "email": "sofia@test.ac.uk",
-            "is_deleted": false,
-            "is_superuser": 1,
-            "first_name": "Sofia",
-            "last_name": "Sousa"
-        }
-    },
-    {
-        "model": "gene2phenotype_app.user",
-        "pk": 9,
-        "fields": {
-            "password": "pbkdf2_sha256$870000$OskKMLKUNQs4skp4zhCxcG$Y/7K1VSVggBTWNC2Y7oyKgf3y1pWWZN9Ht+MbNM1nP8=",
-            "is_staff": false,
-            "is_active": true,
-            "username": "test_user_elisa",
-            "email": "elisa@test.ac.uk",
-            "is_deleted": false,
-            "is_superuser": 0,
-            "first_name": "Elisa",
-            "last_name": "Stevens",
-            "groups": [1]
-        }
-    },
-    {
-        "model": "gene2phenotype_app.panel",
-        "pk": 1,
-        "fields": {
-            "name": "DD",
-            "description": "Developmental disorders",
-            "is_visible": 1
-        }
-    },
-    {
-        "model": "gene2phenotype_app.panel",
-        "pk": 2,
-        "fields": {
-            "name": "Ear",
-            "description": "Ear disorders",
-            "is_visible": 0
-        }
-    },
-    {
-        "model": "gene2phenotype_app.panel",
-        "pk": 3,
-        "fields": {
-            "name": "Eye",
-            "description": "Eye disorders",
-            "is_visible": 1
-        }
-    },
-    {
-        "model": "gene2phenotype_app.panel",
-        "pk": 4,
-        "fields": {
-            "name": "Cardiac",
-            "description": "Cardiac disorders",
-            "is_visible": 1
-        }
-    },
-    {
-        "model": "gene2phenotype_app.panel",
-        "pk": 5,
-        "fields": {
-            "name": "Cancer",
-            "description": "Cancer disorders",
-            "is_visible": 1
-        }
-    },
-    {
-        "model": "gene2phenotype_app.userpanel",
-        "pk": 1,
-        "fields": {
-            "user": 1,
-            "panel": 1,
-            "is_deleted": 0
-        }
-    },
-    {
-        "model": "gene2phenotype_app.userpanel",
-        "pk": 2,
-        "fields": {
-            "user": 1,
-            "panel": 2,
-            "is_deleted": 0
-        }
-    },
-    {
-        "model": "gene2phenotype_app.userpanel",
-        "pk": 3,
-        "fields": {
-            "user": 1,
-            "panel": 3,
-            "is_deleted": 0
-        }
-    },
-    {
-        "model": "gene2phenotype_app.userpanel",
-        "pk": 4,
-        "fields": {
-            "user": 1,
-            "panel": 4,
-            "is_deleted": 0
-        }
-    },
-    {
-        "model": "gene2phenotype_app.userpanel",
-        "pk": 5,
-        "fields": {
-            "user": 2,
-            "panel": 1,
-            "is_deleted": 0
-        }
-    },
-    {
-        "model": "gene2phenotype_app.userpanel",
-        "pk": 6,
-        "fields": {
-            "user": 2,
-            "panel": 2,
-            "is_deleted": 0
-        }
-    },
-    {
-        "model": "gene2phenotype_app.userpanel",
-        "pk": 7,
-        "fields": {
-            "user": 3,
-            "panel": 1,
-            "is_deleted": 0
-        }
-    },
-    {
-        "model": "gene2phenotype_app.userpanel",
-        "pk": 8,
-        "fields": {
-            "user": 3,
-            "panel": 2,
-            "is_deleted": 0
-        }
-    },
-    {
-        "model": "gene2phenotype_app.userpanel",
-        "pk": 9,
-        "fields": {
-            "user": 3,
-            "panel": 3,
-            "is_deleted": 1
-        }
-    },
-    {
-        "model": "gene2phenotype_app.userpanel",
-        "pk": 10,
-        "fields": {
-            "user": 3,
-            "panel": 4,
-            "is_deleted": 0
-        }
-    },
-    {
-        "model": "gene2phenotype_app.userpanel",
-        "pk": 11,
-        "fields": {
-            "user": 4,
-            "panel": 1,
-            "is_deleted": 0
-        }
-    },
-    {
-        "model": "gene2phenotype_app.userpanel",
-        "pk": 12,
-        "fields": {
-            "user": 4,
-            "panel": 2,
-            "is_deleted": 0
-        }
-    },
-    {
-        "model": "gene2phenotype_app.userpanel",
-        "pk": 13,
-        "fields": {
-            "user": 5,
-            "panel": 1,
-            "is_deleted": 0
-        }
-    },
-    {
-        "model": "gene2phenotype_app.userpanel",
-        "pk": 14,
-        "fields": {
-            "user": 5,
-            "panel": 2,
-            "is_deleted": 0
-        }
-    },
-    {
-        "model": "gene2phenotype_app.userpanel",
-        "pk": 15,
-        "fields": {
-            "user": 5,
-            "panel": 3,
-            "is_deleted": 0
-        }
-    },
-    {
-        "model": "gene2phenotype_app.userpanel",
-        "pk": 16,
-        "fields": {
-            "user": 6,
-            "panel": 4,
-            "is_deleted": 0
-        }
-    },
-    {
-        "model": "gene2phenotype_app.userpanel",
-        "pk": 17,
-        "fields": {
-            "user": 7,
-            "panel": 5,
-            "is_deleted": 0
-        }
-    },
-    {
-        "model": "gene2phenotype_app.userpanel",
-        "pk": 18,
-        "fields": {
-            "user": 8,
-            "panel": 5,
-            "is_deleted": 0
-        }
-    },
-    {
-        "model": "gene2phenotype_app.userpanel",
-        "pk": 19,
-        "fields": {
-            "user": 9,
-            "panel": 1,
-            "is_deleted": 0
-        }
+  {
+    "model": "gene2phenotype_app.user",
+    "pk": 1,
+    "fields": {
+      "password": "pbkdf2_sha256$720000$0k4DsHeXy2xI1czeahgFE8$5zaRcE9orXAf3oMH9b5v4xAwK1WtCsOI893H/7Uy8S0=",
+      "is_staff": false,
+      "is_active": true,
+      "username": "test_user1",
+      "email": "user1@test.ac.uk",
+      "is_deleted": false,
+      "is_superuser": 0,
+      "first_name": "Test",
+      "last_name": "User1"
     }
+  },
+  {
+    "model": "gene2phenotype_app.user",
+    "pk": 2,
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$iYlN4pPKxtNlwU0OpPj0tb$bnQZBWVVdl6jSjtzqxmEG09rTiQhWeJS292eU+VL7iU=",
+      "is_staff": false,
+      "is_active": true,
+      "username": "test_user2",
+      "email": "user2@test.ac.uk",
+      "is_deleted": true,
+      "is_superuser": 0,
+      "first_name": "Test",
+      "last_name": "User2"
+    }
+  },
+  {
+    "model": "gene2phenotype_app.user",
+    "pk": 3,
+    "fields": {
+      "password": "pbkdf2_sha256$720000$iZL1O7xIUhZYHTJ6g8Vkg0$N47r3fthBDJWgQAVzqxOqXsmAj+pIT3N8jTbMcJDN3g=",
+      "is_staff": false,
+      "is_active": true,
+      "username": "test_user3",
+      "email": "user3@test.ac.uk",
+      "is_deleted": false,
+      "is_superuser": 0,
+      "first_name": "Test",
+      "last_name": "User3"
+    }
+  },
+  {
+    "model": "gene2phenotype_app.user",
+    "pk": 4,
+    "fields": {
+      "password": "pbkdf2_sha256$720000$lNUtl4QeLK8QaTJ2J6FJei$NQsTN1+LP6PqJMxC0dKEqSaeeTEbFiE0vtWaia1Ufik=",
+      "is_staff": false,
+      "is_active": false,
+      "username": "test_user4",
+      "email": "user4@test.ac.uk",
+      "is_deleted": false,
+      "is_superuser": 1,
+      "first_name": "Test",
+      "last_name": "User4"
+    }
+  },
+  {
+    "model": "gene2phenotype_app.user",
+    "pk": 5,
+    "fields": {
+      "password": "pbkdf2_sha256$870000$HrfXdrZCGZiSBa4yXvbsWA$3lbG4QNEMHuLsLkcJDE9/tiYdinAwoFGYdvOBigUp0A=",
+      "is_staff": true,
+      "is_active": true,
+      "username": "test_user5",
+      "email": "user5@test.ac.uk",
+      "is_deleted": false,
+      "is_superuser": 1,
+      "first_name": "Test",
+      "last_name": "User5"
+    }
+  },
+  {
+    "model": "gene2phenotype_app.user",
+    "pk": 6,
+    "fields": {
+      "password": "pbkdf2_sha256$720000$w5I3Bm9k1tX10ZHYbkyXiB$MAOsldxIofWkGpKIVTvgpBp3hWGBfCCwrpuRedueshE=",
+      "is_staff": false,
+      "is_active": true,
+      "username": "test_user_john",
+      "email": "john@test.ac.uk",
+      "is_deleted": false,
+      "is_superuser": 1,
+      "first_name": "John",
+      "last_name": "Doe"
+    }
+  },
+  {
+    "model": "gene2phenotype_app.user",
+    "pk": 7,
+    "fields": {
+      "password": "pbkdf2_sha256$720000$w5I3Bm9k1tX10ZHYbkyXiB$MAOsldxIofWkGpKIVTvgpBp3hWGBfCCwrpuRedueshE=",
+      "is_staff": false,
+      "is_active": true,
+      "username": "test_user_mary",
+      "email": "mary@test.ac.uk",
+      "is_deleted": false,
+      "is_superuser": 0,
+      "first_name": "Mary",
+      "last_name": "Smith"
+    }
+  },
+  {
+    "model": "gene2phenotype_app.user",
+    "pk": 8,
+    "fields": {
+      "password": "pbkdf2_sha256$870000$FI4cYx4hwv7dME29LzC8pA$LFLkoVMRscGOaAj7qkEYCt/Uw9SXzCEzpZG2muJJi8w=",
+      "is_staff": false,
+      "is_active": true,
+      "username": "test_user_sofia",
+      "email": "sofia@test.ac.uk",
+      "is_deleted": false,
+      "is_superuser": 1,
+      "first_name": "Sofia",
+      "last_name": "Sousa"
+    }
+  },
+  {
+    "model": "gene2phenotype_app.user",
+    "pk": 9,
+    "fields": {
+      "password": "pbkdf2_sha256$870000$OskKMLKUNQs4skp4zhCxcG$Y/7K1VSVggBTWNC2Y7oyKgf3y1pWWZN9Ht+MbNM1nP8=",
+      "is_staff": false,
+      "is_active": true,
+      "username": "test_user_elisa",
+      "email": "elisa@test.ac.uk",
+      "is_deleted": false,
+      "is_superuser": 0,
+      "first_name": "Elisa",
+      "last_name": "Stevens",
+      "groups": [1]
+    }
+  },
+  {
+    "model": "gene2phenotype_app.user",
+    "pk": 10,
+    "fields": {
+      "password": "pbkdf2_sha256$870000$aKgx0dReqIQ6w15xquZtHE$6tveYkrnS/+3emWKOOtF8X/MWb7e2e9/25U8+7OCR+M=",
+      "is_staff": true,
+      "is_active": true,
+      "username": "g2p_admin",
+      "email": "g2p-admin@test.ac.uk",
+      "is_deleted": false,
+      "is_superuser": 1,
+      "first_name": "G2P",
+      "last_name": "Test Admin",
+      "groups": [5]
+    }
+  },
+  {
+    "model": "gene2phenotype_app.panel",
+    "pk": 1,
+    "fields": {
+      "name": "DD",
+      "description": "Developmental disorders",
+      "is_visible": 1
+    }
+  },
+  {
+    "model": "gene2phenotype_app.panel",
+    "pk": 2,
+    "fields": {
+      "name": "Ear",
+      "description": "Ear disorders",
+      "is_visible": 0
+    }
+  },
+  {
+    "model": "gene2phenotype_app.panel",
+    "pk": 3,
+    "fields": {
+      "name": "Eye",
+      "description": "Eye disorders",
+      "is_visible": 1
+    }
+  },
+  {
+    "model": "gene2phenotype_app.panel",
+    "pk": 4,
+    "fields": {
+      "name": "Cardiac",
+      "description": "Cardiac disorders",
+      "is_visible": 1
+    }
+  },
+  {
+    "model": "gene2phenotype_app.panel",
+    "pk": 5,
+    "fields": {
+      "name": "Cancer",
+      "description": "Cancer disorders",
+      "is_visible": 1
+    }
+  },
+  {
+    "model": "gene2phenotype_app.userpanel",
+    "pk": 1,
+    "fields": {
+      "user": 1,
+      "panel": 1,
+      "is_deleted": 0
+    }
+  },
+  {
+    "model": "gene2phenotype_app.userpanel",
+    "pk": 2,
+    "fields": {
+      "user": 1,
+      "panel": 2,
+      "is_deleted": 0
+    }
+  },
+  {
+    "model": "gene2phenotype_app.userpanel",
+    "pk": 3,
+    "fields": {
+      "user": 1,
+      "panel": 3,
+      "is_deleted": 0
+    }
+  },
+  {
+    "model": "gene2phenotype_app.userpanel",
+    "pk": 4,
+    "fields": {
+      "user": 1,
+      "panel": 4,
+      "is_deleted": 0
+    }
+  },
+  {
+    "model": "gene2phenotype_app.userpanel",
+    "pk": 5,
+    "fields": {
+      "user": 2,
+      "panel": 1,
+      "is_deleted": 0
+    }
+  },
+  {
+    "model": "gene2phenotype_app.userpanel",
+    "pk": 6,
+    "fields": {
+      "user": 2,
+      "panel": 2,
+      "is_deleted": 0
+    }
+  },
+  {
+    "model": "gene2phenotype_app.userpanel",
+    "pk": 7,
+    "fields": {
+      "user": 3,
+      "panel": 1,
+      "is_deleted": 0
+    }
+  },
+  {
+    "model": "gene2phenotype_app.userpanel",
+    "pk": 8,
+    "fields": {
+      "user": 3,
+      "panel": 2,
+      "is_deleted": 0
+    }
+  },
+  {
+    "model": "gene2phenotype_app.userpanel",
+    "pk": 9,
+    "fields": {
+      "user": 3,
+      "panel": 3,
+      "is_deleted": 1
+    }
+  },
+  {
+    "model": "gene2phenotype_app.userpanel",
+    "pk": 10,
+    "fields": {
+      "user": 3,
+      "panel": 4,
+      "is_deleted": 0
+    }
+  },
+  {
+    "model": "gene2phenotype_app.userpanel",
+    "pk": 11,
+    "fields": {
+      "user": 4,
+      "panel": 1,
+      "is_deleted": 0
+    }
+  },
+  {
+    "model": "gene2phenotype_app.userpanel",
+    "pk": 12,
+    "fields": {
+      "user": 4,
+      "panel": 2,
+      "is_deleted": 0
+    }
+  },
+  {
+    "model": "gene2phenotype_app.userpanel",
+    "pk": 13,
+    "fields": {
+      "user": 5,
+      "panel": 1,
+      "is_deleted": 0
+    }
+  },
+  {
+    "model": "gene2phenotype_app.userpanel",
+    "pk": 14,
+    "fields": {
+      "user": 5,
+      "panel": 2,
+      "is_deleted": 0
+    }
+  },
+  {
+    "model": "gene2phenotype_app.userpanel",
+    "pk": 15,
+    "fields": {
+      "user": 5,
+      "panel": 3,
+      "is_deleted": 0
+    }
+  },
+  {
+    "model": "gene2phenotype_app.userpanel",
+    "pk": 16,
+    "fields": {
+      "user": 6,
+      "panel": 4,
+      "is_deleted": 0
+    }
+  },
+  {
+    "model": "gene2phenotype_app.userpanel",
+    "pk": 17,
+    "fields": {
+      "user": 7,
+      "panel": 5,
+      "is_deleted": 0
+    }
+  },
+  {
+    "model": "gene2phenotype_app.userpanel",
+    "pk": 18,
+    "fields": {
+      "user": 8,
+      "panel": 5,
+      "is_deleted": 0
+    }
+  },
+  {
+    "model": "gene2phenotype_app.userpanel",
+    "pk": 19,
+    "fields": {
+      "user": 9,
+      "panel": 1,
+      "is_deleted": 0
+    }
+  }
 ]

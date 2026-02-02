@@ -34,6 +34,7 @@ from .curation import (
     AddCurationData,
     ListCurationEntries,
     CurationDataDetail,
+    ClaimCurationData,
     UpdateCurationData,
     PublishRecord,
     DeleteCurationData,
