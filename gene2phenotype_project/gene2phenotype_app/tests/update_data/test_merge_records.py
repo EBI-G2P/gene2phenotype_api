@@ -9,6 +9,7 @@ from gene2phenotype_app.models import (
     LGDVariantType,
     LGDVariantTypeComment,
     LGDPublication,
+    LGDMinedPublication,
 )
 
 
@@ -28,11 +29,13 @@ class LGDEditPublicationsEndpoint(TestCase):
         "gene2phenotype_app/fixtures/locus_genotype_disease.json",
         "gene2phenotype_app/fixtures/locus.json",
         "gene2phenotype_app/fixtures/publication.json",
+        "gene2phenotype_app/fixtures/mined_publication.json",
         "gene2phenotype_app/fixtures/sequence.json",
         "gene2phenotype_app/fixtures/user_panels.json",
         "gene2phenotype_app/fixtures/ontology_term.json",
         "gene2phenotype_app/fixtures/source.json",
         "gene2phenotype_app/fixtures/lgd_publication.json",
+        "gene2phenotype_app/fixtures/lgd_mined_publication.json",
         "gene2phenotype_app/fixtures/lgd_phenotype.json",
         "gene2phenotype_app/fixtures/lgd_variant_consequence.json",
         "gene2phenotype_app/fixtures/lgd_variant_type.json",
@@ -193,6 +196,11 @@ class LGDEditPublicationsEndpoint(TestCase):
                     variant_type_comment_list[0].comment,
                     "Recurrent c.340C>T; other variant",
                 )
-        # Count the number of publications
+        # Count the number of curated publications
         lgd_publication_list = LGDPublication.objects.filter(lgd=lgd_obj.id)
         self.assertEqual(len(lgd_publication_list), 4)
+
+        # Check mined publications
+        lgd_mined_publication_list = LGDMinedPublication.objects.filter(lgd=lgd_obj.id)
+        self.assertEqual(len(lgd_mined_publication_list), 1)
+        self.assertEqual(lgd_mined_publication_list[0].status, "curated")

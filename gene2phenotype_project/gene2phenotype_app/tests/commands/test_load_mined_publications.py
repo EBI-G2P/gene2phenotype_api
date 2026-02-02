@@ -56,11 +56,11 @@ class TestLoadMinedPublicationsCommand(TestCase):
 
         # Check database
         mined_publications = MinedPublication.objects.all()
-        self.assertEqual(len(mined_publications), 6)
+        self.assertEqual(len(mined_publications), 7)
         history_mined_publications = MinedPublication.history.all()
         self.assertEqual(len(history_mined_publications), 4)
         lgd_mined_publications = LGDMinedPublication.objects.all()
-        self.assertEqual(len(lgd_mined_publications), 5)
+        self.assertEqual(len(lgd_mined_publications), 6)
         history_lgd_mined_publications = LGDMinedPublication.history.all()
         self.assertEqual(len(history_lgd_mined_publications), 3)
 
