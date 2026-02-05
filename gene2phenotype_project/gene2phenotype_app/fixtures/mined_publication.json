@@ -18,5 +18,15 @@
             "year": 2020,
             "date_upload": "2025-09-01T11:38:52Z"
         }
+    },
+    {
+        "model": "gene2phenotype_app.minedpublication",
+        "pk": 3,
+        "fields": {
+            "pmid": 15214012,
+            "title": "Cardiomyopathy in Coffin-Lowry syndrome.",
+            "year": 2004,
+            "date_upload": "2025-09-01T11:38:52Z"
+        }
     }
 ]

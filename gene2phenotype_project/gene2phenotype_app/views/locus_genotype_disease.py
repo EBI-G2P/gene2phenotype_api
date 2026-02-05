@@ -47,6 +47,7 @@ from gene2phenotype_app.models import (
     LGDMolecularMechanismEvidence,
     LGDMolecularMechanismSynopsis,
     LGDPublication,
+    LGDMinedPublication,
     LGDComment,
 )
 
@@ -1953,6 +1954,10 @@ def MergeRecords(request):
                                         )
                                         stable_id_obj.save()
 
+                                    # Check the mined publications
+                                    # If the final record now has the publication 'curated'
+                                    check_mined_publications_after_merge(lgd_obj_keep)
+
                                     merged_records.append(
                                         {f"{g2p_id} merged into {final_g2p_id}"}
                                     )
@@ -2089,3 +2094,29 @@ def move_related_objects(
 
         obj.lgd = lgd_obj_keep
         obj.save()
+
+
+@extend_schema(exclude=True)
+def check_mined_publications_after_merge(lgd_obj_keep):
+    """
+    Method to check if any mined publication linked to the final LGD record
+    is part of the curated publications.
+    If so, update the status of the mined publication to 'curated'.
+    """
+    # Select mined publications with status 'mined'
+    mined_publications = LGDMinedPublication.objects.filter(
+        lgd=lgd_obj_keep,
+        status="mined",
+    ).prefetch_related("mined_publication")
+
+    # Check if any mined publication is also in the curated publications
+    for mined_pub in mined_publications:
+        curated_exists = LGDPublication.objects.filter(
+            lgd=lgd_obj_keep,
+            publication__pmid=mined_pub.mined_publication.pmid,
+            is_deleted=0,
+        ).exists()
+        if curated_exists:
+            # Update status to 'curated'
+            mined_pub.status = "curated"
+            mined_pub.save()

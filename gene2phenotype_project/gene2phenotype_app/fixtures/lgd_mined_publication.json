@@ -22,5 +22,17 @@
             "score": null,
             "score_comment": null
         }
+    },
+    {
+        "model": "gene2phenotype_app.lgdminedpublication",
+        "pk": 3,
+        "fields": {
+            "lgd": 5,
+            "mined_publication": 3,
+            "status": "mined",
+            "comment": null,
+            "score": null,
+            "score_comment": null
+        }
     }
 ]
