@@ -1989,7 +1989,7 @@ def MergeRecords(request):
 
 
 @extend_schema(exclude=True)
-def add_disease_synonym_to_keep_record(lgd_obj, lgd_obj_keep):
+def add_disease_synonym_to_keep_record(lgd_obj: Model, lgd_obj_keep: Model) -> None:
     """
     Method to add the disease synonym of the record to be merged (lgd_obj)
     to the record to keep (lgd_obj_keep).
