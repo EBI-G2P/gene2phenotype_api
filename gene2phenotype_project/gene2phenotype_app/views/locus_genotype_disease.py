@@ -34,6 +34,7 @@ from gene2phenotype_app.models import (
     Attrib,
     LocusGenotypeDisease,
     OntologyTerm,
+    DiseaseSynonym,
     G2PStableID,
     CVMolecularMechanism,
     LGDCrossCuttingModifier,
@@ -1794,6 +1795,8 @@ class LocusGenotypeDiseaseDelete(APIView):
 def MergeRecords(request):
     """
     Merges one or more LGD records ("g2p_ids") into a target record ("final_g2p_id").
+    Optionally, the disease synonym of the record to be merged can be added to the
+    target record as a synonym (if "add_disease_synonym" is set to true in the input data).
 
     Args:
         request (Request): HTTP request containing a list of records to merge
@@ -1801,7 +1804,8 @@ def MergeRecords(request):
     Example:
     [
         {"g2p_ids": ["G2P00004"], "final_g2p_id": "G2P00001"},
-        {"g2p_ids": ["G2P00005", "G2P00008"], "final_g2p_id": "G2P00006"}
+        {"g2p_ids": ["G2P00005", "G2P00008"], "final_g2p_id": "G2P00006"},
+        {"g2p_ids": ["G2P00728"], "final_g2p_id": "G2P00206", "add_disease_synonym": true}
     ]
     """
     records_list = request.data
@@ -1817,6 +1821,8 @@ def MergeRecords(request):
 
     for record in records_list:
         # record = {"g2p_ids": ["G2P00004"], "final_g2p_id": "G2P00001"}
+        # OR
+        # record = {"g2p_ids": ["G2P00004"], "final_g2p_id": "G2P00001", "add_disease_synonym": true}
         try:
             g2p_ids = record["g2p_ids"]
         except KeyError:
@@ -1836,6 +1842,9 @@ def MergeRecords(request):
                         }
                     )
                 else:
+                    # Check if the flag "add_disease_synonym" is set to true in the input data
+                    add_disease_synonym = record.get("add_disease_synonym", False)
+
                     # Check the g2p id to keep is not in the list of g2p ids
                     # This avoids merging a record into itself
                     if final_g2p_id in g2p_ids:
@@ -1935,6 +1944,10 @@ def MergeRecords(request):
                                         ["variant_consequence"],
                                     )
 
+                                    # Add the disease synonym
+                                    if add_disease_synonym:
+                                        add_disease_synonym_to_keep_record(lgd_obj, lgd_obj_keep)
+
                                     delete_lgd_record(lgd_obj)
 
                                     # Delete the stable id used by the LGD record
@@ -1973,6 +1986,27 @@ def MergeRecords(request):
         response_data,
         status=status.HTTP_200_OK if merged_records else status.HTTP_400_BAD_REQUEST,
     )
+
+
+@extend_schema(exclude=True)
+def add_disease_synonym_to_keep_record(lgd_obj, lgd_obj_keep):
+    """
+    Method to add the disease synonym of the record to be merged (lgd_obj)
+    to the record to keep (lgd_obj_keep).
+    The disease synonym is added as a new phenotype linked to the record to keep.
+
+    Args:
+        lgd_obj (Model): Record to be merged
+        lgd_obj_keep (Model): Record to be kept
+    """
+    # Check if the disease synonym is already linked to the record to keep
+    if not DiseaseSynonym.objects.filter(
+        disease=lgd_obj_keep.disease, synonym=lgd_obj.disease.name
+    ).exists():
+        new_disease_synonym = DiseaseSynonym(
+            disease=lgd_obj_keep.disease, synonym=lgd_obj.disease.name
+        )
+        new_disease_synonym.save()
 
 
 @extend_schema(exclude=True)

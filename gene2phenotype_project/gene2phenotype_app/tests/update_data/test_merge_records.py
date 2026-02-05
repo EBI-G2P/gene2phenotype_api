@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from gene2phenotype_app.models import (
+    DiseaseSynonym,
     User,
     G2PStableID,
     LocusGenotypeDisease,
@@ -22,6 +23,7 @@ class LGDEditPublicationsEndpoint(TestCase):
         "gene2phenotype_app/fixtures/attribs.json",
         "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
         "gene2phenotype_app/fixtures/disease.json",
+        "gene2phenotype_app/fixtures/disease_synonym.json",
         "gene2phenotype_app/fixtures/g2p_stable_id.json",
         "gene2phenotype_app/fixtures/lgd_mechanism_evidence.json",
         "gene2phenotype_app/fixtures/lgd_mechanism_synopsis.json",
@@ -151,7 +153,7 @@ class LGDEditPublicationsEndpoint(TestCase):
         """
         url_merge = reverse("merge_records")
 
-        records_to_merge = [{"g2p_ids": ["G2P00002"], "final_g2p_id": "G2P00006"}]
+        records_to_merge = [{"g2p_ids": ["G2P00002"], "final_g2p_id": "G2P00006", "add_disease_synonym": True}]
 
         # Login
         user = User.objects.get(email="user5@test.ac.uk")
@@ -204,3 +206,12 @@ class LGDEditPublicationsEndpoint(TestCase):
         lgd_mined_publication_list = LGDMinedPublication.objects.filter(lgd=lgd_obj.id)
         self.assertEqual(len(lgd_mined_publication_list), 1)
         self.assertEqual(lgd_mined_publication_list[0].status, "curated")
+
+        # Check the disease synonym was added to the target record
+        disease_synonym_list = DiseaseSynonym.objects.filter(disease=lgd_obj.disease.id)
+        self.assertEqual(len(disease_synonym_list), 1)
+        self.assertEqual(disease_synonym_list[0].synonym, "RAB27A-related Griscelli syndrome")
+        # Check the disease synonym history was updated with the correct information
+        history_records = DiseaseSynonym.history.all()
+        self.assertEqual(len(history_records), 1)
+        self.assertEqual(history_records[0].synonym, "RAB27A-related Griscelli syndrome")
