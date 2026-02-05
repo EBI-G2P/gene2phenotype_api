@@ -535,10 +535,12 @@ class VerifyEmailSerializer(serializers.ModelSerializer):
                 reset_link=reset_link,
                 to_email=user.email,
             )
-        # If user not found, return a generic response to avoid user enumeration
-        return {
-            "message": "If an account exists for this email, a reset link has been sent."
-        }
+            return {"id": user.id, "email": user.email, "token": reset_token}
+        else:
+            # If user not found, return a generic response to avoid user enumeration
+            return {
+                "message": "If an account exists for this email, a reset link has been sent."
+            }
 
     class Meta:
         model = User
