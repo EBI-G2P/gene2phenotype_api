@@ -260,3 +260,16 @@ class ChangePasswordTest(TestCase):
         self.assertIn("id", response.data)
         self.assertIn("email", response.data)
         self.assertIn("token", response.data)
+
+    def test_verify_email_failure(self):
+        """
+        Test verifying email for password reset with non-existent email
+        """
+        response = self.client.post(
+            self.url_verify_email,
+            {"email": "nonexistent@test.mail.com"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["message"], "If an account exists for this email, a reset link has been sent.")
