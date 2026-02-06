@@ -2,6 +2,7 @@ import json
 from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from gene2phenotype_app.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -273,3 +274,50 @@ class ChangePasswordTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["message"], "If an account exists for this email, a reset link has been sent.")
+
+
+class TokenRefreshTest(TestCase):
+    fixtures = ["gene2phenotype_app/fixtures/user_panels.json"]
+
+    def setUp(self):
+        self.url_login = reverse("_login")
+        self.url_logout = reverse("logout")
+        self.url_refresh = reverse("token_refresh")
+        self.user = User.objects.get(email="user5@test.ac.uk")
+
+    def _set_refresh_cookies(self, refresh_token):
+        refresh_expires = timezone.now() + settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"]
+        self.client.cookies[settings.SIMPLE_JWT["REFRESH_COOKIE"]] = str(refresh_token)
+        self.client.cookies["refresh_token_lifetime"] = refresh_expires.isoformat()
+
+    def test_token_refresh_success(self):
+        refresh = RefreshToken.for_user(self.user)
+        self._set_refresh_cookies(refresh)
+
+        response = self.client.post(self.url_refresh, content_type="application/json")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(settings.SIMPLE_JWT["AUTH_COOKIE"], response.cookies)
+
+    def test_token_refresh_missing_cookie(self):
+        response = self.client.post(self.url_refresh, content_type="application/json")
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_logout_blacklists_refresh_token(self):
+        refresh = RefreshToken.for_user(self.user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+        self._set_refresh_cookies(refresh)
+
+        response_logout = self.client.post(
+            self.url_logout, content_type="application/json"
+        )
+        self.assertEqual(response_logout.status_code, 204)
+
+        self._set_refresh_cookies(refresh)
+        response_refresh = self.client.post(
+            self.url_refresh, content_type="application/json"
+        )
+
+        self.assertEqual(response_refresh.status_code, 401)
