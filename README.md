@@ -7,7 +7,7 @@ API documentation is available at [Gene2Phenotype API Documentation](https://www
 
 ### Requirements
 
-- Python 3.10
+- Python 3.10+
 - MySQL 8
 
 ### Installation
