@@ -1795,17 +1795,21 @@ class LocusGenotypeDiseaseDelete(APIView):
 def MergeRecords(request):
     """
     Merges one or more LGD records ("g2p_ids") into a target record ("final_g2p_id").
-    Optionally, the disease synonym of the record to be merged can be added to the
+    Optionally:
+    - the disease synonym of the record to be merged can be added to the
     target record as a synonym (if "add_disease_synonym" is set to true in the input data).
+    - the genotype of the record to be merged can be changed in the target record (if "new_genotype"
+    is set in the input data).
 
     Args:
         request (Request): HTTP request containing a list of records to merge
 
-    Example:
+    Examples:
     [
         {"g2p_ids": ["G2P00004"], "final_g2p_id": "G2P00001"},
         {"g2p_ids": ["G2P00005", "G2P00008"], "final_g2p_id": "G2P00006"},
         {"g2p_ids": ["G2P00728"], "final_g2p_id": "G2P00206", "add_disease_synonym": true}
+        {"g2p_ids": ["G2P00728"], "final_g2p_id": "G2P00206", "new_genotype": "monoallelic_autosomal"}
     ]
     """
     records_list = request.data
@@ -1844,6 +1848,7 @@ def MergeRecords(request):
                 else:
                     # Check if the flag "add_disease_synonym" is set to true in the input data
                     add_disease_synonym = record.get("add_disease_synonym", False)
+                    new_genotype = record.get("new_genotype", None)
 
                     # Check the g2p id to keep is not in the list of g2p ids
                     # This avoids merging a record into itself
@@ -1874,14 +1879,8 @@ def MergeRecords(request):
                                 errors.append({"error": f"Invalid G2P record {g2p_id}"})
                             else:
                                 # Run checks before the update
-                                # Check if the gene and genotypes are the same
-                                if lgd_obj_keep.genotype != lgd_obj.genotype:
-                                    errors.append(
-                                        {
-                                            "error": f"Cannot merge records {final_g2p_id} and {g2p_id} with different genotypes"
-                                        }
-                                    )
-                                elif lgd_obj_keep.locus != lgd_obj.locus:
+                                # Check if the genes are the same
+                                if lgd_obj_keep.locus != lgd_obj.locus:
                                     errors.append(
                                         {
                                             "error": f"Cannot merge records {final_g2p_id} and {g2p_id} with different genes"
@@ -1943,6 +1942,22 @@ def MergeRecords(request):
                                         lgd_obj_keep,
                                         ["variant_consequence"],
                                     )
+
+                                    # Update the genotype if "new_genotype" is set in the input data
+                                    if new_genotype:
+                                        try:
+                                            genotype_obj = Attrib.objects.get(
+                                                value=new_genotype, type__code="genotype"
+                                            )
+                                        except Attrib.DoesNotExist:
+                                            errors.append(
+                                                {
+                                                    "error": f"Invalid genotype '{new_genotype}' for record {final_g2p_id}"
+                                                }
+                                            )
+                                        else:
+                                            lgd_obj_keep.genotype = genotype_obj
+                                            lgd_obj_keep.save()
 
                                     # Add the disease synonym
                                     if add_disease_synonym:
@@ -2154,3 +2169,5 @@ def check_mined_publications_after_merge(lgd_obj_keep):
             # Update status to 'curated'
             mined_pub.status = "curated"
             mined_pub.save()
+
+    # TODO: add mined publications from the merged record to the final record.
