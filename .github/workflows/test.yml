@@ -76,7 +76,7 @@ jobs:
           export SECRET_KEY=$(openssl rand -base64 12)
           python manage.py makemigrations
           python manage.py migrate
-          python -m coverage run --source=gene2phenotype_app manage.py test gene2phenotype_app.tests
+          python -m coverage run --source=gene2phenotype_app --omit="*/tests/*" manage.py test gene2phenotype_app.tests
           python -m coverage xml -o coverage.cobertura.xml
         env:
           PROJECT_CONFIG_PATH: /home/runner/work/config.ini
