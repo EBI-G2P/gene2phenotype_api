@@ -130,8 +130,12 @@ class LGDDiseaseUpdatesEndpoint(TestCase):
         self.assertEqual(response.status_code, 200)
 
         response_data = response.json()
-        # Record G2P00008 was associated with disease id 10, the endpoint updated it to disease id 11
-        expected_response_updates = [{"g2p_id": "G2P00008", "lgd_id": 7}]
+        # Records G2P00008 and G2P00015 were associated with disease id 10,
+        # the endpoint updated them to disease id 11
+        expected_response_updates = [
+            {"g2p_id": "G2P00008", "lgd_id": 7},
+            {"g2p_id": "G2P00015", "lgd_id": 9}
+        ]
         # The other record associated with disease id 10 cannot be updated
         expected_response_data_error = [
             {

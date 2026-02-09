@@ -153,7 +153,13 @@ class LGDEditPublicationsEndpoint(TestCase):
         """
         url_merge = reverse("merge_records")
 
-        records_to_merge = [{"g2p_ids": ["G2P00002"], "final_g2p_id": "G2P00006", "add_disease_synonym": True}]
+        records_to_merge = [
+            {
+                "g2p_ids": ["G2P00002"],
+                "final_g2p_id": "G2P00006",
+                "add_disease_synonym": True,
+            }
+        ]
 
         # Login
         user = User.objects.get(email="user5@test.ac.uk")
@@ -204,14 +210,71 @@ class LGDEditPublicationsEndpoint(TestCase):
 
         # Check mined publications
         lgd_mined_publication_list = LGDMinedPublication.objects.filter(lgd=lgd_obj.id)
-        self.assertEqual(len(lgd_mined_publication_list), 1)
-        self.assertEqual(lgd_mined_publication_list[0].status, "curated")
+        self.assertEqual(len(lgd_mined_publication_list), 2)
+        for lgd_mined_publication in lgd_mined_publication_list:
+            if lgd_mined_publication.mined_publication.pmid == "15214012":
+                self.assertEqual(lgd_mined_publication.status, "curated")
 
         # Check the disease synonym was added to the target record
         disease_synonym_list = DiseaseSynonym.objects.filter(disease=lgd_obj.disease.id)
         self.assertEqual(len(disease_synonym_list), 1)
-        self.assertEqual(disease_synonym_list[0].synonym, "RAB27A-related Griscelli syndrome")
+        self.assertEqual(
+            disease_synonym_list[0].synonym, "RAB27A-related Griscelli syndrome"
+        )
         # Check the disease synonym history was updated with the correct information
         history_records = DiseaseSynonym.history.all()
         self.assertEqual(len(history_records), 1)
-        self.assertEqual(history_records[0].synonym, "RAB27A-related Griscelli syndrome")
+        self.assertEqual(
+            history_records[0].synonym, "RAB27A-related Griscelli syndrome"
+        )
+
+    def test_merge_records_different_genotype(self):
+        """
+        Test merging two records with different genotypes but the same gene.
+        """
+        url_merge = reverse("merge_records")
+
+        records_to_merge = [
+            {
+                "g2p_ids": ["G2P00002"],
+                "final_g2p_id": "G2P00015",
+                "add_disease_synonym": True,
+                "new_genotype": "monoallelic_autosomal",
+            }
+        ]
+
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.post(
+            url_merge, records_to_merge, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["merged_records"], [["G2P00002 merged into G2P00015"]]
+        )
+
+        # Test merged records
+        deleted_stable_id_obj = G2PStableID.objects.get(stable_id="G2P00002")
+        self.assertEqual(deleted_stable_id_obj.is_live, False)
+        self.assertEqual(deleted_stable_id_obj.is_deleted, 1)
+        self.assertEqual(deleted_stable_id_obj.comment, "Merged into G2P00015")
+        stable_id_obj = G2PStableID.objects.get(stable_id="G2P00015")
+        self.assertEqual(stable_id_obj.is_live, True)
+        lgd_obj = LocusGenotypeDisease.objects.get(
+            stable_id=stable_id_obj.id, is_deleted=0
+        )
+
+        # Check if genotype was updated to the new genotype
+        self.assertEqual(lgd_obj.genotype.value, "monoallelic_autosomal")
+
+        # Check mined publications
+        lgd_mined_publication_list = LGDMinedPublication.objects.filter(lgd=lgd_obj.id)
+        self.assertEqual(len(lgd_mined_publication_list), 1)
