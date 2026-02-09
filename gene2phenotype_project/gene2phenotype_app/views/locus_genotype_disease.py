@@ -890,11 +890,13 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
                 )
             except LGDVariantGenccConsequence.DoesNotExist:
                 return Response(
-                    {"error": f"Could not find variant consequence '{consequence}' for ID '{stable_id}'"},
+                    {
+                        "error": f"Could not find variant consequence '{consequence}' for ID '{stable_id}'"
+                    },
                     status=status.HTTP_404_NOT_FOUND,
                 )
             else:
-                variant_consequence_obj.is_deleted=1
+                variant_consequence_obj.is_deleted = 1
                 variant_consequence_obj.save()
 
             lgd_obj.date_review = get_date_now()
@@ -1717,6 +1719,7 @@ class LocusGenotypeDiseaseDelete(APIView):
     """
     Delete a LGD record
     """
+
     http_method_names = ["patch", "options"]
     serializer_class = LocusGenotypeDiseaseSerializer
     permission_classes = [permissions.IsAuthenticated, IsSuperUser]
@@ -1734,9 +1737,7 @@ class LocusGenotypeDiseaseDelete(APIView):
         # Validate input data
         if not isinstance(input_data, dict):
             return Response(
-                {
-                    "error": "Invalid input data."
-                },
+                {"error": "Invalid input data."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -1795,17 +1796,21 @@ class LocusGenotypeDiseaseDelete(APIView):
 def MergeRecords(request):
     """
     Merges one or more LGD records ("g2p_ids") into a target record ("final_g2p_id").
-    Optionally, the disease synonym of the record to be merged can be added to the
+    Optionally:
+    - the disease synonym of the record to be merged can be added to the
     target record as a synonym (if "add_disease_synonym" is set to true in the input data).
+    - the genotype of the record to be merged can be changed in the target record (if "new_genotype"
+    is set in the input data).
 
     Args:
         request (Request): HTTP request containing a list of records to merge
 
-    Example:
+    Examples:
     [
         {"g2p_ids": ["G2P00004"], "final_g2p_id": "G2P00001"},
         {"g2p_ids": ["G2P00005", "G2P00008"], "final_g2p_id": "G2P00006"},
         {"g2p_ids": ["G2P00728"], "final_g2p_id": "G2P00206", "add_disease_synonym": true}
+        {"g2p_ids": ["G2P00728"], "final_g2p_id": "G2P00206", "new_genotype": "monoallelic_autosomal"}
     ]
     """
     records_list = request.data
@@ -1844,6 +1849,7 @@ def MergeRecords(request):
                 else:
                     # Check if the flag "add_disease_synonym" is set to true in the input data
                     add_disease_synonym = record.get("add_disease_synonym", False)
+                    new_genotype = record.get("new_genotype", None)
 
                     # Check the g2p id to keep is not in the list of g2p ids
                     # This avoids merging a record into itself
@@ -1874,14 +1880,8 @@ def MergeRecords(request):
                                 errors.append({"error": f"Invalid G2P record {g2p_id}"})
                             else:
                                 # Run checks before the update
-                                # Check if the gene and genotypes are the same
-                                if lgd_obj_keep.genotype != lgd_obj.genotype:
-                                    errors.append(
-                                        {
-                                            "error": f"Cannot merge records {final_g2p_id} and {g2p_id} with different genotypes"
-                                        }
-                                    )
-                                elif lgd_obj_keep.locus != lgd_obj.locus:
+                                # Check if the genes are the same
+                                if lgd_obj_keep.locus != lgd_obj.locus:
                                     errors.append(
                                         {
                                             "error": f"Cannot merge records {final_g2p_id} and {g2p_id} with different genes"
@@ -1944,9 +1944,28 @@ def MergeRecords(request):
                                         ["variant_consequence"],
                                     )
 
+                                    # Update the genotype if "new_genotype" is set in the input data
+                                    if new_genotype:
+                                        try:
+                                            genotype_obj = Attrib.objects.get(
+                                                value=new_genotype,
+                                                type__code="genotype",
+                                            )
+                                        except Attrib.DoesNotExist:
+                                            errors.append(
+                                                {
+                                                    "error": f"Invalid genotype '{new_genotype}' for record {final_g2p_id}"
+                                                }
+                                            )
+                                        else:
+                                            lgd_obj_keep.genotype = genotype_obj
+                                            lgd_obj_keep.save()
+
                                     # Add the disease synonym
                                     if add_disease_synonym:
-                                        add_disease_synonym_to_keep_record(lgd_obj, lgd_obj_keep)
+                                        add_disease_synonym_to_keep_record(
+                                            lgd_obj, lgd_obj_keep
+                                        )
 
                                     delete_lgd_record(lgd_obj)
 
@@ -1969,7 +1988,9 @@ def MergeRecords(request):
 
                                     # Check the mined publications
                                     # If the final record now has the publication 'curated'
-                                    check_mined_publications_after_merge(lgd_obj_keep)
+                                    check_mined_publications_after_merge(
+                                        lgd_obj_keep, lgd_obj
+                                    )
 
                                     merged_records.append(
                                         {f"{g2p_id} merged into {final_g2p_id}"}
@@ -2131,26 +2152,42 @@ def move_related_objects(
 
 
 @extend_schema(exclude=True)
-def check_mined_publications_after_merge(lgd_obj_keep):
+def check_mined_publications_after_merge(lgd_obj_keep: Model, lgd_obj: Model) -> None:
     """
     Method to check if any mined publication linked to the final LGD record
     is part of the curated publications.
     If so, update the status of the mined publication to 'curated'.
     """
     # Select mined publications with status 'mined'
-    mined_publications = LGDMinedPublication.objects.filter(
+    lgd_mined_publications = LGDMinedPublication.objects.filter(
         lgd=lgd_obj_keep,
         status="mined",
     ).prefetch_related("mined_publication")
 
     # Check if any mined publication is also in the curated publications
-    for mined_pub in mined_publications:
+    for lgd_mined_pub in lgd_mined_publications:
         curated_exists = LGDPublication.objects.filter(
             lgd=lgd_obj_keep,
-            publication__pmid=mined_pub.mined_publication.pmid,
+            publication__pmid=lgd_mined_pub.mined_publication.pmid,
             is_deleted=0,
         ).exists()
         if curated_exists:
             # Update status to 'curated'
-            mined_pub.status = "curated"
-            mined_pub.save()
+            lgd_mined_pub.status = "curated"
+            lgd_mined_pub.save()
+
+    # Get the mined publications linked to the record to be merged (lgd_obj)
+    mined_publications_to_move = LGDMinedPublication.objects.filter(
+        lgd=lgd_obj,
+        status="mined",
+    ).prefetch_related("mined_publication")
+
+    for lgd_mined_pub in mined_publications_to_move:
+        # Check if the mined publication is already linked to the final record (lgd_obj_keep)
+        if not LGDMinedPublication.objects.filter(
+            lgd=lgd_obj_keep,
+            mined_publication=lgd_mined_pub.mined_publication,
+        ).exists():
+            # If not, move the mined publication to be linked to the final record (lgd_obj_keep)
+            lgd_mined_pub.lgd = lgd_obj_keep
+            lgd_mined_pub.save()

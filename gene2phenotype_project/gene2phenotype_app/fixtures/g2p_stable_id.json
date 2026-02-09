@@ -138,5 +138,15 @@
       "is_deleted": 0,
       "comment": null
     }
+  },
+  {
+    "model": "gene2phenotype_app.g2pstableid",
+    "pk": 15,
+    "fields": {
+      "stable_id": "G2P00015",
+      "is_live": true,
+      "is_deleted": 0,
+      "comment": null
+    }
   }
 ]
