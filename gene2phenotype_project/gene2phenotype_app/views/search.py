@@ -66,6 +66,13 @@ from .base import BaseView, CustomPagination
         Skin
 
 
+    - `genotype`
+      Filters results to a specific genotype (allelic requirement).
+
+      Accepted values can be found at:
+      https://www.ebi.ac.uk/gene2phenotype/about/terminology#allelic-requirement-section
+
+
     - `mechanism`
       Filters results to a specific molecular mechanism.
 
@@ -188,6 +195,7 @@ class SearchView(BaseView):
         search_type = params.get("type", None)
         search_query = params.get("query", None)
         search_panel = params.get("panel", None)
+        search_genotype = params.get("genotype", None)
         search_mechanism = params.get("mechanism", None)
         search_variant_consequence = params.get("variant_consequence", None)
 
@@ -210,6 +218,9 @@ class SearchView(BaseView):
 
         if search_panel:
             options_query &= Q(lgdpanel__panel__name=search_panel)
+
+        if search_genotype:
+            options_query &= Q(genotype__value=search_genotype)
 
         if search_mechanism:
             options_query &= Q(mechanism__value=search_mechanism)
