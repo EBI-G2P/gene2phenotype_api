@@ -311,10 +311,13 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
                     print("Error adding lgdpublication-comment")
         else:
             # LGD-publication already exists
-            # If it does not have number of families or affected individuals then update it
+            # If it does not have number of families/individuals or
+            # number of families/individuals is different from new values then update it
             if (
                 not lgd_publication_obj.number_of_families
                 or not lgd_publication_obj.affected_individuals
+                or lgd_publication_obj.number_of_families != number_of_families
+                or lgd_publication_obj.affected_individuals != affected_individuals
             ):
                 lgd_publication_obj.number_of_families = number_of_families
                 lgd_publication_obj.affected_individuals = affected_individuals

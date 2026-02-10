@@ -161,7 +161,7 @@ class LGDEditPublications(BaseUpdate):
     def post(self, request, stable_id):
         """
         The post method adds a list of publications to an existing G2P record (LGD).
-        It also allows to add or updated data linked to the publication:
+        It also allows to add or update data linked to the publication:
             - comment
             - family info as reported in the publication
 
@@ -175,7 +175,7 @@ class LGDEditPublications(BaseUpdate):
             - molecular mechanism evidence
 
         Args:
-                request data (dict)
+            request data (dict)
 
             Example for a record already linked to pmid '41':
             { "publications":[
