@@ -153,6 +153,10 @@ class ListCurationEntries(BaseView):
         for data in queryset:
             entry = {
                 "locus": data.json_data["locus"],
+                "disease": data.json_data["disease"]["disease_name"] or None,
+                "allelic_requirement": data.json_data["allelic_requirement"] or None,
+                "molecular_mechanism": data.json_data["molecular_mechanism"]["name"] or None,
+                "panels": data.json_data["panels"],
                 "session_name": data.session_name,
                 "stable_id": data.stable_id.stable_id,
                 "type": data.status,

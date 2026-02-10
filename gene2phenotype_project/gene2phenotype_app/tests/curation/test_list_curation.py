@@ -36,7 +36,10 @@ class LGDListCurationDraftsEndpoint(TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(response.data.get("count"), 1)
-        self.assertEqual(response.data.get("results")[0]["type"], "manual")
+        result = response.data.get("results")[0]
+        self.assertEqual(result["type"], "manual")
+        self.assertEqual(result["locus"], "CEP290")
+        self.assertEqual(result["disease"], None)
 
     def test_list_curation_success_with_scope_all(self):
         """
