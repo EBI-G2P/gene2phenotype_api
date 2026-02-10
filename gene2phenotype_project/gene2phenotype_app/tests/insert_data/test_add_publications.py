@@ -212,6 +212,57 @@ class LGDEditPublicationsEndpoint(TestCase):
         self.assertEqual(response_logs_data["count"], 7)
         self.assertEqual(response_logs_data["results"][0]["change_type"], "created")
 
+    def test_add_existing_lgd_publication(self):
+        """
+        Test the endpoint to add a publication that already exists for a record.
+        It should not add the publication again and update the data linked to the publication.
+        """
+        # This pmid is already associated with the record
+        # The enpoint should update the number of families and affected individuals
+        publication_to_add = {
+            "publications": [
+                {
+                    "publication": {"pmid": 3897232},
+                    "comment": {"comment": "", "is_public": 1},
+                    "families": {
+                        "families": 2,
+                        "consanguinity": "unknown",
+                        "ancestries": None,
+                        "affected_individuals": 2,
+                    },
+                }
+            ],
+        }
+
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.post(
+            self.url_add_publication,
+            publication_to_add,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 201)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["message"], "Publication added to the G2P entry successfully."
+        )
+
+        # Check inserted data and history tables
+        lgd_publications = LGDPublication.objects.filter(
+            lgd__stable_id__stable_id="G2P00001", is_deleted=0
+        )
+        self.assertEqual(len(lgd_publications), 1)
+        self.assertEqual(lgd_publications[0].affected_individuals, 2)
+        self.assertEqual(lgd_publications[0].number_of_families, 2)
+
+        history_lgd_publications = LGDPublication.history.all()
+        self.assertEqual(len(history_lgd_publications), 1)
+
     def test_add_lgd_publication_linked_mined_publication(self):
         """
         Test the endpoint to add multiple publications to a record which also includes a linked mined publication.
@@ -667,7 +718,7 @@ class LGDEditPublicationsEndpoint(TestCase):
 
     def test_add_lgd_publication_invalid_input(self):
         """
-        Test the endpoint to add a LGD-publication with invalid consanguinity
+        Test the endpoint to add a LGD-publication with empty publication field
         """
         publication_to_add = {
             "publication": [
