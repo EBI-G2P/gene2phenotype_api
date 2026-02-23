@@ -1137,7 +1137,6 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
                             "comment": "this is a comment",
                             "de_novo": false,
                             "inherited": true,
-                            "nmd_escape": false,
                             "primary_type": "protein_changing",
                             "secondary_type": "stop_gained",
                             "supporting_papers": ["1"],

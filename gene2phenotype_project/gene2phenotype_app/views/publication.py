@@ -195,7 +195,6 @@ class LGDEditPublications(BaseUpdate):
                         "comment": "",
                         "de_novo": false,
                         "inherited": false,
-                        "nmd_escape": false,
                         "primary_type": "protein_changing",
                         "secondary_type": "inframe_insertion",
                         "supporting_papers": ["41"],

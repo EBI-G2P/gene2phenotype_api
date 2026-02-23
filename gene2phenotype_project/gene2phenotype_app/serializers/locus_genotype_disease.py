@@ -1406,7 +1406,6 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
     supporting_papers = serializers.ListField(
         write_only=True
     )  # list of pmids (used by curation)
-    nmd_escape = serializers.BooleanField(write_only=True)  # flag (used by curation)
     comment = serializers.CharField(
         write_only=True, allow_blank=True
     )  # single comment (used by curation)
@@ -1428,13 +1427,6 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
         var_type = validated_data.get("secondary_type", None)  # Used by curation
         publications = validated_data.get("supporting_papers", None)  # Used by curation
         comment = validated_data.get("comment", None)  # Used by curation
-
-        # Get variant type from ontology_term
-        # nmd_escape list: frameshift_variant, stop_gained, splice_region_variant?, splice_acceptor_variant,
-        # splice_donor_variant
-        # We save the variant types already with the NMD_escape attached to the term
-        if validated_data.get("nmd_escape", None) is True:
-            var_type = f"{var_type}_NMD_escaping"
 
         try:
             var_type_obj = OntologyTerm.objects.get(
@@ -1627,7 +1619,6 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
             "comments",
             "secondary_type",
             "supporting_papers",
-            "nmd_escape",
             "comment",
         ]
 

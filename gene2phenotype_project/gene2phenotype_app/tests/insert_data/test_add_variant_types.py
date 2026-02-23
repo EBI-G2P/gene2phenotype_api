@@ -43,7 +43,6 @@ class LGDEditVariantTypesTests(TestCase):
                     "comment": "this is a comment",
                     "de_novo": False,
                     "inherited": True,
-                    "nmd_escape": False,
                     "primary_type": "protein_changing",
                     "secondary_type": "stop_gained",
                     "supporting_papers": ["12451214"],
