@@ -36,8 +36,130 @@ from .locus import LocusSerializer
 from .disease import DiseaseSerializer
 from .panel import LGDPanelSerializer
 
-from ..utils import get_date_now, ConfidenceCustomMail
-from ..utils import validate_mechanism_synopsis, validate_confidence_publications
+from ..utils import (
+    ConfidenceCustomMail,
+    get_date_now,
+    validate_mechanism_synopsis,
+    validate_confidence_publications,
+    article_for_phrase,
+    clean_disease_summary_text,
+    clean_summary_text,
+    cross_cutting_modifier_fragment,
+    join_summary_items,
+    join_with_and,
+    plural_suffix,
+)
+
+
+def build_lgd_summary(lgd_obj: LocusGenotypeDisease) -> Optional[str]:
+    """
+    Build a summary from the LGMDE record.
+    """
+    if lgd_obj is None:
+        return None
+
+    locus_name = getattr(getattr(lgd_obj, "locus", None), "name", None)
+    disease_name = clean_disease_summary_text(
+        getattr(getattr(lgd_obj, "disease", None), "name", None)
+    )
+    genotype_value = clean_summary_text(getattr(getattr(lgd_obj, "genotype", None), "value", None))
+    mechanism_value = clean_summary_text(getattr(getattr(lgd_obj, "mechanism", None), "value", None))
+    mechanism_support = getattr(getattr(lgd_obj, "mechanism_support", None), "value", None)
+    confidence_value = getattr(getattr(lgd_obj, "confidence", None), "value", None)
+
+    sentences: list[str] = []
+
+    # Count the number of curated publications only for this record to include in the summary
+    curated_pmids = set()
+    for row in (
+        LGDPublication.objects.filter(lgd_id=lgd_obj, is_deleted=0).select_related("publication")
+    ):
+        pmid = getattr(getattr(row, "publication", None), "pmid", None)
+        if pmid is not None:
+            curated_pmids.add(pmid)
+    curated_pub_count = len(curated_pmids)
+
+    if locus_name and disease_name:
+        confidence_prefix = f"{confidence_value} " if confidence_value else ""
+        sentences.append(
+            "There is "
+            f"{confidence_prefix}evidence, from {curated_pub_count} publication{plural_suffix(curated_pub_count)} "
+            f"that {locus_name} is related to {disease_name}."
+        )
+
+    # Variant consequences grouped by support value
+    variant_support_to_terms: dict[str, list[str]] = {}
+    for row in (
+        LGDVariantGenccConsequence.objects.filter(lgd_id=lgd_obj, is_deleted=0)
+        .select_related("variant_consequence", "support")
+    ):
+        term = clean_summary_text(
+            getattr(getattr(row, "variant_consequence", None), "term", None)
+        )
+        support_value = getattr(getattr(row, "support", None), "value", None)
+        if term:
+            support_key = support_value or "unknown"
+            variant_support_to_terms.setdefault(support_key, []).append(term)
+
+    variant_phrase = None
+    if variant_support_to_terms:
+        variant_chunks = []
+        for support_key, terms in variant_support_to_terms.items():
+            # Join the unique terms by comma
+            clean_terms = join_summary_items(terms)
+            if not clean_terms:
+                continue
+            if support_key == "unknown":
+                variant_chunks.append(
+                    f"variant consequence{plural_suffix(len(list(dict.fromkeys(terms))))} of {clean_terms}"
+                )
+            else:
+                variant_chunks.append(
+                    f"{support_key} variant consequence{plural_suffix(len(list(dict.fromkeys(terms))))} of {clean_terms}"
+                )
+        if variant_chunks:
+            variant_phrase = " and ".join(variant_chunks)
+
+    mechanism_phrase = None
+    if mechanism_value:
+        mechanism_core = f"{mechanism_value} molecular mechanism"
+        if mechanism_support and mechanism_value.lower() != "undetermined":
+            mechanism_core = f"{mechanism_support} {mechanism_core}"
+        mechanism_phrase = f"{article_for_phrase(mechanism_core)} {mechanism_core}"
+
+    cross_cutting_modifiers = []
+    for row in (
+        LGDCrossCuttingModifier.objects.filter(lgd_id=lgd_obj, is_deleted=0).select_related("ccm")
+    ):
+        ccm_value = clean_summary_text(getattr(getattr(row, "ccm", None), "value", None))
+        if ccm_value:
+            cross_cutting_modifiers.append(ccm_value)
+
+    if genotype_value:
+        condition_sentence = (
+            f"This is {article_for_phrase(genotype_value)} {genotype_value} condition"
+        )
+        if variant_phrase:
+            condition_sentence += f" with {variant_phrase}"
+        if mechanism_phrase:
+            if variant_phrase:
+                condition_sentence += f" and {mechanism_phrase}"
+            else:
+                condition_sentence += f" with {mechanism_phrase}"
+        sentences.append(condition_sentence + ".")
+
+    if cross_cutting_modifiers:
+        ccm_fragments = [
+            cross_cutting_modifier_fragment(modifier) for modifier in cross_cutting_modifiers
+        ]
+        ccm_text = join_with_and(ccm_fragments)
+        if ccm_text:
+            sentences.append(f"This {ccm_text}.")
+
+    if not sentences:
+        return None
+
+    return " ".join(sentences)
 
 
 class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
@@ -45,7 +167,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     Serializer for the LocusGenotypeDisease model.
     LocusGenotypeDisease represents a unique Locus-Genotype-Mechanism-Disease-Evidence (LGMDE) record.
     """
-
+    summary = serializers.SerializerMethodField(read_only=True)
     locus = serializers.SerializerMethodField()  # part of the unique entry
     stable_id = serializers.CharField(
         source="stable_id.stable_id", read_only=True
@@ -69,6 +191,13 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     date_created = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField(allow_null=True)
     is_reviewed = serializers.SerializerMethodField()
+
+    def get_summary(self, id: int) -> Optional[str]:
+        """
+        Summary of the LGMDE record.
+        The summary is automatically generated using the record's data.
+        """
+        return build_lgd_summary(id)
 
     def get_locus(self, id: int) -> dict[str, Any]:
         """

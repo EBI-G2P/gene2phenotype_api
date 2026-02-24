@@ -75,13 +75,22 @@ def clean_string(name: str) -> str:
     return " ".join(disease_tokens)
 
 
-# Clean OMIM disease name
-# Removes the gene and subtype from the disease name
-# Example: "BLEPHAROCHEILODONTIC SYNDROME 1; BCDS1" -> "blepharocheilodontic syndrome"
+def clean_disease_summary_text(text: str) -> Optional[str]:
+    """
+    Remove leading '<gene>-related' from the disease name.
+    Called by: build_lgd_record_summary() in LocusGenotypeDiseaseSerializer
+    """
+    if not text:
+        return None
+    text = re.sub(r"^\S+-related\s+", "", text, flags=re.IGNORECASE)
+    return text or None
+
+
 def clean_omim_disease(name: str) -> str:
     """
     Method to normalise and clean the OMIM disease name.
     It removes the gene and subtypes from the name.
+    Example: "BLEPHAROCHEILODONTIC SYNDROME 1; BCDS1" -> "blepharocheilodontic syndrome"
 
     Args:
         name (str): The original OMIM disease name
