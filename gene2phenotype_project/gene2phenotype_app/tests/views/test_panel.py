@@ -106,6 +106,7 @@ class PanelDetailsEndpointTests(TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.data["error"], "No matching Panel found for: Ears")
 
+
 class PanelSummaryEndpointTests(TestCase):
     """
     Test the panel endpoint: PanelRecordsSummary
@@ -140,7 +141,7 @@ class PanelSummaryEndpointTests(TestCase):
         response = self.client.get(self.url_panel_dd)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data.get("records_summary")), 1)
-    
+
     def test_get_cardiac_panel_summary(self):
         """
         Get the summary for a visible panel.
@@ -237,7 +238,7 @@ class PanelDownloadEndpointTests(TestCase):
 
     def test_download_all_visible_panel(self):
         """
-        Download all visible panel (non authenticated user)
+        Download all visible panels (non authenticated user)
         """
         url_panel = reverse("panel_download", kwargs={"name": "all"})
         response = self.client.get(url_panel)
@@ -283,6 +284,60 @@ class PanelDownloadEndpointTests(TestCase):
             "All mutations are located in the aminoterminal part of the gene, before the first epidermal growth factor-like domain.",
             "2018-07-05 16:33:03+00:00",
             "under review",
+        ]
+
+        self.assertEqual(rows[2], expected_data)
+
+    def test_download_all_visible_panel_with_summary(self):
+        """
+        Download all visible panels (non authenticated user)
+        The download should include the summary for each record
+        """
+        url_panel = reverse("panel_download", kwargs={"name": "all"})
+        response = self.client.get(url_panel + "?extra_columns=summary")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
+
+        # Check the content
+        content_disposition = response.get("Content-Disposition")
+        self.assertTrue(content_disposition.startswith("attachment"))
+        self.assertIn("filename=", content_disposition)
+
+        content = response.content.decode("utf-8")
+        csv_reader = csv.reader(StringIO(content))
+        rows = list(csv_reader)
+
+        # Check content of file
+        self.assertEqual(len(rows), 6)
+        self.assertIn("g2p id", rows[0])
+
+        expected_data = [
+            "G2P00002",
+            "RAB27A",
+            "",
+            "9766",
+            "GS2; RAB27",
+            "RAB27A-related Griscelli syndrome",
+            "",
+            "",
+            "biallelic_autosomal",
+            "typified by incomplete penetrance; typically de novo",
+            "definitive",
+            "absent gene product",
+            "inframe_insertion; intron_variant",
+            "loss of function",
+            "evidence",
+            "assembly-mediated GOF:inferred; aggregation:inferred",
+            "15214012 -> function: protein interaction",
+            "HP:0003549; HP:0010786; HP:0033127",
+            "12451214; 15214012",
+            "32302040",
+            "Cardiac",
+            "All mutations are located in the aminoterminal part of the gene, before the first epidermal growth factor-like domain.",
+            "2018-07-05 16:33:03+00:00",
+            "under review",
+            "There is definitive evidence, from 2 publications that RAB27A is related to Griscelli syndrome. This is a biallelic autosomal condition with inferred variant consequence of absent gene product and an evidence loss of function molecular mechanism. This is typically de novo and is typified by incomplete penetrance.",
         ]
 
         self.assertEqual(rows[2], expected_data)
