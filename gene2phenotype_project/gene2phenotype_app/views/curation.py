@@ -101,7 +101,8 @@ class ListCurationEntries(BaseView):
         Supported query parameters (optional):
             - type (Supported values - "manual", "automatic")
             - scope (Supported values - "all")
-        If no query params are provided, retrieve "manual" curations of specific user
+            - unclaimed (Supported values - "true", "false")
+        If no query params are provided, the view retrieves "manual" CurationData objects assigned to the specific user.
 
         Returns:
             Queryset of CurationData objects.
@@ -111,8 +112,17 @@ class ListCurationEntries(BaseView):
         scope_param = params.get("scope", None)
         # By default, retrieve "manual" curations
         status_param = params.get("type", "manual")
+        # "unclaimed" is a boolean query flag to retrieve curations assigned
+        # to users in the groups "junior_curator" or "g2p_admin"
+        unclaimed = str(params.get("unclaimed", "false")).strip().lower() == "true"
+
+        # Defined what user groups are considered to determine if a curation is unclaimed
+        unclaimed_groups = ["junior_curator", "g2p_admin"]
 
         query_filter = Q(status=status_param)
+
+        if unclaimed:
+            query_filter &= Q(user__groups__name__in=unclaimed_groups)
 
         if scope_param is None:
             # If "scope" is not provided, retrieve specific user curations
@@ -129,6 +139,7 @@ class ListCurationEntries(BaseView):
                 user_email=F("user__email"),
             )
             .order_by("-date_created")
+            .distinct()
         )
         return queryset
 
