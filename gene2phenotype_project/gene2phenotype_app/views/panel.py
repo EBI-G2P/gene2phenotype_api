@@ -33,6 +33,7 @@ from gene2phenotype_app.serializers import (
     PanelDetailSerializer,
     LGDPanelSerializer,
     UserSerializer,
+    build_lgd_summary,
 )
 
 from .base import BaseAPIView, IsSuperUser, CustomPermissionAPIView
@@ -527,7 +528,7 @@ def PanelDownload(request, name):
 
     Raises: Invalid panel
     """
-
+    extra_columns = request.query_params.get("extra_columns", None)
     user_email = request.user
     panel = None
 
@@ -551,6 +552,13 @@ def PanelDownload(request, name):
             panel = Panel.objects.get(name=name)
         except Panel.DoesNotExist:
             raise Http404(f"No matching panel found for: {name}")
+
+    # Process the extra columns
+    include_record_summary = False
+    if extra_columns:
+        extra_column_list = [extra_column.strip().lower() for extra_column in extra_columns.split(",")]
+        if "summary" in extra_column_list:
+            include_record_summary = True
 
     # Get date to attach to filename
     date_now = datetime.today().strftime("%Y-%m-%d")
@@ -737,34 +745,35 @@ def PanelDownload(request, name):
 
     writer = csv.writer(response)
     # Write file header
-    writer.writerow(
-        [
-            "g2p id",
-            "gene symbol",
-            "gene mim",
-            "hgnc id",
-            "previous gene symbols",
-            "disease name",
-            "disease mim",
-            "disease MONDO",
-            "allelic requirement",
-            "cross cutting modifier",
-            "confidence",
-            "variant consequence",
-            "variant types",
-            "molecular mechanism",
-            "molecular mechanism support",
-            "molecular mechanism categorisation",
-            "molecular mechanism evidence",
-            "phenotypes",
-            "publications",
-            "additional mined publications",
-            "panel",
-            "comments",
-            "date of last review",
-            "review",
-        ]
-    )
+    header_row = [
+        "g2p id",
+        "gene symbol",
+        "gene mim",
+        "hgnc id",
+        "previous gene symbols",
+        "disease name",
+        "disease mim",
+        "disease MONDO",
+        "allelic requirement",
+        "cross cutting modifier",
+        "confidence",
+        "variant consequence",
+        "variant types",
+        "molecular mechanism",
+        "molecular mechanism support",
+        "molecular mechanism categorisation",
+        "molecular mechanism evidence",
+        "phenotypes",
+        "publications",
+        "additional mined publications",
+        "panel",
+        "comments",
+        "date of last review",
+        "review",
+    ]
+    if include_record_summary:
+        header_row.append("summary")
+    writer.writerow(header_row)
 
     # Authenticated users can download all panels
     # Non authenticated users can only download visible panels
@@ -1008,35 +1017,39 @@ def PanelDownload(request, name):
             if not lgd.is_reviewed:
                 review = "under review"
 
+            if include_record_summary:
+                summary = build_lgd_summary(lgd)
+
             # Write data to output file
-            writer.writerow(
-                [
-                    lgd.stable_id.stable_id,
-                    lgd.locus.name,
-                    gene_mim,
-                    hgnc_id,
-                    locus_previous,
-                    lgd.disease.name,
-                    disease_mim,
-                    disease_mondo,
-                    lgd.genotype.value,
-                    ccm,
-                    lgd.confidence.value,
-                    variant_consequences,
-                    variant_types,
-                    molecular_mechanism,
-                    molecular_mechanism_support,
-                    molecular_mechanism_categorisation,
-                    molecular_mechanism_evidence,
-                    phenotypes,
-                    publications,
-                    mined_publications,
-                    panels,
-                    comments,
-                    lgd.date_review,
-                    review,
-                ]
-            )
+            row = [
+                lgd.stable_id.stable_id,
+                lgd.locus.name,
+                gene_mim,
+                hgnc_id,
+                locus_previous,
+                lgd.disease.name,
+                disease_mim,
+                disease_mondo,
+                lgd.genotype.value,
+                ccm,
+                lgd.confidence.value,
+                variant_consequences,
+                variant_types,
+                molecular_mechanism,
+                molecular_mechanism_support,
+                molecular_mechanism_categorisation,
+                molecular_mechanism_evidence,
+                phenotypes,
+                publications,
+                mined_publications,
+                panels,
+                comments,
+                lgd.date_review,
+                review,
+            ]
+            if include_record_summary:
+                row.append(summary)
+            writer.writerow(row)
     else:
         # If user is not authenticated then it can only download visible panels
         # Return no matching panel

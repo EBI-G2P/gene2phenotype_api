@@ -53,6 +53,7 @@ from .locus_genotype_disease import (
     LGDMechanismEvidenceSerializer,
     LGDCommentListSerializer,
     LGDReviewSerializer,
+    build_lgd_summary,
 )
 
 from .stable_id import G2PStableIDSerializer
