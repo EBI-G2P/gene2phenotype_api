@@ -768,7 +768,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
         ### Variant types ###
         # Example: {'comment': 'This is a frameshift', 'inherited': false, 'de_novo': false,
-        # 'unknown_inheritance': false, 'nmd_escape': True, 'primary_type': 'protein_changing',
+        # 'unknown_inheritance': false, 'primary_type': 'protein_changing',
         # 'secondary_type': 'frameshift_variant', 'supporting_papers': [38737272, 38768424]}
         for variant_type in data.json_data["variant_types"]:
             LGDVariantTypeSerializer(context={"lgd": lgd_obj, "user": user_obj}).create(

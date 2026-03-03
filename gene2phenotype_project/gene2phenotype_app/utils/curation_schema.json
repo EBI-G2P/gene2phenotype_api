@@ -88,9 +88,6 @@
                     "secondary_type": {
                         "type": "string"
                     },
-                    "nmd_escape": {
-                        "type": "boolean"
-                    },
                     "de_novo": {
                         "type": "boolean"
                     },
