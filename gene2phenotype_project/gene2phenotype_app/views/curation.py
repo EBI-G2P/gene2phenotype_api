@@ -100,8 +100,8 @@ class ListCurationEntries(BaseView):
         Retrieve the queryset of CurationData objects filtered according to the provided optional query parameters.
         Supported query parameters (optional):
             - type (Supported values - "manual", "automatic")
-            - scope (Supported values - "all")
-        If no query params are provided, retrieve "manual" curations of specific user
+            - scope (Supported values - "all", "unclaimed")
+        If no query params are provided, the view retrieves "manual" CurationData objects assigned to the specific user.
 
         Returns:
             Queryset of CurationData objects.
@@ -112,11 +112,18 @@ class ListCurationEntries(BaseView):
         # By default, retrieve "manual" curations
         status_param = params.get("type", "manual")
 
+        # Defined what user groups are considered to determine if a curation is unclaimed
+        unclaimed_groups = ["junior_curator", "g2p_admin"]
+
         query_filter = Q(status=status_param)
 
         if scope_param is None:
             # If "scope" is not provided, retrieve specific user curations
             query_filter &= Q(user__email=user, user__is_active=1)
+        elif scope_param == "unclaimed":
+            # If "scope" is "unclaimed", retrieve curations assigned
+            # to users in the groups "junior_curator" or "g2p_admin"
+            query_filter &= Q(user__groups__name__in=unclaimed_groups)
         elif scope_param == "all":
             # If "scope" is "all", retrieve curations of all users (no filter applied)
             pass
@@ -129,6 +136,7 @@ class ListCurationEntries(BaseView):
                 user_email=F("user__email"),
             )
             .order_by("-date_created")
+            .distinct()
         )
         return queryset
 
@@ -140,9 +148,10 @@ class ListCurationEntries(BaseView):
             Response containing the list of CurationData objects with specified fields.
         """
         scope_param = request.query_params.get("scope", None)
+        valid_score_params = ["all", "unclaimed"]
 
         # Validate "scope" query paramater
-        if scope_param and scope_param != "all":
+        if scope_param and scope_param not in valid_score_params:
             return Response(
                 {"error": "Invalid value provided for query parameter 'scope'"},
                 status=status.HTTP_400_BAD_REQUEST,
