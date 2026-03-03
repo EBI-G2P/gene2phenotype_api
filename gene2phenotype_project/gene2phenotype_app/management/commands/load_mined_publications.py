@@ -75,7 +75,7 @@ class Command(BaseCommand):
         all_records, publication_counts = self.get_all_record_publications()
 
         # Pre-process the file
-        with open(data_file, newline="") as fh:
+        with open(data_file, newline="", encoding='utf-8-sig') as fh:
             data_reader = csv.DictReader(fh)
 
             # Check headers
@@ -101,7 +101,7 @@ class Command(BaseCommand):
                         g2p_records_skip[new_g2p_id] += 1
 
         # Open the file again to import the data
-        with open(data_file, newline="") as fh_file, open(output_file, "w") as wr:
+        with open(data_file, newline="", encoding='utf-8-sig') as fh_file, open(output_file, "w") as wr:
             data_reader = csv.DictReader(fh_file)
 
             # Check headers
