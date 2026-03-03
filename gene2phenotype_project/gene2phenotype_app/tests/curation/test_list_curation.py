@@ -147,6 +147,31 @@ class LGDListCurationDraftsEndpoint(TestCase):
             all(item["type"] == "automatic" for item in response.data.get("results"))
         )
 
+    def test_list_curation_success_with_type_automatic_and_scope_unclaimed(self):
+        """
+        Test successful call to list curation drafts endpoint with 'type' = 'automatic' and 'scope' = 'unclaimed'
+        Should retrieve automatic drafts that are not claimed by any user
+        """
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        url = f"{self.url_list_curation}?type=automatic&scope=unclaimed"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(response.data.get("count"), 1)
+        self.assertTrue(
+            all(item["type"] == "automatic" for item in response.data.get("results"))
+        )
+        self.assertTrue(
+            all(item["curator_email"] == "g2p-admin@test.ac.uk" for item in response.data.get("results"))
+        )
+
     def test_list_curation_with_invalid_scope(self):
         """
         Test call to list curation drafts endpoint with invalid 'scope' value
