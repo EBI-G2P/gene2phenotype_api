@@ -142,7 +142,7 @@ class LGDListCurationDraftsEndpoint(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(response.data.get("count"), 3)
+        self.assertEqual(response.data.get("count"), 4)
         self.assertTrue(
             all(item["type"] == "automatic" for item in response.data.get("results"))
         )
@@ -164,7 +164,7 @@ class LGDListCurationDraftsEndpoint(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(response.data.get("count"), 1)
+        self.assertEqual(response.data.get("count"), 2)
         self.assertTrue(
             all(item["type"] == "automatic" for item in response.data.get("results"))
         )

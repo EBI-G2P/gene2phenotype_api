@@ -547,8 +547,8 @@ class LGDAddCurationEndpoint(TestCase):
         self.assertEqual(response.status_code, 200)
 
         expected_response = {
-            "message": "Data saved successfully for session name 'G2P00016'",
-            "result": "G2P00016",
+            "message": "Data saved successfully for session name 'G2P00017'",
+            "result": "G2P00017",
         }
         response_data = response.json()
         self.assertEqual(response_data, expected_response)

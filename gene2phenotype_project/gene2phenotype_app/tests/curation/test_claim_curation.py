@@ -26,6 +26,10 @@ class LGDClaimCurationEndpoint(TestCase):
             "claim_curation", kwargs={"stable_id": "G2P00014"}
         )
 
+        self.url_claim_curation_3 = reverse(
+            "claim_curation", kwargs={"stable_id": "G2P00016"}
+        )
+
         self.url_claim_invalid_curation = reverse(
             "claim_curation", kwargs={"stable_id": "G2P00123"}
         )
@@ -144,4 +148,23 @@ class LGDClaimCurationEndpoint(TestCase):
         self.assertEqual(
             response_data["error"],
             "Curation draft with G2P Stable ID 'G2P00004' already claimed by same user.",
+        )
+
+    def test_claim_curation_no_permission(self):
+        """
+        Test call to claim curation endpoint for curation which is not accessible to the user
+        """
+        self.login_user()
+
+        response = self.client.patch(
+            self.url_claim_curation_3,
+            data=None,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 403)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"],
+            "You do not have permission to claim this curation draft with G2P Stable ID 'G2P00016'",
         )
