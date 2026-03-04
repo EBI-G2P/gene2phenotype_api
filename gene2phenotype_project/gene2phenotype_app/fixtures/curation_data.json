@@ -226,5 +226,43 @@
       "stable_id": 14,
       "status": "automatic"
     }
+  },
+  {
+    "model": "gene2phenotype_app.curationdata",
+    "pk": 7,
+    "fields": {
+      "date_created": "2026-03-03T15:10:21Z",
+      "date_last_update": "2026-03-03T15:10:21Z",
+      "session_name": "test automic curation TUBB4A",
+      "json_data": {
+        "allelic_requirement": "monoallelic_Y_hemizygous",
+        "confidence": "definitive",
+        "cross_cutting_modifier": [],
+        "disease": {
+          "cross_references": [],
+          "disease_name": ""
+        },
+        "locus": "TUBB4A",
+        "mechanism_evidence": [],
+        "mechanism_synopsis": [],
+        "molecular_mechanism": {
+          "name": "",
+          "support": ""
+        },
+        "panels": ["Cardiac"],
+        "phenotypes": [],
+        "private_comment": "",
+        "public_comment": "",
+        "publications": [],
+        "session_name": "test automic curation TUBB4A",
+        "variant_consequences": [],
+        "variant_descriptions": [],
+        "variant_types": []
+      },
+      "gene_symbol": "TUBB4A",
+      "user_id": 10,
+      "stable_id": 16,
+      "status": "automatic"
+    }
   }
 ]

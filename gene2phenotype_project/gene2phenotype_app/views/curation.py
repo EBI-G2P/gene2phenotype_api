@@ -15,6 +15,7 @@ from gene2phenotype_app.models import (
     CurationData,
     LocusGenotypeDisease,
     User,
+    UserPanel,
 )
 
 from .base import BaseView, BaseAdd, BaseUpdate, IsNotJuniorCurator
@@ -289,6 +290,19 @@ class ClaimCurationData(BaseUpdate):
                     "error": f"Curation draft with G2P Stable ID '{stable_id}' already claimed by another user."
                 },
                 status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validate if user has permission to claim the draft
+        user_panels = (UserPanel.objects.filter(user=user_obj, is_deleted=0)
+                       .annotate(panel_name=F("panel__name"))
+                       .values_list("panel_name", flat=True))
+
+        if (curation_obj.json_data["panels"] and not set(curation_obj.json_data["panels"]).intersection(set(user_panels))):
+            return Response(
+                {
+                    "error": f"You do not have permission to claim this curation draft with G2P Stable ID '{stable_id}'"
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         # Update user
