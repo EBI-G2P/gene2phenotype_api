@@ -228,10 +228,6 @@ class VariantTypesList(APIView):
             "Example 1",
             description="Fetch detailed information for record with stable_id G2P03507",
             value={
-                "summary": "There is definitive evidence, from 5 publications that MTFMT is related"
-                " to mitochondrial disease with regression and lactic acidosis. This is a biallelic autosomal"
-                " condition with inferred variant consequences of absent gene product, altered gene product"
-                " structure and an evidence loss of function molecular mechanism.",
                 "locus": {
                     "gene_symbol": "MTFMT",
                     "sequence": "15",

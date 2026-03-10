@@ -167,7 +167,6 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     Serializer for the LocusGenotypeDisease model.
     LocusGenotypeDisease represents a unique Locus-Genotype-Mechanism-Disease-Evidence (LGMDE) record.
     """
-    summary = serializers.SerializerMethodField(read_only=True)
     locus = serializers.SerializerMethodField()  # part of the unique entry
     stable_id = serializers.CharField(
         source="stable_id.stable_id", read_only=True
@@ -191,13 +190,6 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     date_created = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField(allow_null=True)
     is_reviewed = serializers.SerializerMethodField()
-
-    def get_summary(self, id: int) -> Optional[str]:
-        """
-        Summary of the LGMDE record.
-        The summary is automatically generated using the record's data.
-        """
-        return build_lgd_summary(id)
 
     def get_locus(self, id: int) -> dict[str, Any]:
         """
