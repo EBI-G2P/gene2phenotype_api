@@ -45,7 +45,8 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
     def validate_to_save(self, data):
         """
-        Validate the input data to add or save a curation draft.
+        Validate the input data before adding a curation draft.
+        This method is called by view AddCurationData().
 
         Validation steps:
             - Locus is the minimum requirement needed to save a draft
