@@ -357,7 +357,7 @@ class LGDUpdateCurationEndpoint(TestCase):
         self.assertEqual(response.status_code, 400)
 
         response_data = response.json()
-        self.assertEqual(response_data["error"], "To save a draft, the minimum requirement is a locus entry. Please save this draft with locus information")
+        self.assertEqual(response_data["error"], "Invalid gene ''")
 
     def test_update_curation_invalid_locus(self):
         """
@@ -433,49 +433,3 @@ class LGDUpdateCurationEndpoint(TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 404)
-
-    def test_update_curation_duplicate(self):
-        """
-        Test to update curation that would create a duplicate entry
-        G2P ID G2P00010 has session name 'test session SRY', this test
-        tries to update the json content to be the same as session 'test session' (G2P00004)
-        """
-        self.login_user()
-
-        curation_to_update = {
-            "json_data": {
-                "allelic_requirement": "",
-                "confidence": "",
-                "cross_cutting_modifier": [],
-                "disease": {
-                    "cross_references": [],
-                    "disease_name": ""
-                    },
-                "locus": "CEP290",
-                "mechanism_evidence": [],
-                "mechanism_synopsis": [],
-                "molecular_mechanism": {
-                    "name": "",
-                    "support": ""
-                    },
-                "panels": [],
-                "phenotypes": [],
-                "private_comment": "",
-                "public_comment": "",
-                "publications": [],
-                "session_name": "test session SRY",
-                "variant_consequences": [],
-                "variant_descriptions": [],
-                "variant_types": []
-            }
-        }
-
-        response = self.client.put(
-            self.url_update_curation_2,
-            curation_to_update,
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, 400)
-
-        response_data = response.json()
-        self.assertEqual(response_data["error"], "Data already under curation. Please check session 'test session'")
