@@ -1,5 +1,7 @@
 import csv
+import json
 import logging
+from pathlib import Path
 import re
 import os.path
 
@@ -23,10 +25,11 @@ The mined publications are going to be saved into tables 'mined_publications' an
 The command does not perform a bulk import because we want to populate the history tables - bulk updates
 do not insert rows into history tables.
 
-Supported input file: csv
-File format is the following:
+Supported input formats: csv, json
+
+The csv file format is the following:
     PMID\tG2P_IDs\trelevance_label
-relevance_label: optional field
+note: relevance_label is optional
 
 How to run the command:
 python manage.py load_mined_publications --data_file <csv data file> --email <user account email>
@@ -49,10 +52,17 @@ class Command(BaseCommand):
             type=str,
             help="User email to store in the history table",
         )
+        parser.add_argument(
+            "--check_json",
+            required=False,
+            type=Path,
+            help="Path to the JSON files containing the Gemini scores (output of gemini_publication_analyser.py)",
+        )
 
     def handle(self, *args, **options):
         data_file = options["data_file"]
         input_email = options["email"]
+        check_json_files = options["check_json"]
         output_file = "invalid_g2p_ids.txt"
 
         if not os.path.isfile(data_file):
@@ -70,12 +80,26 @@ class Command(BaseCommand):
         except User.DoesNotExist:
             raise CommandError(f"Invalid user {input_email}")
 
+        # Get the Gemini scores to determine which PMIDs to skip
+        pmids_to_skip = {}
+        if check_json_files and os.path.isdir(check_json_files):
+            for json_file in Path(check_json_files).glob("*.json"):
+                with open(json_file) as f:
+                    check_json_data = json.load(f)
+                    for g2p_record in check_json_data:
+                        for publication in g2p_record["publications"]:
+                            if publication["status"] == "low":
+                                if g2p_record["id"] in pmids_to_skip:
+                                    pmids_to_skip[g2p_record["id"]].add(publication["id"])
+                                else:
+                                    pmids_to_skip[g2p_record["id"]] = {publication["id"]}
+
         invalid_g2p_ids = set()
 
         all_records, publication_counts = self.get_all_record_publications()
 
-        # Open the file to import the data
-        with open(data_file, newline="", encoding='utf-8-sig') as fh_file, open(output_file, "w") as wr:
+        # Open the file again to import the data
+        with open(data_file, newline="", encoding="utf-8-sig") as fh_file, open(output_file, "w") as wr:
             data_reader = csv.DictReader(fh_file)
 
             # Check headers
@@ -127,6 +151,11 @@ class Command(BaseCommand):
                 for g2p_id in list_g2p_ids:
                     # Clean the IDs
                     new_g2p_id = re.sub(r'[\*."`)]+', "", g2p_id).strip()
+
+                    # Check if the G2P ID-PMID has a low score in the Gemini output (json files)
+                    if new_g2p_id in pmids_to_skip and int(pmid) in pmids_to_skip[new_g2p_id]:
+                        logger.warning(f"Low score {pmid}-{new_g2p_id}. Skipping import.")
+                        continue
 
                     if (
                         new_g2p_id not in final_list_g2p_ids
