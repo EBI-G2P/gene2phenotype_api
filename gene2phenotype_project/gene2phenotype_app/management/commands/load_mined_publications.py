@@ -25,7 +25,8 @@ do not insert rows into history tables.
 
 Supported input file: csv
 File format is the following:
-PMID\tG2P_IDs
+    PMID\tG2P_IDs\trelevance_label
+relevance_label: optional field
 
 How to run the command:
 python manage.py load_mined_publications --data_file <csv data file> --email <user account email>
@@ -70,37 +71,10 @@ class Command(BaseCommand):
             raise CommandError(f"Invalid user {input_email}")
 
         invalid_g2p_ids = set()
-        g2p_records_skip = {}
 
         all_records, publication_counts = self.get_all_record_publications()
 
-        # Pre-process the file
-        with open(data_file, newline="", encoding='utf-8-sig') as fh:
-            data_reader = csv.DictReader(fh)
-
-            # Check headers
-            if not all(
-                column in data_reader.fieldnames for column in mandatory_headers
-            ):
-                raise CommandError(
-                    f"Missing data. Mandatory fields are: {mandatory_headers}"
-                )
-
-            for row in data_reader:
-                pmid = row["PMID"].strip()
-                g2p_ids = row["G2P_IDs"].strip()
-                list_g2p_ids = g2p_ids.split(";")
-
-                for g2p_id in list_g2p_ids:
-                    # Clean the IDs
-                    new_g2p_id = re.sub(r'[\*."`)]+', "", g2p_id).strip()
-
-                    if new_g2p_id not in g2p_records_skip:
-                        g2p_records_skip[new_g2p_id] = 1
-                    else:
-                        g2p_records_skip[new_g2p_id] += 1
-
-        # Open the file again to import the data
+        # Open the file to import the data
         with open(data_file, newline="", encoding='utf-8-sig') as fh_file, open(output_file, "w") as wr:
             data_reader = csv.DictReader(fh_file)
 
@@ -115,6 +89,12 @@ class Command(BaseCommand):
             for row in data_reader:
                 pmid = row["PMID"].strip()
                 g2p_ids = row["G2P_IDs"].strip()
+
+                if "relevance_label" in row:
+                    relevant_publication = row["relevance_label"].strip()
+                    if relevant_publication == "low":
+                        logger.warning(f"Low score {pmid}-{g2p_ids}. Skipping import.")
+                        continue
 
                 if not pmid or not g2p_ids or not g2p_ids.startswith("G2P"):
                     logger.warning(f"Invalid PMID or G2P IDs in row {str(row)}")
