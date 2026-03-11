@@ -82,17 +82,49 @@ class Command(BaseCommand):
 
         # Get the Gemini scores to determine which PMIDs to skip
         pmids_to_skip = {}
+        gemini_scores = {}
         if check_json_files and os.path.isdir(check_json_files):
             for json_file in Path(check_json_files).glob("*.json"):
                 with open(json_file) as f:
                     check_json_data = json.load(f)
                     for g2p_record in check_json_data:
                         for publication in g2p_record["publications"]:
+                            if publication["status"] is None:
+                                continue
+
                             if publication["status"] == "low":
                                 if g2p_record["id"] in pmids_to_skip:
                                     pmids_to_skip[g2p_record["id"]].add(publication["id"])
                                 else:
                                     pmids_to_skip[g2p_record["id"]] = {publication["id"]}
+                            else:
+                                if publication["status"] == "incomplete":
+                                    score_comment = "No access to this publication"
+                                    score = "N/A"
+                                else:
+                                    score = publication["status"]
+                                    score_comment = publication["comment"]
+                                    if publication["fulltext"] is not None:
+                                        score_comment += " (Score based on full text)"
+                                    else:
+                                        score_comment += " (Score based on abstract only)"
+
+                                if g2p_record["id"] in gemini_scores:
+                                    if publication["id"] not in gemini_scores[g2p_record["id"]]:
+                                        gemini_scores[g2p_record["id"]][publication["id"]] = {
+                                                "score": score,
+                                                "comment": score_comment
+                                            }
+                                else:
+                                    gemini_scores[g2p_record["id"]] = {
+                                        publication["id"]: {
+                                            "score": score,
+                                            "comment": score_comment
+                                        }
+                                    }
+
+        # for g2p_id in gemini_scores:
+        #     print("->", g2p_id, gemini_scores[g2p_id])
 
         invalid_g2p_ids = set()
 
@@ -192,11 +224,20 @@ class Command(BaseCommand):
                             else:
                                 status = "curated"
 
+                            # Get scores (if available)
+                            score = None
+                            score_comment = None
+                            if new_g2p_id in gemini_scores:
+                                if int(pmid) in gemini_scores[g2p_id]:
+                                    score = gemini_scores[g2p_id][int(pmid)]["score"]
+                                    score_comment = gemini_scores[g2p_id][int(pmid)]["comment"]
+
                             lgd_mined_pub_obj = LGDMinedPublication(
                                 lgd=lgd_obj,
                                 mined_publication=mined_publication_obj,
                                 status=status,
-                                comment=None,
+                                score=score,
+                                score_comment=score_comment,
                             )
                             lgd_mined_pub_obj._history_user = user_obj
                             lgd_mined_pub_obj.save()
