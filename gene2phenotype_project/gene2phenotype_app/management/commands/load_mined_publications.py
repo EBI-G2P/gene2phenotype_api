@@ -14,6 +14,7 @@ from gene2phenotype_app.models import (
     MinedPublication,
     LGDMinedPublication,
     LGDPublication,
+    LGDPanel,
     LocusGenotypeDisease,
     User,
 )
@@ -58,11 +59,17 @@ class Command(BaseCommand):
             type=Path,
             help="Path to the JSON files containing the Gemini scores (output of gemini_publication_analyser.py)",
         )
+        parser.add_argument(
+            "--only_dd",
+            action="store_true",
+            help="Only import scores for G2P records that are in the DD panel",
+        )
 
     def handle(self, *args, **options):
         data_file = options["data_file"]
         input_email = options["email"]
         check_json_files = options["check_json"]
+        only_dd = options["only_dd"]
         output_file = "invalid_g2p_ids.txt"
 
         if not os.path.isfile(data_file):
@@ -80,7 +87,9 @@ class Command(BaseCommand):
         except User.DoesNotExist:
             raise CommandError(f"Invalid user {input_email}")
 
-        # Get the Gemini scores to determine which PMIDs to skip
+        # If run with option --check_json:
+        # Get the Gemini scores from the json files to determine which PMIDs to skip
+        # Low scores are not imported
         pmids_to_skip = {}
         gemini_scores = {}
         if check_json_files and os.path.isdir(check_json_files):
@@ -123,14 +132,15 @@ class Command(BaseCommand):
                                         }
                                     }
 
-        # for g2p_id in gemini_scores:
-        #     print("->", g2p_id, gemini_scores[g2p_id])
-
         invalid_g2p_ids = set()
 
         all_records, publication_counts = self.get_all_record_publications()
+        
+        if only_dd:
+            print("INFO: only importing DD records ...")
+            dd_records = self.get_dd_records()
 
-        # Open the file again to import the data
+        # # Open the file again to import the data
         with open(data_file, newline="", encoding="utf-8-sig") as fh_file, open(output_file, "w") as wr:
             data_reader = csv.DictReader(fh_file)
 
@@ -184,6 +194,10 @@ class Command(BaseCommand):
                     # Clean the IDs
                     new_g2p_id = re.sub(r'[\*."`)]+', "", g2p_id).strip()
 
+                    if only_dd and new_g2p_id not in dd_records:
+                        continue
+
+                    # If run with option --check_json:
                     # Check if the G2P ID-PMID has a low score in the Gemini output (json files)
                     if new_g2p_id in pmids_to_skip and int(pmid) in pmids_to_skip[new_g2p_id]:
                         logger.warning(f"Low score {pmid}-{new_g2p_id}. Skipping import.")
@@ -224,6 +238,7 @@ class Command(BaseCommand):
                             else:
                                 status = "curated"
 
+                            # If run with option --check_json:
                             # Get scores (if available)
                             score = None
                             score_comment = None
@@ -272,3 +287,25 @@ class Command(BaseCommand):
             all_records[record.stable_id.stable_id] = record
         
         return all_records, publication_counts
+
+    def get_dd_records(self):
+        """
+        Get a list of all G2P records that are part of the DD panel.
+        """
+        all_dd_records = []
+
+        lgd_panel_list = (
+            LGDPanel.objects
+            .filter(
+                is_deleted=0,
+                panel__name="DD"
+            )
+            .annotate(g2p_id=F("lgd__stable_id__stable_id"))
+            .values("g2p_id")
+            .distinct()
+        )
+
+        for record in lgd_panel_list:
+            all_dd_records.append(record)
+        
+        return record
