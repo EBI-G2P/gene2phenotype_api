@@ -254,25 +254,6 @@ urlpatterns = [
     path("create/panel/", views.PanelCreateView.as_view(), name="panel_create"),
     ### Meta information ###
     path("reference_data/", views.MetaView.as_view(), name="get_reference_data"),
-    ### GenCC submission  ###
-    path(
-        "gencc_create/", views.GenCCSubmissionCreateView.as_view(), name="create_gencc"
-    ),
-    path(
-        "unsubmitted_stable_ids/",
-        views.GenCCSubmissionView.as_view(),
-        name="unsubmitted_stable_ids",
-    ),
-    path(
-        "later_review_date/",
-        views.StableIDsWithLaterReviewDateView.as_view(),
-        name="later_review_date",
-    ),
-    path(
-        "gencc_deleted_records/",
-        views.GenCCDeletedRecords.as_view(),
-        name="gencc_deleted_records",
-    ),
     ### Activity logs ###
     path("activity_logs/", views.ActivityLogs.as_view(), name="activity_logs"),
 ]
