@@ -306,6 +306,6 @@ class Command(BaseCommand):
         )
 
         for record in lgd_panel_list:
-            all_dd_records.append(record)
+            all_dd_records.append(record['g2p_id'])
         
-        return record
+        return all_dd_records
