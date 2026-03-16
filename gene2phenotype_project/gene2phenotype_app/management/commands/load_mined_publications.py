@@ -1,5 +1,7 @@
 import csv
+import json
 import logging
+from pathlib import Path
 import re
 import os.path
 
@@ -12,6 +14,7 @@ from gene2phenotype_app.models import (
     MinedPublication,
     LGDMinedPublication,
     LGDPublication,
+    LGDPanel,
     LocusGenotypeDisease,
     User,
 )
@@ -23,9 +26,11 @@ The mined publications are going to be saved into tables 'mined_publications' an
 The command does not perform a bulk import because we want to populate the history tables - bulk updates
 do not insert rows into history tables.
 
-Supported input file: csv
-File format is the following:
-PMID\tG2P_IDs
+Supported input formats: csv, json
+
+The csv file format is the following:
+    PMID\tG2P_IDs\trelevance_label
+note: relevance_label is optional
 
 How to run the command:
 python manage.py load_mined_publications --data_file <csv data file> --email <user account email>
@@ -48,10 +53,23 @@ class Command(BaseCommand):
             type=str,
             help="User email to store in the history table",
         )
+        parser.add_argument(
+            "--check_json",
+            required=False,
+            type=Path,
+            help="Path to the JSON files containing the Gemini scores (output of gemini_publication_analyser.py)",
+        )
+        parser.add_argument(
+            "--only_dd",
+            action="store_true",
+            help="Only import scores for G2P records that are in the DD panel",
+        )
 
     def handle(self, *args, **options):
         data_file = options["data_file"]
         input_email = options["email"]
+        check_json_files = options["check_json"]
+        only_dd = options["only_dd"]
         output_file = "invalid_g2p_ids.txt"
 
         if not os.path.isfile(data_file):
@@ -69,39 +87,61 @@ class Command(BaseCommand):
         except User.DoesNotExist:
             raise CommandError(f"Invalid user {input_email}")
 
+        # If run with option --check_json:
+        # Get the Gemini scores from the json files to determine which PMIDs to skip
+        # Low scores are not imported
+        pmids_to_skip = {}
+        gemini_scores = {}
+        if check_json_files and os.path.isdir(check_json_files):
+            for json_file in Path(check_json_files).glob("*.json"):
+                with open(json_file) as f:
+                    check_json_data = json.load(f)
+                    for g2p_record in check_json_data:
+                        for publication in g2p_record["publications"]:
+                            if publication["status"] is None:
+                                continue
+
+                            if publication["status"] == "low":
+                                if g2p_record["id"] in pmids_to_skip:
+                                    pmids_to_skip[g2p_record["id"]].add(publication["id"])
+                                else:
+                                    pmids_to_skip[g2p_record["id"]] = {publication["id"]}
+                            else:
+                                if publication["status"] == "incomplete":
+                                    score_comment = "No access to this publication"
+                                    score = "N/A"
+                                else:
+                                    score = publication["status"]
+                                    score_comment = publication["comment"]
+                                    if publication["fulltext"] is not None:
+                                        score_comment += " (Score based on full text)"
+                                    else:
+                                        score_comment += " (Score based on abstract only)"
+
+                                if g2p_record["id"] in gemini_scores:
+                                    if publication["id"] not in gemini_scores[g2p_record["id"]]:
+                                        gemini_scores[g2p_record["id"]][publication["id"]] = {
+                                                "score": score,
+                                                "comment": score_comment
+                                            }
+                                else:
+                                    gemini_scores[g2p_record["id"]] = {
+                                        publication["id"]: {
+                                            "score": score,
+                                            "comment": score_comment
+                                        }
+                                    }
+
         invalid_g2p_ids = set()
-        g2p_records_skip = {}
 
         all_records, publication_counts = self.get_all_record_publications()
+        
+        if only_dd:
+            print("INFO: only importing DD records ...")
+            dd_records = self.get_dd_records()
 
-        # Pre-process the file
-        with open(data_file, newline="") as fh:
-            data_reader = csv.DictReader(fh)
-
-            # Check headers
-            if not all(
-                column in data_reader.fieldnames for column in mandatory_headers
-            ):
-                raise CommandError(
-                    f"Missing data. Mandatory fields are: {mandatory_headers}"
-                )
-
-            for row in data_reader:
-                pmid = row["PMID"].strip()
-                g2p_ids = row["G2P_IDs"].strip()
-                list_g2p_ids = g2p_ids.split(";")
-
-                for g2p_id in list_g2p_ids:
-                    # Clean the IDs
-                    new_g2p_id = re.sub(r'[\*."`)]+', "", g2p_id).strip()
-
-                    if new_g2p_id not in g2p_records_skip:
-                        g2p_records_skip[new_g2p_id] = 1
-                    else:
-                        g2p_records_skip[new_g2p_id] += 1
-
-        # Open the file again to import the data
-        with open(data_file, newline="") as fh_file, open(output_file, "w") as wr:
+        # # Open the file again to import the data
+        with open(data_file, newline="", encoding="utf-8-sig") as fh_file, open(output_file, "w") as wr:
             data_reader = csv.DictReader(fh_file)
 
             # Check headers
@@ -115,6 +155,12 @@ class Command(BaseCommand):
             for row in data_reader:
                 pmid = row["PMID"].strip()
                 g2p_ids = row["G2P_IDs"].strip()
+
+                if "relevance_label" in row:
+                    relevant_publication = row["relevance_label"].strip()
+                    if relevant_publication == "low":
+                        logger.warning(f"Low score {pmid}-{g2p_ids}. Skipping import.")
+                        continue
 
                 if not pmid or not g2p_ids or not g2p_ids.startswith("G2P"):
                     logger.warning(f"Invalid PMID or G2P IDs in row {str(row)}")
@@ -147,6 +193,15 @@ class Command(BaseCommand):
                 for g2p_id in list_g2p_ids:
                     # Clean the IDs
                     new_g2p_id = re.sub(r'[\*."`)]+', "", g2p_id).strip()
+
+                    if only_dd and new_g2p_id not in dd_records:
+                        continue
+
+                    # If run with option --check_json:
+                    # Check if the G2P ID-PMID has a low score in the Gemini output (json files)
+                    if new_g2p_id in pmids_to_skip and int(pmid) in pmids_to_skip[new_g2p_id]:
+                        logger.warning(f"Low score {pmid}-{new_g2p_id}. Skipping import.")
+                        continue
 
                     if (
                         new_g2p_id not in final_list_g2p_ids
@@ -183,11 +238,21 @@ class Command(BaseCommand):
                             else:
                                 status = "curated"
 
+                            # If run with option --check_json:
+                            # Get scores (if available)
+                            score = None
+                            score_comment = None
+                            if new_g2p_id in gemini_scores:
+                                if int(pmid) in gemini_scores[g2p_id]:
+                                    score = gemini_scores[g2p_id][int(pmid)]["score"]
+                                    score_comment = gemini_scores[g2p_id][int(pmid)]["comment"]
+
                             lgd_mined_pub_obj = LGDMinedPublication(
                                 lgd=lgd_obj,
                                 mined_publication=mined_publication_obj,
                                 status=status,
-                                comment=None,
+                                score=score,
+                                score_comment=score_comment,
                             )
                             lgd_mined_pub_obj._history_user = user_obj
                             lgd_mined_pub_obj.save()
@@ -222,3 +287,25 @@ class Command(BaseCommand):
             all_records[record.stable_id.stable_id] = record
         
         return all_records, publication_counts
+
+    def get_dd_records(self):
+        """
+        Get a list of all G2P records that are part of the DD panel.
+        """
+        all_dd_records = []
+
+        lgd_panel_list = (
+            LGDPanel.objects
+            .filter(
+                is_deleted=0,
+                panel__name="DD"
+            )
+            .annotate(g2p_id=F("lgd__stable_id__stable_id"))
+            .values("g2p_id")
+            .distinct()
+        )
+
+        for record in lgd_panel_list:
+            all_dd_records.append(record)
+        
+        return record
