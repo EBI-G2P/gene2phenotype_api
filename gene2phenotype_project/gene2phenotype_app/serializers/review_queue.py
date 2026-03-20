@@ -13,7 +13,7 @@ from ..utils import get_date_now
 class LGDReviewItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = LGDReviewItem
-        fields = ["component", "details"]
+        fields = ["component", "details", "is_deleted"]
 
 
 class LGDReviewCaseSerializer(serializers.ModelSerializer):
@@ -127,6 +127,10 @@ class LGDReviewCaseCreateSerializer(serializers.Serializer):
 
 
 class LGDReviewCaseUpdateSerializer(serializers.Serializer):
+    """
+    Update items of a LGD flagged for review.
+    It only updates existing items.
+    """
     summary = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     status = serializers.ChoiceField(
         choices=["open", "in_review", "resolved"], required=False
@@ -172,15 +176,27 @@ class LGDReviewCaseUpdateSerializer(serializers.Serializer):
 
         if "items" in validated_data:
             input_items = validated_data.get("items", [])
-            LGDReviewItem.objects.filter(review_case=instance, is_deleted=0).update(
-                is_deleted=1, active_component_key=None
-            )
+
             for item in input_items:
-                LGDReviewItem.objects.create(
-                    review_case=instance,
-                    component=item["component"],
-                    details=item.get("details"),
-                )
+                try:
+                    # If the component ("disease", "mechanism", etc.) is already is the db
+                    # then just update the details and the status (deleted or not)
+                    lgd_item = LGDReviewItem.objects.get(
+                        review_case=instance,
+                        component=item["component"],
+                        is_deleted=0
+                    )
+                except LGDReviewItem.DoesNotExist:
+                    # Create new component
+                    LGDReviewItem.objects.create(
+                        review_case=instance,
+                        component=item["component"],
+                        details=item.get("details"),
+                    )
+                else:
+                    lgd_item.details=item["details"]
+                    lgd_item.is_deleted=item["is_deleted"]
+                    lgd_item.save()
 
         instance.date_last_update = date_now
         instance.save()

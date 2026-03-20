@@ -263,6 +263,18 @@ urlpatterns = [
     ### Meta information ###
     path("reference_data/", views.MetaView.as_view(), name="get_reference_data"),
 
+    ### Review Queue ###
+    path(
+        "review_queue/",
+        views.ReviewQueueListCreate.as_view(),
+        name="review_queue",
+    ),
+    path(
+        "review_queue/<int:case_id>/",
+        views.ReviewQueueDetail.as_view(),
+        name="review_queue_detail",
+    ),
+
     ### Activity logs ###
     path("activity_logs/", views.ActivityLogs.as_view(), name="activity_logs"),
 ]

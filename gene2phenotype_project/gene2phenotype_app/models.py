@@ -894,18 +894,11 @@ class LGDReviewItem(models.Model):
     details = models.TextField(null=True, blank=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     # when item is active this stores "<review_case_id>:<component>", otherwise NULL.
-    active_component_key = models.CharField(max_length=150, null=True, blank=True, unique=True)
     history = HistoricalRecords()
-
-    def save(self, *args, **kwargs):
-        if self.is_deleted == 0:
-            self.active_component_key = f"{self.review_case_id}:{self.component}"
-        else:
-            self.active_component_key = None
-        super().save(*args, **kwargs)
 
     class Meta:
         db_table = "lgd_review_item"
+        unique_together = ["review_case", "component", "is_deleted"]
         indexes = [
             models.Index(fields=["review_case"]),
             models.Index(fields=["component"]),
