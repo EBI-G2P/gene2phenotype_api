@@ -819,12 +819,12 @@ class LGDMinedPublication(models.Model):
 ### Models for tracking LGD records under review ###
 class LGDReviewCase(models.Model):
     """
-    Track a G2P record that is currently under review.
+    Track a G2P record that requires review.
     """
 
     STATUS_CHOICES = [
         ("open", "Open"),
-        ("in_review", "In review"),
+        ("under_review", "Under review"),
         ("resolved", "Resolved"),
     ]
 
@@ -845,11 +845,10 @@ class LGDReviewCase(models.Model):
     active_lgd_id = models.IntegerField(null=True, blank=True, unique=True)
     date_created = models.DateTimeField(null=False)
     date_last_update = models.DateTimeField(null=False)
-    is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 
     def save(self, *args, **kwargs):
-        is_active_case = self.status in ["open", "in_review"] and self.is_deleted == 0
+        is_active_case = self.status in ["open", "under_review"]
         self.active_lgd_id = self.lgd_id if is_active_case else None
         super().save(*args, **kwargs)
 
@@ -857,7 +856,7 @@ class LGDReviewCase(models.Model):
         db_table = "lgd_review_case"
         constraints = [
             models.CheckConstraint(
-                condition=Q(status__in=["open", "in_review", "resolved"]),
+                condition=Q(status__in=["open", "under_review", "resolved"]),
                 name="lgd_review_case_status_valid",
             )
         ]
@@ -865,7 +864,6 @@ class LGDReviewCase(models.Model):
             models.Index(fields=["lgd"]),
             models.Index(fields=["status"]),
             models.Index(fields=["assigned_to"]),
-            models.Index(fields=["is_deleted"]),
         ]
 
 
@@ -876,33 +874,48 @@ class LGDReviewItem(models.Model):
 
     COMPONENT_CHOICES = [
         ("disease", "Disease"),
+        ("disease_cross_reference", "Disease cross reference"),
         ("mechanism", "Molecular mechanism"),
         ("genotype", "Allelic requirement"),
         ("confidence", "Confidence"),
         ("publications", "Publications"),
+        ("mined_publications", "Mined publications"),
         ("phenotypes", "Phenotypes"),
         ("variant_type", "Variant type"),
         ("variant_consequence", "Variant consequence"),
-        ("cross_cutting_modifier", "Cross cutting modifier"),
         ("panel", "Panel"),
+        ("duplicate", "Duplicate"),
+        ("full_review", "Full review"),
         ("other", "Other"),
+    ]
+
+    STATUS_CHOICES = [
+        ("open", "Open"),
+        ("under_review", "Under review"),
+        ("resolved", "Resolved"),
     ]
 
     id = models.AutoField(primary_key=True)
     review_case = models.ForeignKey("LGDReviewCase", on_delete=models.PROTECT)
     component = models.CharField(max_length=100, choices=COMPONENT_CHOICES)
-    details = models.TextField(null=True, blank=True)
-    is_deleted = models.SmallIntegerField(null=False, default=False)
-    # when item is active this stores "<review_case_id>:<component>", otherwise NULL.
+    details = models.JSONField(null=True)
+    comment = models.TextField(null=True, blank=True)
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default="open")
     history = HistoricalRecords()
 
     class Meta:
         db_table = "lgd_review_item"
-        unique_together = ["review_case", "component", "is_deleted"]
+        # unique_together = ["review_case", "component", "status"]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(status__in=["open", "under_review", "resolved"]),
+                name="lgd_review_item_status_valid",
+            )
+        ]
         indexes = [
             models.Index(fields=["review_case"]),
             models.Index(fields=["component"]),
-            models.Index(fields=["is_deleted"]),
+            models.Index(fields=["status"]),
         ]
 
 ###################

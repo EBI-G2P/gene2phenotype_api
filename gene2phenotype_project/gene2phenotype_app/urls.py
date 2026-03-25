@@ -270,6 +270,11 @@ urlpatterns = [
         name="review_queue",
     ),
     path(
+        "review_queue/<int:case_id>/resolve/",
+        views.ReviewQueueResolve.as_view(),
+        name="review_queue_resolve",
+    ),
+    path(
         "review_queue/<int:case_id>/",
         views.ReviewQueueDetail.as_view(),
         name="review_queue_detail",

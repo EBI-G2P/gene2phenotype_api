@@ -8,6 +8,7 @@ from gene2phenotype_app.serializers import (
     LGDReviewCaseSerializer,
     LGDReviewCaseCreateSerializer,
     LGDReviewCaseUpdateSerializer,
+    LGDReviewCaseResolveSerializer,
 )
 
 from .base import BaseAPIView
@@ -20,7 +21,7 @@ class ReviewQueueListCreate(BaseAPIView):
     http_method_names = ["get", "post", "head", "options"]
 
     def get_queryset(self, request):
-        queryset = LGDReviewCase.objects.filter(is_deleted=0).select_related(
+        queryset = LGDReviewCase.objects.all().select_related(
             "lgd", "lgd__stable_id", "created_by", "assigned_to"
         )
         status_value = request.query_params.get("status")
@@ -60,16 +61,44 @@ class ReviewQueueDetail(BaseAPIView):
     http_method_names = ["get", "patch", "head", "options"]
 
     def get_object(self, case_id):
-        return get_object_or_404(LGDReviewCase, id=case_id, is_deleted=0)
+        return get_object_or_404(LGDReviewCase, id=case_id)
 
     def get(self, request, case_id):
+        """
+        Get the info for the specific case number (pk).
+        """
         review_case = self.get_object(case_id)
         serializer = self.serializer_class(review_case)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def patch(self, request, case_id):
+        """
+        Update the info for a specific case number (pk)
+        """
         review_case = self.get_object(case_id)
         serializer = LGDReviewCaseUpdateSerializer(
+            review_case, data=request.data, partial=True, context={"user": request.user}
+        )
+        serializer.is_valid(raise_exception=True)
+        review_case = serializer.save()
+        return Response(
+            LGDReviewCaseSerializer(review_case).data, status=status.HTTP_200_OK
+        )
+
+class ReviewQueueResolve(BaseAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = LGDReviewCaseSerializer
+    http_method_names = ["patch", "head", "options"]
+
+    def get_object(self, case_id):
+        return get_object_or_404(LGDReviewCase, id=case_id)
+
+    def patch(self, request, case_id):
+        """
+        Set a specific case number (pk) to status 'resolved'.
+        """
+        review_case = self.get_object(case_id)
+        serializer = LGDReviewCaseResolveSerializer(
             review_case, data=request.data, partial=True, context={"user": request.user}
         )
         serializer.is_valid(raise_exception=True)

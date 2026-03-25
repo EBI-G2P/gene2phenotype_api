@@ -13,7 +13,7 @@ from ..utils import get_date_now
 class LGDReviewItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = LGDReviewItem
-        fields = ["component", "details", "is_deleted"]
+        fields = ["component", "details", "status", "comment"]
 
 
 class LGDReviewCaseSerializer(serializers.ModelSerializer):
@@ -34,9 +34,7 @@ class LGDReviewCaseSerializer(serializers.ModelSerializer):
         return obj.assigned_to.email
 
     def get_items(self, obj):
-        queryset = LGDReviewItem.objects.filter(review_case=obj, is_deleted=0).order_by(
-            "component"
-        )
+        queryset = LGDReviewItem.objects.filter(review_case=obj).order_by("component")
         return LGDReviewItemSerializer(queryset, many=True).data
 
     class Meta:
@@ -81,16 +79,14 @@ class LGDReviewCaseCreateSerializer(serializers.Serializer):
 
         stable_id = validated_data.get("stable_id")
         try:
-            lgd_obj = LocusGenotypeDisease.objects.get(
-                stable_id__stable_id=stable_id, is_deleted=0
-            )
+            lgd_obj = LocusGenotypeDisease.objects.get(stable_id__stable_id=stable_id)
         except LocusGenotypeDisease.DoesNotExist:
             raise serializers.ValidationError(
                 {"error": f"Could not find active LGD record '{stable_id}'"}
             )
 
         if LGDReviewCase.objects.filter(
-            lgd=lgd_obj, status__in=["open", "in_review"], is_deleted=0
+            lgd=lgd_obj, status__in=["open", "under_review"]
         ).exists():
             raise serializers.ValidationError(
                 {"error": f"Record '{stable_id}' already has an active review case."}
@@ -131,9 +127,10 @@ class LGDReviewCaseUpdateSerializer(serializers.Serializer):
     Update items of a LGD flagged for review.
     It only updates existing items.
     """
+
     summary = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     status = serializers.ChoiceField(
-        choices=["open", "in_review", "resolved"], required=False
+        choices=["open", "under_review", "resolved"], required=True
     )
     assigned_to = serializers.EmailField(required=False, allow_null=True)
     items = LGDReviewItemSerializer(many=True, required=False)
@@ -165,10 +162,14 @@ class LGDReviewCaseUpdateSerializer(serializers.Serializer):
             assigned_to_email = validated_data.get("assigned_to")
             if assigned_to_email:
                 try:
-                    assigned_to_obj = User.objects.get(email=assigned_to_email, is_active=1)
+                    assigned_to_obj = User.objects.get(
+                        email=assigned_to_email, is_active=1
+                    )
                 except User.DoesNotExist:
                     raise serializers.ValidationError(
-                        {"error": f"Assigned user '{assigned_to_email}' does not exist."}
+                        {
+                            "error": f"Assigned user '{assigned_to_email}' does not exist."
+                        }
                     )
                 instance.assigned_to = assigned_to_obj
             else:
@@ -180,24 +181,61 @@ class LGDReviewCaseUpdateSerializer(serializers.Serializer):
             for item in input_items:
                 try:
                     # If the component ("disease", "mechanism", etc.) is already is the db
-                    # then just update the details and the status (deleted or not)
+                    # then just update the details and the status
                     lgd_item = LGDReviewItem.objects.get(
                         review_case=instance,
                         component=item["component"],
-                        is_deleted=0
                     )
                 except LGDReviewItem.DoesNotExist:
                     # Create new component
                     LGDReviewItem.objects.create(
                         review_case=instance,
                         component=item["component"],
-                        details=item.get("details"),
+                        status=item["status"],
+                        details=item.get("details", None),
+                        comment=item.get("comment", None),
                     )
                 else:
-                    lgd_item.details=item["details"]
-                    lgd_item.is_deleted=item["is_deleted"]
+                    if "details" in item:
+                        lgd_item.details = item["details"]
+                    if "comment" in item:
+                        lgd_item.comment = item["comment"]
+                    lgd_item.status = item["status"]
                     lgd_item.save()
 
+        instance.date_last_update = date_now
+        instance.save()
+
+        return instance
+
+
+class LGDReviewCaseResolveSerializer(serializers.Serializer):
+    """
+    Set the case status to 'resolved'.
+    """
+
+    summary = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        user_ref = self.context.get("user")
+        user_email = user_ref.email if isinstance(user_ref, User) else user_ref
+        if not User.objects.filter(email=user_email, is_active=1).exists():
+            raise serializers.ValidationError({"error": f"Invalid user '{user_email}'"})
+
+        date_now = get_date_now()
+        if "summary" in validated_data:
+            instance.summary = validated_data.get("summary")
+
+        # Check if all items are resolved
+        if LGDReviewItem.objects.filter(
+            review_case=instance, status__in=["open", "under_review"]
+        ).exists():
+            raise serializers.ValidationError(
+                {"error": "Cannot resolve case: some items are still open"}
+            )
+
+        instance.status = "resolved"
         instance.date_last_update = date_now
         instance.save()
 
