@@ -71,5 +71,4 @@ from .review_queue import (
     LGDReviewCaseSerializer,
     LGDReviewCaseCreateSerializer,
     LGDReviewCaseUpdateSerializer,
-    LGDReviewCaseResolveSerializer,
 )

@@ -32,17 +32,27 @@ class ReviewQueueEndpointTests(TestCase):
 
     def test_review_queue_requires_authentication(self):
         response = self.client.get(self.url_review_queue)
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.status_code, 403)
 
     def test_create_and_update_review_case(self):
-        self._login("user1@test.ac.uk")
+        self._login("user5@test.ac.uk")
 
         payload = {
             "stable_id": "G2P00001",
             "summary": "Record needs updates before next panel release.",
             "items": [
-                {"component": "mechanism", "details": "Review mechanism support."},
-                {"component": "disease", "details": "Disease name may need update."},
+                {
+                    "component": "mechanism",
+                    "details": {"note": "Review mechanism support."},
+                    "status": "open",
+                    "comment": "Check mechanism evidence.",
+                },
+                {
+                    "component": "disease",
+                    "details": {"note": "Disease name may need update."},
+                    "status": "open",
+                    "comment": "Confirm disease name.",
+                },
             ],
         }
 
@@ -60,8 +70,8 @@ class ReviewQueueEndpointTests(TestCase):
         case_id = response_create.data["id"]
         response_update = self.client.patch(
             reverse("review_queue_detail", kwargs={"case_id": case_id}),
-            {"status": "in_review"},
+            {"status": "under_review"},
             content_type="application/json",
         )
         self.assertEqual(response_update.status_code, 200)
-        self.assertEqual(response_update.data["status"], "in_review")
+        self.assertEqual(response_update.data["status"], "under_review")

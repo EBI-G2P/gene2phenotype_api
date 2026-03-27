@@ -20,6 +20,8 @@ class LGDReviewCaseSerializer(serializers.ModelSerializer):
     stable_id = serializers.SerializerMethodField()
     created_by = serializers.SerializerMethodField()
     assigned_to = serializers.SerializerMethodField()
+    date_created = serializers.SerializerMethodField()
+    date_last_update = serializers.SerializerMethodField()
     items = serializers.SerializerMethodField()
 
     def get_stable_id(self, obj):
@@ -32,6 +34,16 @@ class LGDReviewCaseSerializer(serializers.ModelSerializer):
         if not obj.assigned_to:
             return None
         return obj.assigned_to.email
+
+    def get_date_created(self, obj):
+        return obj.date_created.strftime("%Y-%m-%d %H:%M") if obj.date_created else None
+
+    def get_date_last_update(self, obj):
+        return (
+            obj.date_last_update.strftime("%Y-%m-%d %H:%M")
+            if obj.date_last_update
+            else None
+        )
 
     def get_items(self, obj):
         queryset = LGDReviewItem.objects.filter(review_case=obj).order_by("component")
@@ -156,6 +168,17 @@ class LGDReviewCaseUpdateSerializer(serializers.Serializer):
 
         if "status" in validated_data:
             new_status = validated_data.get("status")
+
+            # To set the status to resolved all items must be resolved too
+            if new_status == "resolved":
+                # Check if all items are resolved
+                if LGDReviewItem.objects.filter(
+                    review_case=instance, status__in=["open", "under_review"]
+                ).exists():
+                    raise serializers.ValidationError(
+                        {"error": "Cannot update case status to resolved: some items are still open or under review"}
+                    )
+
             instance.status = new_status
 
         if "assigned_to" in validated_data:
@@ -203,39 +226,6 @@ class LGDReviewCaseUpdateSerializer(serializers.Serializer):
                     lgd_item.status = item["status"]
                     lgd_item.save()
 
-        instance.date_last_update = date_now
-        instance.save()
-
-        return instance
-
-
-class LGDReviewCaseResolveSerializer(serializers.Serializer):
-    """
-    Set the case status to 'resolved'.
-    """
-
-    summary = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-
-    @transaction.atomic
-    def update(self, instance, validated_data):
-        user_ref = self.context.get("user")
-        user_email = user_ref.email if isinstance(user_ref, User) else user_ref
-        if not User.objects.filter(email=user_email, is_active=1).exists():
-            raise serializers.ValidationError({"error": f"Invalid user '{user_email}'"})
-
-        date_now = get_date_now()
-        if "summary" in validated_data:
-            instance.summary = validated_data.get("summary")
-
-        # Check if all items are resolved
-        if LGDReviewItem.objects.filter(
-            review_case=instance, status__in=["open", "under_review"]
-        ).exists():
-            raise serializers.ValidationError(
-                {"error": "Cannot resolve case: some items are still open"}
-            )
-
-        instance.status = "resolved"
         instance.date_last_update = date_now
         instance.save()
 
