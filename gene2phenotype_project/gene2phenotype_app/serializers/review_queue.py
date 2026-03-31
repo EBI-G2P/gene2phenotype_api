@@ -28,12 +28,12 @@ class LGDReviewCaseSerializer(serializers.ModelSerializer):
         return obj.lgd.stable_id.stable_id
 
     def get_created_by(self, obj):
-        return obj.created_by.email
+        return obj.created_by.first_name + " " + obj.created_by.last_name if obj.created_by else None
 
     def get_assigned_to(self, obj):
         if not obj.assigned_to:
             return None
-        return obj.assigned_to.email
+        return obj.assigned_to.first_name + " " + obj.assigned_to.last_name if obj.assigned_to else None
 
     def get_date_created(self, obj):
         return obj.date_created.strftime("%Y-%m-%d %H:%M") if obj.date_created else None
