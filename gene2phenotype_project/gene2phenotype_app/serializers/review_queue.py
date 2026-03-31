@@ -13,7 +13,7 @@ from ..utils import get_date_now
 class LGDReviewItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = LGDReviewItem
-        fields = ["component", "details", "status", "comment"]
+        fields = ["component", "status", "comment"]
 
 
 class LGDReviewCaseSerializer(serializers.ModelSerializer):
@@ -128,7 +128,6 @@ class LGDReviewCaseCreateSerializer(serializers.Serializer):
             LGDReviewItem.objects.create(
                 review_case=review_case,
                 component=item["component"],
-                details=item.get("details"),
             )
 
         return review_case
@@ -204,7 +203,7 @@ class LGDReviewCaseUpdateSerializer(serializers.Serializer):
             for item in input_items:
                 try:
                     # If the component ("disease", "mechanism", etc.) is already is the db
-                    # then just update the details and the status
+                    # then just update the status
                     lgd_item = LGDReviewItem.objects.get(
                         review_case=instance,
                         component=item["component"],
@@ -215,12 +214,9 @@ class LGDReviewCaseUpdateSerializer(serializers.Serializer):
                         review_case=instance,
                         component=item["component"],
                         status=item["status"],
-                        details=item.get("details", None),
                         comment=item.get("comment", None),
                     )
                 else:
-                    if "details" in item:
-                        lgd_item.details = item["details"]
                     if "comment" in item:
                         lgd_item.comment = item["comment"]
                     lgd_item.status = item["status"]

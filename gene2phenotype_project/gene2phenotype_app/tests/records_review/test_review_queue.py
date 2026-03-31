@@ -43,13 +43,11 @@ class ReviewQueueEndpointTests(TestCase):
             "items": [
                 {
                     "component": "mechanism",
-                    "details": {"note": "Review mechanism support."},
                     "status": "open",
                     "comment": "Check mechanism evidence.",
                 },
                 {
                     "component": "disease",
-                    "details": {"note": "Disease name may need update."},
                     "status": "open",
                     "comment": "Confirm disease name.",
                 },

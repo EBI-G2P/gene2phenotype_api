@@ -898,14 +898,12 @@ class LGDReviewItem(models.Model):
     id = models.AutoField(primary_key=True)
     review_case = models.ForeignKey("LGDReviewCase", on_delete=models.PROTECT)
     component = models.CharField(max_length=100, choices=COMPONENT_CHOICES)
-    details = models.JSONField(null=True)
     comment = models.TextField(null=True, blank=True)
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default="open")
     history = HistoricalRecords()
 
     class Meta:
         db_table = "lgd_review_item"
-        # unique_together = ["review_case", "component", "status"]
         constraints = [
             models.CheckConstraint(
                 condition=Q(status__in=["open", "under_review", "resolved"]),
