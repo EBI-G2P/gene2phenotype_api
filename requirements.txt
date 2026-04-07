@@ -16,7 +16,7 @@ mysqlclient==2.1.1
 ordered-set==4.1.0
 pytz==2025.2
 referencing==0.37.0
-requests==2.32.5
+requests==2.33.1
 rpds-py==0.30.0
 setuptools==82.0.0
 sqlparse==0.5.5
