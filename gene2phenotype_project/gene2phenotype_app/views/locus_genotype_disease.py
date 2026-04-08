@@ -4,7 +4,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db import transaction, IntegrityError
 from django.db.models import Model, QuerySet
-from django.http import Http404
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiResponse
 
@@ -228,6 +227,13 @@ class VariantTypesList(APIView):
             "Example 1",
             description="Fetch detailed information for record with stable_id G2P03507",
             value={
+                "summary": "MTFMT-related mitochondrial disease with regression and lactic acidosis has"
+                " a confidence assertion of definitive based on 5 curated publications."
+                " This is a biallelic autosomal condition. Variant consequence is absent"
+                " gene product (inferred) and altered gene product structure (inferred)."
+                " Molecular mechanism is loss of function (evidenced by biochemical function,"
+                " protein expression function, patient cells functional alteration and patient cells rescue)."
+                " Recorded variant types include splice region variant, frameshift variant, stop gained and missense variant.",
                 "locus": {
                     "gene_symbol": "MTFMT",
                     "sequence": "15",
@@ -583,10 +589,6 @@ class LGDUpdateMechanism(BaseUpdate):
 
         Returns:
             QuerySet: A queryset of LocusGenotypeDisease objects.
-
-        Raises:
-            Http404: If the stable ID does not exist.
-            PermissionDenied: If update is not allowed.
         """
         stable_id = self.kwargs["stable_id"]
 

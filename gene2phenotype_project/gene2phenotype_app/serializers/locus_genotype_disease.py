@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db import IntegrityError
-from django.db.models import Prefetch
+from django.db.models import Prefetch, F
 from django.conf import settings
 from typing import Any, Optional
 from datetime import date
@@ -42,10 +42,7 @@ from ..utils import (
     validate_mechanism_synopsis,
     validate_confidence_publications,
     article_for_phrase,
-    clean_disease_summary_text,
     clean_summary_text,
-    cross_cutting_modifier_fragment,
-    join_summary_items,
     join_with_and,
     plural_suffix,
 )
@@ -59,9 +56,7 @@ def build_lgd_summary(lgd_obj: LocusGenotypeDisease) -> Optional[str]:
         return None
 
     locus_name = getattr(getattr(lgd_obj, "locus", None), "name", None)
-    disease_name = clean_disease_summary_text(
-        getattr(getattr(lgd_obj, "disease", None), "name", None)
-    )
+    disease_name = getattr(getattr(lgd_obj, "disease", None), "name", None)
     genotype_value = clean_summary_text(getattr(getattr(lgd_obj, "genotype", None), "value", None))
     mechanism_value = clean_summary_text(getattr(getattr(lgd_obj, "mechanism", None), "value", None))
     mechanism_support = getattr(getattr(lgd_obj, "mechanism_support", None), "value", None)
@@ -80,15 +75,11 @@ def build_lgd_summary(lgd_obj: LocusGenotypeDisease) -> Optional[str]:
     curated_pub_count = len(curated_pmids)
 
     if locus_name and disease_name:
-        confidence_prefix = f"{confidence_value} " if confidence_value else ""
-        sentences.append(
-            "There is "
-            f"{confidence_prefix}evidence, from {curated_pub_count} publication{plural_suffix(curated_pub_count)} "
-            f"that {locus_name} is related to {disease_name}."
-        )
+        sentences.append(f"{disease_name} has a confidence assertion of {confidence_value} based on {curated_pub_count} "
+                         f"curated publication{plural_suffix(curated_pub_count)}.")
 
     # Variant consequences grouped by support value
-    variant_support_to_terms: dict[str, list[str]] = {}
+    variant_support_to_terms = []
     for row in (
         LGDVariantGenccConsequence.objects.filter(lgd_id=lgd_obj, is_deleted=0)
         .select_related("variant_consequence", "support")
@@ -97,35 +88,23 @@ def build_lgd_summary(lgd_obj: LocusGenotypeDisease) -> Optional[str]:
             getattr(getattr(row, "variant_consequence", None), "term", None)
         )
         support_value = getattr(getattr(row, "support", None), "value", None)
-        if term:
-            support_key = support_value or "unknown"
-            variant_support_to_terms.setdefault(support_key, []).append(term)
+        if term and term != "uncertain":
+            variant_support_to_terms.append(f"{term} ({support_value})")
+        elif term:
+            variant_support_to_terms.append(f"{term}")
 
     variant_phrase = None
     if variant_support_to_terms:
-        variant_chunks = []
-        for support_key, terms in variant_support_to_terms.items():
-            # Join the unique terms by comma
-            clean_terms = join_summary_items(terms)
-            if not clean_terms:
-                continue
-            if support_key == "unknown":
-                variant_chunks.append(
-                    f"variant consequence{plural_suffix(len(list(dict.fromkeys(terms))))} of {clean_terms}"
-                )
-            else:
-                variant_chunks.append(
-                    f"{support_key} variant consequence{plural_suffix(len(list(dict.fromkeys(terms))))} of {clean_terms}"
-                )
-        if variant_chunks:
-            variant_phrase = " and ".join(variant_chunks)
+            variant_phrase = join_with_and(variant_support_to_terms)
 
-    mechanism_phrase = None
-    if mechanism_value:
-        mechanism_core = f"{mechanism_value} molecular mechanism"
-        if mechanism_support and mechanism_value.lower() != "undetermined":
-            mechanism_core = f"{mechanism_support} {mechanism_core}"
-        mechanism_phrase = f"{article_for_phrase(mechanism_core)} {mechanism_core}"
+    # Variant types
+    variant_types = []
+    for row in LGDVariantType.objects.filter(lgd_id=lgd_obj, is_deleted=0).select_related("variant_type_ot"):
+        variant_type_term = clean_summary_text(
+            getattr(getattr(row, "variant_type_ot", None), "term", None)
+        )
+        if variant_type_term and variant_type_term not in variant_types:
+            variant_types.append(variant_type_term)
 
     cross_cutting_modifiers = []
     for row in (
@@ -135,26 +114,41 @@ def build_lgd_summary(lgd_obj: LocusGenotypeDisease) -> Optional[str]:
         if ccm_value:
             cross_cutting_modifiers.append(ccm_value)
 
-    if genotype_value:
-        condition_sentence = (
-            f"This is {article_for_phrase(genotype_value)} {genotype_value} condition"
-        )
-        if variant_phrase:
-            condition_sentence += f" with {variant_phrase}"
-        if mechanism_phrase:
-            if variant_phrase:
-                condition_sentence += f" and {mechanism_phrase}"
-            else:
-                condition_sentence += f" with {mechanism_phrase}"
-        sentences.append(condition_sentence + ".")
-
     if cross_cutting_modifiers:
-        ccm_fragments = [
-            cross_cutting_modifier_fragment(modifier) for modifier in cross_cutting_modifiers
-        ]
-        ccm_text = join_with_and(ccm_fragments)
+        ccm_text = join_with_and(cross_cutting_modifiers)
         if ccm_text:
-            sentences.append(f"This {ccm_text}.")
+            sentences.append(f"There is {article_for_phrase(ccm_text)} {ccm_text}.")
+
+    if genotype_value:
+        sentences.append(
+            f"This is {article_for_phrase(genotype_value)} {genotype_value} condition."
+        )
+
+    if variant_phrase:
+        sentences.append(f"Variant consequence is {variant_phrase}.")
+
+    if mechanism_value:
+        if mechanism_support == "evidence":
+            mechanism_evidence = []
+            mechanism_evidence_list = (
+                LGDMolecularMechanismEvidence.objects
+                .filter(lgd_id=lgd_obj, is_deleted=0)
+                .select_related("evidence")
+                .annotate(evidence_value=F("evidence__value"), evidence_type=F("evidence__subtype"))
+             )
+
+            for value in mechanism_evidence_list:
+                new_value = f"{value.evidence_value} {value.evidence_type.replace('_', ' ')}"
+                if new_value not in mechanism_evidence:
+                    mechanism_evidence.append(new_value)
+
+            sentences.append(f"Molecular mechanism is {mechanism_value} (evidenced by {join_with_and(mechanism_evidence)}).")
+
+        else:
+            sentences.append(f"Molecular mechanism is {mechanism_value}.")
+
+    if variant_types:
+        sentences.append(f"Recorded variant types include {join_with_and(variant_types)}.")
 
     if not sentences:
         return None
@@ -167,6 +161,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     Serializer for the LocusGenotypeDisease model.
     LocusGenotypeDisease represents a unique Locus-Genotype-Mechanism-Disease-Evidence (LGMDE) record.
     """
+    summary = serializers.SerializerMethodField(read_only=True)
     locus = serializers.SerializerMethodField()  # part of the unique entry
     stable_id = serializers.CharField(
         source="stable_id.stable_id", read_only=True
@@ -190,6 +185,13 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     date_created = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField(allow_null=True)
     is_reviewed = serializers.SerializerMethodField()
+
+    def get_summary(self, id: int) -> Optional[str]:
+        """
+        Summary of the LGMDE record.
+        The summary is automatically generated using the record's data.
+        """
+        return build_lgd_summary(id)
 
     def get_locus(self, id: int) -> dict[str, Any]:
         """
@@ -1582,13 +1584,13 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
                 if lgd_variant_type_obj.is_deleted == 1:
                     lgd_variant_type_obj.is_deleted = 0
                 # update inheritance data
-                if lgd_variant_type_obj.inherited == 0 and inherited == True:
+                if lgd_variant_type_obj.inherited == 0 and inherited is True:
                     lgd_variant_type_obj.inherited = 1
-                if lgd_variant_type_obj.de_novo == 0 and de_novo == True:
+                if lgd_variant_type_obj.de_novo == 0 and de_novo is True:
                     lgd_variant_type_obj.de_novo = 1
                 if (
                     lgd_variant_type_obj.unknown_inheritance == 0
-                    and unknown_inheritance == True
+                    and unknown_inheritance is True
                 ):
                     lgd_variant_type_obj.unknown_inheritance = 1
                 lgd_variant_type_obj.save()
@@ -1666,18 +1668,18 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
                             # Add publication to existing object
                             lgd_variant_type_obj.publication = publication_obj
                             if (
-                                lgd_variant_type_obj.inherited == False
-                                and inherited == True
+                                lgd_variant_type_obj.inherited is False
+                                and inherited is True
                             ):
                                 lgd_variant_type_obj.inherited = True
                             if (
-                                lgd_variant_type_obj.de_novo == False
-                                and de_novo == True
+                                lgd_variant_type_obj.de_novo is False
+                                and de_novo is True
                             ):
                                 lgd_variant_type_obj.de_novo = True
                             if (
-                                lgd_variant_type_obj.unknown_inheritance == False
-                                and unknown_inheritance == True
+                                lgd_variant_type_obj.unknown_inheritance is False
+                                and unknown_inheritance is True
                             ):
                                 lgd_variant_type_obj.unknown_inheritance = True
                             lgd_variant_type_obj.save()
@@ -1688,15 +1690,15 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
                             lgd_variant_type_obj.is_deleted = 0
                         # update inheritance data
                         if (
-                            lgd_variant_type_obj.inherited == False
-                            and inherited == True
+                            lgd_variant_type_obj.inherited is False
+                            and inherited is True
                         ):
                             lgd_variant_type_obj.inherited = True
-                        if lgd_variant_type_obj.de_novo == False and de_novo == True:
+                        if lgd_variant_type_obj.de_novo is False and de_novo is True:
                             lgd_variant_type_obj.de_novo = True
                         if (
-                            lgd_variant_type_obj.unknown_inheritance == False
-                            and unknown_inheritance == True
+                            lgd_variant_type_obj.unknown_inheritance is False
+                            and unknown_inheritance is True
                         ):
                             lgd_variant_type_obj.unknown_inheritance = True
                         lgd_variant_type_obj.save()

@@ -18,8 +18,6 @@ from .lgd_utils import (
     validate_confidence_publications,
     article_for_phrase,
     clean_summary_text,
-    cross_cutting_modifier_fragment,
-    join_summary_items,
     join_with_and,
     plural_suffix,
 )
