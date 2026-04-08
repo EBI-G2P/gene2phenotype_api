@@ -796,7 +796,7 @@ class LGDMinedPublication(models.Model):
     score = models.CharField(max_length=50, null=True, default=None)
     score_comment = models.TextField(null=True, default=None)
     history = HistoricalRecords()
-
+ 
     class Meta:
         db_table = "lgd_mined_publication"
         unique_together = ["lgd", "mined_publication"]
@@ -814,6 +814,109 @@ class LGDMinedPublication(models.Model):
             models.Index(fields=["lgd"]),
             models.Index(fields=["mined_publication"]),
         ]
+
+
+### Models for tracking LGD records under review ###
+class LGDReviewCase(models.Model):
+    """
+    Track a G2P record that requires review.
+    """
+
+    STATUS_CHOICES = [
+        ("open", "Open"),
+        ("under_review", "Under review"),
+        ("resolved", "Resolved"),
+    ]
+
+    id = models.AutoField(primary_key=True)
+    lgd = models.ForeignKey("LocusGenotypeDisease", on_delete=models.PROTECT)
+    summary = models.TextField(null=True, blank=True)
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default="open")
+    created_by = models.ForeignKey(
+        "User", related_name="review_cases_created", on_delete=models.PROTECT
+    )
+    assigned_to = models.ForeignKey(
+        "User",
+        related_name="review_cases_assigned",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+    )
+    active_lgd_id = models.IntegerField(null=True, blank=True, unique=True)
+    date_created = models.DateTimeField(null=False)
+    date_last_update = models.DateTimeField(null=False)
+    history = HistoricalRecords()
+
+    def save(self, *args, **kwargs):
+        is_active_case = self.status in ["open", "under_review"]
+        self.active_lgd_id = self.lgd_id if is_active_case else None
+        super().save(*args, **kwargs)
+
+    class Meta:
+        db_table = "lgd_review_case"
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(status__in=["open", "under_review", "resolved"]),
+                name="lgd_review_case_status_valid",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["lgd"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["assigned_to"]),
+        ]
+
+
+class LGDReviewItem(models.Model):
+    """
+    Specific LGD fields/components that are under review in one review case.
+    """
+
+    COMPONENT_CHOICES = [
+        ("disease", "Disease"),
+        ("disease_cross_reference", "Disease cross reference"),
+        ("mechanism", "Molecular mechanism"),
+        ("genotype", "Allelic requirement"),
+        ("confidence", "Confidence"),
+        ("publications", "Publications"),
+        ("mined_publications", "Mined publications"),
+        ("phenotypes", "Phenotypes"),
+        ("variant_type", "Variant type"),
+        ("variant_consequence", "Variant consequence"),
+        ("panel", "Panel"),
+        ("duplicate", "Duplicate"),
+        ("full_review", "Full review"),
+        ("other", "Other"),
+    ]
+
+    STATUS_CHOICES = [
+        ("open", "Open"),
+        ("under_review", "Under review"),
+        ("resolved", "Resolved"),
+    ]
+
+    id = models.AutoField(primary_key=True)
+    review_case = models.ForeignKey("LGDReviewCase", on_delete=models.PROTECT)
+    component = models.CharField(max_length=100, choices=COMPONENT_CHOICES)
+    comment = models.TextField(null=True, blank=True)
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default="open")
+    history = HistoricalRecords()
+
+    class Meta:
+        db_table = "lgd_review_item"
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(status__in=["open", "under_review", "resolved"]),
+                name="lgd_review_item_status_valid",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["review_case"]),
+            models.Index(fields=["component"]),
+            models.Index(fields=["status"]),
+        ]
+
+###################
 
 
 ### Legacy data ###
@@ -845,6 +948,5 @@ class LGDMutationConsequenceFlag(models.Model):
 
     class Meta:
         db_table = "lgd_mutation_consequence_flag"
-
 
 ###################

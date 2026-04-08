@@ -66,3 +66,9 @@ from .mined_publication import (
     LGDMinedPublicationSerializer,
     LGDMinedPublicationListSerializer,
 )
+
+from .review_queue import (
+    LGDReviewCaseSerializer,
+    LGDReviewCaseCreateSerializer,
+    LGDReviewCaseUpdateSerializer,
+)
