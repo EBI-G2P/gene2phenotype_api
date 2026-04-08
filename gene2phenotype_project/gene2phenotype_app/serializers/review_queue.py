@@ -20,6 +20,7 @@ class LGDReviewCaseSerializer(serializers.ModelSerializer):
     stable_id = serializers.SerializerMethodField()
     created_by = serializers.SerializerMethodField()
     assigned_to = serializers.SerializerMethodField()
+    assigned_to_email = serializers.SerializerMethodField()
     date_created = serializers.SerializerMethodField()
     date_last_update = serializers.SerializerMethodField()
     items = serializers.SerializerMethodField()
@@ -42,6 +43,9 @@ class LGDReviewCaseSerializer(serializers.ModelSerializer):
             if obj.assigned_to
             else None
         )
+
+    def get_assigned_to_email(self, obj):
+        return obj.assigned_to.email if obj.assigned_to else None
 
     def get_date_created(self, obj):
         return obj.date_created.strftime("%Y-%m-%d %H:%M") if obj.date_created else None
@@ -66,6 +70,7 @@ class LGDReviewCaseSerializer(serializers.ModelSerializer):
             "status",
             "created_by",
             "assigned_to",
+            "assigned_to_email",
             "date_created",
             "date_last_update",
             "items",
