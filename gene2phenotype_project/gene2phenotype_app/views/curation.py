@@ -293,8 +293,9 @@ class ClaimCurationData(BaseUpdate):
             )
 
         # Validate if user has permission to claim the draft
+        # The draft uses the panel description as the name
         user_panels = (UserPanel.objects.filter(user=user_obj, is_deleted=0)
-                       .annotate(panel_name=F("panel__name"))
+                       .annotate(panel_name=F("panel__description"))
                        .values_list("panel_name", flat=True))
 
         if (curation_obj.json_data["panels"] and not set(curation_obj.json_data["panels"]).intersection(set(user_panels))):
