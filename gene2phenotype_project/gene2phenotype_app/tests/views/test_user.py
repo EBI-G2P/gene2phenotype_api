@@ -381,6 +381,28 @@ class ResetPasswordTest(TestCase):
 
         self.assertEqual(response.status_code, 400)
 
+    def test_reset_password_check_token_valid(self):
+        uid = urlsafe_base64_encode(force_bytes(self.user.id))
+        token = PasswordResetTokenGenerator().make_token(self.user)
+        response = self.client.post(
+            reverse("reset_password", kwargs={"uid": uid, "token": token}),
+            {"password": "new_password1", "password2": "new_password1"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+
+    def test_check_token_fails_for_tampered_token(self):
+        uid = urlsafe_base64_encode(force_bytes(self.user.id))
+        token = PasswordResetTokenGenerator().make_token(self.user)
+        tampered_token = token + "tampered"
+        response = self.client.post(
+            reverse("reset_password", kwargs={"uid": uid, "token": tampered_token}),
+            {"password": "new_password1", "password2": "new_password1"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
 
 class UserAdminPermissionTest(TestCase):
     fixtures = ["gene2phenotype_app/fixtures/user_panels.json"]
