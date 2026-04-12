@@ -65,7 +65,7 @@ class CustomMail:
         except Exception as e:
             return str(e)
 
-def retrieve_hashed_token(self, token: str) -> str:
+def retrieve_hashed_token(token: str) -> str:
     """
     Retrieve the hashed version of the token
 
