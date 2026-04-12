@@ -1,3 +1,4 @@
+import hashlib
 from email.message import EmailMessage
 from smtplib import SMTP
 from django.conf import settings
@@ -63,3 +64,15 @@ class CustomMail:
                 server.send_message(message)
         except Exception as e:
             return str(e)
+
+def retrieve_hashed_token(self, token: str) -> str:
+    """
+    Retrieve the hashed version of the token
+
+    Args:
+        token (str): The token to be hashed
+
+    Returns:
+        str: The hashed version of the token
+    """
+    return hashlib.sha256(token.encode()).hexdigest()

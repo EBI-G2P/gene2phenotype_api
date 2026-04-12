@@ -10,7 +10,7 @@ from .disease_utils import (
 from .publication_utils import get_publication, get_authors, clean_title
 from .locus_utils import validate_gene
 from .phenotype_utils import validate_phenotype
-from .user_utils import CustomMail
+from .user_utils import CustomMail, retrieve_hashed_token
 from .date_utils import get_date_now
 from .curationinfo_utils import ConfidenceCustomMail
 from .lgd_utils import (
