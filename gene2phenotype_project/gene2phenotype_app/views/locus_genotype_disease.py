@@ -227,13 +227,13 @@ class VariantTypesList(APIView):
             "Example 1",
             description="Fetch detailed information for record with stable_id G2P03507",
             value={
-                "summary": "MTFMT-related mitochondrial disease with regression and lactic acidosis has"
-                " a confidence assertion of definitive based on 5 curated publications."
-                " This is a biallelic autosomal condition. Variant consequence is absent"
-                " gene product (inferred) and altered gene product structure (inferred)."
-                " Molecular mechanism is loss of function (evidenced by biochemical function,"
-                " protein expression function, patient cells functional alteration and patient cells rescue)."
-                " Recorded variant types include splice region variant, frameshift variant, stop gained and missense variant.",
+                "summary": "MTFMT-related mitochondrial disease with regression and lactic acidosis "
+                "has a confidence assertion of definitive based on 5 curated publications. This is a "
+                "biallelic autosomal condition. Variant consequence is absent gene product (inferred) "
+                "and altered gene product structure (inferred). Molecular mechanism is loss of function "
+                "(evidenced by biochemical function, protein expression function, patient cells functional "
+                "alteration and patient cells rescue). Recorded variant types include splice region variant, "
+                "frameshift variant, stop gained and missense variant.",
                 "locus": {
                     "gene_symbol": "MTFMT",
                     "sequence": "15",

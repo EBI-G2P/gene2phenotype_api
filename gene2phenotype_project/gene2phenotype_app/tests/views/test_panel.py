@@ -312,6 +312,8 @@ class PanelDownloadEndpointTests(TestCase):
         self.assertEqual(len(rows), 6)
         self.assertIn("g2p id", rows[0])
 
+        print(rows[2])
+
         expected_data = [
             "G2P00002",
             "RAB27A",
@@ -337,7 +339,7 @@ class PanelDownloadEndpointTests(TestCase):
             "All mutations are located in the aminoterminal part of the gene, before the first epidermal growth factor-like domain.",
             "2018-07-05 16:33:03+00:00",
             "under review",
-            "RAB27A-related Griscelli syndrome has a confidence assertion of definitive based on 2 curated publications. There is a typically de novo and typified by incomplete penetrance. This is a biallelic autosomal condition. Variant consequence is absent gene product (inferred). Molecular mechanism is loss of function (evidenced by protein interaction function). Recorded variant types include inframe insertion and intron variant.",
+            "RAB27A-related Griscelli syndrome has a confidence assertion of definitive based on 2 curated publications. This is typically de novo and this is typified by incomplete penetrance. This is a biallelic autosomal condition. Variant consequence is absent gene product (inferred). Molecular mechanism is loss of function (evidenced by protein interaction function). Recorded variant types include inframe insertion and intron variant.",
         ]
 
         self.assertEqual(rows[2], expected_data)

@@ -20,4 +20,5 @@ from .lgd_utils import (
     clean_summary_text,
     join_with_and,
     plural_suffix,
+    cross_cutting_modifier_fragment,
 )

@@ -45,6 +45,7 @@ from ..utils import (
     clean_summary_text,
     join_with_and,
     plural_suffix,
+    cross_cutting_modifier_fragment,
 )
 
 
@@ -57,49 +58,56 @@ def build_lgd_summary(lgd_obj: LocusGenotypeDisease) -> Optional[str]:
 
     locus_name = getattr(getattr(lgd_obj, "locus", None), "name", None)
     disease_name = getattr(getattr(lgd_obj, "disease", None), "name", None)
-    genotype_value = clean_summary_text(getattr(getattr(lgd_obj, "genotype", None), "value", None))
-    mechanism_value = clean_summary_text(getattr(getattr(lgd_obj, "mechanism", None), "value", None))
-    mechanism_support = getattr(getattr(lgd_obj, "mechanism_support", None), "value", None)
+    genotype_value = clean_summary_text(
+        getattr(getattr(lgd_obj, "genotype", None), "value", None)
+    )
+    mechanism_value = clean_summary_text(
+        getattr(getattr(lgd_obj, "mechanism", None), "value", None)
+    )
+    mechanism_support = getattr(
+        getattr(lgd_obj, "mechanism_support", None), "value", None
+    )
     confidence_value = getattr(getattr(lgd_obj, "confidence", None), "value", None)
 
     sentences: list[str] = []
 
     # Count the number of curated publications only for this record to include in the summary
     curated_pmids = set()
-    for row in (
-        LGDPublication.objects.filter(lgd_id=lgd_obj, is_deleted=0).select_related("publication")
-    ):
+    for row in LGDPublication.objects.filter(
+        lgd_id=lgd_obj, is_deleted=0
+    ).select_related("publication"):
         pmid = getattr(getattr(row, "publication", None), "pmid", None)
         if pmid is not None:
             curated_pmids.add(pmid)
     curated_pub_count = len(curated_pmids)
 
     if locus_name and disease_name:
-        sentences.append(f"{disease_name} has a confidence assertion of {confidence_value} based on {curated_pub_count} "
-                         f"curated publication{plural_suffix(curated_pub_count)}.")
+        sentences.append(
+            f"{disease_name} has a confidence assertion of {confidence_value} based on {curated_pub_count} "
+            f"curated publication{plural_suffix(curated_pub_count)}."
+        )
 
     # Variant consequences grouped by support value
     variant_support_to_terms = []
-    for row in (
-        LGDVariantGenccConsequence.objects.filter(lgd_id=lgd_obj, is_deleted=0)
-        .select_related("variant_consequence", "support")
-    ):
+    for row in LGDVariantGenccConsequence.objects.filter(
+        lgd_id=lgd_obj, is_deleted=0
+    ).select_related("variant_consequence", "support"):
         term = clean_summary_text(
             getattr(getattr(row, "variant_consequence", None), "term", None)
         )
         support_value = getattr(getattr(row, "support", None), "value", None)
         if term and term != "uncertain":
             variant_support_to_terms.append(f"{term} ({support_value})")
-        elif term:
-            variant_support_to_terms.append(f"{term}")
 
     variant_phrase = None
     if variant_support_to_terms:
-            variant_phrase = join_with_and(variant_support_to_terms)
+        variant_phrase = join_with_and(variant_support_to_terms)
 
     # Variant types
     variant_types = []
-    for row in LGDVariantType.objects.filter(lgd_id=lgd_obj, is_deleted=0).select_related("variant_type_ot"):
+    for row in LGDVariantType.objects.filter(
+        lgd_id=lgd_obj, is_deleted=0
+    ).select_related("variant_type_ot"):
         variant_type_term = clean_summary_text(
             getattr(getattr(row, "variant_type_ot", None), "term", None)
         )
@@ -107,17 +115,23 @@ def build_lgd_summary(lgd_obj: LocusGenotypeDisease) -> Optional[str]:
             variant_types.append(variant_type_term)
 
     cross_cutting_modifiers = []
-    for row in (
-        LGDCrossCuttingModifier.objects.filter(lgd_id=lgd_obj, is_deleted=0).select_related("ccm")
-    ):
-        ccm_value = clean_summary_text(getattr(getattr(row, "ccm", None), "value", None))
+    for row in LGDCrossCuttingModifier.objects.filter(
+        lgd_id=lgd_obj, is_deleted=0
+    ).select_related("ccm"):
+        ccm_value = clean_summary_text(
+            getattr(getattr(row, "ccm", None), "value", None)
+        )
         if ccm_value:
             cross_cutting_modifiers.append(ccm_value)
 
     if cross_cutting_modifiers:
-        ccm_text = join_with_and(cross_cutting_modifiers)
+        ccm_fragments = [
+            cross_cutting_modifier_fragment(modifier)
+            for modifier in cross_cutting_modifiers
+        ]
+        ccm_text = join_with_and(ccm_fragments)
         if ccm_text:
-            sentences.append(f"There is {article_for_phrase(ccm_text)} {ccm_text}.")
+            sentences.append(f"{ccm_text.capitalize()}.")
 
     if genotype_value:
         sentences.append(
@@ -131,24 +145,34 @@ def build_lgd_summary(lgd_obj: LocusGenotypeDisease) -> Optional[str]:
         if mechanism_support == "evidence":
             mechanism_evidence = []
             mechanism_evidence_list = (
-                LGDMolecularMechanismEvidence.objects
-                .filter(lgd_id=lgd_obj, is_deleted=0)
+                LGDMolecularMechanismEvidence.objects.filter(
+                    lgd_id=lgd_obj, is_deleted=0
+                )
                 .select_related("evidence")
-                .annotate(evidence_value=F("evidence__value"), evidence_type=F("evidence__subtype"))
-             )
+                .annotate(
+                    evidence_value=F("evidence__value"),
+                    evidence_type=F("evidence__subtype"),
+                )
+            )
 
             for value in mechanism_evidence_list:
-                new_value = f"{value.evidence_value} {value.evidence_type.replace('_', ' ')}"
+                new_value = (
+                    f"{value.evidence_value} {value.evidence_type.replace('_', ' ')}"
+                )
                 if new_value not in mechanism_evidence:
                     mechanism_evidence.append(new_value)
 
-            sentences.append(f"Molecular mechanism is {mechanism_value} (evidenced by {join_with_and(mechanism_evidence)}).")
+            sentences.append(
+                f"Molecular mechanism is {mechanism_value} (evidenced by {join_with_and(mechanism_evidence)})."
+            )
 
         else:
             sentences.append(f"Molecular mechanism is {mechanism_value}.")
 
     if variant_types:
-        sentences.append(f"Recorded variant types include {join_with_and(variant_types)}.")
+        sentences.append(
+            f"Recorded variant types include {join_with_and(variant_types)}."
+        )
 
     if not sentences:
         return None
@@ -161,6 +185,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     Serializer for the LocusGenotypeDisease model.
     LocusGenotypeDisease represents a unique Locus-Genotype-Mechanism-Disease-Evidence (LGMDE) record.
     """
+
     summary = serializers.SerializerMethodField(read_only=True)
     locus = serializers.SerializerMethodField()  # part of the unique entry
     stable_id = serializers.CharField(
@@ -330,10 +355,10 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         3. "rejected" - extracted publication which was rejected by curators
         """
         queryset = (
-            LGDMinedPublication.objects
-            .filter(lgd_id=id)
+            LGDMinedPublication.objects.filter(lgd_id=id)
             .select_related("mined_publication")
-            .order_by("-mined_publication__year", "-mined_publication__pmid"))
+            .order_by("-mined_publication__year", "-mined_publication__pmid")
+        )
 
         return LGDMinedPublicationSerializer(
             queryset, many=True, context={"user": self.context.get("user")}

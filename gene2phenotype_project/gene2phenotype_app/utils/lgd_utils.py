@@ -102,3 +102,23 @@ def article_for_phrase(value: str) -> str:
 
 def plural_suffix(count: int) -> str:
     return "" if count == 1 else "s"
+
+
+def cross_cutting_modifier_fragment(value: str) -> str:
+    """
+    Convert a cross cutting modifier value into a sentence fragment.
+    Called by: build_lgd_record_summary() in LocusGenotypeDiseaseSerializer
+    """
+    normalized = value.strip().lower()
+    custom_fragments = {
+        "displays anticipation": "displays anticipation",
+        "imprinted region": "this is an imprinted region",
+        "potential secondary finding": "this is a potential secondary finding",
+        "restricted mutation set": "there is a restricted mutation set",
+        "typically de novo": "this is typically de novo",
+        "typically mosaic": "this is typically mosaic",
+        "typified by incomplete penetrance": "this is typified by incomplete penetrance",
+    }
+    if normalized in custom_fragments:
+        return custom_fragments[normalized]
+    return f"has {article_for_phrase(value)} {value}"
