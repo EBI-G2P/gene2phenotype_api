@@ -69,7 +69,7 @@ def build_lgd_summary(lgd_obj: LocusGenotypeDisease) -> Optional[str]:
     )
     confidence_value = getattr(getattr(lgd_obj, "confidence", None), "value", None)
 
-    sentences: list[str] = []
+    sentences = []
 
     # Count the number of curated publications only for this record to include in the summary
     curated_pmids = set()
@@ -124,6 +124,11 @@ def build_lgd_summary(lgd_obj: LocusGenotypeDisease) -> Optional[str]:
         if ccm_value:
             cross_cutting_modifiers.append(ccm_value)
 
+    if genotype_value:
+        sentences.append(
+            f"This is {article_for_phrase(genotype_value)} {genotype_value} condition."
+        )
+
     if cross_cutting_modifiers:
         ccm_fragments = [
             cross_cutting_modifier_fragment(modifier)
@@ -132,11 +137,6 @@ def build_lgd_summary(lgd_obj: LocusGenotypeDisease) -> Optional[str]:
         ccm_text = join_with_and(ccm_fragments)
         if ccm_text:
             sentences.append(f"{ccm_text.capitalize()}.")
-
-    if genotype_value:
-        sentences.append(
-            f"This is {article_for_phrase(genotype_value)} {genotype_value} condition."
-        )
 
     if variant_phrase:
         sentences.append(f"Variant consequence is {variant_phrase}.")

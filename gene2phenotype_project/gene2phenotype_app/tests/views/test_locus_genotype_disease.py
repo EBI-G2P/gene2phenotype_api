@@ -89,9 +89,10 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         self.assertEqual(response.data["last_updated"], "2017-04-24")
         self.assertEqual(response.data["date_created"], None)
 
-        self.assertEqual(response.data["summary"], "CEP290-related JOUBERT SYNDROME" \
-        " TYPE 5 has a confidence assertion of definitive based on 1 curated publication." \
-        " This is a biallelic autosomal condition. Molecular mechanism is loss of function (evidenced by biochemical function).")
+        self.assertEqual(response.data["summary"], "CEP290-related JOUBERT SYNDROME"
+        " TYPE 5 has a confidence assertion of definitive based on 1 curated publication."
+        " This is a biallelic autosomal condition. Molecular mechanism is loss of function "
+        "(evidenced by biochemical function).")
 
         expected_data_comments = [
             {
