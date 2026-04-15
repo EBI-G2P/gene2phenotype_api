@@ -247,10 +247,18 @@
             "description": "General comment linked to the record only available to authenticated users",
             "type": "string"
         },
+        "extra_comment": {
+            "description": "Additional comment field for any extra information",
+            "type": "string"
+        },
         "source_data": {
-            "description": "Optional source metadata for this record",
+            "description": "Optional source metadata for this record. Necessary for automatic drafts.",
             "type": "object",
             "properties": {
+                "url": {
+                    "type": "string",
+                    "description": "Source record URL"
+                },
                 "name": {
                     "type": "string",
                     "description": "Origin of the data (e.g. clingen)"
@@ -258,14 +266,70 @@
                 "disease": {
                     "type": "string",
                     "description": "Disease name as provided by the source"
+                },
+                "mechanism": {
+                    "type": "string",
+                    "description": "Mechanism value as provided by the source"
+                },
+                "confidence": {
+                    "type": "string",
+                    "description": "Confidence value as provided by the source"
+                },
+                "mechanism_comment": {
+                    "type": "string",
+                    "description": "Free-text source comment about the mechanism"
+                },
+                "mechanism_evidence": {
+                    "type": "string",
+                    "description": "Free-text source evidence summary for the mechanism"
+                },
+                "disease_cross_references": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "source": {
+                                "type": "string"
+                            },
+                            "identifier": {
+                                "type": ["number", "string"]
+                            },
+                            "disease_name": {
+                                "type": "string"
+                            },
+                            "original_disease_name": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "source",
+                            "identifier",
+                            "disease_name",
+                            "original_disease_name"
+                        ]
+                    }
                 }
             },
-            "required": ["name"],
-            "additionalProperties": true
+            "required": ["name"]
         }
     },
-    "required": ["locus"],
-    "additionalProperties": {
-        "type": "string"
-    }
+    "required": [
+        "session_name",
+        "locus",
+        "publications",
+        "phenotypes",
+        "allelic_requirement",
+        "cross_cutting_modifier",
+        "variant_types",
+        "variant_descriptions",
+        "variant_consequences",
+        "molecular_mechanism",
+        "mechanism_synopsis",
+        "mechanism_evidence",
+        "disease",
+        "panels",
+        "confidence",
+        "public_comment",
+        "private_comment"
+    ]
 }
