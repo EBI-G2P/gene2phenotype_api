@@ -246,6 +246,22 @@
         "private_comment": {
             "description": "General comment linked to the record only available to authenticated users",
             "type": "string"
+        },
+        "source_data": {
+            "description": "Optional source metadata for this record",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Origin of the data (e.g. clingen)"
+                },
+                "disease": {
+                    "type": "string",
+                    "description": "Disease name as provided by the source"
+                }
+            },
+            "required": ["name"],
+            "additionalProperties": true
         }
     },
     "required": ["locus"],
