@@ -337,7 +337,10 @@ class PanelDownloadEndpointTests(TestCase):
             "All mutations are located in the aminoterminal part of the gene, before the first epidermal growth factor-like domain.",
             "2018-07-05 16:33:03+00:00",
             "under review",
-            "There is definitive evidence, from 2 publications that RAB27A is related to Griscelli syndrome. This is a biallelic autosomal condition with inferred variant consequence of absent gene product and an evidence loss of function molecular mechanism. This is typically de novo and is typified by incomplete penetrance.",
+            "RAB27A-related Griscelli syndrome has a confidence assertion of definitive based on 2 curated publications. "
+            "This is a biallelic autosomal condition. This is typically de novo and this is typified by incomplete penetrance. "
+            "Variant consequence is absent gene product (inferred). Molecular mechanism is loss of function (evidenced by protein "
+            "interaction function). Recorded variant types include inframe insertion and intron variant.",
         ]
 
         self.assertEqual(rows[2], expected_data)

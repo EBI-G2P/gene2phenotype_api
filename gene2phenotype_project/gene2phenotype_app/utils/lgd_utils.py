@@ -76,15 +76,6 @@ def clean_summary_text(value: str) -> Optional[str]:
     return text
 
 
-def join_summary_items(values: list[str]) -> str:
-    """
-    Join unique values to form a comma-separated string.
-    Called by: build_lgd_record_summary() in LocusGenotypeDiseaseSerializer
-    """
-    unique_values = list(dict.fromkeys(v for v in values if v))
-    return ", ".join(unique_values)
-
-
 def join_with_and(values: list[str]) -> str:
     """
     Join values with commas and 'and' before the last value.
@@ -115,18 +106,18 @@ def plural_suffix(count: int) -> str:
 
 def cross_cutting_modifier_fragment(value: str) -> str:
     """
-    Convert a cross cutting modifier value into a sentence fragment that follows 'This '.
+    Convert a cross cutting modifier value into a sentence fragment.
     Called by: build_lgd_record_summary() in LocusGenotypeDiseaseSerializer
     """
     normalized = value.strip().lower()
     custom_fragments = {
         "displays anticipation": "displays anticipation",
-        "imprinted region": "involves imprinting",
-        "potential secondary finding": "is a potential secondary finding",
-        "restricted mutation set": "involves a restricted mutation set",
-        "typically de novo": "is typically de novo",
-        "typically mosaic": "is typically mosaic",
-        "typified by incomplete penetrance": "is typified by incomplete penetrance",
+        "imprinted region": "this is an imprinted region",
+        "potential secondary finding": "this is a potential secondary finding",
+        "restricted mutation set": "there is a restricted mutation set",
+        "typically de novo": "this is typically de novo",
+        "typically mosaic": "this is typically mosaic",
+        "typified by incomplete penetrance": "this is typified by incomplete penetrance",
     }
     if normalized in custom_fragments:
         return custom_fragments[normalized]
