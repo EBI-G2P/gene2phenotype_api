@@ -1,3 +1,4 @@
+import copy
 from django.test import TestCase
 from django.urls import reverse
 from django.conf import settings
@@ -154,6 +155,27 @@ class LGDUpdateCurationEndpoint(TestCase):
         # Test history table
         history_records = CurationData.history.filter(stable_id__stable_id="G2P00004")
         self.assertEqual(len(history_records), 1)
+
+    def test_update_automatic_curation_preserves_json_data(self):
+        """
+        Test updating an automatic draft with the same JSON preserves the JSON content
+        and converts the draft to manual.
+        """
+        self.login_user()
+
+        curation_obj = CurationData.objects.get(stable_id__stable_id="G2P00010")
+        original_json = copy.deepcopy(curation_obj.json_data)
+
+        response = self.client.put(
+            self.url_update_curation_2,
+            {"json_data": original_json},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        curation_obj.refresh_from_db()
+        self.assertEqual(curation_obj.json_data, original_json)
+        self.assertEqual(curation_obj.status, "manual")
 
     def test_update_curation_no_permission(self):
         """
