@@ -82,6 +82,16 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 }
             )
 
+        if (
+            data_dict.get("status") == "automatic"
+            and "source_data" not in data_dict["json_data"]
+        ):
+            raise serializers.ValidationError(
+                {
+                    "error": "To save an automatic draft, 'source_data' must be included in 'json_data'"
+                }
+            )
+
         session_name = data_dict["json_data"]["session_name"]
         # Check if JSON is already in the table
         curation_entry = self.compare_curation_data(data_dict, user_obj.id)
