@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.contrib.auth import authenticate
+from django.conf import settings
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.encoding import smart_str, force_bytes
 from rest_framework.exceptions import AuthenticationFailed
@@ -10,8 +11,8 @@ from django.contrib.auth.models import update_last_login
 from django.core.exceptions import ObjectDoesNotExist
 
 
-from ..utils import CustomMail
-from ..models import User, UserPanel, Panel
+from ..utils import CustomMail, retrieve_hashed_token
+from ..models import User, UserPanel, Panel, PasswordResetToken
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -535,6 +536,10 @@ class VerifyEmailSerializer(serializers.ModelSerializer):
                 reset_link=reset_link,
                 to_email=user.email,
             )
+            hashed_token = retrieve_hashed_token(self, reset_token)
+            token_lifetime = getattr(settings, "PASSWORD_RESET_TIMEOUT", 900) # default to 15 minutes if not set
+            expiry_time = timezone.now() + timedelta(seconds=token_lifetime)
+            PasswordResetToken.objects.create(user=user, token_hash=hashed_token, used=False, expires_at=expiry_time)
             return {"id": user.id, "email": user.email, "token": reset_token}
         else:
             # If user not found, return a generic response to avoid user enumeration
@@ -598,9 +603,12 @@ class PasswordResetSerializer(serializers.ModelSerializer):
         uid = smart_str(urlsafe_base64_decode(uid))
         user = User.objects.get(id=uid)
 
-        if not PasswordResetTokenGenerator().check_token(user, token):
+        # checks the validation of the token against the time set in settings and if token is used or not
+        if self.check_token_validity(token):
             raise serializers.ValidationError("Token is not valid or expired")
 
+        # if the token is valid, mark the token as used to prevent reuse
+        self.update_password_reset_token(token)
         attrs["id"] = uid
 
         return attrs
@@ -625,6 +633,47 @@ class PasswordResetSerializer(serializers.ModelSerializer):
         user.save()
 
         return user.email
+
+    def update_password_reset_token(self, token: str):
+        """
+        Update the password reset token as used
+
+        Args:
+            token (str): The token to be updated
+
+        Method:
+            Updates the PasswordResetToken object associated with the token to mark it as used
+        """
+        hashed_token = retrieve_hashed_token(self, token)
+        reset_token = PasswordResetToken.objects.filter(token_hash=hashed_token).first()
+        if reset_token:
+            reset_token.used = True
+            reset_token.used_at = timezone.now()
+            reset_token.save()
+
+
+    def check_token_validity(self, token: str) -> bool:
+        """
+        Verify that:
+        - Django's token generator considers the token valid for the given user (time/state)
+        - there is a matching PasswordResetToken DB row that is unused
+
+        Args:
+            token (str): The token to be checked
+
+        Returns:
+            bool: True if the token is valid and not expired, False otherwise
+        """
+        if not PasswordResetTokenGenerator().check_token(user, token):
+            return False
+        hashed_token = retrieve_hashed_token(self, token)
+        reset_token = PasswordResetToken.objects.filter(token_hash=hashed_token, used=False).first()
+        # Check if the token is within the valid time frame
+        if not reset_token:
+            return False
+        if timezone.now() > reset_token.expires_at:
+            return False
+        return True
 
     class Meta:
         model = User

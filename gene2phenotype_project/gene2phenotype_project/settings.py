@@ -71,6 +71,8 @@ LOGGING = {
     },
 }
 
+PASSWORD_RESET_TIMEOUT = 900
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",

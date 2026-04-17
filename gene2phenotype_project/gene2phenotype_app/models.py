@@ -949,4 +949,17 @@ class LGDMutationConsequenceFlag(models.Model):
     class Meta:
         db_table = "lgd_mutation_consequence_flag"
 
+class PasswordResetToken(models.Model):
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey("User", on_delete=models.PROTECT)
+    token_hash = models.CharField(max_length=255, null=False, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=False)
+    used = models.BooleanField(default=False)
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "password_reset_token"
+        indexes = [models.Index(fields=["token"])]
+
 ###################
