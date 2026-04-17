@@ -1,5 +1,6 @@
 from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
+from django.core.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db import transaction, IntegrityError
@@ -663,14 +664,17 @@ class LGDUpdateMechanism(BaseUpdate):
         ):
             self.handle_missing_data("Mechanism data")
 
-        # Check if mechanism value can be updated
+        # Mechanism value updates on non-undetermined records are restricted to superusers
         if (
             molecular_mechanism
-            and lgd_obj.mechanism.value != "undetermined"
             and "name" in molecular_mechanism
             and molecular_mechanism["name"] != ""
+            and lgd_obj.mechanism.value != "undetermined"
         ):
-            return self.handle_no_update("molecular mechanism", stable_id)
+            try:
+                IsSuperUser().has_permission(request, self)
+            except PermissionDenied as e:
+                return Response(e.args[0], status=status.HTTP_403_FORBIDDEN)
 
         # If the mechanism support is "evidence" then the evidence has to be provided
         if (

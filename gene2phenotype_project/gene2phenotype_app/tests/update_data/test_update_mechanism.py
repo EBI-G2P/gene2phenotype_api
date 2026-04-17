@@ -132,13 +132,13 @@ class LGDUpdateMechanismEndpoint(TestCase):
         response_data = response.json()
         self.assertEqual(response_data["error"], "Mechanism data is missing")
 
-    def test_update_not_undetermined(self):
+    def test_update_mechanism_value_when_not_undetermined(self):
         """
-        Test the endpoint to update mechanism for a record that does not have 'undetermined' mechanism
-        API only allows to update mechanisms with value 'undetermined' or support 'inferred'
+        Test the endpoint allows updating mechanism value for a record whose
+        current mechanism is not 'undetermined'
         """
-        invalid_input_data = {
-            "molecular_mechanism": {"name": "loss of function", "support": "inferred"}
+        input_data = {
+            "molecular_mechanism": {"name": "gain of function", "support": "inferred"}
         }
 
         # Login
@@ -151,14 +151,77 @@ class LGDUpdateMechanismEndpoint(TestCase):
 
         response = self.client.patch(
             self.url_lgd_update_mechanism_3,
-            invalid_input_data,
+            input_data,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        response_data = response.json()
+        self.assertEqual(
+            response_data["message"],
+            "Molecular mechanism updated successfully for 'G2P00001'",
+        )
+
+        locus_genotype_disease = LocusGenotypeDisease.objects.get(
+            stable_id__stable_id="G2P00001", is_deleted=0
+        )
+        self.assertEqual(locus_genotype_disease.mechanism.value, "gain of function")
+        self.assertEqual(locus_genotype_disease.mechanism_support.value, "inferred")
+
+    def test_update_mechanism_value_when_not_undetermined_requires_superuser(self):
+        """
+        Test non-superusers cannot update the mechanism value when the current
+        mechanism is not 'undetermined', even if panel permissions match.
+        """
+        input_data = {
+            "molecular_mechanism": {"name": "gain of function", "support": "inferred"}
+        }
+
+        # Login as a non-superuser with matching panel permissions
+        user = User.objects.get(email="user1@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.patch(
+            self.url_lgd_update_mechanism_3,
+            input_data,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 403)
+
         response_data = response.json()
         self.assertEqual(
             response_data["error"],
-            "Cannot update 'molecular mechanism' for ID 'G2P00001'",
+            "You do not have permission to perform this action.",
+        )
+
+    def test_update_mechanism_value_when_not_undetermined_still_requires_panel_match(self):
+        """
+        Test superusers still need panel permission to update the mechanism value
+        when the current mechanism is not 'undetermined'.
+        """
+        input_data = {
+            "molecular_mechanism": {"name": "gain of function", "support": "inferred"}
+        }
+
+        # Login as a superuser without matching panel permissions
+        user = User.objects.get(email="john@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.patch(
+            self.url_lgd_update_mechanism_3,
+            input_data,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 403)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"], "No permission to update record 'G2P00001'"
         )
 
     def test_update_no_evidence(self):

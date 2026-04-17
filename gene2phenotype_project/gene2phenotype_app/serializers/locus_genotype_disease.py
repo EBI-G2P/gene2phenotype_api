@@ -961,8 +961,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     }
                 )
 
-        # Update LGD instance with new mechanism value only if mechanism value is "undetermined"
-        if cv_mechanism_obj and lgd_instance.mechanism.value == "undetermined":
+        # Update LGD instance with the new mechanism value when provided
+        if cv_mechanism_obj:
             lgd_instance.mechanism = cv_mechanism_obj
 
         # Update the mechanism support
