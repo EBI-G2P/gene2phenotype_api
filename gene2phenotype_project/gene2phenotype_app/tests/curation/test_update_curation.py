@@ -1,3 +1,4 @@
+import copy
 from django.test import TestCase
 from django.urls import reverse
 from django.conf import settings
@@ -155,6 +156,27 @@ class LGDUpdateCurationEndpoint(TestCase):
         history_records = CurationData.history.filter(stable_id__stable_id="G2P00004")
         self.assertEqual(len(history_records), 1)
 
+    def test_update_automatic_curation_preserves_json_data(self):
+        """
+        Test updating an automatic draft with the same JSON preserves the JSON content
+        and converts the draft to manual.
+        """
+        self.login_user()
+
+        curation_obj = CurationData.objects.get(stable_id__stable_id="G2P00010")
+        original_json = copy.deepcopy(curation_obj.json_data)
+
+        response = self.client.put(
+            self.url_update_curation_2,
+            {"json_data": original_json},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        curation_obj.refresh_from_db()
+        self.assertEqual(curation_obj.json_data, original_json)
+        self.assertEqual(curation_obj.status, "manual")
+
     def test_update_curation_no_permission(self):
         """
         Test call to update curation endpoint with super user who does not have permission to update the curation
@@ -294,6 +316,145 @@ class LGDUpdateCurationEndpoint(TestCase):
         self.assertIn(
             "JSON data does not follow the required format.", response_data["error"]
         )
+
+    def test_update_curation_invalid_nested_schema_type(self):
+        """
+        Test call to update curation endpoint with an invalid nested field type
+        """
+        self.login_user()
+
+        curation_to_update = {
+            "json_data": {
+                "allelic_requirement": "",
+                "confidence": "",
+                "cross_cutting_modifier": [],
+                "disease": {"cross_references": [], "disease_name": ""},
+                "locus": "CEP290",
+                "mechanism_evidence": [
+                    {
+                        "description": "test comment",
+                        "evidence_types": [
+                            {
+                                "primary_type": "Rescue",
+                                "secondary_type": "Patient Cells",
+                            }
+                        ],
+                        "pmid": "1",
+                    }
+                ],
+                "mechanism_synopsis": [],
+                "molecular_mechanism": {"name": "", "support": ""},
+                "panels": [],
+                "phenotypes": [],
+                "private_comment": "",
+                "public_comment": "",
+                "publications": [],
+                "session_name": "test session",
+                "variant_consequences": [],
+                "variant_descriptions": [],
+                "variant_types": [],
+            }
+        }
+
+        response = self.client.put(
+            self.url_update_curation,
+            curation_to_update,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertIn(
+            "JSON data does not follow the required format.", response_data["error"]
+        )
+        self.assertIn("'Patient Cells' is not of type 'array'", response_data["error"])
+
+    def test_update_curation_missing_nested_required_field(self):
+        """
+        Test call to update curation endpoint with a missing nested required field
+        """
+        self.login_user()
+
+        curation_to_update = {
+            "json_data": {
+                "allelic_requirement": "",
+                "confidence": "",
+                "cross_cutting_modifier": [],
+                "disease": {"cross_references": [], "disease_name": ""},
+                "locus": "CEP290",
+                "mechanism_evidence": [],
+                "mechanism_synopsis": [],
+                "molecular_mechanism": {"name": "", "support": ""},
+                "panels": [],
+                "phenotypes": [],
+                "private_comment": "",
+                "public_comment": "",
+                "publications": [
+                    {
+                        "authors": "Makar AB, McMartin KE, Palese M, Tephly TR.",
+                        "title": "Formate assay in body fluids: application in methanol poisoning.",
+                    }
+                ],
+                "session_name": "test session",
+                "variant_consequences": [],
+                "variant_descriptions": [],
+                "variant_types": [],
+            }
+        }
+
+        response = self.client.put(
+            self.url_update_curation,
+            curation_to_update,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertIn(
+            "JSON data does not follow the required format.", response_data["error"]
+        )
+        self.assertIn("'pmid' is a required property", response_data["error"])
+
+    def test_update_curation_null_field_fails_schema_validation(self):
+        """
+        Test call to update curation endpoint with a null field rejected by the schema
+        """
+        self.login_user()
+
+        curation_to_update = {
+            "json_data": {
+                "allelic_requirement": "",
+                "confidence": "",
+                "cross_cutting_modifier": [],
+                "disease": {"cross_references": [], "disease_name": ""},
+                "locus": None,
+                "mechanism_evidence": [],
+                "mechanism_synopsis": [],
+                "molecular_mechanism": {"name": "", "support": ""},
+                "panels": [],
+                "phenotypes": [],
+                "private_comment": "",
+                "public_comment": "",
+                "publications": [],
+                "session_name": "test session",
+                "variant_consequences": [],
+                "variant_descriptions": [],
+                "variant_types": [],
+            }
+        }
+
+        response = self.client.put(
+            self.url_update_curation,
+            curation_to_update,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertIn(
+            "JSON data does not follow the required format.", response_data["error"]
+        )
+        self.assertIn("None is not of type 'string'", response_data["error"])
 
     def test_update_curation_missing_json(self):
         """

@@ -197,6 +197,7 @@ class LGDAddCurationEndpoint(TestCase):
                 "private_comment": "test comment",
                 "public_comment": "test comment",
                 "extra_comment": "",
+                "source_data": {"name": "clingen"},
                 "publications": [
                     {
                         "affectedIndividuals": 1,
@@ -252,6 +253,114 @@ class LGDAddCurationEndpoint(TestCase):
         )
         self.assertEqual(len(curation_entries), 1)
         self.assertEqual(curation_entries[0].status, "automatic")
+
+    def test_add_automatic_curation_missing_source_data(self):
+        """
+        Test automatic drafts must include source_data
+        """
+        self.login_user()
+
+        curation_to_add = {
+            "json_data": {
+                "allelic_requirement": "biallelic_autosomal",
+                "confidence": "limited",
+                "cross_cutting_modifier": ["potential secondary finding"],
+                "disease": {
+                    "cross_references": [
+                        {
+                            "disease_name": "bardet-biedl syndrome",
+                            "identifier": "615991",
+                            "original_disease_name": "BARDET-BIEDL SYNDROME 14",
+                            "source": "OMIM",
+                        }
+                    ],
+                    "disease_name": "CEP290-related bardet-biedl syndrome test",
+                },
+                "locus": "CEP290",
+                "mechanism_evidence": [
+                    {
+                        "description": "test comment",
+                        "evidence_types": [
+                            {
+                                "primary_type": "Rescue",
+                                "secondary_type": ["Patient Cells"],
+                            }
+                        ],
+                        "pmid": "1",
+                    }
+                ],
+                "mechanism_synopsis": [
+                    {"name": "destabilising LOF", "support": "inferred"}
+                ],
+                "molecular_mechanism": {
+                    "name": "loss of function",
+                    "support": "evidence",
+                },
+                "panels": ["Developmental disorders"],
+                "phenotypes": [
+                    {
+                        "hpo_terms": [
+                            {
+                                "accession": "HP:0012372",
+                                "term": "Abnormal eye morphology",
+                            }
+                        ],
+                        "pmid": "1",
+                        "summary": "test comment",
+                    }
+                ],
+                "private_comment": "test comment",
+                "public_comment": "test comment",
+                "extra_comment": "",
+                "publications": [
+                    {
+                        "affectedIndividuals": 1,
+                        "ancestries": "test",
+                        "authors": "Makar AB, McMartin KE, Palese M, Tephly TR.",
+                        "comment": "test comment",
+                        "consanguineous": "no",
+                        "families": 1,
+                        "pmid": "1",
+                        "source": "G2P",
+                        "title": "Formate assay in body fluids: application in methanol poisoning.",
+                        "year": 1975,
+                    }
+                ],
+                "session_name": "test automatic session missing source data",
+                "variant_consequences": [
+                    {
+                        "support": "inferred",
+                        "variant_consequence": "altered_gene_product_level",
+                    }
+                ],
+                "variant_descriptions": [
+                    {"description": "test description", "publication": "1"}
+                ],
+                "variant_types": [
+                    {
+                        "comment": "test comment",
+                        "de_novo": True,
+                        "inherited": True,
+                        "primary_type": "protein_changing",
+                        "secondary_type": "missense_variant",
+                        "supporting_papers": ["1"],
+                        "unknown_inheritance": False,
+                    }
+                ],
+            },
+            "status": "automatic",
+        }
+
+        response = self.client.post(
+            self.url_add_curation, curation_to_add, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"],
+            "To save an automatic draft, 'source_data' must be included in 'json_data'",
+        )
 
     def test_add_curation_existing_curation(self):
         """
@@ -395,6 +504,139 @@ class LGDAddCurationEndpoint(TestCase):
         self.assertIn(
             "JSON data does not follow the required format.", response_data["error"]
         )
+
+    def test_add_curation_invalid_nested_schema_type(self):
+        """
+        Test call to add curation endpoint with an invalid nested field type
+        """
+        self.login_user()
+
+        curation_to_add = {
+            "json_data": {
+                "allelic_requirement": "",
+                "confidence": "",
+                "cross_cutting_modifier": [],
+                "disease": {"cross_references": [], "disease_name": ""},
+                "locus": "CEP290",
+                "mechanism_evidence": [
+                    {
+                        "description": "test comment",
+                        "evidence_types": [
+                            {
+                                "primary_type": "Rescue",
+                                "secondary_type": "Patient Cells",
+                            }
+                        ],
+                        "pmid": "1",
+                    }
+                ],
+                "mechanism_synopsis": [],
+                "molecular_mechanism": {"name": "", "support": ""},
+                "panels": [],
+                "phenotypes": [],
+                "private_comment": "",
+                "public_comment": "",
+                "publications": [],
+                "session_name": "invalid nested schema",
+                "variant_consequences": [],
+                "variant_descriptions": [],
+                "variant_types": [],
+            }
+        }
+
+        response = self.client.post(
+            self.url_add_curation, curation_to_add, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertIn(
+            "JSON data does not follow the required format.", response_data["error"]
+        )
+        self.assertIn("'Patient Cells' is not of type 'array'", response_data["error"])
+
+    def test_add_curation_missing_nested_required_field(self):
+        """
+        Test call to add curation endpoint with a missing nested required field
+        """
+        self.login_user()
+
+        curation_to_add = {
+            "json_data": {
+                "allelic_requirement": "",
+                "confidence": "",
+                "cross_cutting_modifier": [],
+                "disease": {"cross_references": [], "disease_name": ""},
+                "locus": "CEP290",
+                "mechanism_evidence": [],
+                "mechanism_synopsis": [],
+                "molecular_mechanism": {"name": "", "support": ""},
+                "panels": [],
+                "phenotypes": [],
+                "private_comment": "",
+                "public_comment": "",
+                "publications": [
+                    {
+                        "authors": "Makar AB, McMartin KE, Palese M, Tephly TR.",
+                        "title": "Formate assay in body fluids: application in methanol poisoning.",
+                    }
+                ],
+                "session_name": "missing nested field",
+                "variant_consequences": [],
+                "variant_descriptions": [],
+                "variant_types": [],
+            }
+        }
+
+        response = self.client.post(
+            self.url_add_curation, curation_to_add, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertIn(
+            "JSON data does not follow the required format.", response_data["error"]
+        )
+        self.assertIn("'pmid' is a required property", response_data["error"])
+
+    def test_add_curation_null_field_fails_schema_validation(self):
+        """
+        Test call to add curation endpoint with a null field rejected by the schema
+        """
+        self.login_user()
+
+        curation_to_add = {
+            "json_data": {
+                "allelic_requirement": "",
+                "confidence": "",
+                "cross_cutting_modifier": [],
+                "disease": {"cross_references": [], "disease_name": ""},
+                "locus": None,
+                "mechanism_evidence": [],
+                "mechanism_synopsis": [],
+                "molecular_mechanism": {"name": "", "support": ""},
+                "panels": [],
+                "phenotypes": [],
+                "private_comment": "",
+                "public_comment": "",
+                "publications": [],
+                "session_name": "null locus session",
+                "variant_consequences": [],
+                "variant_descriptions": [],
+                "variant_types": [],
+            }
+        }
+
+        response = self.client.post(
+            self.url_add_curation, curation_to_add, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertIn(
+            "JSON data does not follow the required format.", response_data["error"]
+        )
+        self.assertIn("None is not of type 'string'", response_data["error"])
 
     def test_add_curation_empty_locus(self):
         """
