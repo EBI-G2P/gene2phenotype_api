@@ -600,6 +600,7 @@ class LGDUpdateMechanism(BaseUpdate):
 
         return queryset
 
+    @transaction.atomic
     def patch(self, request, stable_id):
         """
         Partially updates the LGD record with a new molecular mechanism.

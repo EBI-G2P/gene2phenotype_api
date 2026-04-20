@@ -554,6 +554,59 @@ class LGDUpdateMechanismEndpoint(TestCase):
             "The categorisation 'assembly-mediated GOF' is not compatible with the mechanism 'loss of function'. Please choose a categorisation relevant to the selected mechanism.",
         )
 
+    def test_update_invalid_synopsis_rolls_back_mechanism_changes(self):
+        """
+        Test mechanism/support changes are rolled back when later synopsis validation fails.
+        """
+        invalid_input_data = {
+            "molecular_mechanism": {"name": "loss of function", "support": "evidence"},
+            "mechanism_synopsis": [
+                {"name": "assembly-mediated GOF", "support": "inferred"}
+            ],
+            "mechanism_evidence": [
+                {
+                    "pmid": "1882842",
+                    "description": "text",
+                    "evidence_types": [
+                        {
+                            "primary_type": "Rescue",
+                            "secondary_type": ["Patient Cells"],
+                        }
+                    ],
+                }
+            ],
+        }
+
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        lgd_before = LocusGenotypeDisease.objects.get(
+            stable_id__stable_id="G2P00009", is_deleted=0
+        )
+        mechanism_before = lgd_before.mechanism.value
+        support_before = lgd_before.mechanism_support.value
+
+        response = self.client.patch(
+            self.url_lgd_update_mechanism,
+            invalid_input_data,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["error"],
+            "The categorisation 'assembly-mediated GOF' is not compatible with the mechanism 'loss of function'. Please choose a categorisation relevant to the selected mechanism.",
+        )
+
+        lgd_after = LocusGenotypeDisease.objects.get(
+            stable_id__stable_id="G2P00009", is_deleted=0
+        )
+        self.assertEqual(lgd_after.mechanism.value, mechanism_before)
+        self.assertEqual(lgd_after.mechanism_support.value, support_before)
+
     def test_update_mechanism_all_data_success(self):
         """
         Test the endpoint to update mechanism with all data

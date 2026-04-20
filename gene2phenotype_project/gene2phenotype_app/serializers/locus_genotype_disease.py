@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import Prefetch, F
 from django.conf import settings
 from typing import Any, Optional
@@ -888,6 +888,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         return instance
 
+    @transaction.atomic
     def update_mechanism(self, lgd_instance, validated_data):
         """
         Method to update the molecular mechanism of the LGD record.
