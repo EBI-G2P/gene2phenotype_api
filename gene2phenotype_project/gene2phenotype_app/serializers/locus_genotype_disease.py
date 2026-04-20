@@ -891,7 +891,9 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     def update_mechanism(self, lgd_instance, validated_data):
         """
         Method to update the molecular mechanism of the LGD record.
-        It only allows to update the mechanism value if current value is 'undetermined'.
+        The caller is responsible for enforcing permission checks before this
+        method is invoked. This method updates the mechanism value and/or support,
+        then applies optional synopsis and evidence changes.
 
         If evidence is provided, the code expects the 'evidence_types' to be populated
         otherwise the evidence data is not stored.

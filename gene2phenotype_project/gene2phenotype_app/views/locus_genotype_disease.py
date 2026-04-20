@@ -581,10 +581,6 @@ class LGDUpdateMechanism(BaseUpdate):
         Retrieves a queryset of LocusGenotypeDisease objects associated with a stable ID
         for the authenticated user.
 
-        Authenticated users can update the mechanism value, support and evidence
-        only if mechanism is 'undetermined' or support is 'inferred'. The check is
-        done in LocusGenotypeDiseaseSerializer.
-
         Args:
             stable_id (str): The stable ID from the URL kwargs.
 
@@ -607,10 +603,12 @@ class LGDUpdateMechanism(BaseUpdate):
     def patch(self, request, stable_id):
         """
         Partially updates the LGD record with a new molecular mechanism.
-        It only allows to update mechanisms with value 'undetermined'
-        or support 'inferred'.
+        Authenticated users with panel access can update mechanism support,
+        synopsis and evidence. Changing the mechanism value when the current
+        mechanism is not 'undetermined' requires superuser privileges.
 
-        Supporting pmids have to already be linked to the LGD record.
+        If mechanism support is set to 'evidence', mechanism evidence must be
+        provided.
 
         Args:
             request: new molecular mechanism data
