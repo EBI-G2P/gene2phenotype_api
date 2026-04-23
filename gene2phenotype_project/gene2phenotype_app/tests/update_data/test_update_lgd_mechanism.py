@@ -142,20 +142,40 @@ class LGDUpdateLGDMechanism(TestCase):
         response_logs_data = response_logs.json()
         self.assertEqual(response_logs_data["results"][0]["change_type"], "created")
 
-    def test_no_permission_update(self):
+    def test_superuser_can_update_non_undetermined_mechanism(self):
         """
-        Test trying to update the record mechanism when it cannot be updated
+        Test a superuser can update the mechanism value for a record whose
+        current mechanism is not 'undetermined'
         """
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = self.access_token
 
+        valid_mechanism_data = {
+            "molecular_mechanism": {"name": "gain of function", "support": "evidence"},
+            "mechanism_evidence": [
+                {
+                    "pmid": "3897232",
+                    "description": "text",
+                    "evidence_types": [
+                        {"primary_type": "Rescue", "secondary_type": ["Patient Cells"]}
+                    ],
+                }
+            ],
+        }
+
         response = self.client.patch(
-            self.url_lgd_mechanism, self.mechanism_data, content_type="application/json"
+            self.url_lgd_mechanism,
+            valid_mechanism_data,
+            content_type="application/json",
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
 
         response_data = response.json()
         self.assertEqual(
-            response_data["error"],
-            "Cannot update 'molecular mechanism' for ID 'G2P00001'",
+            response_data["message"],
+            "Molecular mechanism updated successfully for 'G2P00001'",
         )
+
+        lgd_obj = LocusGenotypeDisease.objects.get(stable_id__stable_id="G2P00001")
+        self.assertEqual(lgd_obj.mechanism.value, "gain of function")
+        self.assertEqual(lgd_obj.mechanism_support.value, "evidence")

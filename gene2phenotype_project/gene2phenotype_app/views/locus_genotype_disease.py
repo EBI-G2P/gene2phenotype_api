@@ -1,5 +1,6 @@
 from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
+from django.core.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db import transaction, IntegrityError
@@ -580,10 +581,6 @@ class LGDUpdateMechanism(BaseUpdate):
         Retrieves a queryset of LocusGenotypeDisease objects associated with a stable ID
         for the authenticated user.
 
-        Authenticated users can update the mechanism value, support and evidence
-        only if mechanism is 'undetermined' or support is 'inferred'. The check is
-        done in LocusGenotypeDiseaseSerializer.
-
         Args:
             stable_id (str): The stable ID from the URL kwargs.
 
@@ -603,13 +600,16 @@ class LGDUpdateMechanism(BaseUpdate):
 
         return queryset
 
+    @transaction.atomic
     def patch(self, request, stable_id):
         """
         Partially updates the LGD record with a new molecular mechanism.
-        It only allows to update mechanisms with value 'undetermined'
-        or support 'inferred'.
+        Authenticated users with panel access can update mechanism support,
+        synopsis and evidence. Changing the mechanism value when the current
+        mechanism is not 'undetermined' requires superuser privileges.
 
-        Supporting pmids have to already be linked to the LGD record.
+        If mechanism support is set to 'evidence', mechanism evidence must be
+        provided.
 
         Args:
             request: new molecular mechanism data
@@ -663,14 +663,17 @@ class LGDUpdateMechanism(BaseUpdate):
         ):
             self.handle_missing_data("Mechanism data")
 
-        # Check if mechanism value can be updated
+        # Mechanism value updates on non-undetermined records are restricted to superusers
         if (
             molecular_mechanism
-            and lgd_obj.mechanism.value != "undetermined"
             and "name" in molecular_mechanism
             and molecular_mechanism["name"] != ""
+            and lgd_obj.mechanism.value != "undetermined"
         ):
-            return self.handle_no_update("molecular mechanism", stable_id)
+            try:
+                IsSuperUser().has_permission(request, self)
+            except PermissionDenied as e:
+                return Response(e.args[0], status=status.HTTP_403_FORBIDDEN)
 
         # If the mechanism support is "evidence" then the evidence has to be provided
         if (

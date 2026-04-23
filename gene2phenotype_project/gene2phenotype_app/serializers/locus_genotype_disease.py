@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import Prefetch, F
 from django.conf import settings
 from typing import Any, Optional
@@ -888,10 +888,13 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         return instance
 
+    @transaction.atomic
     def update_mechanism(self, lgd_instance, validated_data):
         """
         Method to update the molecular mechanism of the LGD record.
-        It only allows to update the mechanism value if current value is 'undetermined'.
+        The caller is responsible for enforcing permission checks before this
+        method is invoked. This method updates the mechanism value and/or support,
+        then applies optional synopsis and evidence changes.
 
         If evidence is provided, the code expects the 'evidence_types' to be populated
         otherwise the evidence data is not stored.
@@ -961,8 +964,8 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     }
                 )
 
-        # Update LGD instance with new mechanism value only if mechanism value is "undetermined"
-        if cv_mechanism_obj and lgd_instance.mechanism.value == "undetermined":
+        # Update LGD instance with the new mechanism value when provided
+        if cv_mechanism_obj:
             lgd_instance.mechanism = cv_mechanism_obj
 
         # Update the mechanism support
