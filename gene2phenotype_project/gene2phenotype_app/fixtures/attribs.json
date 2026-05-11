@@ -501,6 +501,38 @@
             "value": "unknown"
         }
     },
+    {
+        "model": "gene2phenotype_app.attrib",
+        "pk": 63,
+        "fields": {
+            "type": 16,
+            "value": "pli_gnomAD"
+        }
+    },
+    {
+        "model": "gene2phenotype_app.attrib",
+        "pk": 64,
+        "fields": {
+            "type": 16,
+            "value": "loeuf_gnomAD"
+        }
+    },
+    {
+        "model": "gene2phenotype_app.attrib",
+        "pk": 65,
+        "fields": {
+            "type": 17,
+            "value": "uniprot_protein_function"
+        }
+    },
+    {
+        "model": "gene2phenotype_app.attrib",
+        "pk": 66,
+        "fields": {
+            "type": 17,
+            "value": "uniprot_subunit"
+        }
+    },
 
     {
         "model": "gene2phenotype_app.attribtype",
@@ -635,6 +667,26 @@
             "code": "mechanism_probabilities",
             "name": "mechanism_probabilities",
             "description": "Predictions for the human UniProt reference proteome whether human protein coding genes are likely to be associated with DN, GOF, or LOF molecular disease mechanisms.",
+            "is_deleted": 0
+        }
+    },
+    {
+        "model": "gene2phenotype_app.attribtype",
+        "pk": 16,
+        "fields": {
+            "code": "gnomAD_constraint_metrics",
+            "name": "gnomAD_constraint_metrics",
+            "description": "gnomAD constraint metrics",
+            "is_deleted": 0
+        }
+    },
+    {
+        "model": "gene2phenotype_app.attribtype",
+        "pk": 17,
+        "fields": {
+            "code": "uniprot_data",
+            "name": "uniprot_data",
+            "description": "Type of data imported from UniProt",
             "is_deleted": 0
         }
     }

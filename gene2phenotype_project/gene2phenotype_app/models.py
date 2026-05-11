@@ -703,17 +703,15 @@ class UniprotAnnotation(models.Model):
     id = models.AutoField(primary_key=True)
     uniprot_accession = models.CharField(max_length=100, null=False)
     gene = models.ForeignKey("Locus", on_delete=models.PROTECT)
-    hgnc = models.CharField(max_length=50, null=False)  # TODO remove this field
-    gene_symbol = models.CharField(max_length=100, null=False)  # TODO remove this field
-    mim = models.CharField(max_length=100, null=True)  # TODO remove this field
     protein_function = models.TextField(null=False)
+    data_type = models.ForeignKey("Attrib", on_delete=models.PROTECT)
     source = models.ForeignKey("Source", on_delete=models.PROTECT)
 
     class Meta:
         db_table = "uniprot_annotation"
         indexes = [
-            models.Index(fields=["uniprot_accession"]),
-            models.Index(fields=["hgnc"]),
+            models.Index(fields=["gene"]),
+            models.Index(fields=["data_type"]),
         ]
 
 
