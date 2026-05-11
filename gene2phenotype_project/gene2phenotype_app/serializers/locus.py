@@ -233,7 +233,10 @@ class LocusGeneSerializer(LocusSerializer):
                 (dict) result_data: it includes the protein function description and the uniprot accession
         """
         result_data = {}
-        uniprot_annotation_objs = UniprotAnnotation.objects.filter(gene=self.id)
+        uniprot_annotation_objs = UniprotAnnotation.objects.filter(
+            gene=self.id,
+            data_type__value="uniprot_protein_function",
+        )
 
         for function_obj in uniprot_annotation_objs:
             result_data["protein_function"] = function_obj.protein_function
