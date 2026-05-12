@@ -5,9 +5,31 @@
         "fields": {
             "uniprot_accession": "O15078",
             "gene": 1,
-            "protein_function": "Involved in early and late steps in cilia formation. Its association with CCP110 is required for inhibition of primary cilia formation by CCP110 (PubMed:18694559).",
+            "annotation": "Involved in early and late steps in cilia formation. Its association with CCP110 is required for inhibition of primary cilia formation by CCP110 (PubMed:18694559).",
             "source": 8,
             "data_type": 65
+        }
+    },
+    {
+        "model": "gene2phenotype_app.uniprotannotation",
+        "pk": 2,
+        "fields": {
+            "uniprot_accession": "P51159",
+            "gene": 2,
+            "annotation": "The small GTPases Rab are key regulators of intracellular membrane trafficking, from the formation of transport vesicles to their fusion with membranes. Rabs cycle between an inactive GDP-bound form and an active GTP-bound form that is able to recruit to membranes different sets of downstream effectors directly responsible for vesicle formation, movement, tethering and fusion (PubMed:30771381). RAB27A regulates homeostasis of late endocytic pathway, including endosomal positioning, maturation and secretion (PubMed:30771381). Plays a role in cytotoxic granule exocytosis in lymphocytes. Required for both granule maturation and granule docking and priming at the immunologic synapse (PubMed:18812475)",
+            "source": 8,
+            "data_type": 65
+        }
+    },
+    {
+        "model": "gene2phenotype_app.uniprotannotation",
+        "pk": 3,
+        "fields": {
+            "uniprot_accession": "P51159",
+            "gene": 2,
+            "annotation": "Does not interact with the BLOC-3 complex (heterodimer of HPS1 and HPS4) (PubMed:20048159).",
+            "source": 8,
+            "data_type": 66
         }
     }
 ]
