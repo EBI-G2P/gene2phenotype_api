@@ -239,8 +239,27 @@ class LocusGeneSerializer(LocusSerializer):
         )
 
         for function_obj in uniprot_annotation_objs:
-            result_data["protein_function"] = function_obj.protein_function
+            result_data["protein_function"] = function_obj.annotation
             result_data["uniprot_accession"] = function_obj.uniprot_accession
+
+        return result_data
+
+    def subunit_structure(self):
+        """
+        Returns the subunit structure from UniProt.
+
+        Returns:
+                (dict) result_data: it includes the subunit quaternary structure and the uniprot accession
+        """
+        result_data = {}
+        uniprot_annotation_objs = UniprotAnnotation.objects.filter(
+            gene=self.id,
+            data_type__value="uniprot_subunit",
+        )
+
+        for data_obj in uniprot_annotation_objs:
+            result_data["quaternary_structure"] = data_obj.annotation
+            result_data["uniprot_accession"] = data_obj.uniprot_accession
 
         return result_data
 

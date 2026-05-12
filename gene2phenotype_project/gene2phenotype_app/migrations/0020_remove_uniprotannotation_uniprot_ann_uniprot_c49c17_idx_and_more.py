@@ -31,6 +31,11 @@ class Migration(migrations.Migration):
             model_name="uniprotannotation",
             name="mim",
         ),
+        migrations.RenameField(
+            model_name="uniprotannotation",
+            old_name="protein_function",
+            new_name="annotation",
+        ),
         migrations.AddField(
             model_name="uniprotannotation",
             name="data_type",

@@ -63,7 +63,9 @@ class GeneSummaryEndpointTests(TestCase):
 
     def setUp(self):
         self.url_gene_summary = reverse("locus_gene_summary", kwargs={"name": "CEP290"})
-        self.url_gene_summary_2 = reverse("locus_gene_summary", kwargs={"name": "RAB27A"})
+        self.url_gene_summary_2 = reverse(
+            "locus_gene_summary", kwargs={"name": "RAB27A"}
+        )
 
     def test_get_summary(self):
         """
@@ -99,17 +101,18 @@ class GeneSummaryEndpointTests(TestCase):
 
         # The output is sorted by date of review
         expected_data = {
-                "disease": "RAB27A-related Griscelli syndrome",
-                "genotype": "biallelic_autosomal",
-                "confidence": "definitive",
-                "panels": ["Cardiac"],
-                "variant_consequence": ["absent gene product"],
-                "variant_type": ['inframe_insertion', 'intron_variant'],
-                "molecular_mechanism": "loss of function",
-                "last_updated": "2018-07-05",
-                "stable_id": "G2P00002",
-            }
+            "disease": "RAB27A-related Griscelli syndrome",
+            "genotype": "biallelic_autosomal",
+            "confidence": "definitive",
+            "panels": ["Cardiac"],
+            "variant_consequence": ["absent gene product"],
+            "variant_type": ["inframe_insertion", "intron_variant"],
+            "molecular_mechanism": "loss of function",
+            "last_updated": "2018-07-05",
+            "stable_id": "G2P00002",
+        }
         self.assertEqual(list(response.data["records_summary"])[1], expected_data)
+
 
 class GeneFunctionEndpointTests(TestCase):
     """
@@ -129,6 +132,9 @@ class GeneFunctionEndpointTests(TestCase):
         self.url_gene_function = reverse(
             "locus_gene_function", kwargs={"name": "CEP290"}
         )
+        self.url_gene_function_subunit = reverse(
+            "locus_gene_function", kwargs={"name": "RAB27A"}
+        )
 
     def test_get_function(self):
         """
@@ -142,9 +148,30 @@ class GeneFunctionEndpointTests(TestCase):
             "protein_function": "Involved in early and late steps in cilia formation. Its association with CCP110 is required for inhibition of primary cilia formation by CCP110 (PubMed:18694559).",
             "uniprot_accession": "O15078",
         }
-        self.assertEqual(response.data["function"], expected_data_function)
 
+        self.assertEqual(response.data["function"], expected_data_function)
         self.assertEqual(response.data["gene_stats"], {"gain_of_function_mp": 0.637})
+        self.assertEqual(response.data["subunit_structure"], {})
+
+    def test_get_function_with_subunit(self):
+        """
+        Test the response of the gene function endpoint when there is subunit structure information available
+        """
+        response = self.client.get(self.url_gene_function_subunit)
+
+        self.assertEqual(response.status_code, 200)
+
+        expected_data_function = {
+            "protein_function": "The small GTPases Rab are key regulators of intracellular membrane trafficking, from the formation of transport vesicles to their fusion with membranes. Rabs cycle between an inactive GDP-bound form and an active GTP-bound form that is able to recruit to membranes different sets of downstream effectors directly responsible for vesicle formation, movement, tethering and fusion (PubMed:30771381). RAB27A regulates homeostasis of late endocytic pathway, including endosomal positioning, maturation and secretion (PubMed:30771381). Plays a role in cytotoxic granule exocytosis in lymphocytes. Required for both granule maturation and granule docking and priming at the immunologic synapse (PubMed:18812475)",
+            "uniprot_accession": "P51159",
+        }
+        expected_subunit_structure = {
+            "quaternary_structure": "Does not interact with the BLOC-3 complex (heterodimer of HPS1 and HPS4) (PubMed:20048159).",
+            "uniprot_accession": "P51159",
+        }
+
+        self.assertEqual(response.data["function"], expected_data_function)
+        self.assertEqual(response.data["subunit_structure"], expected_subunit_structure)
 
 
 class GeneDiseaseEndpointTests(TestCase):

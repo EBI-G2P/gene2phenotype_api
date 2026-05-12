@@ -248,10 +248,12 @@ class GeneFunction(BaseAPIView):
         serializer = LocusGeneSerializer
         summmary = serializer.function(queryset.first())
         gene_stats = serializer.gene_scores(queryset.first())
+        uniprot_subunit = serializer.subunit_structure(queryset.first())
         response_data = {
             "gene_symbol": queryset.first().name,
             "function": summmary,
             "gene_stats": gene_stats,
+            "subunit_structure": uniprot_subunit,
         }
 
         return Response(response_data)
