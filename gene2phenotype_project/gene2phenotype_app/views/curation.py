@@ -8,17 +8,20 @@ from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema
 from django.db.models import Q, F
 
-from gene2phenotype_app.serializers import CurationDataSerializer
+from gene2phenotype_app.serializers import CurationDataSerializer, UserSerializer
 
 from gene2phenotype_app.models import (
     G2PStableID,
     CurationData,
     LocusGenotypeDisease,
     User,
-    UserPanel,
 )
 
 from .base import BaseView, BaseAdd, BaseUpdate, IsNotJuniorCurator
+
+
+def get_user_panel_descriptions(user):
+    return set(UserSerializer(context={"user": user}).get_panels(user.id))
 
 
 ### Curation data
@@ -96,6 +99,21 @@ class ListCurationEntries(BaseView):
     serializer_class = CurationDataSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def curation_matches_user_panels(self, curation_data, user_panels):
+        """
+        Check if a curation draft is accessible to a user based on panels.
+        If the draft has no panels, it is accessible to all users.
+
+        Args:
+            curation_data: CurationData object
+            user_panels: list of panel descriptions the user can edit
+
+        Returns:
+            True if the draft is accessible, False otherwise.
+        """
+        panels = curation_data.json_data.get("panels", [])
+        return not panels or bool(set(panels).intersection(user_panels))
+
     def get_queryset(self):
         """
         Retrieve the queryset of CurationData objects filtered according to the provided optional query parameters.
@@ -139,6 +157,18 @@ class ListCurationEntries(BaseView):
             .order_by("-date_created")
             .distinct()
         )
+
+        # For automatic curations, only return records assigned to panels the user has access to.
+        # If the record has empty panels, it is accessible to all users.
+        if status_param == "automatic":
+            user_panels = get_user_panel_descriptions(user)
+            accessible_ids = [
+                data.pk
+                for data in queryset
+                if self.curation_matches_user_panels(data, user_panels)
+            ]
+            queryset = queryset.filter(pk__in=accessible_ids)
+
         return queryset
 
     def list(self, request, *args, **kwargs):
@@ -294,9 +324,7 @@ class ClaimCurationData(BaseUpdate):
 
         # Validate if user has permission to claim the draft
         # The draft uses the panel description as the name
-        user_panels = (UserPanel.objects.filter(user=user_obj, is_deleted=0)
-                       .annotate(panel_name=F("panel__description"))
-                       .values_list("panel_name", flat=True))
+        user_panels = get_user_panel_descriptions(user_obj)
 
         if (curation_obj.json_data["panels"] and not set(curation_obj.json_data["panels"]).intersection(set(user_panels))):
             return Response(
