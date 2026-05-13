@@ -128,7 +128,7 @@ class LGDListCurationDraftsEndpoint(TestCase):
     def test_list_curation_success_with_type_automatic_and_scope_all(self):
         """
         Test successful call to list curation drafts endpoint with 'type' = 'automatic' and 'scope' = 'all'
-        Should retrieve automatic drafts of all users
+        Should retrieve automatic drafts with empty panels or panels accessible to the user
         """
         # Login
         user = User.objects.get(email="user5@test.ac.uk")
@@ -142,15 +142,17 @@ class LGDListCurationDraftsEndpoint(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(response.data.get("count"), 4)
+        results = response.data.get("results")
+        self.assertEqual(response.data.get("count"), 3)
         self.assertTrue(
-            all(item["type"] == "automatic" for item in response.data.get("results"))
+            all(item["type"] == "automatic" for item in results)
         )
+        self.assertNotIn("G2P00016", [item["stable_id"] for item in results])
 
     def test_list_curation_success_with_type_automatic_and_scope_unclaimed(self):
         """
         Test successful call to list curation drafts endpoint with 'type' = 'automatic' and 'scope' = 'unclaimed'
-        Should retrieve automatic drafts that are not claimed by any user
+        Should retrieve unclaimed automatic drafts with empty panels or panels accessible to the user
         """
         # Login
         user = User.objects.get(email="user5@test.ac.uk")
@@ -164,13 +166,15 @@ class LGDListCurationDraftsEndpoint(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(response.data.get("count"), 2)
+        results = response.data.get("results")
+        self.assertEqual(response.data.get("count"), 1)
         self.assertTrue(
-            all(item["type"] == "automatic" for item in response.data.get("results"))
+            all(item["type"] == "automatic" for item in results)
         )
         self.assertTrue(
-            all(item["curator_email"] == "g2p-admin@test.ac.uk" for item in response.data.get("results"))
+            all(item["curator_email"] == "g2p-admin@test.ac.uk" for item in results)
         )
+        self.assertNotIn("G2P00016", [item["stable_id"] for item in results])
 
     def test_list_curation_with_invalid_scope(self):
         """
