@@ -222,14 +222,24 @@ class CurationDataDetail(BaseView):
         user = self.request.user
 
         g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
-        # Get the entry if the user matches
+
         queryset = CurationData.objects.filter(
-            stable_id=g2p_stable_id, user__email=user
+            stable_id=g2p_stable_id
         ).annotate(
             first_name=F("user_id__first_name"),
             last_name=F("user_id__last_name"),
             user_email=F("user__email"),
         )
+
+        # Keep entries owned by the user or entries with at least one panel the user can edit
+        user_panels = set(get_user_panel_descriptions(user))
+        accessible_ids = [
+            data.pk
+            for data in queryset
+            if data.user_id == user.id
+            or set(data.json_data.get("panels", [])).intersection(user_panels)
+        ]
+        queryset = queryset.filter(pk__in=accessible_ids)
 
         if not queryset.exists():
             self.handle_no_permission("Entry", stable_id)
