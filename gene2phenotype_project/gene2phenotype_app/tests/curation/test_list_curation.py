@@ -11,6 +11,7 @@ class LGDListCurationDraftsEndpoint(TestCase):
     """
 
     fixtures = [
+        "gene2phenotype_app/fixtures/auth_groups.json",
         "gene2phenotype_app/fixtures/g2p_stable_id.json",
         "gene2phenotype_app/fixtures/user_panels.json",
         "gene2phenotype_app/fixtures/curation_data.json",
@@ -175,6 +176,50 @@ class LGDListCurationDraftsEndpoint(TestCase):
             all(item["curator_email"] == "g2p-admin@test.ac.uk" for item in results)
         )
         self.assertNotIn("G2P00016", [item["stable_id"] for item in results])
+
+    def test_list_curation_success_with_scope_junior(self):
+        """
+        Test successful call to list curation drafts endpoint with 'scope' = 'junior'
+        Should retrieve manual drafts assigned to users that belong to the junior_curator group
+        """
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        url = f"{self.url_list_curation}?scope=junior"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        results = response.data.get("results")
+        self.assertEqual(response.data.get("count"), 1)
+        self.assertTrue(all(item["type"] == "manual" for item in results))
+        self.assertTrue(
+            all(item["curator_email"] == "elisa@test.ac.uk" for item in results)
+        )
+
+    def test_list_curation_success_with_type_automatic_and_scope_junior(self):
+        """
+        Test successful call to list curation drafts endpoint with 'type' = 'automatic' and 'scope' = 'junior'
+        Should retrieve automatic drafts assigned to users that belong to the junior_curator group
+        """
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        url = f"{self.url_list_curation}?type=automatic&scope=junior"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(response.data.get("count"), 0)
+        self.assertEqual(response.data.get("results"), [])
 
     def test_list_curation_with_invalid_scope(self):
         """
