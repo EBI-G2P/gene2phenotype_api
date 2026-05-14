@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db import IntegrityError
-from django.db.models import Q
+from django.db.models import Q, FilteredRelation
 from typing import Optional
 from datetime import date
 
@@ -162,11 +162,15 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                     is_deleted=0,
                     lgd__is_deleted=0,
                 )
-                .filter(
-                    Q(lgd__lgdvariantgenccconsequence__is_deleted=0) |
-                    Q(lgd__lgdvariantgenccconsequence__isnull=True),
-                    Q(lgd__lgdvarianttype__is_deleted=0) |
-                    Q(lgd__lgdvarianttype__isnull=True),
+                .annotate(
+                    active_variant_consequence=FilteredRelation(
+                        "lgd__lgdvariantgenccconsequence",
+                        condition=Q(lgd__lgdvariantgenccconsequence__is_deleted=0),
+                    ),
+                    active_variant_type=FilteredRelation(
+                        "lgd__lgdvarianttype",
+                        condition=Q(lgd__lgdvarianttype__is_deleted=0),
+                    ),
                 )
                 .select_related(
                     "lgd",
@@ -189,11 +193,15 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                     lgd__is_deleted=0,
                     panel__is_visible=1,
                 )
-                .filter(
-                    Q(lgd__lgdvariantgenccconsequence__is_deleted=0) |
-                    Q(lgd__lgdvariantgenccconsequence__isnull=True),
-                    Q(lgd__lgdvarianttype__is_deleted=0) |
-                    Q(lgd__lgdvarianttype__isnull=True),
+                .annotate(
+                    active_variant_consequence=FilteredRelation(
+                        "lgd__lgdvariantgenccconsequence",
+                        condition=Q(lgd__lgdvariantgenccconsequence__is_deleted=0),
+                    ),
+                    active_variant_type=FilteredRelation(
+                        "lgd__lgdvarianttype",
+                        condition=Q(lgd__lgdvarianttype__is_deleted=0),
+                    ),
                 )
                 .select_related(
                     "lgd",
@@ -215,8 +223,8 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                 "lgd__disease__name",
                 "lgd__genotype__value",
                 "lgd__confidence__value",
-                "lgd__lgdvariantgenccconsequence__variant_consequence__term",
-                "lgd__lgdvarianttype__variant_type_ot__term",
+                "active_variant_consequence__variant_consequence__term",
+                "active_variant_type__variant_type_ot__term",
                 "lgd__mechanism__value",
                 "lgd__date_review",
                 "lgd__stable_id__stable_id",
@@ -234,15 +242,21 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                 variant_consequences = []
                 variant_types = []
 
-                variant_consequences.append(
+                if (
                     lgd_obj[
-                        "lgd__lgdvariantgenccconsequence__variant_consequence__term"
+                        "active_variant_consequence__variant_consequence__term"
                     ]
-                )
+                    is not None
+                ):
+                    variant_consequences.append(
+                        lgd_obj[
+                            "active_variant_consequence__variant_consequence__term"
+                        ]
+                    )
                 # Some records do not have variant types
-                if lgd_obj["lgd__lgdvarianttype__variant_type_ot__term"] is not None:
+                if lgd_obj["active_variant_type__variant_type_ot__term"] is not None:
                     variant_types.append(
-                        lgd_obj["lgd__lgdvarianttype__variant_type_ot__term"]
+                        lgd_obj["active_variant_type__variant_type_ot__term"]
                     )
 
                 date_review = None
@@ -265,30 +279,34 @@ class PanelDetailSerializer(serializers.ModelSerializer):
             elif number_keys < 10:
                 if (
                     lgd_obj[
-                        "lgd__lgdvariantgenccconsequence__variant_consequence__term"
+                        "active_variant_consequence__variant_consequence__term"
                     ]
                     not in aggregated_data[lgd_obj["lgd__stable_id__stable_id"]][
                         "variant_consequence"
                     ]
+                    and lgd_obj[
+                        "active_variant_consequence__variant_consequence__term"
+                    ]
+                    is not None
                 ):
                     aggregated_data[lgd_obj["lgd__stable_id__stable_id"]][
                         "variant_consequence"
                     ].append(
                         lgd_obj[
-                            "lgd__lgdvariantgenccconsequence__variant_consequence__term"
+                            "active_variant_consequence__variant_consequence__term"
                         ]
                     )
                 if (
-                    lgd_obj["lgd__lgdvarianttype__variant_type_ot__term"]
+                    lgd_obj["active_variant_type__variant_type_ot__term"]
                     not in aggregated_data[lgd_obj["lgd__stable_id__stable_id"]][
                         "variant_type"
                     ]
-                    and lgd_obj["lgd__lgdvarianttype__variant_type_ot__term"]
+                    and lgd_obj["active_variant_type__variant_type_ot__term"]
                     is not None
                 ):
                     aggregated_data[lgd_obj["lgd__stable_id__stable_id"]][
                         "variant_type"
-                    ].append(lgd_obj["lgd__lgdvarianttype__variant_type_ot__term"])
+                    ].append(lgd_obj["active_variant_type__variant_type_ot__term"])
 
         return aggregated_data.values()
 

@@ -4,7 +4,7 @@ from django.test import TestCase
 from django.conf import settings
 from django.urls import reverse
 import datetime
-from gene2phenotype_app.models import User
+from gene2phenotype_app.models import LGDVariantGenccConsequence, User
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
@@ -152,6 +152,26 @@ class PanelSummaryEndpointTests(TestCase):
         self.assertEqual(len(records_summary), 1)
         self.assertEqual(len(list(records_summary)[0]["variant_type"]), 2)
         self.assertEqual(len(list(records_summary)[0]["variant_consequence"]), 1)
+
+    def test_get_panel_summary_with_only_deleted_variant_consequence(self):
+        """
+        Records with only deleted variant consequences should still be returned.
+        """
+        LGDVariantGenccConsequence.objects.filter(lgd_id=2).update(is_deleted=1)
+
+        response = self.client.get(self.url_panel_cardiac)
+
+        self.assertEqual(response.status_code, 200)
+
+        record = next(
+            item
+            for item in response.data["records_summary"]
+            if item["stable_id"] == "G2P00002"
+        )
+        self.assertEqual(record["variant_consequence"], [])
+        self.assertEqual(
+            record["variant_type"], ["inframe_insertion", "intron_variant"]
+        )
 
 
 class PanelDownloadEndpointTests(TestCase):

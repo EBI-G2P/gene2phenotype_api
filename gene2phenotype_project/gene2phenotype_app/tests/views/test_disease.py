@@ -1,6 +1,8 @@
 from django.test import TestCase
 from django.urls import reverse
 
+from gene2phenotype_app.models import LGDVariantGenccConsequence
+
 
 class DiseaseEndpointTests(TestCase):
     """
@@ -141,7 +143,7 @@ class DiseaseSummaryTests(TestCase):
                 "genotype": "biallelic_autosomal",
                 "confidence": "definitive",
                 "panels": ["DD", "Eye"],
-                "variant_consequence": [None],
+                "variant_consequence": [],
                 "variant_type": [],
                 "molecular_mechanism": "loss of function",
                 "stable_id": "G2P00001",
@@ -170,11 +172,34 @@ class DiseaseSummaryTests(TestCase):
             "confidence": "definitive",
             "panels": ["Cardiac"],
             "variant_consequence": ["absent gene product"],
-            "variant_type": ['inframe_insertion', 'intron_variant'],
+            "variant_type": ["inframe_insertion", "intron_variant"],
             "molecular_mechanism": "loss of function",
             "stable_id": "G2P00002",
         }
         self.assertEqual(list(response.data["records_summary"])[0], expected_data)
+
+    def test_get_disease_with_only_deleted_variant_consequence(self):
+        """
+        Records with only deleted variant consequences should still be returned.
+        """
+        self.url_disease = reverse(
+            "disease_summary", kwargs={"id": "RAB27A-related Griscelli syndrome"}
+        )
+        LGDVariantGenccConsequence.objects.filter(lgd_id=2).update(is_deleted=1)
+
+        response = self.client.get(self.url_disease)
+
+        self.assertEqual(response.status_code, 200)
+
+        record = next(
+            item
+            for item in response.data["records_summary"]
+            if item["stable_id"] == "G2P00002"
+        )
+        self.assertEqual(record["variant_consequence"], [])
+        self.assertEqual(
+            record["variant_type"], ["inframe_insertion", "intron_variant"]
+        )
 
     def test_not_found(self):
         """
