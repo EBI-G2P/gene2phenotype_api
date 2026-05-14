@@ -1,6 +1,8 @@
 from django.test import TestCase
 from django.urls import reverse
 
+from gene2phenotype_app.models import LGDVariantGenccConsequence
+
 
 class GeneEndpointTests(TestCase):
     """
@@ -79,7 +81,7 @@ class GeneSummaryEndpointTests(TestCase):
                 "genotype": "biallelic_autosomal",
                 "confidence": "definitive",
                 "panels": ["DD", "Eye"],
-                "variant_consequence": [None],
+                "variant_consequence": [],
                 "variant_type": [],
                 "molecular_mechanism": "loss of function",
                 "last_updated": "2017-04-24",
@@ -99,17 +101,38 @@ class GeneSummaryEndpointTests(TestCase):
 
         # The output is sorted by date of review
         expected_data = {
-                "disease": "RAB27A-related Griscelli syndrome",
-                "genotype": "biallelic_autosomal",
-                "confidence": "definitive",
-                "panels": ["Cardiac"],
-                "variant_consequence": ["absent gene product"],
-                "variant_type": ['inframe_insertion', 'intron_variant'],
-                "molecular_mechanism": "loss of function",
-                "last_updated": "2018-07-05",
-                "stable_id": "G2P00002",
-            }
+            "disease": "RAB27A-related Griscelli syndrome",
+            "genotype": "biallelic_autosomal",
+            "confidence": "definitive",
+            "panels": ["Cardiac"],
+            "variant_consequence": ["absent gene product"],
+            "variant_type": ["inframe_insertion", "intron_variant"],
+            "molecular_mechanism": "loss of function",
+            "last_updated": "2018-07-05",
+            "stable_id": "G2P00002",
+        }
         self.assertEqual(list(response.data["records_summary"])[1], expected_data)
+
+    def test_get_summary_with_only_deleted_variant_consequence(self):
+        """
+        Records with only deleted variant consequences should still be returned.
+        """
+        LGDVariantGenccConsequence.objects.filter(lgd_id=2).update(is_deleted=1)
+
+        response = self.client.get(self.url_gene_summary_2)
+
+        self.assertEqual(response.status_code, 200)
+
+        record = next(
+            item
+            for item in response.data["records_summary"]
+            if item["stable_id"] == "G2P00002"
+        )
+        self.assertEqual(record["variant_consequence"], [])
+        self.assertEqual(
+            record["variant_type"], ["inframe_insertion", "intron_variant"]
+        )
+
 
 class GeneFunctionEndpointTests(TestCase):
     """
