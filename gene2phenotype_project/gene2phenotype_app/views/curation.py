@@ -370,10 +370,20 @@ class UpdateCurationData(BaseUpdate):
         user = self.request.user
 
         g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
-        # Get the entry for this user
+
         queryset = CurationData.objects.filter(
-            stable_id=g2p_stable_id, user__email=user
+            stable_id=g2p_stable_id
         )
+
+        # Keep entries owned by the user or entries with at least one panel the user can edit
+        user_panels = set(get_user_panel_descriptions(user))
+        accessible_ids = [
+            data.pk
+            for data in queryset
+            if data.user_id == user.id
+            or set(data.json_data.get("panels", [])).intersection(user_panels)
+        ]
+        queryset = queryset.filter(pk__in=accessible_ids)
 
         if not queryset.exists():
             self.handle_no_permission("Entry", stable_id)
@@ -384,6 +394,7 @@ class UpdateCurationData(BaseUpdate):
         """
         Update the JSON data for the specific G2P ID.
         It replaces the existing json with the new data.
+        If the curation draft is 'automatic', it changes the status to 'manual' when updated.
 
         Args:
             stable_id (string)
@@ -458,7 +469,7 @@ class PublishRecord(APIView):
             stable_id (string)
 
         Returns:
-                Response message
+            Response message
         """
         user = request.user
 
