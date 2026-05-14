@@ -261,9 +261,7 @@ class ChangePasswordTest(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn("id", response.data)
-        self.assertIn("email", response.data)
-        self.assertIn("token", response.data)
+        self.assertEqual(response.data["message"], "If an account exists for this email, a reset link has been sent.")
 
     def test_verify_email_failure(self):
         """
