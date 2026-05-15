@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from django.db.models import Q
+from django.db.models import Q, FilteredRelation
 from typing import Any, Optional
 from datetime import date
 import re
@@ -190,11 +190,15 @@ class DiseaseDetailSerializer(DiseaseSerializer):
                     is_deleted=0,
                     lgdpanel__is_deleted=0,
                 )
-                .filter(
-                    Q(lgdvariantgenccconsequence__is_deleted=0) |
-                    Q(lgdvariantgenccconsequence__isnull=True),
-                    Q(lgdvarianttype__is_deleted=0) |
-                    Q(lgdvarianttype__isnull=True),
+                .annotate(
+                    active_variant_consequence=FilteredRelation(
+                        "lgdvariantgenccconsequence",
+                        condition=Q(lgdvariantgenccconsequence__is_deleted=0),
+                    ),
+                    active_variant_type=FilteredRelation(
+                        "lgdvarianttype",
+                        condition=Q(lgdvarianttype__is_deleted=0),
+                    ),
                 )
                 .select_related("locus", "genotype", "confidence", "mechanism")
                 .prefetch_related(
@@ -215,11 +219,15 @@ class DiseaseDetailSerializer(DiseaseSerializer):
                     lgdpanel__panel__is_visible=1,
                     lgdpanel__is_deleted=0,
                 )
-                .filter(
-                    Q(lgdvariantgenccconsequence__is_deleted=0) |
-                    Q(lgdvariantgenccconsequence__isnull=True),
-                    Q(lgdvarianttype__is_deleted=0) |
-                    Q(lgdvarianttype__isnull=True),
+                .annotate(
+                    active_variant_consequence=FilteredRelation(
+                        "lgdvariantgenccconsequence",
+                        condition=Q(lgdvariantgenccconsequence__is_deleted=0),
+                    ),
+                    active_variant_type=FilteredRelation(
+                        "lgdvarianttype",
+                        condition=Q(lgdvarianttype__is_deleted=0),
+                    ),
                 )
                 .select_related("locus", "genotype", "confidence", "mechanism")
                 .prefetch_related(
@@ -239,8 +247,8 @@ class DiseaseDetailSerializer(DiseaseSerializer):
                 "stable_id__stable_id",  # to get the stable_id stableID
                 "genotype__value",
                 "confidence__value",
-                "lgdvariantgenccconsequence__variant_consequence__term",
-                "lgdvarianttype__variant_type_ot__term",
+                "active_variant_consequence__variant_consequence__term",
+                "active_variant_type__variant_type_ot__term",
                 "mechanism__value",
             )
         )
@@ -253,12 +261,20 @@ class DiseaseDetailSerializer(DiseaseSerializer):
                 panels = []
 
                 panels.append(lgd_obj["lgdpanel__panel__name"])
-                variant_consequences.append(
-                    lgd_obj["lgdvariantgenccconsequence__variant_consequence__term"]
-                )
-                if lgd_obj["lgdvarianttype__variant_type_ot__term"] is not None:
+                if (
+                    lgd_obj[
+                        "active_variant_consequence__variant_consequence__term"
+                    ]
+                    is not None
+                ):
+                    variant_consequences.append(
+                        lgd_obj[
+                            "active_variant_consequence__variant_consequence__term"
+                        ]
+                    )
+                if lgd_obj["active_variant_type__variant_type_ot__term"] is not None:
                     variant_types.append(
-                        lgd_obj["lgdvarianttype__variant_type_ot__term"]
+                        lgd_obj["active_variant_type__variant_type_ot__term"]
                     )
 
                 aggregated_data[lgd_obj["stable_id__stable_id"]] = {
@@ -281,26 +297,35 @@ class DiseaseDetailSerializer(DiseaseSerializer):
                         lgd_obj["lgdpanel__panel__name"]
                     )
                 if (
-                    lgd_obj["lgdvariantgenccconsequence__variant_consequence__term"]
+                    lgd_obj[
+                        "active_variant_consequence__variant_consequence__term"
+                    ]
                     not in aggregated_data[lgd_obj["stable_id__stable_id"]][
                         "variant_consequence"
                     ]
+                    and lgd_obj[
+                        "active_variant_consequence__variant_consequence__term"
+                    ]
+                    is not None
                 ):
                     aggregated_data[lgd_obj["stable_id__stable_id"]][
                         "variant_consequence"
                     ].append(
-                        lgd_obj["lgdvariantgenccconsequence__variant_consequence__term"]
+                        lgd_obj[
+                            "active_variant_consequence__variant_consequence__term"
+                        ]
                     )
                 if (
-                    lgd_obj["lgdvarianttype__variant_type_ot__term"]
+                    lgd_obj["active_variant_type__variant_type_ot__term"]
                     not in aggregated_data[lgd_obj["stable_id__stable_id"]][
                         "variant_type"
                     ]
-                    and lgd_obj["lgdvarianttype__variant_type_ot__term"] is not None
+                    and lgd_obj["active_variant_type__variant_type_ot__term"]
+                    is not None
                 ):
                     aggregated_data[lgd_obj["stable_id__stable_id"]][
                         "variant_type"
-                    ].append(lgd_obj["lgdvarianttype__variant_type_ot__term"])
+                    ].append(lgd_obj["active_variant_type__variant_type_ot__term"])
 
         return aggregated_data.values()
 
