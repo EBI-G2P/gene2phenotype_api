@@ -10,7 +10,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.db.models import F
 
-from .base import BaseView
+from .base import BaseView, IsSuperUser
 
 from gene2phenotype_app.authentication import CustomAuthentication
 
@@ -67,10 +67,7 @@ class UserPanels(BaseView):
 class CreateUserView(generics.CreateAPIView):
     """
     View for creating a new user.
-
-    This view handles POST requests to create a new user using the `CreateUserSerializer`.
-    It is based on Django's `CreateAPIView` which provides the default implementation
-    for handling object creation.
+    Only available to super users.
 
     Usage:
         Send a POST request with the required user details (username, email,
@@ -78,18 +75,18 @@ class CreateUserView(generics.CreateAPIView):
     """
 
     serializer_class = CreateUserSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsSuperUser]
 
 
 @extend_schema(exclude=True)
 class AddUserToPanelView(generics.CreateAPIView):
     """
     API view to add a user to a panel.
-    Only available to admin users, as enforced by the IsAdminUser permission class.
+    Only available to super users.
     """
 
     serializer_class = AddUserToPanelSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsSuperUser]
 
 
 @extend_schema(exclude=True)
