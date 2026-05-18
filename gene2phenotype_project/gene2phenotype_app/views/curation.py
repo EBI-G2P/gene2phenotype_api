@@ -291,6 +291,14 @@ class ClaimCurationData(BaseUpdate):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        """
+        Retrieve the queryset of CurationData objects filtered by stable_id.
+
+        Args:
+            stable_id (string): The stable ID to filter the CurationData objects.
+        Returns:
+            Queryset of CurationData objects filtered by stable_id.
+        """
         stable_id = self.kwargs["stable_id"]
 
         g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
@@ -366,6 +374,11 @@ class UpdateCurationData(BaseUpdate):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        """
+        Retrieve the queryset of CurationData objects filtered by:
+         - stable_id
+         - user permissions: only entries owned by the user or entries with at least one panel the user can edit
+        """
         stable_id = self.kwargs["stable_id"]
         user = self.request.user
 
@@ -454,10 +467,42 @@ class UpdateCurationData(BaseUpdate):
 
 
 @extend_schema(exclude=True)
-class PublishRecord(APIView):
+class PublishRecord(BaseUpdate):
     http_method_names = ["post", "head"]
     serializer_class = CurationDataSerializer
     permission_classes = [permissions.IsAuthenticated, IsNotJuniorCurator]
+
+    def get_queryset(self):
+        """
+        Retrieve the queryset of CurationData objects filtered by:
+         - stable_id
+         - user permissions: own entries or entries associated with junior curators in panels the user can edit
+        """
+        stable_id = self.kwargs["stable_id"]
+        user = self.request.user
+
+        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
+
+        filters = Q(stable_id=g2p_stable_id) & (Q(user__email=user) | Q(user__groups__name="junior_curator"))
+
+        queryset = CurationData.objects.filter(
+            filters
+        )
+
+        # Keep entries owned by the user or entries with at least one panel the user can edit
+        user_panels = set(get_user_panel_descriptions(user))
+        accessible_ids = [
+            data.pk
+            for data in queryset
+            if data.user_id == user.id
+            or set(data.json_data.get("panels", [])).intersection(user_panels)
+        ]
+        queryset = queryset.filter(pk__in=accessible_ids)
+
+        if not queryset.exists():
+            self.handle_no_permission("Entry", stable_id)
+        else:
+            return queryset
 
     def post(self, request, stable_id):
         """
@@ -475,9 +520,7 @@ class PublishRecord(APIView):
 
         try:
             # Get curation record
-            curation_obj = CurationData.objects.get(
-                stable_id__stable_id=stable_id, user__email=user
-            )
+            curation_obj = self.get_queryset().first()
 
             # Cannot publish if status is 'automatic'
             if curation_obj.status == "automatic":
