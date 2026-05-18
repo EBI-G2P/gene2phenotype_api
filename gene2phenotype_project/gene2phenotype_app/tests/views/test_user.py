@@ -3,11 +3,13 @@ from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+from django.test.utils import override_settings
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from gene2phenotype_app.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
+from unittest.mock import patch
 
 
 def login(user):
@@ -113,6 +115,37 @@ class CreateUserEndpointTest(TestCase):
             self.url_create_user, json_data, content_type="application/json"
         )
         self.assertEqual(response.status_code, 400)
+
+    @override_settings(
+        PUBLIC_APP_URL="https://public.example.org",
+        ALLOWED_HOSTS=["testserver", "evil.example"],
+    )
+    @patch("gene2phenotype_app.serializers.user.CustomMail.send_create_email")
+    def test_create_user_email_uses_public_app_url(self, mock_send_create_email):
+        post_data = {
+            "username": "test_user31",
+            "email": "user31@test.ac.uk",
+            "first_name": "First name test",
+            "last_name": "Last name test",
+            "password": "testpassword31",
+            "password2": "testpassword31",
+            "is_superuser": False,
+            "is_staff": False,
+            "panels": ["DD"],
+        }
+
+        response = self.client.post(
+            self.url_create_user,
+            json.dumps(post_data),
+            content_type="application/json",
+            HTTP_HOST="evil.example",
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(mock_send_create_email.call_count, 1)
+        self.assertEqual(
+            mock_send_create_email.call_args.kwargs["verify_link"],
+            "https://public.example.org/verify/email",
+        )
 
 
 class AddUserToPanelEndpointTest(TestCase):
@@ -280,6 +313,29 @@ class ChangePasswordTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["message"], "If an account exists for this email, a reset link has been sent.")
+
+    @override_settings(
+        PUBLIC_APP_URL="https://public.example.org",
+        ALLOWED_HOSTS=["testserver", "evil.example"],
+    )
+    @patch("gene2phenotype_app.serializers.user.CustomMail.send_reset_email")
+    def test_verify_email_uses_public_app_url(self, mock_send_reset_email):
+        response = self.client.post(
+            self.url_verify_email,
+            {"email": "user5@test.ac.uk"},
+            content_type="application/json",
+            HTTP_HOST="evil.example",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(mock_send_reset_email.call_count, 1)
+        reset_link = mock_send_reset_email.call_args.kwargs["reset_link"]
+        self.assertTrue(
+            reset_link.startswith(
+                "https://public.example.org/gene2phenotype/reset-password/"
+            )
+        )
+        self.assertNotIn("evil.example", reset_link)
 
 
 class TokenRefreshTest(TestCase):

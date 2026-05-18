@@ -11,6 +11,7 @@ from .publication_utils import get_publication, get_authors, clean_title
 from .locus_utils import validate_gene
 from .phenotype_utils import validate_phenotype
 from .user_utils import CustomMail
+from .url_utils import build_public_url
 from .date_utils import get_date_now
 from .curationinfo_utils import ConfidenceCustomMail
 from .lgd_utils import (
