@@ -391,11 +391,17 @@ class UserAdminPermissionTest(TestCase):
     def setUp(self):
         self.url_create_user = reverse("create_user")
         self.url_add_to_panel = reverse("add_user_panel")
+
+    def logging_in_as_non_superuser(self):
+        # Login
+        # We are logging in as user1 who is not a super user or staff
         user = User.objects.get(email="user1@test.ac.uk")
         access_token = login(user)
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-    def test_non_admin_cannot_create_user(self):
+    def test_non_superuser_cannot_create_user(self):
+        self.logging_in_as_non_superuser()
+
         post_data = {
             "username": "test_user6",
             "email": "user6@test.ac.uk",
@@ -415,7 +421,9 @@ class UserAdminPermissionTest(TestCase):
 
         self.assertEqual(response.status_code, 403)
 
-    def test_non_admin_cannot_add_user_to_panel(self):
+    def test_non_superuser_cannot_add_user_to_panel(self):
+        self.logging_in_as_non_superuser()
+
         post_data = {"user": "user2@test.ac.uk", "panel": ["Eye"]}
         json_data = json.dumps(post_data)
         response = self.client.post(
@@ -423,3 +431,53 @@ class UserAdminPermissionTest(TestCase):
         )
 
         self.assertEqual(response.status_code, 403)
+
+    def test_inactive_superuser_create_user(self):
+        # Login as user4 who is a superuser but is inactive
+        user = User.objects.get(email="user4@test.ac.uk")
+        access_token = login(user)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        post_data = {
+            "username": "test_user6",
+            "email": "user6@test.ac.uk",
+            "first_name": "First name test",
+            "last_name": "Last name test",
+            "password": "testpassword2",
+            "password2": "testpassword2",
+            "is_superuser": False,
+            "is_staff": False,
+            "panels": ["DD", "Ear"],
+        }
+
+        json_data = json.dumps(post_data)
+        response = self.client.post(
+            self.url_create_user, json_data, content_type="application/json"
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_superuser_create_user(self):
+        # Login as user5 who is an active superuser
+        user = User.objects.get(email="user5@test.ac.uk")
+        access_token = login(user)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        post_data = {
+            "username": "test_user6",
+            "email": "user6@test.ac.uk",
+            "first_name": "First name test",
+            "last_name": "Last name test",
+            "password": "testpassword2",
+            "password2": "testpassword2",
+            "is_superuser": False,
+            "is_staff": False,
+            "panels": ["DD", "Ear"],
+        }
+
+        json_data = json.dumps(post_data)
+        response = self.client.post(
+            self.url_create_user, json_data, content_type="application/json"
+        )
+
+        self.assertEqual(response.status_code, 201)

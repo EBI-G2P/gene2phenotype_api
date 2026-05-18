@@ -10,7 +10,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.db.models import F
 
-from .base import BaseView
+from .base import BaseView, IsSuperUser
 
 from gene2phenotype_app.authentication import CustomAuthentication
 
@@ -78,7 +78,7 @@ class CreateUserView(generics.CreateAPIView):
     """
 
     serializer_class = CreateUserSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsSuperUser]
 
 
 @extend_schema(exclude=True)
@@ -89,7 +89,7 @@ class AddUserToPanelView(generics.CreateAPIView):
     """
 
     serializer_class = AddUserToPanelSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsSuperUser]
 
 
 @extend_schema(exclude=True)
