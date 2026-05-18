@@ -67,10 +67,7 @@ class UserPanels(BaseView):
 class CreateUserView(generics.CreateAPIView):
     """
     View for creating a new user.
-
-    This view handles POST requests to create a new user using the `CreateUserSerializer`.
-    It is based on Django's `CreateAPIView` which provides the default implementation
-    for handling object creation.
+    Only available to super users.
 
     Usage:
         Send a POST request with the required user details (username, email,
@@ -85,7 +82,7 @@ class CreateUserView(generics.CreateAPIView):
 class AddUserToPanelView(generics.CreateAPIView):
     """
     API view to add a user to a panel.
-    Only available to admin users, as enforced by the IsAdminUser permission class.
+    Only available to super users.
     """
 
     serializer_class = AddUserToPanelSerializer
