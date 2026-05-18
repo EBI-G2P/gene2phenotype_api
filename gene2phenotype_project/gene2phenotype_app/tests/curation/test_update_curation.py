@@ -28,6 +28,9 @@ class LGDUpdateCurationEndpoint(TestCase):
         self.url_update_curation_2 = reverse(
             "update_curation", kwargs={"stable_id": "G2P00010"}
         )
+        self.url_update_curation_panel_restricted = reverse(
+            "update_curation", kwargs={"stable_id": "G2P00016"}
+        )
         self.url_update_invalid_curation = reverse(
             "update_curation", kwargs={"stable_id": "G2P00123"}
         )
@@ -39,14 +42,15 @@ class LGDUpdateCurationEndpoint(TestCase):
             refresh.access_token
         )
 
-    def test_update_curation_success(self):
-        """
-        Test successful call to update curation endpoint
-        """
-        self.login_user()
+    def login_as(self, email):
+        user = User.objects.get(email=email)
+        refresh = RefreshToken.for_user(user)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = str(
+            refresh.access_token
+        )
 
-        # Define the complex data structure
-        curation_to_update = {
+    def get_valid_curation_payload(self):
+        return {
             "json_data": {
                 "allelic_requirement": "biallelic_autosomal",
                 "confidence": "limited",
@@ -134,6 +138,14 @@ class LGDUpdateCurationEndpoint(TestCase):
                 ],
             }
         }
+
+    def test_update_curation_success(self):
+        """
+        Test successful call to update curation endpoint
+        """
+        self.login_user()
+
+        curation_to_update = self.get_valid_curation_payload()
 
         response = self.client.put(
             self.url_update_curation,
@@ -177,99 +189,95 @@ class LGDUpdateCurationEndpoint(TestCase):
         self.assertEqual(curation_obj.json_data, original_json)
         self.assertEqual(curation_obj.status, "manual")
 
+    def test_update_curation_unauthorised_access(self):
+        """
+        Test call to update curation endpoint without authentication
+        """
+        response = self.client.put(
+            self.url_update_curation,
+            self.get_valid_curation_payload(),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_update_curation_success_when_user_owns_entry_and_panel_matches(self):
+        """
+        Test successful update when the curation belongs to the user and
+        the curation panels match the user's panel access.
+        """
+        self.login_user()
+
+        curation_obj = CurationData.objects.get(stable_id__stable_id="G2P00004")
+        curation_obj.json_data["panels"] = ["Developmental disorders"]
+        curation_obj.save(update_fields=["json_data"])
+
+        response = self.client.put(
+            self.url_update_curation,
+            self.get_valid_curation_payload(),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_update_curation_success_when_user_panel_matches_but_entry_is_owned_by_another_user(self):
+        """
+        Test update succeeds when the user does not own the curation but
+        has access to one of the curation panels.
+        """
+        self.login_as("john@test.ac.uk")
+
+        curation_to_update = self.get_valid_curation_payload()
+        curation_to_update["json_data"]["panels"] = ["Cardiac disorders"]
+        curation_to_update["json_data"]["locus"] = "TUBB4A"
+
+        response = self.client.put(
+            self.url_update_curation_panel_restricted,
+            curation_to_update,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["message"],
+            "Data updated successfully for session name 'test automic curation TUBB4A'",
+        )
+
+        curation_obj = CurationData.objects.get(stable_id__stable_id="G2P00016")
+        self.assertEqual(curation_obj.json_data["locus"], "TUBB4A")
+        self.assertEqual(curation_obj.json_data["panels"], ["Cardiac disorders"])
+
+    def test_update_curation_success_when_user_owns_entry_but_panel_does_not_match(self):
+        """
+        Test update succeeds when the user owns the curation even if the
+        curation panels do not match the user's panel assignments.
+        """
+        self.login_user()
+
+        curation_obj = CurationData.objects.get(stable_id__stable_id="G2P00004")
+        curation_obj.json_data["panels"] = ["Cardiac disorders"]
+        curation_obj.save(update_fields=["json_data"])
+
+        curation_to_update = self.get_valid_curation_payload()
+        curation_to_update["json_data"]["panels"] = ["Cardiac disorders"]
+
+        response = self.client.put(
+            self.url_update_curation,
+            curation_to_update,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["message"],
+            "Data updated successfully for session name 'test session'",
+        )
+
     def test_update_curation_no_permission(self):
         """
         Test call to update curation endpoint with super user who does not have permission to update the curation
         """
-        # Define the complex data structure
-        curation_to_update = {
-            "json_data": {
-                "allelic_requirement": "biallelic_autosomal",
-                "confidence": "limited",
-                "cross_cutting_modifier": ["potential secondary finding"],
-                "disease": {
-                    "cross_references": [
-                        {
-                            "disease_name": "bardet-biedl syndrome",
-                            "identifier": "615991",
-                            "original_disease_name": "BARDET-BIEDL SYNDROME 14",
-                            "source": "OMIM",
-                        }
-                    ],
-                    "disease_name": "CEP290-related bardet-biedl syndrome",
-                },
-                "locus": "CEP290",
-                "mechanism_evidence": [
-                    {
-                        "description": "updated test comment",
-                        "evidence_types": [
-                            {
-                                "primary_type": "Rescue",
-                                "secondary_type": ["Patient Cells"],
-                            }
-                        ],
-                        "pmid": "1",
-                    }
-                ],
-                "mechanism_synopsis": [
-                    {"name": "destabilising LOF", "support": "inferred"}
-                ],
-                "molecular_mechanism": {
-                    "name": "loss of function",
-                    "support": "evidence",
-                },
-                "panels": ["Developmental disorders"],
-                "phenotypes": [
-                    {
-                        "hpo_terms": [
-                            {
-                                "accession": "HP:0012372",
-                                "term": "Abnormal eye morphology",
-                            }
-                        ],
-                        "pmid": "1",
-                        "summary": "updated test comment",
-                    }
-                ],
-                "private_comment": "updated test comment",
-                "public_comment": "updated test comment",
-                "publications": [
-                    {
-                        "affectedIndividuals": 1,
-                        "ancestries": "updated test",
-                        "authors": "Makar AB, McMartin KE, Palese M, Tephly TR.",
-                        "comment": "updated test comment",
-                        "consanguineous": "no",
-                        "families": 1,
-                        "pmid": "1",
-                        "source": "G2P",
-                        "title": "Formate assay in body fluids: application in methanol poisoning.",
-                        "year": 1975,
-                    }
-                ],
-                "session_name": "test session",
-                "variant_consequences": [
-                    {
-                        "support": "inferred",
-                        "variant_consequence": "altered_gene_product_level",
-                    }
-                ],
-                "variant_descriptions": [
-                    {"description": "updated test description", "publication": "1"}
-                ],
-                "variant_types": [
-                    {
-                        "comment": "updated test comment",
-                        "de_novo": True,
-                        "inherited": True,
-                        "primary_type": "protein_changing",
-                        "secondary_type": "missense_variant",
-                        "supporting_papers": ["1"],
-                        "unknown_inheritance": False,
-                    }
-                ],
-            }
-        }
+        curation_to_update = self.get_valid_curation_payload()
 
         # Login
         user = User.objects.get(email="john@test.ac.uk")

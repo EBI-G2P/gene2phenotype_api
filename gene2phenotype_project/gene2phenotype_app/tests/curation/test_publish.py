@@ -40,12 +40,103 @@ class LGDAddCurationEndpoint(TestCase):
             refresh.access_token
         )
 
+    def login_as(self, email):
+        self.user = User.objects.get(email=email)
+        refresh = RefreshToken.for_user(self.user)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = str(
+            refresh.access_token
+        )
+
     def login_junior_user(self):
         self.user = User.objects.get(email="elisa@test.ac.uk")
         refresh = RefreshToken.for_user(self.user)
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = str(
             refresh.access_token
         )
+
+    def get_publishable_curation_payload(
+        self,
+        session_name="Test B",
+        panels=None,
+        disease_name="SRY-related 46,xx sex reversal",
+    ):
+        return {
+            "json_data": {
+                "allelic_requirement": "monoallelic_Y_hemizygous",
+                "confidence": "limited",
+                "cross_cutting_modifier": ["potential secondary finding"],
+                "disease": {
+                    "cross_references": [
+                        {
+                            "disease_name": "46,xx sex reversal",
+                            "identifier": "MONDO:0100250",
+                            "original_disease_name": "46,xx sex reversal",
+                            "source": "Mondo",
+                        }
+                    ],
+                    "disease_name": disease_name,
+                },
+                "locus": "SRY",
+                "mechanism_evidence": [
+                    {
+                        "description": "test comment",
+                        "evidence_types": [
+                            {
+                                "primary_type": "Rescue",
+                                "secondary_type": ["Patient Cells"],
+                            }
+                        ],
+                        "pmid": "1",
+                    }
+                ],
+                "mechanism_synopsis": [
+                    {"name": "destabilising LOF", "support": "inferred"}
+                ],
+                "molecular_mechanism": {
+                    "name": "loss of function",
+                    "support": "evidence",
+                },
+                "panels": panels or ["Developmental disorders"],
+                "phenotypes": [],
+                "private_comment": "test comment",
+                "public_comment": "test comment public",
+                "publications": [
+                    {
+                        "affectedIndividuals": 1,
+                        "ancestries": "test",
+                        "authors": "Makar AB, McMartin KE, Palese M, Tephly TR.",
+                        "comment": "test comment",
+                        "consanguineous": "no",
+                        "families": 1,
+                        "pmid": "1",
+                        "source": "G2P",
+                        "title": "Formate assay in body fluids: application in methanol poisoning.",
+                        "year": 1975,
+                    }
+                ],
+                "session_name": session_name,
+                "variant_consequences": [
+                    {
+                        "support": "inferred",
+                        "variant_consequence": "decreased_gene_product_level",
+                    }
+                ],
+                "variant_descriptions": [
+                    {"description": "test description", "publication": "1"}
+                ],
+                "variant_types": [
+                    {
+                        "comment": "test comment",
+                        "de_novo": True,
+                        "inherited": True,
+                        "primary_type": "protein_changing",
+                        "secondary_type": "missense_variant",
+                        "supporting_papers": ["1"],
+                        "unknown_inheritance": False,
+                    }
+                ],
+            }
+        }
 
     def test_publish_incorrect_genotype(self):
         """
@@ -448,84 +539,7 @@ class LGDAddCurationEndpoint(TestCase):
         Test successful call to publish a record
         """
         self.login_user()
-        # Define the input data structure
-        data_to_add = {
-            "json_data": {
-                "allelic_requirement": "monoallelic_Y_hemizygous",
-                "confidence": "limited",
-                "cross_cutting_modifier": ["potential secondary finding"],
-                "disease": {
-                    "cross_references": [
-                        {
-                            "disease_name": "46,xx sex reversal",
-                            "identifier": "MONDO:0100250",
-                            "original_disease_name": "46,xx sex reversal",
-                            "source": "Mondo",
-                        }
-                    ],
-                    "disease_name": "SRY-related 46,xx sex reversal",
-                },
-                "locus": "SRY",
-                "mechanism_evidence": [
-                    {
-                        "description": "test comment",
-                        "evidence_types": [
-                            {
-                                "primary_type": "Rescue",
-                                "secondary_type": ["Patient Cells"],
-                            }
-                        ],
-                        "pmid": "1",
-                    }
-                ],
-                "mechanism_synopsis": [
-                    {"name": "destabilising LOF", "support": "inferred"}
-                ],
-                "molecular_mechanism": {
-                    "name": "loss of function",
-                    "support": "evidence",
-                },
-                "panels": ["Developmental disorders"],
-                "phenotypes": [],
-                "private_comment": "test comment",
-                "public_comment": "test comment public",
-                "publications": [
-                    {
-                        "affectedIndividuals": 1,
-                        "ancestries": "test",
-                        "authors": "Makar AB, McMartin KE, Palese M, Tephly TR.",
-                        "comment": "test comment",
-                        "consanguineous": "no",
-                        "families": 1,
-                        "pmid": "1",
-                        "source": "G2P",
-                        "title": "Formate assay in body fluids: application in methanol poisoning.",
-                        "year": 1975,
-                    }
-                ],
-                "session_name": "Test B",
-                "variant_consequences": [
-                    {
-                        "support": "inferred",
-                        "variant_consequence": "decreased_gene_product_level",
-                    }
-                ],
-                "variant_descriptions": [
-                    {"description": "test description", "publication": "1"}
-                ],
-                "variant_types": [
-                    {
-                        "comment": "test comment",
-                        "de_novo": True,
-                        "inherited": True,
-                        "primary_type": "protein_changing",
-                        "secondary_type": "missense_variant",
-                        "supporting_papers": ["1"],
-                        "unknown_inheritance": False,
-                    }
-                ],
-            }
-        }
+        data_to_add = self.get_publishable_curation_payload()
 
         # Save the curation draft
         response = self.client.post(
@@ -571,6 +585,134 @@ class LGDAddCurationEndpoint(TestCase):
             lgd_publication=lgd_publications[0], is_deleted=0
         )
         self.assertEqual(len(lgd_publication_comments), 1)
+
+    def test_publish_unauthorised_access(self):
+        """
+        Test publishing a record without authentication
+        """
+        url_publish = reverse("publish_record", kwargs={"stable_id": "G2P00010"})
+
+        response_publish = self.client.post(
+            url_publish, content_type="application/json"
+        )
+        self.assertEqual(response_publish.status_code, 401)
+
+    def test_publish_success_when_user_owns_entry_without_panel_access(self):
+        """
+        Test publishing succeeds for the owner even when the draft panel
+        is not in the user's panel assignments.
+        """
+        self.login_user()
+
+        data_to_add = self.get_publishable_curation_payload(
+            session_name="Test owner no panel",
+            disease_name="SRY-related 46,xx sex reversal owner no panel",
+        )
+
+        response = self.client.post(
+            self.url_add_curation, data_to_add, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        stable_id = response.json()["result"]
+        from gene2phenotype_app.models import CurationData
+
+        curation_obj = CurationData.objects.get(stable_id__stable_id=stable_id)
+        curation_obj.json_data["panels"] = ["Cancer disorders"]
+        curation_obj.save(update_fields=["json_data"])
+
+        url_publish = reverse("publish_record", kwargs={"stable_id": stable_id})
+
+        response_publish = self.client.post(
+            url_publish, content_type="application/json"
+        )
+        self.assertEqual(response_publish.status_code, 201)
+
+    def test_publish_success_when_junior_owned_entry_panel_matches(self):
+        """
+        Test publishing succeeds for a non-junior user when the draft is owned
+        by a junior curator and the user has access to the draft panel.
+        """
+        self.login_junior_user()
+
+        data_to_add = self.get_publishable_curation_payload(
+            session_name="Test junior match",
+            panels=["Developmental disorders"],
+            disease_name="SRY-related 46,xx sex reversal junior match",
+        )
+
+        response = self.client.post(
+            self.url_add_curation, data_to_add, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        stable_id = response.json()["result"]
+
+        self.login_user()
+        url_publish = reverse("publish_record", kwargs={"stable_id": stable_id})
+
+        response_publish = self.client.post(
+            url_publish, content_type="application/json"
+        )
+        self.assertEqual(response_publish.status_code, 201)
+
+    def test_publish_not_found_when_junior_owned_entry_panel_does_not_match(self):
+        """
+        Test publishing is rejected when the draft is owned by a junior curator
+        but the user has no access to the draft panel.
+        """
+        self.login_junior_user()
+
+        data_to_add = self.get_publishable_curation_payload(
+            session_name="Test junior no match",
+            disease_name="SRY-related 46,xx sex reversal junior no match",
+        )
+
+        response = self.client.post(
+            self.url_add_curation, data_to_add, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        stable_id = response.json()["result"]
+        from gene2phenotype_app.models import CurationData
+
+        curation_obj = CurationData.objects.get(stable_id__stable_id=stable_id)
+        curation_obj.json_data["panels"] = ["Cancer disorders"]
+        curation_obj.save(update_fields=["json_data"])
+
+        self.login_user()
+        url_publish = reverse("publish_record", kwargs={"stable_id": stable_id})
+
+        response_publish = self.client.post(
+            url_publish, content_type="application/json"
+        )
+        self.assertEqual(response_publish.status_code, 404)
+
+        response_data_publish = response_publish.json()
+        self.assertEqual(
+            response_data_publish["error"],
+            f"Could not find 'Entry' for ID '{stable_id}'",
+        )
+
+    def test_publish_not_found_when_other_user_owns_non_junior_entry(self):
+        """
+        Test publishing is rejected when the draft is owned by another user
+        who is not a junior curator.
+        """
+        self.login_as("john@test.ac.uk")
+
+        url_publish = reverse("publish_record", kwargs={"stable_id": "G2P00004"})
+
+        response_publish = self.client.post(
+            url_publish, content_type="application/json"
+        )
+        self.assertEqual(response_publish.status_code, 404)
+
+        response_data_publish = response_publish.json()
+        self.assertEqual(
+            response_data_publish["error"],
+            "Could not find 'Entry' for ID 'G2P00004'",
+        )
 
     def test_publish_similar_record(self):
         """
