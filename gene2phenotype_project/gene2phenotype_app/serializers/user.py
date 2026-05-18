@@ -24,6 +24,7 @@ class UserSerializer(serializers.ModelSerializer):
     is_active = serializers.BooleanField()
     is_superuser = serializers.BooleanField()
     is_staff = serializers.BooleanField()
+    is_junior_curator = serializers.SerializerMethodField()
 
     def get_full_name(self, obj):
         """
@@ -62,6 +63,15 @@ class UserSerializer(serializers.ModelSerializer):
             )
 
         return user_panels
+
+    def get_is_junior_curator(self, obj):
+        """
+        Get the user groups and check if the user is a junior curator.
+        """
+        user = User.objects.filter(email=obj).first()
+        if user.groups.filter(name="junior_curator").exists():
+            return True
+        return False
 
     def panels_names(self, id):
         """
@@ -122,6 +132,7 @@ class UserSerializer(serializers.ModelSerializer):
             "panels",
             "is_superuser",
             "is_staff",
+            "is_junior_curator",
         ]
         extra_kwargs = {"password": {"write_only": True}}
 
@@ -735,6 +746,8 @@ class LoginSerializer(serializers.ModelSerializer):
 
             user_serializer = UserSerializer(User)
             panels = user_serializer.get_panels(id=user.id)
+            is_junior_curator = user_serializer.get_is_junior_curator(obj=username)
+
             # Update the last login column in the User table on login
             update_last_login(None, user)
 
@@ -743,6 +756,8 @@ class LoginSerializer(serializers.ModelSerializer):
                 "full_name": user.first_name + " " + user.last_name,
                 "panels": panels,
                 "is_superuser": user.is_superuser,
+                "is_staff": user.is_staff,
+                "is_junior_curator": is_junior_curator,
                 "tokens": user.tokens(),
             }
             return login_data

@@ -159,6 +159,8 @@ class LoginLogoutTest(TestCase):
         self.assertEqual(response.data["email"], "user5@test.ac.uk")
         self.assertEqual(response.data["full_name"], "Test User5")
         self.assertEqual(response.data["is_superuser"], True)
+        self.assertEqual(response.data["is_staff"], True)
+        self.assertEqual(response.data["is_junior_curator"], False)
         self.assertEqual(
             list(response.data["panels"]), ["Developmental disorders", "Eye disorders"]
         )
@@ -167,10 +169,13 @@ class LoginLogoutTest(TestCase):
         response_profile = self.client.get(
             self.url_profile, content_type="application/json"
         )
+
         self.assertEqual(response_profile.status_code, 200)
         self.assertEqual(response_profile.data["full_name"], "Test User5")
         self.assertEqual(response_profile.data["email"], "user5@test.ac.uk")
         self.assertEqual(response_profile.data["is_superuser"], True)
+        self.assertEqual(response_profile.data["is_staff"], True)
+        self.assertEqual(response_profile.data["is_junior_curator"], False)
         self.assertEqual(
             list(response_profile.data["panels"]), ["Developmental disorders", "Eye disorders"]
         )
