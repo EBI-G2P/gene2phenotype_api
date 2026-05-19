@@ -10,7 +10,7 @@ from django.contrib.auth.models import update_last_login
 from django.core.exceptions import ObjectDoesNotExist
 
 
-from ..utils import CustomMail
+from ..utils import CustomMail, build_public_url
 from ..models import User, UserPanel, Panel
 
 
@@ -247,11 +247,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
                 panel = Panel.objects.get(name=panel)
                 UserPanel.objects.create(user=user, panel=panel, is_deleted=False)
 
-            request = self.context.get("request")
-            # base_url = url_link.build_absolute_uri()
-            http_response = request.scheme
-            host = request.get_host()
-            verify_email_link = f"{http_response}://{host}/verify/email"
+            verify_email_link = build_public_url("/verify/email")
             CustomMail.send_create_email(
                 data=user,
                 verify_link=verify_email_link,
@@ -535,10 +531,9 @@ class VerifyEmailSerializer(serializers.ModelSerializer):
         if user:
             reset_token = PasswordResetTokenGenerator().make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.id))
-            request = self.context.get("request")
-            http_response = request.scheme
-            host = request.get_host()
-            reset_link = f"{http_response}://{host}/gene2phenotype/reset-password/{uid}/{reset_token}"
+            reset_link = build_public_url(
+                f"/gene2phenotype/reset-password/{uid}/{reset_token}"
+            )
             CustomMail.send_reset_email(
                 user=user.first_name,
                 subject="Reset password request",

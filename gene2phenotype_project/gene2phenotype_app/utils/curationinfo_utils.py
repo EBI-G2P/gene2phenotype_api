@@ -3,6 +3,7 @@ from smtplib import SMTP
 from django.conf import settings
 from django.template.loader import render_to_string
 from typing import Dict, Any
+from .url_utils import build_public_url
 
 
 class ConfidenceCustomMail:
@@ -79,10 +80,10 @@ class ConfidenceCustomMail:
         Returns:
             str: url string
         """
-        http_response = self.request.scheme
-        host = self.request.get_host()
-        self.host = host
-        return f"{http_response}://{host}/gene2phenotype/lgd/{self.stable_id}"
+        self.host = settings.PUBLIC_APP_URL.replace("https://", "").replace(
+            "http://", ""
+        ).rstrip("/")
+        return build_public_url(f"/gene2phenotype/lgd/{self.stable_id}")
 
     def get_user_info(self) -> str:
         """

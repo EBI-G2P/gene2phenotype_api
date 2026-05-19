@@ -34,6 +34,11 @@ DEBUG = config.getboolean("settings", "DEBUG")
 
 ALLOWED_HOSTS = json.loads(config.get("settings", "ALLOWED_HOSTS"))
 
+# Used in the email templates to generate the links to the app
+PUBLIC_APP_URL = config.get(
+    "settings", "PUBLIC_APP_URL", fallback="http://localhost"
+).rstrip("/")
+
 # Application definition
 
 LOGGING = {
