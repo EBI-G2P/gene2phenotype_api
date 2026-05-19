@@ -38,6 +38,9 @@ class AddDiseaseEndpoint(TestCase):
             "name": "RAB27A-related Griscelli syndrome biallelic"
         }
         self.add_new_disease = {"name": "LDLR-related hypercholesterolaemia"}
+        self.add_too_long_disease = {
+            "name": "LDLR-related " + ("hypercholesterolaemia" * 20)
+        }
         self.add_disease_with_ontology = {
             "name": "STRA6-related syndromic microphthalmia",
             "ontology_terms": [
@@ -169,6 +172,28 @@ class AddDiseaseEndpoint(TestCase):
         response_data = response.json()
         self.assertEqual(
             response_data["name"], ["disease with this name already exists."]
+        )
+
+    def test_add_disease_name_too_long(self):
+        """
+        Test the endpoint rejects a disease name longer than the configured max length.
+        """
+        user = User.objects.get(email="john@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.post(
+            self.url_add_disease,
+            self.add_too_long_disease,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["name"],
+            ["Ensure this field has no more than 255 characters."],
         )
 
     def test_add_disease_with_invalid_ontology(self):

@@ -4,6 +4,8 @@ import re
 import requests
 from typing import Optional, Union
 
+from django.conf import settings
+
 
 def latin2arab(match: re.Match[str]) -> str:
     """
@@ -119,9 +121,12 @@ def clean_omim_disease(name: str) -> str:
 
 def validate_disease_name(name: str) -> bool:
     """
-    Validate that the disease name follows the dyadic format.
+    Validate that the disease name follows the length constraint and the dyadic format.
     """
     flag = True
+
+    if len(name) > settings.MAX_DISEASE_NAME_LENGTH:
+        flag = False
 
     name_pattern = re.compile(
         # forbid duplicate ocurrences of gene-related

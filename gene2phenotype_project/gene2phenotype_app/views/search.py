@@ -1,5 +1,7 @@
 from functools import reduce
 from operator import or_
+from django.conf import settings
+from rest_framework import status
 from rest_framework.response import Response
 from django.db.models import Q, F
 import textwrap, re
@@ -419,6 +421,15 @@ class SearchView(BaseView):
         """
         search_query = request.query_params.get("query", None)
         search_type = request.query_params.get("type", None)
+
+        if search_query and len(search_query.strip()) > settings.MAX_DISEASE_NAME_LENGTH:
+            return Response(
+                {
+                    "error": "Search query is too long. "
+                    f"Maximum length is {settings.MAX_DISEASE_NAME_LENGTH} characters."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Check if query is a merged or deleted record
         if search_type == "stable_id" or (

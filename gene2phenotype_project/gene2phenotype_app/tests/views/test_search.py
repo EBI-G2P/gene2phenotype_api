@@ -306,6 +306,20 @@ class SearchTests(TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.data["error"], "No matching Gene found for: TUBB4A")
 
+    def test_search_gene_with_really_long_query(self):
+        """
+        Test the endpoint rejects a very long search query.
+        """
+        long_query = "TUBB4A" * 300
+        url_search_gene = f"{self.base_url_search}?type=gene&query={long_query}"
+        response = self.client.get(url_search_gene)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.data["error"],
+            "Search query is too long. Maximum length is 255 characters.",
+        )
+
     def test_search_not_found_2(self):
         """
         Test the response when not found because the record is deleted
