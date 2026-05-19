@@ -34,6 +34,12 @@ DEBUG = config.getboolean("settings", "DEBUG")
 
 ALLOWED_HOSTS = json.loads(config.get("settings", "ALLOWED_HOSTS"))
 
+# Maximum length of the disease name
+# Used to limit the disease name when creating, updating or searching
+MAX_DISEASE_NAME_LENGTH = config.getint(
+    "settings", "MAX_DISEASE_NAME_LENGTH", fallback=255
+)
+
 # Used in the email templates to generate the links to the app
 PUBLIC_APP_URL = config.get(
     "settings", "PUBLIC_APP_URL", fallback="http://localhost"
