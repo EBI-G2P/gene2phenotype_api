@@ -1,9 +1,14 @@
 from django.core.checks import Error
 from django.db.models import F
 from difflib import SequenceMatcher
+from collections import defaultdict
 import re
 
-from gene2phenotype_app.models import DiseaseOntologyTerm, LocusGenotypeDisease
+from gene2phenotype_app.models import (
+    DiseaseOntologyTerm,
+    LocusGenotypeDisease,
+    DiseaseSynonym,
+)
 
 from gene2phenotype_app.utils import (
     clean_string,
@@ -13,6 +18,7 @@ from gene2phenotype_app.utils import (
 
 
 def check_cross_references():
+    """Check whether linked ontology terms look compatible with the G2P disease."""
     errors = []
 
     # Select disease with ontology terms that are linked to visible panels
@@ -28,7 +34,18 @@ def check_cross_references():
                 lgdpanel__panel__is_visible=1, is_deleted=0
             ).values("disease")
         )
+        .distinct()
     )
+
+    disease_ontology_list = list(disease_ontology_list)
+    disease_ids = {obj.disease_id for obj in disease_ontology_list}
+
+    disease_synonyms_map = defaultdict(set)
+    disease_synonyms = DiseaseSynonym.objects.filter(
+        disease_id__in=disease_ids
+    ).values_list("disease_id", "synonym")
+    for disease_id, synonym in disease_synonyms:
+        disease_synonyms_map[disease_id].add(clean_string(synonym))
 
     for obj in disease_ontology_list:
         new_disease_name = re.sub(r".*\-related\s*", "", obj.disease_name).strip()
@@ -36,10 +53,14 @@ def check_cross_references():
         term_without_type = clean_omim_disease(obj.term)
         clean_term = clean_string(term_without_type)
 
-        # Get the synonym name from our internal list of synonyms
-        synonyms_g2p_name = check_synonyms_disease(obj.term.lower())
+        known_names = {clean_disease_name}
+        known_names.update(disease_synonyms_map[obj.disease_id])
 
-        if synonyms_g2p_name and synonyms_g2p_name == new_disease_name.lower():
+        synonyms_g2p_name = check_synonyms_disease(obj.term.lower())
+        if synonyms_g2p_name:
+            known_names.add(clean_string(synonyms_g2p_name))
+
+        if clean_term in known_names:
             continue
 
         # Check for deafness
@@ -52,7 +73,7 @@ def check_cross_references():
         ).ratio()
 
         if (
-            score < 0.3
+            score < 0.2
             and new_disease_name.lower() not in term_without_type
             and term_without_type not in new_disease_name.lower()
         ):
@@ -69,6 +90,7 @@ def check_cross_references():
 
 
 def check_disease_name():
+    """Check that visible record disease names start with the linked locus name."""
     errors = []
 
     lgd_records = (
@@ -79,6 +101,7 @@ def check_disease_name():
             locus_name=F("locus__name"),
         )
         .filter(lgdpanel__panel__is_visible=1, is_deleted=0)
+        .distinct()
     )
 
     for obj in lgd_records:

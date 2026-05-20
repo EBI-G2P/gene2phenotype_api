@@ -1,6 +1,8 @@
-from .PublicationFamilies import check_publication_families
+from .Base import should_process
 
-from .AllelicRequirement import check_ar_constraint, check_ar_publications
+from .Publications import check_publication_families, check_number_publications
+
+from .AllelicRequirement import check_ar_constraint
 
 from .MutationConsequence import mutation_consequence_constraint
 

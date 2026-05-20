@@ -9,6 +9,7 @@ from gene2phenotype_app.models import (
 
 
 def check_mined_publication_status():
+    """Check consistency between mined publication statuses and curated publications."""
     errors = []
 
     # Curated rows have to be stored in LGDPublication
