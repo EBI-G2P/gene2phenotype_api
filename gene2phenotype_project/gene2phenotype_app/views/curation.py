@@ -270,6 +270,9 @@ class CurationDataDetail(BaseView):
         """
         curation_data_obj = self.get_queryset().first()
 
+        curation_user_obj = User.objects.get(email=curation_data_obj.user)
+        unclaimed_draft = curation_user_obj.groups.filter(name__in=["g2p_admin"]).exists()
+
         response_data = {
             "session_name": curation_data_obj.session_name,
             "stable_id": curation_data_obj.stable_id.stable_id,
@@ -281,6 +284,10 @@ class CurationDataDetail(BaseView):
             "curator_last_name": curation_data_obj.last_name,
             "curator_email": curation_data_obj.user_email,
         }
+
+        if unclaimed_draft:
+            response_data["unclaimed_draft"] = True
+
         return Response(response_data)
 
 
