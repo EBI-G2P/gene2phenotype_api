@@ -5,6 +5,7 @@ from gene2phenotype_app.models import LocusGenotypeDisease
 
 
 def get_similar_records():
+    """Check for visible records that share locus, disease, and genotype with an undetermined mechanism."""
     errors = []
     list_of_records = {}
 
@@ -30,7 +31,7 @@ def get_similar_records():
             list_of_records[key] = [
                 {"g2p_id": obj["g2p_id"], "mechanism": obj["mechanism_value"]}
             ]
-        elif obj["g2p_id"] not in list_of_records[key]:
+        else:
             list_of_records[key].append(
                 {"g2p_id": obj["g2p_id"], "mechanism": obj["mechanism_value"]}
             )

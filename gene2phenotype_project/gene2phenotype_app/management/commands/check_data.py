@@ -4,7 +4,7 @@ import logging
 from .datachecks import (
     check_publication_families,
     check_ar_constraint,
-    check_ar_publications,
+    check_number_publications,
     mutation_consequence_constraint,
     check_mined_publication_status,
     check_cross_references,
@@ -39,10 +39,6 @@ class Command(BaseCommand):
         for error in allelic_requirement_errors:
             logger.error(error)
 
-        allelic_requirement_errors_2 = check_ar_publications()
-        for error in allelic_requirement_errors_2:
-            logger.error(error)
-
         mc_errors = mutation_consequence_constraint()
         for error in mc_errors:
             logger.error(error)
@@ -61,6 +57,11 @@ class Command(BaseCommand):
         ### The following checks are non critical: level = WARNING ###
         if include_warnings:
             print("\nRunning non-critical data checks...")
+            # Check the number of publications linked to definitive and strong records
+            number_publications_errors = check_number_publications()
+            for error in number_publications_errors:
+                logger.warning(error)
+
             # Check for similar records
             similar_records = get_similar_records()
             for error in similar_records:
