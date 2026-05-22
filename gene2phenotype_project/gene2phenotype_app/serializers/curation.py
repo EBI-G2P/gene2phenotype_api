@@ -468,7 +468,6 @@ class CurationDataSerializer(serializers.ModelSerializer):
         # Get user object
         try:
             user_obj = User.objects.get(email=user, is_active=1)
-
         except User.DoesNotExist:
             raise serializers.ValidationError({"error": f"Invalid user '{user}'"})
 
