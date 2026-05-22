@@ -118,3 +118,58 @@ def check_disease_name():
             )
 
     return errors
+
+
+def check_mondo_single_gene_link():
+    """Check that each MONDO ID is linked to only one visible active locus."""
+    errors = []
+    mondo_gene_map = defaultdict(set)
+    mondo_disease_map = defaultdict(set)
+
+    lgd_records = list(
+        LocusGenotypeDisease.objects.annotate(
+            disease_name=F("disease__name"), locus_name=F("locus__name")
+        )
+        .filter(
+            lgdpanel__panel__is_visible=1,
+            lgdpanel__is_deleted=0,
+            is_deleted=0,
+        )
+        .values("disease_id", "disease_name", "locus_name")
+        .distinct()
+    )
+
+    disease_gene_map = defaultdict(set)
+    disease_name_map = {}
+    for obj in lgd_records:
+        disease_gene_map[obj["disease_id"]].add(obj["locus_name"])
+        disease_name_map[obj["disease_id"]] = obj["disease_name"]
+
+    mondo_links = (
+        DiseaseOntologyTerm.objects.annotate(
+            mondo_id=F("ontology_term__accession"),
+        )
+        .filter(
+            disease_id__in=disease_gene_map.keys(),
+            ontology_term__accession__startswith="MONDO:",
+        )
+        .values("disease_id", "mondo_id")
+        .distinct()
+    )
+
+    for obj in mondo_links:
+        disease_id = obj["disease_id"]
+        mondo_id = obj["mondo_id"]
+        mondo_gene_map[mondo_id].update(disease_gene_map[disease_id])
+        mondo_disease_map[mondo_id].add(disease_name_map[disease_id])
+
+    for mondo_id, genes in mondo_gene_map.items():
+        if len(genes) > 1:
+            errors.append(
+                Error(
+                    f"'{mondo_id}' is linked to multiple genes: {', '.join(sorted(genes))}. Diseases: {', '.join(sorted(mondo_disease_map[mondo_id]))}",
+                    id="gene2phenotype_app.E403",
+                )
+            )
+
+    return errors

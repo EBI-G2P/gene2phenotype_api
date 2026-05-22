@@ -9,6 +9,7 @@ from .datachecks import (
     check_mined_publication_status,
     check_cross_references,
     check_disease_name,
+    check_mondo_single_gene_link,
     get_similar_records,
 )
 
@@ -50,6 +51,10 @@ class Command(BaseCommand):
         # Check if the locus is in the disease name
         disease_name_errors = check_disease_name()
         for error in disease_name_errors:
+            logger.error(error)
+
+        mondo_gene_errors = check_mondo_single_gene_link()
+        for error in mondo_gene_errors:
             logger.error(error)
 
         print("Running data checks... done")

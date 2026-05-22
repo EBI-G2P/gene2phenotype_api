@@ -6,7 +6,11 @@ from .AllelicRequirement import check_ar_constraint
 
 from .MutationConsequence import mutation_consequence_constraint
 
-from .Disease import check_cross_references, check_disease_name
+from .Disease import (
+    check_cross_references,
+    check_disease_name,
+    check_mondo_single_gene_link,
+)
 
 from .MinedPublications import check_mined_publication_status
 
