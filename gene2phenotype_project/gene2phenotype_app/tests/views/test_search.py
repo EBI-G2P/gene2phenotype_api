@@ -301,6 +301,9 @@ class SearchTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["count"], 2)
+        self.assertEqual(
+            {result["status"] for result in response.data["results"]}, {"automatic"}
+        )
 
     def test_search_all(self):
         """

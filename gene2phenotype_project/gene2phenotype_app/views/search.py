@@ -480,6 +480,7 @@ class SearchView(BaseView):
                 data = {
                     "stable_id": c_data.stable_id.stable_id,
                     "gene": c_data.gene_symbol,
+                    "status": c_data.status,
                     "date_created": c_data.date_created,
                     "date_last_updated": c_data.date_last_update,
                     "curator_first": c_data.first_name,
