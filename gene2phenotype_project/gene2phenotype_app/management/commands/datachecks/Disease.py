@@ -8,6 +8,7 @@ from gene2phenotype_app.models import (
     DiseaseOntologyTerm,
     LocusGenotypeDisease,
     DiseaseSynonym,
+    GeneDisease,
 )
 
 from gene2phenotype_app.utils import (
@@ -121,7 +122,7 @@ def check_disease_name():
 
 
 def check_mondo_single_gene_link():
-    """Check that each MONDO ID is linked to only one visible active locus."""
+    """Check that visible G2P MONDO-gene links are compatible with Mondo gene associations."""
     errors = []
     mondo_gene_map = defaultdict(set)
     mondo_disease_map = defaultdict(set)
@@ -163,11 +164,42 @@ def check_mondo_single_gene_link():
         mondo_gene_map[mondo_id].update(disease_gene_map[disease_id])
         mondo_disease_map[mondo_id].add(disease_name_map[disease_id])
 
+    mondo_external_gene_map = defaultdict(set)
+    mondo_external_links = (
+        GeneDisease.objects.annotate(
+            gene_name=F("gene__name"),
+            source_name=F("source__name"),
+        )
+        .filter(
+            identifier__in=mondo_gene_map.keys(),
+            identifier__startswith="MONDO:",
+            source__name="Mondo",
+        )
+        .values("identifier", "gene_name")
+        .distinct()
+    )
+
+    for obj in mondo_external_links:
+        mondo_external_gene_map[obj["identifier"]].add(obj["gene_name"])
+
     for mondo_id, genes in mondo_gene_map.items():
-        if len(genes) > 1:
+        if len(genes) <= 1:
+            continue
+
+        external_genes = mondo_external_gene_map.get(mondo_id, set())
+        if not external_genes:
+            continue
+
+        if genes.issubset(external_genes):
+            continue
+
+        unsupported_genes = sorted(genes - external_genes)
+        if unsupported_genes:
             errors.append(
                 Error(
-                    f"'{mondo_id}' is linked to multiple genes: {', '.join(sorted(genes))}. Diseases: {', '.join(sorted(mondo_disease_map[mondo_id]))}",
+                    f"'{mondo_id}' is linked to multiple genes in G2P: {', '.join(sorted(genes))}. "
+                    f"Genes not supported by Mondo gene associations: {', '.join(unsupported_genes)}. "
+                    f"Diseases: {', '.join(sorted(mondo_disease_map[mondo_id]))}",
                     id="gene2phenotype_app.E403",
                 )
             )
