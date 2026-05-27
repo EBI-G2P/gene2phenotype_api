@@ -13,6 +13,7 @@ class SearchTests(TestCase):
     """
 
     fixtures = [
+        "gene2phenotype_app/fixtures/auth_groups.json",
         "gene2phenotype_app/fixtures/locus.json",
         "gene2phenotype_app/fixtures/attribs.json",
         "gene2phenotype_app/fixtures/source.json",
@@ -264,7 +265,7 @@ class SearchTests(TestCase):
 
     def test_search_draft_not_found_manual(self):
         """
-        Test the response when searching a draft which is not of status 'manual'
+        Test automatic drafts are excluded when the owner is not in g2p_admin.
         """
         # Login
         user = User.objects.get(email="user5@test.ac.uk")
@@ -282,6 +283,27 @@ class SearchTests(TestCase):
         # So, the endpoint should return an error
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.data["error"], "No matching draft found for: MPI")
+
+    def test_search_draft_automatic_for_g2p_admin(self):
+        """
+        Test automatic drafts are included when the owner is in g2p_admin.
+        """
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        url_search_id = f"{self.base_url_search}?type=draft&query=TUBB4A"
+        response = self.client.get(url_search_id)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 2)
+        self.assertEqual(
+            {result["status"] for result in response.data["results"]}, {"automatic"}
+        )
 
     def test_search_all(self):
         """
