@@ -5,6 +5,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from gene2phenotype_app.models import (
     User,
     LocusGenotypeDisease,
+    LGDComment,
     LGDPublication,
     LGDPublicationComment,
 )
@@ -585,6 +586,69 @@ class LGDAddCurationEndpoint(TestCase):
             lgd_publication=lgd_publications[0], is_deleted=0
         )
         self.assertEqual(len(lgd_publication_comments), 1)
+
+        lgd_comments = LGDComment.objects.filter(lgd=lgd_obj, is_deleted=0)
+        self.assertEqual(len(lgd_comments), 2)
+        self.assertFalse(
+            lgd_comments.filter(comment__contains="reviewed by").exists()
+        )
+
+    def test_publish_junior_curator_record_adds_review_comment(self):
+        """
+        Test publishing a junior curator draft as a senior curator adds the
+        private review comment.
+        """
+        self.login_junior_user()
+        data_to_add = self.get_publishable_curation_payload(
+            session_name="Test junior review publish",
+            disease_name="SRY-related 46,xx sex reversal junior review",
+        )
+
+        response = self.client.post(
+            self.url_add_curation, data_to_add, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["message"],
+            "Data saved successfully for session name 'Test junior review publish'",
+        )
+
+        self.login_user()
+        url_publish = reverse(
+            "publish_record", kwargs={"stable_id": response_data["result"]}
+        )
+
+        response_publish = self.client.post(
+            url_publish, content_type="application/json"
+        )
+        self.assertEqual(response_publish.status_code, 201)
+        response_data_publish = response_publish.json()
+        self.assertEqual(
+            response_data_publish["message"],
+            "Record 'G2P00017' published successfully",
+        )
+
+        lgd_obj = LocusGenotypeDisease.objects.get(
+            locus__name="SRY",
+            disease__name="SRY-related 46,xx sex reversal junior review",
+            genotype__value="monoallelic_Y_hemizygous",
+            is_deleted=0,
+        )
+
+        lgd_comments = LGDComment.objects.filter(lgd=lgd_obj, is_deleted=0)
+        self.assertEqual(len(lgd_comments), 3)
+
+        review_comment = LGDComment.objects.get(
+            lgd=lgd_obj,
+            is_deleted=0,
+            is_public=0,
+            comment=(
+                "Record created by Elisa Stevens and reviewed by Test User5."
+            ),
+        )
+        self.assertEqual(review_comment.user.email, "user5@test.ac.uk")
 
     def test_publish_unauthorised_access(self):
         """

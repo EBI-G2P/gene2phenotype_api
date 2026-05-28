@@ -462,7 +462,12 @@ class CurationDataSerializer(serializers.ModelSerializer):
         Args:
             data: CurationData object to publish (JSON format)
         """
+        # user that is publishing the record, not necessarily the same user that created the draft
         user = self.context.get("user")
+
+        # Check if user that created draft is a junior curator
+        is_junior_curator = self.context.get("is_junior_curator", False)
+
         publications_list = []
 
         # Get user object
@@ -814,6 +819,17 @@ class CurationDataSerializer(serializers.ModelSerializer):
             }
             LGDCommentSerializer(context={"lgd": lgd_obj, "user": user_obj}).create(
                 comment_obj_private
+            )
+
+        # If user attached to the draft is a junior curator, add a comment to
+        # indicate that the record was reviewed by another curator
+        if is_junior_curator:
+            comment_obj_review = {
+                "comment": f"Record created by {data.user.first_name} {data.user.last_name} and reviewed by {user_obj.first_name} {user_obj.last_name}.",
+                "is_public": 0,
+            }
+            LGDCommentSerializer(context={"lgd": lgd_obj, "user": user_obj}).create(
+                comment_obj_review
             )
 
         # Update stable_id status to live (is_live=1)

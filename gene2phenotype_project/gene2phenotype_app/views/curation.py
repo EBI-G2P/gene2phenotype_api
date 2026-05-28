@@ -541,9 +541,14 @@ class PublishRecord(BaseUpdate):
             # Check if there is enough data to publish the record
             self.serializer_class().validate_to_publish(curation_obj)
 
+            # Check if user that created draft is a junior curator
+            is_junior_curator = curation_obj.user.groups.filter(name="junior_curator").exists()
+
             # Publish record
             try:
-                lgd_obj, check = self.serializer_class(context={"user": user}).publish(
+                # 'user' is the curator that publishes the record
+                # 'is_junior_curator' is used to determine if the user that created the draft is a junior curator
+                lgd_obj, check = self.serializer_class(context={"user": user, "is_junior_curator": is_junior_curator}).publish(
                     curation_obj
                 )
                 # Delete entry from 'curation_data'
