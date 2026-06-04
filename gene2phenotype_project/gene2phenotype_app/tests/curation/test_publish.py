@@ -29,6 +29,8 @@ class LGDAddCurationEndpoint(TestCase):
         "gene2phenotype_app/fixtures/ontology_term.json",
         "gene2phenotype_app/fixtures/locus_genotype_disease.json",
         "gene2phenotype_app/fixtures/disease.json",
+        "gene2phenotype_app/fixtures/disease_external.json",
+        "gene2phenotype_app/fixtures/gene_disease.json",
     ]
 
     def setUp(self):

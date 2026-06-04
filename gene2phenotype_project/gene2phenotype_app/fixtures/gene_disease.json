@@ -38,5 +38,25 @@
             "identifier": "MONDO:0012433",
             "source": 3
         }
+    },
+    {
+        "model": "gene2phenotype_app.genedisease",
+        "pk": 5,
+        "fields": {
+            "gene": 3,
+            "disease": "Matthew-Wood syndrome",
+            "identifier": "MONDO:0011010",
+            "source": 3
+        }
+    },
+    {
+        "model": "gene2phenotype_app.genedisease",
+        "pk": 6,
+        "fields": {
+            "gene": 8,
+            "disease": "46,XX sex reversal 1",
+            "identifier": "MONDO:0100250",
+            "source": 3
+        }
     }
 ]

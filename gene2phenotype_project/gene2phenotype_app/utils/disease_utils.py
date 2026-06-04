@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import re
-import requests
 from typing import Optional, Union
 
 from django.conf import settings
@@ -141,45 +140,6 @@ def validate_disease_name(name: str) -> bool:
         flag = False
 
     return flag
-
-
-def get_ontology(id: str, source: str) -> Union[dict, None]:
-    """
-    Query the Ontology Lookup Service (OLS) API for disease ontology information.
-
-    Input:
-        id (str): The disease identifier to query (e.g. "MONDO:0005148" or "222100")
-        source (str): The ontology source. Supported values are: 'Mondo' and 'OMIM'
-    Output:
-        dict | None:
-            - A dictionary containing the OLS response `doc` if available
-            - None if the source is invalid or no matching record is found
-    """
-    if source.lower() == "mondo":
-        url = f"https://www.ebi.ac.uk/ols4/api/search?q={id}&ontology=mondo&exact=1"
-
-    elif source.lower() == "omim":
-        url = f"https://www.ebi.ac.uk/ols4/api/search?q={id}&ontology=cco"
-
-    else:
-        return None
-
-    r = requests.get(url, headers={"Content-Type": "application/json"})
-
-    if not r.ok:
-        return None
-
-    decoded = r.json()
-
-    if (
-        len(decoded["response"]["docs"]) > 0
-        and "label" in decoded["response"]["docs"][0]
-    ):
-        name = decoded["response"]["docs"][0]
-    else:
-        name = None
-
-    return name
 
 
 def get_ontology_source(id: str) -> Optional[str]:
