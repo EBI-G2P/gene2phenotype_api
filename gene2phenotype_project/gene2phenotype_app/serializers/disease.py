@@ -6,6 +6,7 @@ import re
 
 from ..models import (
     Disease,
+    DiseaseExternal,
     DiseaseOntologyTerm,
     DiseaseSynonym,
     Attrib,
@@ -17,7 +18,6 @@ from ..models import (
 
 from ..utils import (
     clean_string,
-    get_ontology,
     get_ontology_source,
     validate_disease_name,
 )
@@ -390,7 +390,6 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
                 disease_obj = disease_synonym.disease
 
         if disease_obj is None:
-            # TODO: give disease suggestions
             disease_obj = Disease.objects.create(name=disease_name)
 
         # Get attributes
@@ -399,8 +398,6 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
         )
         attrib = Attrib.objects.get(value="Data source", type__code="ontology_mapping")
 
-        # Check if ontology is in db
-        # The disease ontology is saved in the db as attrib type 'disease'
         for ontology in ontologies_list:
             ontology_accession = ontology["ontology_term"]["accession"]
             ontology_term = ontology["ontology_term"]["term"]
@@ -408,6 +405,7 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
 
             if ontology_accession is not None and ontology_term is not None:
                 try:
+                    # Check if ontology is already saved in db (table ontology_term)
                     ontology_obj = OntologyTerm.objects.get(
                         accession=ontology_accession
                     )
@@ -422,53 +420,34 @@ class CreateDiseaseSerializer(serializers.ModelSerializer):
                             }
                         )
 
-                    elif source == "Mondo":
-                        # Check if ontology accession is valid
-                        mondo_disease = get_ontology(ontology_accession, source)
-                        if mondo_disease is None:
-                            raise serializers.ValidationError(
-                                {
-                                    "error": f"Invalid Mondo ID. Please check ID '{ontology_accession}'"
-                                }
-                            )
-                        elif mondo_disease == "query failed":
-                            raise serializers.ValidationError(
-                                {
-                                    "error": f"Cannot query Mondo ID '{ontology_accession}'"
-                                }
-                            )
+                    new_ontology_term = None
+                    # Fetch the disease ID from the G2P db
+                    # External identifiers are stored in the db in: GeneDisease and DiseaseExternal
+                    gene_disease = GeneDisease.objects.filter(identifier=ontology_accession)
+                    if gene_disease.exists():
+                        new_ontology_term = gene_disease.first().disease
+                    else:
+                        external_disease = DiseaseExternal.objects.filter(identifier=ontology_accession)
+                        if external_disease.exists():
+                            new_ontology_term = external_disease.first().disease
 
-                    # Replace '_' from mondo ID
-                    ontology_accession = re.sub(r"\_", ":", ontology_accession)
-                    ontology_term = re.sub(r"\_", ":", ontology_term)
-                    # Insert ontology
-                    if ontology_desc is None and len(mondo_disease["description"]) > 0:
-                        ontology_desc = mondo_disease["description"][0]
+                    if new_ontology_term is None:
+                        raise serializers.ValidationError(
+                            {
+                                "error": f"Invalid {source} ID. Please check ID '{ontology_accession}'"
+                            }
+                        )
 
-                    elif source == "OMIM":
-                        omim_disease = get_ontology(ontology_accession, source)
-                        # TODO: check if we can use the OMIM API in the future
-                        if omim_disease == "query failed":
-                            raise serializers.ValidationError(
-                                {
-                                    "error": f"Cannot query OMIM ID '{ontology_accession}'"
-                                }
-                            )
+                    ontology_term = new_ontology_term
+                    ontology_desc = new_ontology_term
 
-                        if (
-                            ontology_desc is None
-                            and omim_disease is not None
-                            and len(omim_disease["description"]) > 0
-                        ):
-                            ontology_desc = omim_disease["description"][0]
-
-                    source = Source.objects.get(name=source)
+                    source_obj = Source.objects.get(name=source)
 
                     ontology_obj = OntologyTerm.objects.create(
                         accession=ontology_accession,
                         term=ontology_term,
                         description=ontology_desc,
-                        source=source,
+                        source=source_obj,
                         group_type=attrib_disease,
                     )
 

@@ -1,6 +1,5 @@
 from .disease_utils import (
     clean_string,
-    get_ontology,
     clean_omim_disease,
     get_ontology_source,
     check_synonyms_disease,

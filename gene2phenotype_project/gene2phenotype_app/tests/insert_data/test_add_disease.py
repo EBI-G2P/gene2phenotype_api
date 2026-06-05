@@ -19,6 +19,8 @@ class AddDiseaseEndpoint(TestCase):
         "gene2phenotype_app/fixtures/attribs.json",
         "gene2phenotype_app/fixtures/cv_molecular_mechanism.json",
         "gene2phenotype_app/fixtures/disease.json",
+        "gene2phenotype_app/fixtures/disease_external.json",
+        "gene2phenotype_app/fixtures/gene_disease.json",
         "gene2phenotype_app/fixtures/g2p_stable_id.json",
         "gene2phenotype_app/fixtures/lgd_mechanism_evidence.json",
         "gene2phenotype_app/fixtures/lgd_mechanism_synopsis.json",
