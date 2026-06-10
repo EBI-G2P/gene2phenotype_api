@@ -3,7 +3,7 @@ from django.urls import reverse
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from gene2phenotype_app.models import User
+from gene2phenotype_app.models import LGDPanel, User
 
 
 class LocusGenotypeDiseaseDetailEndpoint(TestCase):
@@ -38,6 +38,8 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
     def setUp(self):
         self.url_list_lgd = reverse("lgd", kwargs={"stable_id": "G2P00001"})
         self.url_list_lgd_2 = reverse("lgd", kwargs={"stable_id": "G2P00002"})
+        self.url_list_lgd_3 = reverse("lgd", kwargs={"stable_id": "G2P00006"})
+        self.url_lgd_private_only = reverse("lgd", kwargs={"stable_id": "G2P00005"})
         self.url_lgd_deleted = reverse("lgd", kwargs={"stable_id": "G2P00003"})
         self.url_lgd_invalid = reverse("lgd", kwargs={"stable_id": "G2P00000"})
         self.url_lgd_merged = reverse("lgd", kwargs={"stable_id": "G2P00007"})
@@ -71,6 +73,31 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
             "G2P00007 is no longer available. It has been merged into G2P00001",
         )
         self.assertEqual(response.data["stable_id"], "G2P00001")
+
+    def test_lgd_private_panel_not_accessible_anonymous(self):
+        """
+        Test calling the endpoint for a record linked only to a private panel.
+        Anonymous users should not be able to access it.
+        """
+        response = self.client.get(self.url_lgd_private_only)
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(
+            response.data["error"], "No matching Entry found for: G2P00005"
+        )
+
+    def test_lgd_detail_private_after_panel_delete(self):
+        """
+        Test anonymous access after the public panel link is soft deleted.
+        """
+        lgd_panel = LGDPanel.objects.get(lgd=5, panel=3, is_deleted=0)
+        lgd_panel.is_deleted = 1
+        lgd_panel.save()
+
+        response = self.client.get(self.url_list_lgd_3)
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(
+            response.data["error"], "No matching Entry found for: G2P00006"
+        )
 
     def test_lgd_detail(self):
         """
