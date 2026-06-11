@@ -443,7 +443,10 @@ class LocusGenotypeDiseaseDetail(BaseAPIView):
             )
         else:
             queryset = LocusGenotypeDisease.objects.filter(
-                stable_id=g2p_stable_id, is_deleted=0, lgdpanel__panel__is_visible=1
+                stable_id=g2p_stable_id,
+                is_deleted=0,
+                lgdpanel__is_deleted=0,
+                lgdpanel__panel__is_visible=1,
             ).distinct()
 
         if not queryset.exists():
