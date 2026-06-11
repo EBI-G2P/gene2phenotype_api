@@ -107,7 +107,10 @@ class PanelDetailSerializer(serializers.ModelSerializer):
 
         queryset = (
             LGDPanel.objects.filter(
-                panel=id, lgd__is_deleted=0, lgd__date_review__isnull=False
+                panel=id,
+                is_deleted=0,
+                lgd__is_deleted=0,
+                lgd__date_review__isnull=False
             )
             .select_related("lgd")
             .order_by("-lgd__date_review")
@@ -128,7 +131,7 @@ class PanelDetailSerializer(serializers.ModelSerializer):
             - total number of records by confidence
         """
         lgd_panels = LGDPanel.objects.filter(
-            panel=panel.id, is_deleted=0
+            panel=panel.id, is_deleted=0, lgd__is_deleted=0
         ).select_related()
 
         genes = set()
