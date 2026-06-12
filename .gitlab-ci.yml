@@ -14,15 +14,35 @@ variables:
 test:
   stage: test
   image: python:3.10-slim
+  services:
+    - name: mysql:8.0
+      alias: mysql
   variables:
+    MYSQL_ROOT_PASSWORD: ci-test-password
+    MYSQL_DATABASE: test_db
     PROJECT_CONFIG_PATH: "$CI_PROJECT_DIR/config.ini"
-    USE_SQLITE_TEST_DB: "true"
+    DB_USERNAME: root
+    DB_PASSWORD: ci-test-password
+    DB_HOST: mysql
+    DB_NAME: test_db
+    DB_PORT: "3306"
+    DB_ENGINE: django.db.backends.mysql
+    USE_SQLITE_TEST_DB: "false"
     SECRET_KEY: ci-test-secret-key
   before_script:
     - apt-get update && apt-get install -y default-libmysqlclient-dev default-mysql-client build-essential pkg-config openssl
     - python -m pip install --upgrade pip
     - pip install -r requirements.txt
     - pip install coverage
+    - |
+      until mysqladmin ping \
+        -h"$DB_HOST" \
+        -u"$DB_USERNAME" \
+        -p"$DB_PASSWORD" \
+        --ssl-mode=DISABLED \
+        --silent; do
+          sleep 2
+        done
     - |
       {
         echo "# config.ini"

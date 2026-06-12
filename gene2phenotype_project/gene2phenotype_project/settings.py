@@ -121,11 +121,21 @@ MIDDLEWARE = [
     "simple_history.middleware.HistoryRequestMiddleware",
 ]
 
-STORAGES = {
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
+RUNNING_TESTS = "test" in sys.argv or "test_coverage" in sys.argv
+
+if RUNNING_TESTS:
+    STORAGES = {
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        }
+    }
+
+else:
+    STORAGES = {
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        }
+    }
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -230,7 +240,6 @@ WSGI_APPLICATION = "gene2phenotype_project.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-RUNNING_TESTS = "test" in sys.argv or "test_coverage" in sys.argv
 USE_SQLITE_TEST_DB = os.environ.get("USE_SQLITE_TEST_DB", "true").lower() == "true"
 
 # For local testing, use SQLite by default. CI can set USE_SQLITE_TEST_DB=false
