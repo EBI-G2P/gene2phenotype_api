@@ -35,14 +35,13 @@ test:
     - pip install -r requirements.txt
     - pip install coverage
     - |
-      until mysqladmin ping \
-        -h"$DB_HOST" \
-        -u"$DB_USERNAME" \
-        -p"$DB_PASSWORD" \
-        --ssl-mode=DISABLED \
-        --silent; do
-          sleep 2
-        done
+      for i in $(seq 1 30); do
+        echo "Waiting for MySQL ($i/30)..."
+        if mysqladmin ping -h"$DB_HOST" -u"$DB_USERNAME" -p"$DB_PASSWORD"; then
+          break
+        fi
+        sleep 2
+      done
     - |
       {
         echo "# config.ini"
@@ -58,8 +57,8 @@ test:
         echo "CSRF_TRUSTED_ORIGINS=[]"
         echo "CORS_ALLOWED_ORIGINS=[]"
         echo "AUTH_COOKIE_SECURE=False"
-        echo "STATIC_ROOT="
-        echo "STATIC_URL=static/"
+        echo "STATIC_ROOT=/app/staticfiles"
+        echo "STATIC_URL=/static/"
         echo "MAX_DISEASE_NAME_LENGTH=255"
         echo "PUBLIC_APP_URL=localhost"
         echo "[g2p]"
