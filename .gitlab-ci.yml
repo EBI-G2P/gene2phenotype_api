@@ -35,13 +35,14 @@ test:
     - pip install -r requirements.txt
     - pip install coverage
     - |
-      for i in $(seq 1 30); do
-        echo "Waiting for MySQL ($i/30)..."
-        if mysqladmin ping -h"$DB_HOST" -u"$DB_USERNAME" -p"$DB_PASSWORD"; then
-          break
-        fi
-        sleep 2
-      done
+      until mysqladmin ping \
+        -h"$DB_HOST" \
+        -u"$DB_USERNAME" \
+        -p"$DB_PASSWORD" \
+        --ssl-mode=DISABLED \
+        --silent; do
+          sleep 2
+        done
     - |
       {
         echo "# config.ini"
