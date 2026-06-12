@@ -1,0 +1,92 @@
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_BRANCH == "test-api-pipeline"'
+      when: always
+
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  DOCKER_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+
+test:
+  stage: test
+  image: python:3.10-slim
+  services:
+    - name: mysql:8.0
+      alias: mysql
+  variables:
+    MYSQL_ROOT_PASSWORD: ci-test-password
+    MYSQL_DATABASE: test_db
+    PROJECT_CONFIG_PATH: "$CI_PROJECT_DIR/config.ini"
+    DB_USERNAME: root
+    DB_PASSWORD: ci-test-password
+    DB_HOST: mysql
+    DB_NAME: test_db
+    DB_PORT: "3306"
+    DB_ENGINE: django.db.backends.mysql
+    USE_SQLITE_TEST_DB: "false"
+    SECRET_KEY: ci-test-secret-key
+  before_script:
+    - apt-get update && apt-get install -y default-libmysqlclient-dev default-mysql-client build-essential pkg-config openssl
+    - python -m pip install --upgrade pip
+    - pip install -r requirements.txt
+    - pip install coverage
+    - until mysqladmin ping -h"$DB_HOST" -u"$DB_USERNAME" -p"$DB_PASSWORD" --silent; do sleep 2; done
+    - |
+      {
+        echo "# config.ini"
+        echo "[email]"
+        echo "from=test_email"
+        echo "host=localhost"
+        echo "port=25"
+        echo "mailing_list=test_email"
+        echo "send_to_mailing_list=False"
+        echo "[settings]"
+        echo "DEBUG=True"
+        echo "ALLOWED_HOSTS=[]"
+        echo "CSRF_TRUSTED_ORIGINS=[]"
+        echo "CORS_ALLOWED_ORIGINS=[]"
+        echo "AUTH_COOKIE_SECURE=False"
+        echo "STATIC_ROOT="
+        echo "STATIC_URL=static/"
+        echo "MAX_DISEASE_NAME_LENGTH=255"
+        echo "PUBLIC_APP_URL=localhost"
+        echo "[g2p]"
+        echo "version=1.0.0"
+      } > "$PROJECT_CONFIG_PATH"
+  script:
+    - cd gene2phenotype_project
+    - python manage.py makemigrations --check --dry-run
+    - python manage.py migrate --noinput
+    - python -m coverage run --source=gene2phenotype_app --omit="*/tests/*" manage.py test --noinput gene2phenotype_app.tests
+    - python -m coverage report --fail-under=80
+
+build:
+  stage: build
+  image: docker:27
+  services:
+    - docker:27-dind
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
+  script:
+    - docker build -t "$DOCKER_IMAGE" .
+    - docker push "$DOCKER_IMAGE"
+    - docker rmi "$DOCKER_IMAGE"
+    - docker logout "$CI_REGISTRY"
+
+trigger_k8s_deploy_test:
+  stage: deploy
+  when: manual
+  trigger:
+    project: "$K8S_MANIFESTS_PROJECT"
+    branch: "$K8S_MANIFESTS_BRANCH"
+    strategy: mirror
+  variables:
+    APP_NAME: g2p-api
+    DOCKER_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+    DEPLOY_ENV: test
+    KUBE_CONTEXT: "$TEST_AGENT"
+    KUBE_NAMESPACE: "$TEST_NS"

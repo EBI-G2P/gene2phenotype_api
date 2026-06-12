@@ -16,12 +16,18 @@ from configparser import ConfigParser
 from datetime import timedelta
 from rest_framework.settings import api_settings
 
-config_path = os.environ.get("PROJECT_CONFIG_PATH")
-config = ConfigParser()
-config.read(config_path)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+config = ConfigParser()
+default_config_path = os.path.join(BASE_DIR, 'default_config.ini')
+config.read(default_config_path)
+
+config_path = os.environ.get("PROJECT_CONFIG_PATH")
+
+if config_path and os.path.exists(config_path):
+    config.read(config_path)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -33,6 +39,12 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 DEBUG = config.getboolean("settings", "DEBUG")
 
 ALLOWED_HOSTS = json.loads(config.get("settings", "ALLOWED_HOSTS"))
+
+# Security headers
+if not DEBUG:
+    # XSS and content protection
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
 
 # Maximum length of the disease name
 # Used to limit the disease name when creating, updating or searching
@@ -99,6 +111,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -107,6 +120,12 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
 ]
+
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -211,21 +230,24 @@ WSGI_APPLICATION = "gene2phenotype_project.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-# For testing
-if "test" in sys.argv or "test_coverage" in sys.argv:
+RUNNING_TESTS = "test" in sys.argv or "test_coverage" in sys.argv
+USE_SQLITE_TEST_DB = os.environ.get("USE_SQLITE_TEST_DB", "true").lower() == "true"
+
+# For local testing, use SQLite by default. CI can set USE_SQLITE_TEST_DB=false
+# to run the Django test suite against the configured MySQL database.
+if RUNNING_TESTS and USE_SQLITE_TEST_DB:
     DATABASES = {
         "default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}
     }
-
 else:
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.backends.mysql",
-            "NAME": config.get("database", "name"),
-            "USER": config.get("database", "user"),
-            "PASSWORD": config.get("database", "password"),
-            "HOST": config.get("database", "host"),
-            "PORT": config.get("database", "port"),
+            "ENGINE": os.environ.get('DB_ENGINE'),
+            "NAME": os.environ.get('DB_NAME'),
+            "USER": os.environ.get('DB_USERNAME'),
+            "PASSWORD": os.environ.get('DB_PASSWORD'),
+            "HOST": os.environ.get('DB_HOST'),
+            "PORT": os.environ.get('DB_PORT'),
         }
     }
 
