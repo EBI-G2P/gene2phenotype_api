@@ -1,0 +1,9 @@
+# This is a placeholder GitLab CI configuration.
+
+workflow:
+  rules:
+    - when: never
+
+hello-world:
+  script:
+    - echo "Hello, world!"
