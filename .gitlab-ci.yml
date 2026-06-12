@@ -19,7 +19,7 @@ test:
     USE_SQLITE_TEST_DB: "true"
     SECRET_KEY: ci-test-secret-key
   before_script:
-    - apt-get update && apt-get install -y build-essential pkg-config openssl
+    - apt-get update && apt-get install -y default-libmysqlclient-dev default-mysql-client build-essential pkg-config openssl
     - python -m pip install --upgrade pip
     - pip install -r requirements.txt
     - pip install coverage
