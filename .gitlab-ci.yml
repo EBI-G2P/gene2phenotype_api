@@ -35,13 +35,24 @@ test:
     - pip install -r requirements.txt
     - pip install coverage
     - |
+      mysql_ready=false
       for i in $(seq 1 30); do
         echo "Waiting for MySQL ($i/30)..."
-        if mysqladmin ping -h"$DB_HOST" -u"$DB_USERNAME" -p"$DB_PASSWORD"; then
+        if mysqladmin \
+          --host="$DB_HOST" \
+          --user="$DB_USERNAME" \
+          --password="$DB_PASSWORD" \
+          --ssl=0 \
+          ping; then
+          mysql_ready=true
           break
         fi
         sleep 2
       done
+      if [ "$mysql_ready" != "true" ]; then
+        echo "MySQL did not become ready"
+        exit 1
+      fi
     - |
       {
         echo "# config.ini"
