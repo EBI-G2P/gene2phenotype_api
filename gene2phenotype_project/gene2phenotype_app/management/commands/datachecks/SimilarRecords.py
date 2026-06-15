@@ -106,13 +106,9 @@ def get_records_with_publication_overlap():
                 continue
 
             for candidate in records[index + 1 :]:
-                same_disease = record["disease_id"] == candidate["disease_id"]
-                different_genotype = record["genotype_id"] != candidate["genotype_id"]
-                same_mechanism = record["mechanism_id"] == candidate["mechanism_id"]
-                shared_panels = panels_by_record.get(record["id"], set()) & panels_by_record.get(
-                    candidate["id"], set()
-                )
-                if same_disease and different_genotype and same_mechanism and shared_panels:
+                if record["disease_id"] == candidate["disease_id"]:
+                    continue
+                if record["genotype_id"] != candidate["genotype_id"]:
                     continue
 
                 candidate_publications = publications_by_record.get(candidate["id"], set())
