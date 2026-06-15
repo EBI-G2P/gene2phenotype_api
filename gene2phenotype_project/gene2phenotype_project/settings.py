@@ -26,7 +26,9 @@ config.read(default_config_path)
 
 config_path = os.environ.get("PROJECT_CONFIG_PATH")
 
-if config_path and os.path.exists(config_path):
+if config_path:
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"PROJECT_CONFIG_PATH does not exist: {config_path}")
     config.read(config_path)
 
 # Quick-start development settings - unsuitable for production
