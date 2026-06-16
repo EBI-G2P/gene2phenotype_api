@@ -13,6 +13,7 @@ variables:
 
 test:
   stage: test
+  coverage: '/TOTAL.*\s+(\d+%)$/'
   image: python:3.10-slim-bookworm
   services:
     - name: mysql:8.0
@@ -28,9 +29,15 @@ test:
     DB_PORT: "3306"
     DB_ENGINE: django.db.backends.mysql
     USE_SQLITE_TEST_DB: "false"
-    SECRET_KEY: ci-test-secret-key
   before_script:
-    - apt-get update && apt-get install -y default-libmysqlclient-dev default-mysql-client build-essential pkg-config openssl
+    - |
+      apt-get update && apt-get install -y --no-install-recommends \
+        default-libmysqlclient-dev \
+        default-mysql-client \
+        build-essential \
+        pkg-config \
+        openssl && \
+      rm -rf /var/lib/apt/lists/*
     - python -m pip install --upgrade pip
     - pip install -r requirements.txt
     - pip install coverage
@@ -70,13 +77,24 @@ test:
       } > "$PROJECT_CONFIG_PATH"
   script:
     - cd gene2phenotype_project
+    - export SECRET_KEY="$(openssl rand -base64 12)"
     - python manage.py makemigrations --check --dry-run
     - python manage.py migrate --noinput
     - python -m coverage run --source=gene2phenotype_app --omit="*/tests/*" manage.py test --noinput gene2phenotype_app.tests
     - python -m coverage report --fail-under=80
+    - python -m coverage xml -o coverage.cobertura.xml
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: gene2phenotype_project/coverage.cobertura.xml
+    paths:
+      - gene2phenotype_project/coverage.cobertura.xml
+    expire_in: 1 week
 
 build:
   stage: build
+  needs: ["test"]
   image: docker:27
   services:
     - docker:27-dind
@@ -91,6 +109,9 @@ build:
 trigger_k8s_deploy_test:
   stage: deploy
   when: manual
+  environment:
+    name: test
+  manual_confirmation: "Deploy this image to the test environment?"
   trigger:
     project: "$K8S_MANIFESTS_PROJECT"
     branch: "$K8S_MANIFESTS_BRANCH"
