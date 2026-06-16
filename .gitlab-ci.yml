@@ -111,7 +111,6 @@ trigger_k8s_deploy_test:
   when: manual
   environment:
     name: test
-  manual_confirmation: "Deploy this image to the test environment?"
   trigger:
     project: "$K8S_MANIFESTS_PROJECT"
     branch: "$K8S_MANIFESTS_BRANCH"
