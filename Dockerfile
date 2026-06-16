@@ -1,4 +1,4 @@
-FROM python:3.10-slim AS builder
+FROM python:3.10-slim-bookworm AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -19,7 +19,7 @@ COPY requirements.txt .
 RUN python -m venv "$VIRTUAL_ENV" && \
     pip install --no-cache-dir -r requirements.txt
 
-FROM python:3.10-slim AS runtime
+FROM python:3.10-slim-bookworm AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
