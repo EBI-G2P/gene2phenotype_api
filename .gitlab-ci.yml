@@ -5,6 +5,7 @@ workflow:
 
 stages:
   - test
+  - deploy_check
   - build
   - deploy
 
@@ -74,6 +75,48 @@ test:
     - python manage.py migrate --noinput
     - python -m coverage run --source=gene2phenotype_app --omit="*/tests/*" manage.py test --noinput gene2phenotype_app.tests
     - python -m coverage report --fail-under=80
+
+deploy_check:
+  stage: deploy_check
+  image: python:3.10-slim
+  variables:
+    PROJECT_CONFIG_PATH: "$CI_PROJECT_DIR/deploy-check-config.ini"
+    SECRET_KEY: deploy-check-secret-key-with-sufficient-length-for-django-deploy-checks
+    DB_ENGINE: django.db.backends.sqlite3
+    DB_NAME: ":memory:"
+    DB_USERNAME: ""
+    DB_PASSWORD: ""
+    DB_HOST: ""
+    DB_PORT: ""
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends default-libmysqlclient-dev build-essential pkg-config
+    - python -m pip install --upgrade pip
+    - pip install -r requirements.txt
+    - |
+      {
+        echo "# deploy-check-config.ini"
+        echo "[email]"
+        echo "from=test_email"
+        echo "host=localhost"
+        echo "port=25"
+        echo "mailing_list=test_email"
+        echo "send_to_mailing_list=False"
+        echo "[settings]"
+        echo "DEBUG=False"
+        echo 'ALLOWED_HOSTS=["localhost", "127.0.0.1"]'
+        echo 'CSRF_TRUSTED_ORIGINS=["https://localhost"]'
+        echo 'CORS_ALLOWED_ORIGINS=["https://localhost"]'
+        echo "AUTH_COOKIE_SECURE=True"
+        echo "STATIC_ROOT=/app/staticfiles"
+        echo "STATIC_URL=/static/"
+        echo "MAX_DISEASE_NAME_LENGTH=255"
+        echo "PUBLIC_APP_URL=https://localhost"
+        echo "[g2p]"
+        echo "version=1.0.0"
+      } > "$PROJECT_CONFIG_PATH"
+  script:
+    - cd gene2phenotype_project
+    - python manage.py check --deploy --fail-level WARNING
 
 build:
   stage: build
