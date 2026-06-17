@@ -15,3 +15,5 @@ from .Disease import (
 from .MinedPublications import check_mined_publication_status
 
 from .SimilarRecords import get_similar_records
+
+from .DeletedRecords import check_deleted_records
