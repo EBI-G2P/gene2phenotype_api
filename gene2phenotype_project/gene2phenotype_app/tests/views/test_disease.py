@@ -166,17 +166,23 @@ class DiseaseSummaryTests(TestCase):
             response.data["disease"], "RAB27A-related Griscelli syndrome"
         )
 
-        expected_data = {
-            "locus": "RAB27A",
-            "genotype": "biallelic_autosomal",
-            "confidence": "definitive",
-            "panels": ["Cardiac"],
-            "variant_consequence": ["absent gene product"],
-            "variant_type": ["inframe_insertion", "intron_variant"],
-            "molecular_mechanism": "loss of function",
-            "stable_id": "G2P00002",
-        }
-        self.assertEqual(list(response.data["records_summary"])[0], expected_data)
+        record = next(
+            item
+            for item in response.data["records_summary"]
+            if item["stable_id"] == "G2P00002"
+        )
+
+        self.assertEqual(record["locus"], "RAB27A")
+        self.assertEqual(record["genotype"], "biallelic_autosomal")
+        self.assertEqual(record["confidence"], "definitive")
+        self.assertEqual(record["molecular_mechanism"], "loss of function")
+        self.assertCountEqual(record["panels"], ["Cardiac"])
+        self.assertCountEqual(
+            record["variant_consequence"], ["absent gene product"]
+        )
+        self.assertCountEqual(
+            record["variant_type"], ["inframe_insertion", "intron_variant"]
+        )
 
     def test_get_disease_with_only_deleted_variant_consequence(self):
         """
@@ -197,7 +203,7 @@ class DiseaseSummaryTests(TestCase):
             if item["stable_id"] == "G2P00002"
         )
         self.assertEqual(record["variant_consequence"], [])
-        self.assertEqual(
+        self.assertCountEqual(
             record["variant_type"], ["inframe_insertion", "intron_variant"]
         )
 

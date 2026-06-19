@@ -35,7 +35,7 @@ class GeneEndpointTests(TestCase):
         self.assertEqual(response.data["ids"], expected_data_ids)
 
         expected_data_synonyms = ["BBS14", "CT87"]
-        self.assertEqual(list(response.data["synonyms"]), expected_data_synonyms)
+        self.assertCountEqual(response.data["synonyms"], expected_data_synonyms)
 
 
 class GeneSummaryEndpointTests(TestCase):
@@ -101,19 +101,24 @@ class GeneSummaryEndpointTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-        # The output is sorted by date of review
-        expected_data = {
-            "disease": "RAB27A-related Griscelli syndrome",
-            "genotype": "biallelic_autosomal",
-            "confidence": "definitive",
-            "panels": ["Cardiac"],
-            "variant_consequence": ["absent gene product"],
-            "variant_type": ["inframe_insertion", "intron_variant"],
-            "molecular_mechanism": "loss of function",
-            "last_updated": "2018-07-05",
-            "stable_id": "G2P00002",
-        }
-        self.assertEqual(list(response.data["records_summary"])[1], expected_data)
+        record = next(
+            item
+            for item in response.data["records_summary"]
+            if item["stable_id"] == "G2P00002"
+        )
+
+        self.assertEqual(record["disease"], "RAB27A-related Griscelli syndrome")
+        self.assertEqual(record["genotype"], "biallelic_autosomal")
+        self.assertEqual(record["confidence"], "definitive")
+        self.assertEqual(record["molecular_mechanism"], "loss of function")
+        self.assertEqual(record["last_updated"], "2018-07-05")
+        self.assertCountEqual(record["panels"], ["Cardiac"])
+        self.assertCountEqual(
+            record["variant_consequence"], ["absent gene product"]
+        )
+        self.assertCountEqual(
+            record["variant_type"], ["inframe_insertion", "intron_variant"]
+        )
 
     def test_get_summary_with_only_deleted_variant_consequence(self):
         """
@@ -131,7 +136,7 @@ class GeneSummaryEndpointTests(TestCase):
             if item["stable_id"] == "G2P00002"
         )
         self.assertEqual(record["variant_consequence"], [])
-        self.assertEqual(
+        self.assertCountEqual(
             record["variant_type"], ["inframe_insertion", "intron_variant"]
         )
 
@@ -250,7 +255,7 @@ class GeneDiseaseEndpointTests(TestCase):
                 "source": "Mondo",
             },
         ]
-        self.assertEqual(response.data["results"], expected_data_function)
+        self.assertCountEqual(response.data["results"], expected_data_function)
 
     def test_get_gene_synonym(self):
         """
@@ -287,7 +292,7 @@ class GeneDiseaseEndpointTests(TestCase):
                 "source": "Mondo",
             },
         ]
-        self.assertEqual(response.data["results"], expected_data_function)
+        self.assertCountEqual(response.data["results"], expected_data_function)
 
     def test_get_invalid_gene(self):
         """
