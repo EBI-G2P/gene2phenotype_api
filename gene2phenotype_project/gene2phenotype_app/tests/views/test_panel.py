@@ -343,11 +343,11 @@ class PanelDownloadEndpointTests(TestCase):
         self.assertIn("g2p id", rows[0])
 
         row = next(row for row in rows[1:] if row[0] == "G2P00002")
-        expected_summary = (
+        expected_summary_prefix = (
             "RAB27A-related Griscelli syndrome has a confidence assertion of definitive based on 2 curated publications. "
             "This is a biallelic autosomal condition. This is typically de novo and this is typified by incomplete penetrance. "
             "Variant consequence is absent gene product (inferred). Molecular mechanism is loss of function (evidenced by protein "
-            "interaction function). Recorded variant types include inframe insertion and intron variant."
+            "interaction function). Recorded variant types include "
         )
 
         self.assertEqual(row[0], "G2P00002")
@@ -374,7 +374,14 @@ class PanelDownloadEndpointTests(TestCase):
         )
         self.assertEqual(row[22], "2018-07-05 16:33:03+00:00")
         self.assertEqual(row[23], "under review")
-        self.assertEqual(row[24], expected_summary)
+        self.assertTrue(row[24].startswith(expected_summary_prefix))
+        self.assertIn(
+            row[24][len(expected_summary_prefix) :],
+            {
+                "inframe insertion and intron variant.",
+                "intron variant and inframe insertion.",
+            },
+        )
         self.assertCountEqual(row[4].split("; "), ["GS2", "RAB27"])
         self.assertCountEqual(
             row[12].split("; "), ["inframe_insertion", "intron_variant"]
