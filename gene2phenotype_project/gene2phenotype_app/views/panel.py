@@ -4,7 +4,12 @@ from rest_framework.response import Response
 from django.http import Http404, HttpResponse
 from django.db.models import Q
 from rest_framework.decorators import api_view
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiResponse,
+    OpenApiExample,
+    OpenApiTypes,
+)
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from datetime import datetime
@@ -514,6 +519,12 @@ class LGDEditPanel(CustomPermissionAPIView):
     - Download DD records:
         `/panel/DD/download`
     """),
+    responses={
+        (200, "text/csv"): OpenApiResponse(
+            response=OpenApiTypes.BINARY,
+            description="Uncompressed CSV export for the selected panel or for all visible panels.",
+        )
+    },
 )
 @api_view(["GET"])
 def PanelDownload(request, name):
