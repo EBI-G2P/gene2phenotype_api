@@ -1,10 +1,16 @@
 from rest_framework import generics, status, permissions
+from rest_framework.renderers import BaseRenderer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import Http404, HttpResponse
 from django.db.models import Q
-from rest_framework.decorators import api_view
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
+from rest_framework.decorators import api_view, renderer_classes
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiResponse,
+    OpenApiExample,
+    OpenApiTypes,
+)
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from datetime import datetime
@@ -39,6 +45,16 @@ from gene2phenotype_app.serializers import (
 from .base import BaseAPIView, IsSuperUser, CustomPermissionAPIView
 
 from ..utils import get_date_now
+
+
+class CSVRenderer(BaseRenderer):
+    media_type = "text/csv"
+    format = "csv"
+    charset = "utf-8"
+    render_style = "binary"
+
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        return data
 
 
 @extend_schema(exclude=True)
@@ -514,8 +530,15 @@ class LGDEditPanel(CustomPermissionAPIView):
     - Download DD records:
         `/panel/DD/download`
     """),
+    responses={
+        (200, "text/csv"): OpenApiResponse(
+            response=OpenApiTypes.BINARY,
+            description="Uncompressed CSV export for the selected panel or for all visible panels.",
+        )
+    },
 )
 @api_view(["GET"])
+@renderer_classes([CSVRenderer])
 def PanelDownload(request, name):
     """
     Method to download the panel data.
