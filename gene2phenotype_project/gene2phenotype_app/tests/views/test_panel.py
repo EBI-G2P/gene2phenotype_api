@@ -153,25 +153,25 @@ class PanelSummaryEndpointTests(TestCase):
         self.assertEqual(len(list(records_summary)[0]["variant_type"]), 2)
         self.assertEqual(len(list(records_summary)[0]["variant_consequence"]), 1)
 
-    # def test_get_panel_summary_with_only_deleted_variant_consequence(self):
-    #     """
-    #     Records with only deleted variant consequences should still be returned.
-    #     """
-    #     LGDVariantGenccConsequence.objects.filter(lgd_id=2).update(is_deleted=1)
+    def test_get_panel_summary_with_only_deleted_variant_consequence(self):
+        """
+        Records with only deleted variant consequences should still be returned.
+        """
+        LGDVariantGenccConsequence.objects.filter(lgd_id=2).update(is_deleted=1)
 
-    #     response = self.client.get(self.url_panel_cardiac)
+        response = self.client.get(self.url_panel_cardiac)
 
-    #     self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)
 
-    #     record = next(
-    #         item
-    #         for item in response.data["records_summary"]
-    #         if item["stable_id"] == "G2P00002"
-    #     )
-    #     self.assertEqual(record["variant_consequence"], [])
-    #     self.assertEqual(
-    #         record["variant_type"], ["inframe_insertion", "intron_variant"]
-    #     )
+        record = next(
+            item
+            for item in response.data["records_summary"]
+            if item["stable_id"] == "G2P00002"
+        )
+        self.assertEqual(record["variant_consequence"], [])
+        self.assertCountEqual(
+            record["variant_type"], ["inframe_insertion", "intron_variant"]
+        )
 
 
 class PanelDownloadEndpointTests(TestCase):
@@ -256,111 +256,134 @@ class PanelDownloadEndpointTests(TestCase):
 
         self.assertEqual(rows[1], expected_data)
 
-    # def test_download_all_visible_panel(self):
-    #     """
-    #     Download all visible panels (non authenticated user)
-    #     """
-    #     url_panel = reverse("panel_download", kwargs={"name": "all"})
-    #     response = self.client.get(url_panel)
+    def test_download_all_visible_panel(self):
+        """
+        Download all visible panels (non authenticated user)
+        """
+        url_panel = reverse("panel_download", kwargs={"name": "all"})
+        response = self.client.get(url_panel)
 
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(response["Content-Type"], "text/csv")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
 
-    #     # Check the content
-    #     content_disposition = response.get("Content-Disposition")
-    #     self.assertTrue(content_disposition.startswith("attachment"))
-    #     self.assertIn("filename=", content_disposition)
+        # Check the content
+        content_disposition = response.get("Content-Disposition")
+        self.assertTrue(content_disposition.startswith("attachment"))
+        self.assertIn("filename=", content_disposition)
 
-    #     content = response.content.decode("utf-8")
-    #     csv_reader = csv.reader(StringIO(content))
-    #     rows = list(csv_reader)
+        content = response.content.decode("utf-8")
+        csv_reader = csv.reader(StringIO(content))
+        rows = list(csv_reader)
 
-    #     # Check content of file
-    #     self.assertEqual(len(rows), 6)
-    #     self.assertIn("g2p id", rows[0])
+        # Check content of file
+        self.assertEqual(len(rows), 6)
+        self.assertIn("g2p id", rows[0])
 
-    #     expected_data = [
-    #         "G2P00002",
-    #         "RAB27A",
-    #         "",
-    #         "9766",
-    #         "GS2; RAB27",
-    #         "RAB27A-related Griscelli syndrome",
-    #         "",
-    #         "",
-    #         "biallelic_autosomal",
-    #         "typified by incomplete penetrance; typically de novo",
-    #         "definitive",
-    #         "absent gene product",
-    #         "inframe_insertion; intron_variant",
-    #         "loss of function",
-    #         "evidence",
-    #         "assembly-mediated GOF:inferred; aggregation:inferred",
-    #         "15214012 -> function: protein interaction",
-    #         "HP:0003549; HP:0010786; HP:0033127",
-    #         "12451214; 15214012",
-    #         "32302040",
-    #         "Cardiac",
-    #         "All mutations are located in the aminoterminal part of the gene, before the first epidermal growth factor-like domain.",
-    #         "2018-07-05 16:33:03+00:00",
-    #         "under review",
-    #     ]
+        row = next(row for row in rows[1:] if row[0] == "G2P00002")
 
-    #     self.assertEqual(rows[2], expected_data)
+        self.assertEqual(row[0], "G2P00002")
+        self.assertEqual(row[1], "RAB27A")
+        self.assertEqual(row[2], "")
+        self.assertEqual(row[3], "9766")
+        self.assertEqual(row[5], "RAB27A-related Griscelli syndrome")
+        self.assertEqual(row[6], "")
+        self.assertEqual(row[7], "")
+        self.assertEqual(row[8], "biallelic_autosomal")
+        self.assertEqual(
+            row[9], "typified by incomplete penetrance; typically de novo"
+        )
+        self.assertEqual(row[10], "definitive")
+        self.assertEqual(row[11], "absent gene product")
+        self.assertEqual(row[13], "loss of function")
+        self.assertEqual(row[14], "evidence")
+        self.assertEqual(row[16], "15214012 -> function: protein interaction")
+        self.assertEqual(row[19], "32302040")
+        self.assertEqual(row[20], "Cardiac")
+        self.assertEqual(
+            row[21],
+            "All mutations are located in the aminoterminal part of the gene, before the first epidermal growth factor-like domain.",
+        )
+        self.assertEqual(row[22], "2018-07-05 16:33:03+00:00")
+        self.assertEqual(row[23], "under review")
+        self.assertCountEqual(row[4].split("; "), ["GS2", "RAB27"])
+        self.assertCountEqual(
+            row[12].split("; "), ["inframe_insertion", "intron_variant"]
+        )
+        self.assertCountEqual(
+            row[15].split("; "),
+            ["assembly-mediated GOF:inferred", "aggregation:inferred"],
+        )
+        self.assertCountEqual(
+            row[17].split("; "), ["HP:0003549", "HP:0010786", "HP:0033127"]
+        )
+        self.assertCountEqual(row[18].split("; "), ["12451214", "15214012"])
 
-    # def test_download_all_visible_panel_with_summary(self):
-    #     """
-    #     Download all visible panels (non authenticated user)
-    #     The download should include the summary for each record
-    #     """
-    #     url_panel = reverse("panel_download", kwargs={"name": "all"})
-    #     response = self.client.get(url_panel + "?extra_columns=summary")
+    def test_download_all_visible_panel_with_summary(self):
+        """
+        Download all visible panels (non authenticated user)
+        The download should include the summary for each record
+        """
+        url_panel = reverse("panel_download", kwargs={"name": "all"})
+        response = self.client.get(url_panel + "?extra_columns=summary")
 
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(response["Content-Type"], "text/csv")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
 
-    #     # Check the content
-    #     content_disposition = response.get("Content-Disposition")
-    #     self.assertTrue(content_disposition.startswith("attachment"))
-    #     self.assertIn("filename=", content_disposition)
+        # Check the content
+        content_disposition = response.get("Content-Disposition")
+        self.assertTrue(content_disposition.startswith("attachment"))
+        self.assertIn("filename=", content_disposition)
 
-    #     content = response.content.decode("utf-8")
-    #     csv_reader = csv.reader(StringIO(content))
-    #     rows = list(csv_reader)
+        content = response.content.decode("utf-8")
+        csv_reader = csv.reader(StringIO(content))
+        rows = list(csv_reader)
 
-    #     # Check content of file
-    #     self.assertEqual(len(rows), 6)
-    #     self.assertIn("g2p id", rows[0])
+        # Check content of file
+        self.assertEqual(len(rows), 6)
+        self.assertIn("g2p id", rows[0])
 
-    #     expected_data = [
-    #         "G2P00002",
-    #         "RAB27A",
-    #         "",
-    #         "9766",
-    #         "GS2; RAB27",
-    #         "RAB27A-related Griscelli syndrome",
-    #         "",
-    #         "",
-    #         "biallelic_autosomal",
-    #         "typified by incomplete penetrance; typically de novo",
-    #         "definitive",
-    #         "absent gene product",
-    #         "inframe_insertion; intron_variant",
-    #         "loss of function",
-    #         "evidence",
-    #         "assembly-mediated GOF:inferred; aggregation:inferred",
-    #         "15214012 -> function: protein interaction",
-    #         "HP:0003549; HP:0010786; HP:0033127",
-    #         "12451214; 15214012",
-    #         "32302040",
-    #         "Cardiac",
-    #         "All mutations are located in the aminoterminal part of the gene, before the first epidermal growth factor-like domain.",
-    #         "2018-07-05 16:33:03+00:00",
-    #         "under review",
-    #         "RAB27A-related Griscelli syndrome has a confidence assertion of definitive based on 2 curated publications. "
-    #         "This is a biallelic autosomal condition. This is typically de novo and this is typified by incomplete penetrance. "
-    #         "Variant consequence is absent gene product (inferred). Molecular mechanism is loss of function (evidenced by protein "
-    #         "interaction function). Recorded variant types include inframe insertion and intron variant.",
-    #     ]
+        row = next(row for row in rows[1:] if row[0] == "G2P00002")
+        expected_summary = (
+            "RAB27A-related Griscelli syndrome has a confidence assertion of definitive based on 2 curated publications. "
+            "This is a biallelic autosomal condition. This is typically de novo and this is typified by incomplete penetrance. "
+            "Variant consequence is absent gene product (inferred). Molecular mechanism is loss of function (evidenced by protein "
+            "interaction function). Recorded variant types include inframe insertion and intron variant."
+        )
 
-    #     self.assertEqual(rows[2], expected_data)
+        self.assertEqual(row[0], "G2P00002")
+        self.assertEqual(row[1], "RAB27A")
+        self.assertEqual(row[2], "")
+        self.assertEqual(row[3], "9766")
+        self.assertEqual(row[5], "RAB27A-related Griscelli syndrome")
+        self.assertEqual(row[6], "")
+        self.assertEqual(row[7], "")
+        self.assertEqual(row[8], "biallelic_autosomal")
+        self.assertEqual(
+            row[9], "typified by incomplete penetrance; typically de novo"
+        )
+        self.assertEqual(row[10], "definitive")
+        self.assertEqual(row[11], "absent gene product")
+        self.assertEqual(row[13], "loss of function")
+        self.assertEqual(row[14], "evidence")
+        self.assertEqual(row[16], "15214012 -> function: protein interaction")
+        self.assertEqual(row[19], "32302040")
+        self.assertEqual(row[20], "Cardiac")
+        self.assertEqual(
+            row[21],
+            "All mutations are located in the aminoterminal part of the gene, before the first epidermal growth factor-like domain.",
+        )
+        self.assertEqual(row[22], "2018-07-05 16:33:03+00:00")
+        self.assertEqual(row[23], "under review")
+        self.assertEqual(row[24], expected_summary)
+        self.assertCountEqual(row[4].split("; "), ["GS2", "RAB27"])
+        self.assertCountEqual(
+            row[12].split("; "), ["inframe_insertion", "intron_variant"]
+        )
+        self.assertCountEqual(
+            row[15].split("; "),
+            ["assembly-mediated GOF:inferred", "aggregation:inferred"],
+        )
+        self.assertCountEqual(
+            row[17].split("; "), ["HP:0003549", "HP:0010786", "HP:0033127"]
+        )
+        self.assertCountEqual(row[18].split("; "), ["12451214", "15214012"])

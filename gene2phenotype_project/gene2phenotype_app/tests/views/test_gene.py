@@ -35,7 +35,7 @@ class GeneEndpointTests(TestCase):
         self.assertEqual(response.data["ids"], expected_data_ids)
 
         expected_data_synonyms = ["BBS14", "CT87"]
-        self.assertEqual(list(response.data["synonyms"]), expected_data_synonyms)
+        self.assertCountEqual(response.data["synonyms"], expected_data_synonyms)
 
 
 class GeneSummaryEndpointTests(TestCase):
@@ -92,48 +92,53 @@ class GeneSummaryEndpointTests(TestCase):
         ]
         self.assertEqual(list(response.data["records_summary"]), expected_data)
 
-    # def test_get_summary_complete(self):
-    #     """
-    #     Test the response of the gene summary endpoint when there are
-    #     deleted variants in the record
-    #     """
-    #     response = self.client.get(self.url_gene_summary_2)
+    def test_get_summary_complete(self):
+        """
+        Test the response of the gene summary endpoint when there are
+        deleted variants in the record
+        """
+        response = self.client.get(self.url_gene_summary_2)
 
-    #     self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)
 
-    #     # The output is sorted by date of review
-    #     expected_data = {
-    #         "disease": "RAB27A-related Griscelli syndrome",
-    #         "genotype": "biallelic_autosomal",
-    #         "confidence": "definitive",
-    #         "panels": ["Cardiac"],
-    #         "variant_consequence": ["absent gene product"],
-    #         "variant_type": ["inframe_insertion", "intron_variant"],
-    #         "molecular_mechanism": "loss of function",
-    #         "last_updated": "2018-07-05",
-    #         "stable_id": "G2P00002",
-    #     }
-    #     self.assertEqual(list(response.data["records_summary"])[1], expected_data)
+        record = next(
+            item
+            for item in response.data["records_summary"]
+            if item["stable_id"] == "G2P00002"
+        )
 
-    # def test_get_summary_with_only_deleted_variant_consequence(self):
-    #     """
-    #     Records with only deleted variant consequences should still be returned.
-    #     """
-    #     LGDVariantGenccConsequence.objects.filter(lgd_id=2).update(is_deleted=1)
+        self.assertEqual(record["disease"], "RAB27A-related Griscelli syndrome")
+        self.assertEqual(record["genotype"], "biallelic_autosomal")
+        self.assertEqual(record["confidence"], "definitive")
+        self.assertEqual(record["molecular_mechanism"], "loss of function")
+        self.assertEqual(record["last_updated"], "2018-07-05")
+        self.assertCountEqual(record["panels"], ["Cardiac"])
+        self.assertCountEqual(
+            record["variant_consequence"], ["absent gene product"]
+        )
+        self.assertCountEqual(
+            record["variant_type"], ["inframe_insertion", "intron_variant"]
+        )
 
-    #     response = self.client.get(self.url_gene_summary_2)
+    def test_get_summary_with_only_deleted_variant_consequence(self):
+        """
+        Records with only deleted variant consequences should still be returned.
+        """
+        LGDVariantGenccConsequence.objects.filter(lgd_id=2).update(is_deleted=1)
 
-    #     self.assertEqual(response.status_code, 200)
+        response = self.client.get(self.url_gene_summary_2)
 
-    #     record = next(
-    #         item
-    #         for item in response.data["records_summary"]
-    #         if item["stable_id"] == "G2P00002"
-    #     )
-    #     self.assertEqual(record["variant_consequence"], [])
-    #     self.assertEqual(
-    #         record["variant_type"], ["inframe_insertion", "intron_variant"]
-    #     )
+        self.assertEqual(response.status_code, 200)
+
+        record = next(
+            item
+            for item in response.data["records_summary"]
+            if item["stable_id"] == "G2P00002"
+        )
+        self.assertEqual(record["variant_consequence"], [])
+        self.assertCountEqual(
+            record["variant_type"], ["inframe_insertion", "intron_variant"]
+        )
 
 
 class GeneFunctionEndpointTests(TestCase):
@@ -215,79 +220,79 @@ class GeneDiseaseEndpointTests(TestCase):
         self.url_invalid_gene = reverse("locus_gene_disease", kwargs={"name": "BBBS14"})
         self.url_not_found = reverse("locus_gene_disease", kwargs={"name": "GS2"})
 
-    # def test_get_gene(self):
-    #     """
-    #     Test the response of the gene disease endpoint
-    #     """
-    #     response = self.client.get(self.url_gene)
+    def test_get_gene(self):
+        """
+        Test the response of the gene disease endpoint
+        """
+        response = self.client.get(self.url_gene)
 
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(response.data["count"], 4)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 4)
 
-    #     expected_data_function = [
-    #         {
-    #             "original_disease_name": "JOUBERT SYNDROME 5",
-    #             "disease_name": "joubert syndrome",
-    #             "identifier": "610188",
-    #             "source": "OMIM",
-    #         },
-    #         {
-    #             "original_disease_name": "SENIOR-LOKEN SYNDROME 6",
-    #             "disease_name": "senior-loken syndrome",
-    #             "identifier": "610189",
-    #             "source": "OMIM",
-    #         },
-    #         {
-    #             "original_disease_name": "Joubert syndrome 5",
-    #             "disease_name": "joubert syndrome",
-    #             "identifier": "MONDO:0012432",
-    #             "source": "Mondo",
-    #         },
-    #         {
-    #             "original_disease_name": "Senior-Loken syndrome 6",
-    #             "disease_name": "senior-loken syndrome",
-    #             "identifier": "MONDO:0012433",
-    #             "source": "Mondo",
-    #         },
-    #     ]
-    #     self.assertEqual(response.data["results"], expected_data_function)
+        expected_data_function = [
+            {
+                "original_disease_name": "JOUBERT SYNDROME 5",
+                "disease_name": "joubert syndrome",
+                "identifier": "610188",
+                "source": "OMIM",
+            },
+            {
+                "original_disease_name": "SENIOR-LOKEN SYNDROME 6",
+                "disease_name": "senior-loken syndrome",
+                "identifier": "610189",
+                "source": "OMIM",
+            },
+            {
+                "original_disease_name": "Joubert syndrome 5",
+                "disease_name": "joubert syndrome",
+                "identifier": "MONDO:0012432",
+                "source": "Mondo",
+            },
+            {
+                "original_disease_name": "Senior-Loken syndrome 6",
+                "disease_name": "senior-loken syndrome",
+                "identifier": "MONDO:0012433",
+                "source": "Mondo",
+            },
+        ]
+        self.assertCountEqual(response.data["results"], expected_data_function)
 
-    # def test_get_gene_synonym(self):
-    #     """
-    #     Test the response of the gene disease endpoint when searching the gene synonym.
-    #     """
-    #     response = self.client.get(self.url_gene_synonym)
+    def test_get_gene_synonym(self):
+        """
+        Test the response of the gene disease endpoint when searching the gene synonym.
+        """
+        response = self.client.get(self.url_gene_synonym)
 
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(response.data["count"], 4)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 4)
 
-    #     expected_data_function = [
-    #         {
-    #             "original_disease_name": "JOUBERT SYNDROME 5",
-    #             "disease_name": "joubert syndrome",
-    #             "identifier": "610188",
-    #             "source": "OMIM",
-    #         },
-    #         {
-    #             "original_disease_name": "SENIOR-LOKEN SYNDROME 6",
-    #             "disease_name": "senior-loken syndrome",
-    #             "identifier": "610189",
-    #             "source": "OMIM",
-    #         },
-    #         {
-    #             "original_disease_name": "Joubert syndrome 5",
-    #             "disease_name": "joubert syndrome",
-    #             "identifier": "MONDO:0012432",
-    #             "source": "Mondo",
-    #         },
-    #         {
-    #             "original_disease_name": "Senior-Loken syndrome 6",
-    #             "disease_name": "senior-loken syndrome",
-    #             "identifier": "MONDO:0012433",
-    #             "source": "Mondo",
-    #         },
-    #     ]
-    #     self.assertEqual(response.data["results"], expected_data_function)
+        expected_data_function = [
+            {
+                "original_disease_name": "JOUBERT SYNDROME 5",
+                "disease_name": "joubert syndrome",
+                "identifier": "610188",
+                "source": "OMIM",
+            },
+            {
+                "original_disease_name": "SENIOR-LOKEN SYNDROME 6",
+                "disease_name": "senior-loken syndrome",
+                "identifier": "610189",
+                "source": "OMIM",
+            },
+            {
+                "original_disease_name": "Joubert syndrome 5",
+                "disease_name": "joubert syndrome",
+                "identifier": "MONDO:0012432",
+                "source": "Mondo",
+            },
+            {
+                "original_disease_name": "Senior-Loken syndrome 6",
+                "disease_name": "senior-loken syndrome",
+                "identifier": "MONDO:0012433",
+                "source": "Mondo",
+            },
+        ]
+        self.assertCountEqual(response.data["results"], expected_data_function)
 
     def test_get_invalid_gene(self):
         """

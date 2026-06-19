@@ -151,55 +151,61 @@ class DiseaseSummaryTests(TestCase):
         ]
         self.assertEqual(list(response.data["records_summary"]), expected_data)
 
-    # def test_get_disease_complete(self):
-    #     """
-    #     Test the response of the disease summary endpoint with deleted variants in the output
-    #     """
-    #     self.url_disease = reverse(
-    #         "disease_summary", kwargs={"id": "RAB27A-related Griscelli syndrome"}
-    #     )
+    def test_get_disease_complete(self):
+        """
+        Test the response of the disease summary endpoint with deleted variants in the output
+        """
+        self.url_disease = reverse(
+            "disease_summary", kwargs={"id": "RAB27A-related Griscelli syndrome"}
+        )
 
-    #     response = self.client.get(self.url_disease)
+        response = self.client.get(self.url_disease)
 
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(
-    #         response.data["disease"], "RAB27A-related Griscelli syndrome"
-    #     )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data["disease"], "RAB27A-related Griscelli syndrome"
+        )
 
-    #     expected_data = {
-    #         "locus": "RAB27A",
-    #         "genotype": "biallelic_autosomal",
-    #         "confidence": "definitive",
-    #         "panels": ["Cardiac"],
-    #         "variant_consequence": ["absent gene product"],
-    #         "variant_type": ["inframe_insertion", "intron_variant"],
-    #         "molecular_mechanism": "loss of function",
-    #         "stable_id": "G2P00002",
-    #     }
-    #     self.assertEqual(list(response.data["records_summary"])[0], expected_data)
+        record = next(
+            item
+            for item in response.data["records_summary"]
+            if item["stable_id"] == "G2P00002"
+        )
 
-    # def test_get_disease_with_only_deleted_variant_consequence(self):
-    #     """
-    #     Records with only deleted variant consequences should still be returned.
-    #     """
-    #     self.url_disease = reverse(
-    #         "disease_summary", kwargs={"id": "RAB27A-related Griscelli syndrome"}
-    #     )
-    #     LGDVariantGenccConsequence.objects.filter(lgd_id=2).update(is_deleted=1)
+        self.assertEqual(record["locus"], "RAB27A")
+        self.assertEqual(record["genotype"], "biallelic_autosomal")
+        self.assertEqual(record["confidence"], "definitive")
+        self.assertEqual(record["molecular_mechanism"], "loss of function")
+        self.assertCountEqual(record["panels"], ["Cardiac"])
+        self.assertCountEqual(
+            record["variant_consequence"], ["absent gene product"]
+        )
+        self.assertCountEqual(
+            record["variant_type"], ["inframe_insertion", "intron_variant"]
+        )
 
-    #     response = self.client.get(self.url_disease)
+    def test_get_disease_with_only_deleted_variant_consequence(self):
+        """
+        Records with only deleted variant consequences should still be returned.
+        """
+        self.url_disease = reverse(
+            "disease_summary", kwargs={"id": "RAB27A-related Griscelli syndrome"}
+        )
+        LGDVariantGenccConsequence.objects.filter(lgd_id=2).update(is_deleted=1)
 
-    #     self.assertEqual(response.status_code, 200)
+        response = self.client.get(self.url_disease)
 
-    #     record = next(
-    #         item
-    #         for item in response.data["records_summary"]
-    #         if item["stable_id"] == "G2P00002"
-    #     )
-    #     self.assertEqual(record["variant_consequence"], [])
-    #     self.assertEqual(
-    #         record["variant_type"], ["inframe_insertion", "intron_variant"]
-    #     )
+        self.assertEqual(response.status_code, 200)
+
+        record = next(
+            item
+            for item in response.data["records_summary"]
+            if item["stable_id"] == "G2P00002"
+        )
+        self.assertEqual(record["variant_consequence"], [])
+        self.assertCountEqual(
+            record["variant_type"], ["inframe_insertion", "intron_variant"]
+        )
 
     def test_not_found(self):
         """
