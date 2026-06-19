@@ -2,7 +2,7 @@
     "openapi": "3.0.3",
     "info": {
         "title": "Gene2Phenotype (G2P)",
-        "version": "15.0.0",
+        "version": "18.0.0",
         "description": "This API enables access to gene disease models held in the G2P database. See [https://www.ebi.ac.uk/gene2phenotype/](https://www.ebi.ac.uk/gene2phenotype/) for more details.<br><br>Contact us by submitting an issue via [https://github.com/EBI-G2P/gene2phenotype_api/issues](https://github.com/EBI-G2P/gene2phenotype_api/issues)."
     },
     "paths": {
@@ -39,6 +39,7 @@
                                 "examples": {
                                     "Example1": {
                                         "value": {
+                                            "summary": "MTFMT-related mitochondrial disease with regression and lactic acidosis has a confidence assertion of definitive based on 5 curated publications. This is a biallelic autosomal condition. Variant consequence is absent gene product (inferred) and altered gene product structure (inferred). Molecular mechanism is loss of function (evidenced by biochemical function, protein expression function, patient cells functional alteration and patient cells rescue). Recorded variant types include splice region variant, frameshift variant, stop gained and missense variant.",
                                             "locus": {
                                                 "gene_symbol": "MTFMT",
                                                 "sequence": "15",
@@ -685,7 +686,15 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "No response body"
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        },
+                        "description": "Uncompressed CSV export for the selected panel or for all visible panels."
                     }
                 }
             }
@@ -1142,6 +1151,12 @@
                 "type": "object",
                 "description": "Serializer for the LocusGenotypeDisease model.\nLocusGenotypeDisease represents a unique Locus-Genotype-Mechanism-Disease-Evidence (LGMDE) record.",
                 "properties": {
+                    "summary": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Summary of the LGMDE record.\nThe summary is automatically generated using the record's data.",
+                        "readOnly": true
+                    },
                     "locus": {
                         "type": "object",
                         "additionalProperties": {},
@@ -1312,6 +1327,7 @@
                     "phenotypes",
                     "publications",
                     "stable_id",
+                    "summary",
                     "variant_consequence",
                     "variant_description",
                     "variant_type"
