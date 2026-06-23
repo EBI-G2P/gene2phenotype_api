@@ -26,6 +26,8 @@ ENV PYTHONUNBUFFERED=1
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 ENV DJANGO_SETTINGS_MODULE=gene2phenotype_project.settings
+ENV HOST=0.0.0.0
+ENV PORT=8000
 
 # Runtime dependency for mysqlclient
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -56,4 +58,4 @@ RUN SECRET_KEY=$SECRET_KEY \
 EXPOSE 8000
 
 # Use gunicorn to serve the application
-CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:8000 --workers ${GUNICORN_WORKERS:-2} --timeout ${GUNICORN_TIMEOUT:-60} --access-logfile - --error-logfile - gene2phenotype_project.wsgi:application"]
+CMD ["sh", "-c", "exec gunicorn --bind ${HOST}:${PORT} --workers ${GUNICORN_WORKERS:-2} --timeout ${GUNICORN_TIMEOUT:-60} --access-logfile - --error-logfile - gene2phenotype_project.wsgi:application"]
