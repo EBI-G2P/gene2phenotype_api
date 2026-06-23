@@ -49,10 +49,8 @@ WORKDIR /app/gene2phenotype_project
 
 USER django
 
-ARG SECRET_KEY=dummy-key-for-collectstatic-only
-
 # Collect static files
-RUN SECRET_KEY=$SECRET_KEY \
+RUN SECRET_KEY=dummy-key-for-collectstatic-only \
     python manage.py collectstatic --noinput --clear
 
 EXPOSE 8000
