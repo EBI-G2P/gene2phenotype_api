@@ -112,9 +112,7 @@ def get_records_with_publication_overlap():
                     continue
 
                 candidate_publications = publications_by_record.get(candidate["id"], set())
-                if not candidate_publications:
-                    continue
-                if len(candidate_publications) == 1:
+                if len(candidate_publications) <= 1:
                     continue
 
                 shared_publications = record_publications & candidate_publications
