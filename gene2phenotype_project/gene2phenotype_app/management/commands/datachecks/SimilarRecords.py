@@ -128,7 +128,7 @@ def get_records_with_publication_overlap():
                     shared_pmids = ", ".join(sorted(str(pmid) for pmid in shared_publications))
                     errors.append(
                         Error(
-                            f"Records share at least 60% of publications: {record['g2p_id']}, {candidate['g2p_id']}. Shared PMIDs: {shared_pmids}",
+                            f"Records share at least {overlap_threshold:.0%} of publications: {record['g2p_id']}, {candidate['g2p_id']}. Shared PMIDs: {shared_pmids}",
                             id="gene2phenotype_app.E602",
                         )
                     )
