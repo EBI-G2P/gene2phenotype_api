@@ -158,6 +158,8 @@ class Command(BaseCommand):
 
                 if "relevance_label" in row:
                     relevant_publication = row["relevance_label"].strip()
+                    score = relevant_publication
+                    score_comment = row["relevance_comment"].strip() + " (Score based on abstract only)"
                     if relevant_publication == "low":
                         logger.warning(f"Low score {pmid}-{g2p_ids}. Skipping import.")
                         continue
@@ -193,6 +195,9 @@ class Command(BaseCommand):
                 for g2p_id in list_g2p_ids:
                     # Clean the IDs
                     new_g2p_id = re.sub(r'[\*."`)]+', "", g2p_id).strip()
+
+                    if new_g2p_id == "G2P01852":
+                        continue # Skip this record (Ear) because the record is low quality
 
                     if only_dd and new_g2p_id not in dd_records:
                         continue
@@ -240,8 +245,8 @@ class Command(BaseCommand):
 
                             # If run with option --check_json:
                             # Get scores (if available)
-                            score = None
-                            score_comment = None
+                            score = score or "N/A"
+                            score_comment = score_comment or "No access to this publication"
                             if new_g2p_id in gemini_scores:
                                 if int(pmid) in gemini_scores[g2p_id]:
                                     score = gemini_scores[g2p_id][int(pmid)]["score"]
