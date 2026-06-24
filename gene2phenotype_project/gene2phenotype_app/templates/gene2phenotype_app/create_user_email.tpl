@@ -19,6 +19,6 @@ Account Created: Welcome to G2P, {{ first_name }} {{ last_name }},
 <p>Thank you for using G2P</p>
 <footer>
 <p>The G2P team</p> 
-<img src="{% static 'gene2phenotype_app/G2P_ALL.png' %}" alt="G2P Logo" />
+<img src="{% static 'gene2phenotype_app/G2P-ALL.png' %}" alt="G2P Logo" />
 </footer>
 {% endblock %}
