@@ -23,7 +23,6 @@ test:
     MYSQL_DATABASE: test_db
     PROJECT_CONFIG_PATH: "$CI_PROJECT_DIR/config.ini"
     VIRTUAL_ENV: "$CI_PROJECT_DIR/.venv"
-    PATH: "$CI_PROJECT_DIR/.venv/bin:$PATH"
     DB_USERNAME: root
     DB_PASSWORD: ci-test-password
     DB_HOST: mysql
@@ -41,9 +40,10 @@ test:
         openssl && \
       rm -rf /var/lib/apt/lists/*
     - python -m venv "$VIRTUAL_ENV"
+    - . "$VIRTUAL_ENV/bin/activate"
     - python -m pip install --upgrade pip
-    - pip install -r requirements.txt
-    - pip install coverage
+    - python -m pip install -r requirements.txt
+    - python -m pip install coverage
     - |
       for i in $(seq 1 30); do
         echo "Waiting for MySQL ($i/30)..."
