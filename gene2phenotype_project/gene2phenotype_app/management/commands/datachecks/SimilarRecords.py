@@ -102,9 +102,7 @@ def get_records_with_publication_overlap():
 
         for index, record in enumerate(records):
             record_publications = publications_by_record.get(record["id"], set())
-            if not record_publications:
-                continue
-            if len(record_publications) == 1:
+            if len(record_publications) <= 1:
                 continue
 
             for candidate in records[index + 1 :]:
