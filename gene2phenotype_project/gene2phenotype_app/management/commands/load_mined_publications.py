@@ -155,6 +155,8 @@ class Command(BaseCommand):
             for row in data_reader:
                 pmid = row["PMID"].strip()
                 g2p_ids = row["G2P_IDs"].strip()
+                score = None
+                score_comment = None
 
                 if "relevance_label" in row:
                     relevant_publication = row["relevance_label"].strip()
