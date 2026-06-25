@@ -18,15 +18,15 @@ from gene2phenotype_app.models import (
 
 
 def append_active_records_with_deleted_g2p_ids_error(
-    errors, queryset, g2p_id_field, error_id
+    errors, queryset, lgd_id_field, g2p_id_field, error_id
 ):
     """Append an error for active records linked to deleted G2P IDs."""
     table_name = queryset.model._meta.db_table
     invalid_records = list(
         queryset.annotate(
-            row_id=F("id"),
-            g2p_id=F(g2p_id_field),
-        ).values("row_id", "g2p_id")
+            record_lgd_id=F(lgd_id_field),
+            deleted_g2p_stable_id=F(g2p_id_field),
+        ).values("record_lgd_id", "deleted_g2p_stable_id")
     )
 
     if invalid_records:
@@ -34,7 +34,7 @@ def append_active_records_with_deleted_g2p_ids_error(
             Error(
                 f"Active records in {table_name} linked to deleted G2P IDs: "
                 + ", ".join(
-                    f"ID {record['row_id']} (G2P ID {record['g2p_id']})"
+                    f"lgd_id={record['record_lgd_id']} ({record['deleted_g2p_stable_id']})"
                     for record in invalid_records
                 ),
                 id=error_id,
@@ -50,6 +50,7 @@ def check_deleted_records():
     append_active_records_with_deleted_g2p_ids_error(
         errors,
         LocusGenotypeDisease.objects.filter(stable_id__is_deleted=1, is_deleted=0),
+        "id",
         "stable_id__stable_id",
         "gene2phenotype_app.E701",
     )
@@ -60,6 +61,7 @@ def check_deleted_records():
         LGDMolecularMechanismSynopsis.objects.filter(
             lgd__stable_id__is_deleted=1, is_deleted=0
         ),
+        "lgd__id",
         "lgd__stable_id__stable_id",
         "gene2phenotype_app.E702",
     )
@@ -70,6 +72,7 @@ def check_deleted_records():
         LGDMolecularMechanismEvidence.objects.filter(
             lgd__stable_id__is_deleted=1, is_deleted=0
         ),
+        "lgd__id",
         "lgd__stable_id__stable_id",
         "gene2phenotype_app.E703",
     )
@@ -80,6 +83,7 @@ def check_deleted_records():
         LGDCrossCuttingModifier.objects.filter(
             lgd__stable_id__is_deleted=1, is_deleted=0
         ),
+        "lgd__id",
         "lgd__stable_id__stable_id",
         "gene2phenotype_app.E704",
     )
@@ -88,6 +92,7 @@ def check_deleted_records():
     append_active_records_with_deleted_g2p_ids_error(
         errors,
         LGDPhenotype.objects.filter(lgd__stable_id__is_deleted=1, is_deleted=0),
+        "lgd__id",
         "lgd__stable_id__stable_id",
         "gene2phenotype_app.E705",
     )
@@ -96,6 +101,7 @@ def check_deleted_records():
     append_active_records_with_deleted_g2p_ids_error(
         errors,
         LGDPhenotypeSummary.objects.filter(lgd__stable_id__is_deleted=1, is_deleted=0),
+        "lgd__id",
         "lgd__stable_id__stable_id",
         "gene2phenotype_app.E706",
     )
@@ -104,6 +110,7 @@ def check_deleted_records():
     append_active_records_with_deleted_g2p_ids_error(
         errors,
         LGDVariantType.objects.filter(lgd__stable_id__is_deleted=1, is_deleted=0),
+        "lgd__id",
         "lgd__stable_id__stable_id",
         "gene2phenotype_app.E707",
     )
@@ -114,6 +121,7 @@ def check_deleted_records():
         LGDVariantTypeDescription.objects.filter(
             lgd__stable_id__is_deleted=1, is_deleted=0
         ),
+        "lgd__id",
         "lgd__stable_id__stable_id",
         "gene2phenotype_app.E708",
     )
@@ -124,6 +132,7 @@ def check_deleted_records():
         LGDVariantGenccConsequence.objects.filter(
             lgd__stable_id__is_deleted=1, is_deleted=0
         ),
+        "lgd__id",
         "lgd__stable_id__stable_id",
         "gene2phenotype_app.E709",
     )
@@ -132,6 +141,7 @@ def check_deleted_records():
     append_active_records_with_deleted_g2p_ids_error(
         errors,
         LGDComment.objects.filter(lgd__stable_id__is_deleted=1, is_deleted=0),
+        "lgd__id",
         "lgd__stable_id__stable_id",
         "gene2phenotype_app.E710",
     )
@@ -140,6 +150,7 @@ def check_deleted_records():
     append_active_records_with_deleted_g2p_ids_error(
         errors,
         LGDPublication.objects.filter(lgd__stable_id__is_deleted=1, is_deleted=0),
+        "lgd__id",
         "lgd__stable_id__stable_id",
         "gene2phenotype_app.E711",
     )
@@ -148,6 +159,7 @@ def check_deleted_records():
     append_active_records_with_deleted_g2p_ids_error(
         errors,
         LGDPanel.objects.filter(lgd__stable_id__is_deleted=1, is_deleted=0),
+        "lgd__id",
         "lgd__stable_id__stable_id",
         "gene2phenotype_app.E712",
     )
