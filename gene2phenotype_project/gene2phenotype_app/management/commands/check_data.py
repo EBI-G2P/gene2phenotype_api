@@ -11,6 +11,7 @@ from .datachecks import (
     check_disease_name,
     check_mondo_single_gene_link,
     get_similar_records,
+    check_deleted_records,
 )
 
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--include_warnings",
             required=False,
-            action='store_true',
+            action="store_true",
             help="Include non-critical data checks",
         )
 
@@ -55,6 +56,10 @@ class Command(BaseCommand):
 
         mondo_gene_errors = check_mondo_single_gene_link()
         for error in mondo_gene_errors:
+            logger.error(error)
+
+        deleted_records_errors = check_deleted_records()
+        for error in deleted_records_errors:
             logger.error(error)
 
         print("Running data checks... done")
