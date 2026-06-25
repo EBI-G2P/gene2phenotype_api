@@ -55,10 +55,9 @@ def get_similar_records():
     return errors
 
 
-def get_records_with_publication_overlap():
-    """Check for non-deleted records sharing at least 60% of publications within a locus."""
+def get_records_with_publication_overlap(overlap_threshold):
+    """Check for non-deleted records sharing a specified threshold of publications within a locus."""
     errors = []
-    overlap_threshold = 0.6
     records_by_locus = {}
     panels_by_record = {}
     publications_by_record = {}
