@@ -33,6 +33,8 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         "gene2phenotype_app/fixtures/lgd_publication_comment.json",
         "gene2phenotype_app/fixtures/mined_publication.json",
         "gene2phenotype_app/fixtures/lgd_mined_publication.json",
+        "gene2phenotype_app/fixtures/lgd_variant_type.json",
+        "gene2phenotype_app/fixtures/lgd_variant_type_comment.json",
     ]
 
     def setUp(self):
@@ -315,4 +317,32 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         ]
         self.assertEqual(
             list(response.data["phenotype_summary"]), expected_phenotype_summary
+        )
+
+    def test_lgd_detail_authenticated_variant_type_comments_include_id(self):
+        """
+        Test authenticated LGD detail includes variant type comment IDs.
+        """
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.get(self.url_list_lgd_2)
+        self.assertEqual(response.status_code, 200)
+
+        inframe_insertion = next(
+            variant
+            for variant in response.data["variant_type"]
+            if variant["term"] == "inframe_insertion"
+        )
+        self.assertEqual(
+            inframe_insertion["comments"],
+            [
+                {
+                    "id": 1,
+                    "text": "Recurrent c.340C>T; p.Arg114Ter in 5/9 cases.",
+                    "date": "2025-02-19",
+                }
+            ],
         )

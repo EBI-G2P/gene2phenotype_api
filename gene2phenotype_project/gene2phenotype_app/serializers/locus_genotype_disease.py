@@ -464,16 +464,18 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 date = None
                 if comment_obj.date is not None:
                     date = comment_obj.date.strftime("%Y-%m-%d")
+                comment_data = {
+                    "id": comment_obj.id,
+                    "text": comment_text,
+                    "date": date,
+                }
 
                 if accession not in list_of_comments:
-                    list_of_comments[accession] = [{"text": comment_text, "date": date}]
+                    list_of_comments[accession] = [comment_data]
                 elif not any(
-                    comment["text"] == comment_text
-                    for comment in list_of_comments[accession]
+                    comment["id"] == comment_obj.id for comment in list_of_comments[accession]
                 ):
-                    list_of_comments[accession].append(
-                        {"text": comment_text, "date": date}
-                    )
+                    list_of_comments[accession].append(comment_data)
 
             if accession in data and lgd_variant.publication:
                 variant_type_comments = []
@@ -1521,13 +1523,14 @@ class LGDVariantTypeCommentSerializer(serializers.ModelSerializer):
     by curators.
     """
 
+    id = serializers.IntegerField(read_only=True)
     comment = serializers.CharField()
     user = serializers.CharField(source="user.username")
     date = serializers.CharField()
 
     class Meta:
         model = LGDVariantTypeComment
-        fields = ["comment", "user", "date"]
+        fields = ["id", "comment", "user", "date"]
 
 
 class LGDVariantTypeSerializer(serializers.ModelSerializer):
