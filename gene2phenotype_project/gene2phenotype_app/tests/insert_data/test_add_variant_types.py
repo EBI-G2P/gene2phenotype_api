@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
 from django.conf import settings
+from datetime import datetime
 from rest_framework_simplejwt.tokens import RefreshToken
 from gene2phenotype_app.models import (
     User,
@@ -37,6 +38,9 @@ class LGDEditVariantTypesTests(TestCase):
         self.url_add_variant = reverse(
             "lgd_variant_type", kwargs={"stable_id": "G2P00002"}
         )
+        self.original_date_review = LocusGenotypeDisease.objects.get(
+            stable_id__stable_id="G2P00002"
+        ).date_review
         self.variant_to_add = {
             "variant_types": [
                 {
@@ -157,3 +161,56 @@ class LGDEditVariantTypesTests(TestCase):
             response_data["error"],
             "Empty variant type. Please provide valid data.",
         )
+        lgd_obj = LocusGenotypeDisease.objects.get(stable_id__stable_id="G2P00002")
+        self.assertEqual(lgd_obj.date_review, self.original_date_review)
+
+    def test_add_variant_types_is_atomic(self):
+        """
+        Test that the endpoint validates the full payload before saving data.
+        """
+        user = User.objects.get(email="john@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        payload = {
+            "variant_types": [
+                {
+                    "comment": "valid comment",
+                    "de_novo": False,
+                    "inherited": True,
+                    "primary_type": "protein_changing",
+                    "secondary_type": "stop_gained",
+                    "supporting_papers": ["12451214"],
+                    "unknown_inheritance": True,
+                },
+                {
+                    "comment": "invalid comment",
+                    "de_novo": False,
+                    "inherited": True,
+                    "primary_type": "protein_changing",
+                    "secondary_type": "not_a_real_variant_type",
+                    "supporting_papers": ["12451214"],
+                    "unknown_inheritance": True,
+                },
+            ]
+        }
+
+        response = self.client.post(
+            self.url_add_variant,
+            payload,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("not_a_real_variant_type", str(response.json()["error"]))
+
+        lgd_variants = LGDVariantType.objects.filter(
+            lgd__stable_id__stable_id="G2P00002", is_deleted=0
+        )
+        self.assertEqual(len(lgd_variants), 2)
+
+        history_records = LGDVariantType.history.all()
+        self.assertEqual(len(history_records), 0)
+
+        lgd_obj = LocusGenotypeDisease.objects.get(stable_id__stable_id="G2P00002")
+        self.assertEqual(lgd_obj.date_review, self.original_date_review)
