@@ -10,6 +10,7 @@ from .datachecks import (
     check_cross_references,
     check_disease_name,
     check_mondo_single_gene_link,
+    get_records_with_publication_overlap,
     get_similar_records,
 )
 
@@ -29,6 +30,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         include_warnings = options["include_warnings"]
+        records_overlap_threshold = 0.6  # Set the threshold for publication overlap
 
         print("Running data checks...")
 
@@ -70,6 +72,11 @@ class Command(BaseCommand):
             # Check for similar records
             similar_records = get_similar_records()
             for error in similar_records:
+                logger.warning(error)
+
+            # Check for publication overlaps for records sharing the same gene
+            publication_overlap_records = get_records_with_publication_overlap(records_overlap_threshold)
+            for error in publication_overlap_records:
                 logger.warning(error)
 
             # Run the disease cross references check
