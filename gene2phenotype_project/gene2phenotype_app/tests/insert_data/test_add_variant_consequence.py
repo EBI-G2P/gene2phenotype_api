@@ -5,8 +5,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from gene2phenotype_app.models import (
     User,
+    Attrib,
     LGDVariantGenccConsequence,
     LocusGenotypeDisease,
+    OntologyTerm,
 )
 
 
@@ -144,3 +146,37 @@ class LGDEditVariantConsequenceTests(TestCase):
             response_data["error"],
             "Empty variant consequence. Please provide valid data.",
         )
+
+    def test_readd_soft_deleted_variant_consequence_updates_support(self):
+        """
+        Test that re-adding a deleted variant consequence reuses the row and
+        updates support to the latest payload value.
+        """
+        user = User.objects.get(email="john@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        lgd_obj = LocusGenotypeDisease.objects.get(stable_id__stable_id="G2P00002")
+        consequence_obj = OntologyTerm.objects.get(
+            term="altered gene product structure"
+        )
+        old_support = Attrib.objects.get(value="evidence", type__code="support")
+
+        lgd_var_consequence = LGDVariantGenccConsequence.objects.create(
+            lgd=lgd_obj,
+            variant_consequence=consequence_obj,
+            support=old_support,
+            is_deleted=1,
+        )
+
+        response = self.client.post(
+            self.url_add_variant,
+            self.variant_to_add,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 201)
+
+        lgd_var_consequence.refresh_from_db()
+        self.assertEqual(lgd_var_consequence.is_deleted, 0)
+        self.assertEqual(lgd_var_consequence.support.value, "inferred")

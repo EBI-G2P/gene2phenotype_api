@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from gene2phenotype_app.models import (
+    CVMolecularMechanism,
     User,
     LGDMolecularMechanismSynopsis,
     LocusGenotypeDisease,
@@ -740,6 +741,55 @@ class LGDUpdateMechanismEndpoint(TestCase):
         )
         # LGD date_review is updated only once
         self.assertEqual(len(history_records), 1)
+
+    def test_readd_deleted_mechanism_evidence_updates_description(self):
+        """
+        Test that re-adding deleted mechanism evidence reuses the row and
+        updates the description to the latest payload value.
+        """
+        input_data = {
+            "molecular_mechanism": {"name": "", "support": "evidence"},
+            "mechanism_evidence": [
+                {
+                    "pmid": "1882842",
+                    "description": "latest description",
+                    "evidence_types": [
+                        {
+                            "primary_type": "Rescue",
+                            "secondary_type": ["Patient Cells"],
+                        }
+                    ],
+                }
+            ],
+        }
+
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        lgd_obj = LocusGenotypeDisease.objects.get(stable_id__stable_id="G2P00008")
+        evidence_obj = CVMolecularMechanism.objects.get(
+            type="evidence", subtype="rescue", value="patient cells"
+        )
+        mechanism_evidence = LGDMolecularMechanismEvidence.objects.create(
+            lgd=lgd_obj,
+            evidence=evidence_obj,
+            description="old description",
+            publication_id=5,
+            is_deleted=1,
+        )
+
+        response = self.client.patch(
+            self.url_lgd_update_mechanism_2,
+            input_data,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        mechanism_evidence.refresh_from_db()
+        self.assertEqual(mechanism_evidence.is_deleted, 0)
+        self.assertEqual(mechanism_evidence.description, "latest description")
 
     def test_update_mechanism_synopsis_success(self):
         """
