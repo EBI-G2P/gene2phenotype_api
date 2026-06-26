@@ -7,6 +7,7 @@ from gene2phenotype_app.models import (
     User,
     LGDVariantType,
     LocusGenotypeDisease,
+    OntologyTerm,
 )
 
 
@@ -214,3 +215,99 @@ class LGDEditVariantTypesTests(TestCase):
 
         lgd_obj = LocusGenotypeDisease.objects.get(stable_id__stable_id="G2P00002")
         self.assertEqual(lgd_obj.date_review, self.original_date_review)
+
+    def test_readd_soft_deleted_variant_updates_inheritance_flags(self):
+        """
+        Test that re-adding a soft-deleted variant type restores the row and
+        replaces inheritance flags with the latest payload values.
+        """
+        user = User.objects.get(email="john@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        missense_variant = OntologyTerm.objects.get(term="missense_variant")
+        lgd_variant = LGDVariantType.objects.create(
+            lgd=LocusGenotypeDisease.objects.get(stable_id__stable_id="G2P00002"),
+            variant_type_ot=missense_variant,
+            inherited=True,
+            de_novo=True,
+            unknown_inheritance=True,
+            publication_id=3,
+            is_deleted=1,
+        )
+
+        payload = {
+            "variant_types": [
+                {
+                    "comment": "",
+                    "de_novo": False,
+                    "inherited": False,
+                    "primary_type": "protein_changing",
+                    "secondary_type": "missense_variant",
+                    "supporting_papers": ["12451214"],
+                    "unknown_inheritance": False,
+                }
+            ]
+        }
+
+        response = self.client.post(
+            self.url_add_variant,
+            payload,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 201)
+
+        lgd_variant.refresh_from_db()
+        self.assertEqual(lgd_variant.is_deleted, 0)
+        self.assertFalse(lgd_variant.inherited)
+        self.assertFalse(lgd_variant.de_novo)
+        self.assertFalse(lgd_variant.unknown_inheritance)
+
+    def test_reuse_existing_row_with_new_publication_updates_inheritance_flags(self):
+        """
+        Test that converting an existing publication-less row into a
+        publication-linked row replaces inheritance flags with the latest payload.
+        """
+        user = User.objects.get(email="john@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        missense_variant = OntologyTerm.objects.get(term="missense_variant")
+        lgd_variant = LGDVariantType.objects.create(
+            lgd=LocusGenotypeDisease.objects.get(stable_id__stable_id="G2P00002"),
+            variant_type_ot=missense_variant,
+            inherited=True,
+            de_novo=True,
+            unknown_inheritance=True,
+            publication=None,
+            is_deleted=0,
+        )
+
+        payload = {
+            "variant_types": [
+                {
+                    "comment": "",
+                    "de_novo": False,
+                    "inherited": False,
+                    "primary_type": "protein_changing",
+                    "secondary_type": "missense_variant",
+                    "supporting_papers": ["12451214"],
+                    "unknown_inheritance": False,
+                }
+            ]
+        }
+
+        response = self.client.post(
+            self.url_add_variant,
+            payload,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 201)
+
+        lgd_variant.refresh_from_db()
+        self.assertEqual(lgd_variant.publication_id, 3)
+        self.assertFalse(lgd_variant.inherited)
+        self.assertFalse(lgd_variant.de_novo)
+        self.assertFalse(lgd_variant.unknown_inheritance)
