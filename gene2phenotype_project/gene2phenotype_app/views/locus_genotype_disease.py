@@ -1153,7 +1153,6 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
                 }
         """
         user = self.request.user  # email
-        success_flag = 0
 
         lgd = get_object_or_404(
             LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0
@@ -1185,36 +1184,37 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Add each variant GenCC consequence from the input list
+            validated_serializers = []
+
+            # Validate the full payload before saving any changes
             for var_type in variant_type_data:
-                # The data is created in LGDVariantTypeSerializer
                 serializer_class = LGDVariantTypeSerializer(
                     data=var_type, context={"lgd": lgd, "user": user_obj}
                 )
 
-                if serializer_class.is_valid():
-                    serializer_class.save()
-                    success_flag = 1
-                    response = Response(
-                        {
-                            "message": "Variant type added to the G2P entry successfully."
-                        },
-                        status=status.HTTP_201_CREATED,
-                    )
-                else:
-                    response = Response(
+                if not serializer_class.is_valid():
+                    return Response(
                         {"error": serializer_class.errors},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
+
+                validated_serializers.append(serializer_class)
+
+            for serializer_class in validated_serializers:
+                serializer_class.save()
+
+            lgd.date_review = get_date_now()
+            lgd.save_without_historical_record()
+
+            response = Response(
+                {"message": "Variant type added to the G2P entry successfully."},
+                status=status.HTTP_201_CREATED,
+            )
 
         else:
             response = Response(
                 {"error": serializer_list.errors}, status=status.HTTP_400_BAD_REQUEST
             )
-
-        # Update the record date_review, if at least one variant type was added successfully
-        lgd.date_review = get_date_now()
-        lgd.save_without_historical_record()
 
         return response
 

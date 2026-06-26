@@ -464,16 +464,18 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                 date = None
                 if comment_obj.date is not None:
                     date = comment_obj.date.strftime("%Y-%m-%d")
+                comment_data = {
+                    "id": comment_obj.id,
+                    "text": comment_text,
+                    "date": date,
+                }
 
                 if accession not in list_of_comments:
-                    list_of_comments[accession] = [{"text": comment_text, "date": date}]
+                    list_of_comments[accession] = [comment_data]
                 elif not any(
-                    comment["text"] == comment_text
-                    for comment in list_of_comments[accession]
+                    comment["id"] == comment_obj.id for comment in list_of_comments[accession]
                 ):
-                    list_of_comments[accession].append(
-                        {"text": comment_text, "date": date}
-                    )
+                    list_of_comments[accession].append(comment_data)
 
             if accession in data and lgd_variant.publication:
                 variant_type_comments = []
@@ -1521,13 +1523,14 @@ class LGDVariantTypeCommentSerializer(serializers.ModelSerializer):
     by curators.
     """
 
+    id = serializers.IntegerField(read_only=True)
     comment = serializers.CharField()
     user = serializers.CharField(source="user.username")
     date = serializers.CharField()
 
     class Meta:
         model = LGDVariantTypeComment
-        fields = ["comment", "user", "date"]
+        fields = ["id", "comment", "user", "date"]
 
 
 class LGDVariantTypeSerializer(serializers.ModelSerializer):
@@ -1560,6 +1563,15 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
     comment = serializers.CharField(
         write_only=True, allow_blank=True
     )  # single comment (used by curation)
+
+    @staticmethod
+    def _apply_latest_inheritance_flags(
+        lgd_variant_type_obj, inherited, de_novo, unknown_inheritance
+    ):
+        lgd_variant_type_obj.inherited = inherited
+        lgd_variant_type_obj.de_novo = de_novo
+        lgd_variant_type_obj.unknown_inheritance = unknown_inheritance
+        return lgd_variant_type_obj
 
     def create(self, validated_data):
         """
@@ -1611,16 +1623,12 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
                 # if deleted, set to not deleted
                 if lgd_variant_type_obj.is_deleted == 1:
                     lgd_variant_type_obj.is_deleted = 0
-                # update inheritance data
-                if lgd_variant_type_obj.inherited == 0 and inherited is True:
-                    lgd_variant_type_obj.inherited = 1
-                if lgd_variant_type_obj.de_novo == 0 and de_novo is True:
-                    lgd_variant_type_obj.de_novo = 1
-                if (
-                    lgd_variant_type_obj.unknown_inheritance == 0
-                    and unknown_inheritance is True
-                ):
-                    lgd_variant_type_obj.unknown_inheritance = 1
+                self._apply_latest_inheritance_flags(
+                    lgd_variant_type_obj,
+                    inherited,
+                    de_novo,
+                    unknown_inheritance,
+                )
                 lgd_variant_type_obj.save()
 
             # The LGDPhenotypeSummary is created - next step is to create the LGDVariantTypeComment
@@ -1695,40 +1703,24 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
                             # LGDVariantType already exists in the db without a publication
                             # Add publication to existing object
                             lgd_variant_type_obj.publication = publication_obj
-                            if (
-                                lgd_variant_type_obj.inherited is False
-                                and inherited is True
-                            ):
-                                lgd_variant_type_obj.inherited = True
-                            if (
-                                lgd_variant_type_obj.de_novo is False
-                                and de_novo is True
-                            ):
-                                lgd_variant_type_obj.de_novo = True
-                            if (
-                                lgd_variant_type_obj.unknown_inheritance is False
-                                and unknown_inheritance is True
-                            ):
-                                lgd_variant_type_obj.unknown_inheritance = True
+                            self._apply_latest_inheritance_flags(
+                                lgd_variant_type_obj,
+                                inherited,
+                                de_novo,
+                                unknown_inheritance,
+                            )
                             lgd_variant_type_obj.save()
                     else:
                         # the entry already exists, it probably needs to be updated
                         # if deleted, set to not deleted
                         if lgd_variant_type_obj.is_deleted == 1:
                             lgd_variant_type_obj.is_deleted = 0
-                        # update inheritance data
-                        if (
-                            lgd_variant_type_obj.inherited is False
-                            and inherited is True
-                        ):
-                            lgd_variant_type_obj.inherited = True
-                        if lgd_variant_type_obj.de_novo is False and de_novo is True:
-                            lgd_variant_type_obj.de_novo = True
-                        if (
-                            lgd_variant_type_obj.unknown_inheritance is False
-                            and unknown_inheritance is True
-                        ):
-                            lgd_variant_type_obj.unknown_inheritance = True
+                        self._apply_latest_inheritance_flags(
+                            lgd_variant_type_obj,
+                            inherited,
+                            de_novo,
+                            unknown_inheritance,
+                        )
                         lgd_variant_type_obj.save()
 
                     # The LGDPhenotypeSummary is created - next step is to create the LGDVariantTypeComment
