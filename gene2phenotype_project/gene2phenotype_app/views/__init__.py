@@ -67,6 +67,7 @@ from .locus_genotype_disease import (
     LocusGenotypeDiseaseDetail,
     LGDEditCCM,
     LGDEditComment,
+    LGDEditVariantTypeComment,
     LGDEditVariantConsequences,
     LGDEditVariantTypes,
     LGDEditVariantTypeDescriptions,

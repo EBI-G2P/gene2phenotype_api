@@ -153,6 +153,11 @@ urlpatterns = [
         views.LGDEditVariantTypes.as_view(),
         name="lgd_variant_type",
     ),
+    path(
+        "lgd/<str:stable_id>/variant_type/comment/",
+        views.LGDEditVariantTypeComment.as_view(),
+        name="lgd_variant_type_comment",
+    ),
     # Add or delete variant description(s) from LGD record.
     # Actions: PATCH (to delete one variant description), POST (to add multiple variant descriptions)
     path(
