@@ -1126,9 +1126,10 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                             )
                         )
                     else:
+                        mechanism_evidence_obj.description = description
                         if mechanism_evidence_obj.is_deleted == 1:
                             mechanism_evidence_obj.is_deleted = 0
-                            mechanism_evidence_obj.save()
+                        mechanism_evidence_obj.save()
 
         # Update LGD date_review without creating an history row
         lgd_obj.date_review = get_date_now()
@@ -1295,6 +1296,7 @@ class LGDVariantGenCCConsequenceSerializer(serializers.ModelSerializer):
             # If deleted then update to not deleted
             else:
                 lgd_var_consequence_obj.is_deleted = 0
+                lgd_var_consequence_obj.support = support_obj
                 lgd_var_consequence_obj.save()
 
         return lgd_var_consequence_obj
