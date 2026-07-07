@@ -1,15 +1,21 @@
 workflow:
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_BRANCH == "test-api-pipeline"'
+    - if: '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_TAG'
+      variables:
+        IMAGE_TAG: "$CI_COMMIT_TAG"
+        DOCKER_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
       when: always
+    - if: '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_BRANCH'
+      variables:
+        IMAGE_TAG: "$CI_COMMIT_REF_SLUG-$CI_PIPELINE_IID-$CI_COMMIT_SHORT_SHA"
+        DOCKER_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$CI_PIPELINE_IID-$CI_COMMIT_SHORT_SHA"
+      when: always
+    - when: never
 
 stages:
   - test
   - build
   - deploy
-
-variables:
-  DOCKER_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
 
 test:
   stage: test
@@ -105,13 +111,18 @@ build:
     - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
   script:
     - docker build -t "$DOCKER_IMAGE" .
+    - docker tag "$DOCKER_IMAGE" "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
     - docker push "$DOCKER_IMAGE"
-    - docker rmi "$DOCKER_IMAGE"
+    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+    - docker rmi "$DOCKER_IMAGE" "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
     - docker logout "$CI_REGISTRY"
 
 trigger_k8s_deploy_test:
   stage: deploy
-  when: manual
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_BRANCH'
+      when: manual
+    - when: never
   environment:
     name: test
   trigger:
@@ -120,7 +131,34 @@ trigger_k8s_deploy_test:
     strategy: mirror
   variables:
     APP_NAME: g2p-api
-    DOCKER_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+    IMAGE_TAG: "$CI_COMMIT_REF_SLUG-$CI_PIPELINE_IID-$CI_COMMIT_SHORT_SHA"
+    DOCKER_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$CI_PIPELINE_IID-$CI_COMMIT_SHORT_SHA"
+    DEPLOY_COMMIT_SHA: "$CI_COMMIT_SHA"
+    DEPLOY_REF: "$CI_COMMIT_REF_NAME"
+    DEPLOY_PIPELINE_URL: "$CI_PIPELINE_URL"
     DEPLOY_ENV: test
     KUBE_CONTEXT: "$TEST_AGENT"
     KUBE_NAMESPACE: "$TEST_NS"
+
+trigger_k8s_deploy_prod:
+  stage: deploy
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_TAG'
+      when: manual
+    - when: never
+  environment:
+    name: production
+  trigger:
+    project: "$K8S_MANIFESTS_PROJECT"
+    branch: "$K8S_MANIFESTS_BRANCH"
+    strategy: mirror
+  variables:
+    APP_NAME: g2p-api
+    IMAGE_TAG: "$CI_COMMIT_TAG"
+    DOCKER_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
+    DEPLOY_COMMIT_SHA: "$CI_COMMIT_SHA"
+    DEPLOY_REF: "$CI_COMMIT_TAG"
+    DEPLOY_PIPELINE_URL: "$CI_PIPELINE_URL"
+    DEPLOY_ENV: production
+    KUBE_CONTEXT: "$PROD_AGENT"
+    KUBE_NAMESPACE: "$PROD_NS"
