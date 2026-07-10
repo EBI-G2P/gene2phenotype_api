@@ -29,6 +29,7 @@ from gene2phenotype_app.models import (
     LGDVariantTypeDescription,
     LGDVariantTypeComment,
     LGDMolecularMechanismEvidence,
+    LGDMinedPublication,
     User,
 )
 
@@ -546,6 +547,14 @@ class LGDEditPublications(BaseUpdate):
         ):
             lgd_mechanism_evidence.is_deleted = 1
             lgd_mechanism_evidence.save()
+
+        # Update the mined publication status to "rejected" for the publication that is going to be deleted
+        for lgd_mined_publication in LGDMinedPublication.objects.filter(
+            lgd=lgd_obj, mined_publication__pmid=lgd_publication_obj.publication.pmid, status= "curated"
+        ):
+            lgd_mined_publication.status = "rejected"
+            lgd_mined_publication.comment = "Publication deleted from record"
+            lgd_mined_publication.save()
 
         # Update the date of the last update of the record
         lgd_obj.date_review = get_date_now()

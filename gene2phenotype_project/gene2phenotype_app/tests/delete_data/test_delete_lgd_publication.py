@@ -11,7 +11,9 @@ from gene2phenotype_app.models import (
     LGDVariantTypeComment,
     LGDVariantTypeDescription,
     LGDMolecularMechanismEvidence,
+    LGDMinedPublication,
     LocusGenotypeDisease,
+    MinedPublication,
 )
 
 
@@ -36,6 +38,8 @@ class LGDDeletePublication(TestCase):
         "gene2phenotype_app/fixtures/ontology_term.json",
         "gene2phenotype_app/fixtures/source.json",
         "gene2phenotype_app/fixtures/lgd_publication.json",
+        "gene2phenotype_app/fixtures/mined_publication.json",
+        "gene2phenotype_app/fixtures/lgd_mined_publication.json",
         "gene2phenotype_app/fixtures/lgd_comment.json",
         "gene2phenotype_app/fixtures/lgd_phenotype.json",
         "gene2phenotype_app/fixtures/lgd_phenotype_summary.json",
@@ -267,3 +271,34 @@ class LGDDeletePublication(TestCase):
         self.assertEqual(len(history_records_mechanism_evidence), 1)
         history_records_lgd = LocusGenotypeDisease.history.all()
         self.assertEqual(len(history_records_lgd), 0)
+
+    def test_delete_curated_mined_publication_updates_status_to_rejected(self):
+        """
+        Test deleting a curated publication updates the matching mined publication to rejected
+        """
+        to_delete = {"pmid": 15214012}
+
+        lgd_obj = LocusGenotypeDisease.objects.get(stable_id__stable_id="G2P00002")
+        mined_publication = MinedPublication.objects.get(pmid=15214012)
+        lgd_mined_publication = LGDMinedPublication.objects.create(
+            lgd=lgd_obj,
+            mined_publication=mined_publication,
+            status="curated",
+            comment=None,
+        )
+
+        user = User.objects.get(email="john@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.patch(
+            self.url_delete, to_delete, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        lgd_mined_publication.refresh_from_db()
+        self.assertEqual(lgd_mined_publication.status, "rejected")
+        self.assertEqual(
+            lgd_mined_publication.comment, "Publication deleted from record"
+        )
