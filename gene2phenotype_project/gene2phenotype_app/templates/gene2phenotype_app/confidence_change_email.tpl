@@ -1,4 +1,3 @@
-{% load static %}  {# Load static at the top #}
 
 {% block subject %}
 Hi,
@@ -17,6 +16,6 @@ Hi,
 
 <footer>
     <p>The G2P team</p> 
-    <img src="{% static 'gene2phenotype_app/G2P_ALL.png' %}" alt="G2P Logo" />
+    <img src="cid:g2p_logo" alt="G2P Logo" width="56" height="56" style="width:56px;height:56px;" />
 </footer>
 {% endblock %}

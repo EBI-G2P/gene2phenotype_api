@@ -11,6 +11,7 @@ from .locus_utils import validate_gene
 from .phenotype_utils import validate_phenotype
 from .user_utils import CustomMail
 from .url_utils import build_public_url
+from .mail_utils import attach_g2p_logo
 from .date_utils import get_date_now
 from .curationinfo_utils import ConfidenceCustomMail
 from .lgd_utils import (

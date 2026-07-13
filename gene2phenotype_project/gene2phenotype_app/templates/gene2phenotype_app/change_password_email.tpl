@@ -1,4 +1,4 @@
-{% extends "mail_templated/base.tpl" %} {% load static %}
+{% extends "mail_templated/base.tpl" %}
 
 {% block subject %}
 Hi {{ user }},
@@ -9,6 +9,6 @@ Hi {{ user }},
 <p>If you do not recognize this action please contact the G2P team at <a href="mailto:g2p-help@ebi.ac.uk">g2p-help@ebi.ac.uk</a>.</p>
 <footer>
 <p>The G2P team</p> 
-<img src="{% static 'gene2phenotype_app/G2P_ALL.png' %}" alt="G2P Logo" />
+<img src="cid:g2p_logo" alt="G2P Logo" width="56" height="56" style="width:56px;height:56px;" />
 </footer>
 {% endblock %}
