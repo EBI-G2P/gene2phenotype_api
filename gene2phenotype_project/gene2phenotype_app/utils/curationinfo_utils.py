@@ -4,7 +4,6 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from typing import Dict, Any
 from .url_utils import build_public_url
-from .mail_utils import attach_g2p_logo
 
 
 class ConfidenceCustomMail:
@@ -55,7 +54,6 @@ class ConfidenceCustomMail:
         message["To"] = settings.MAILING_LIST
         message["Subject"] = self.get_email_subject()
         message.set_content(email_body, "html")
-        attach_g2p_logo(message)
 
         try:
             with SMTP(host=settings.EMAIL_HOST, port=settings.EMAIL_PORT) as server:

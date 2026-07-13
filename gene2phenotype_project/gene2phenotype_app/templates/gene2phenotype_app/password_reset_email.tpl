@@ -10,7 +10,6 @@ Hi {{ user }},
 <p> If you think you received this email in error, please contact the G2P team at <a href="mailto:g2p-help@ebi.ac.uk">g2p-help@ebi.ac.uk</a>.</p>
 <p>Thank you</p>
 <footer>
-<p>The G2P team</p> 
-<img src="cid:g2p_logo" alt="G2P Logo" width="72" height="72" style="width:72px;height:72px;" />
+<p>The G2P team</p>
 </footer>
 {% endblock %}

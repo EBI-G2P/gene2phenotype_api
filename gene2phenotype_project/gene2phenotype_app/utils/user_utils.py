@@ -3,8 +3,6 @@ from smtplib import SMTP
 from django.conf import settings
 from django.template.loader import render_to_string
 
-from .mail_utils import attach_g2p_logo
-
 
 class CustomMail:
     @staticmethod
@@ -18,7 +16,6 @@ class CustomMail:
         message["To"] = to_email
         message["Subject"] = subject
         message.set_content(email_body, "html")
-        attach_g2p_logo(message)
         try:
             with SMTP(host=settings.EMAIL_HOST, port=settings.EMAIL_PORT) as server:
                 server.send_message(message)
@@ -43,7 +40,6 @@ class CustomMail:
         message["To"] = to_email
         message["Subject"] = subject
         message.set_content(email_body, "html")
-        attach_g2p_logo(message)
 
         try:
             with SMTP(host=settings.EMAIL_HOST, port=settings.EMAIL_PORT) as server:
@@ -62,7 +58,6 @@ class CustomMail:
         message["To"] = to_email
         message["Subject"] = subject
         message.set_content(email_body, "html")
-        attach_g2p_logo(message)
         try:
             with SMTP(host=settings.EMAIL_HOST, port=settings.EMAIL_PORT) as server:
                 server.send_message(message)
