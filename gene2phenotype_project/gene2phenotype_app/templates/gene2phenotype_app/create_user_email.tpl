@@ -1,4 +1,4 @@
-{% extends "mail_templated/base.tpl" %} {% load static %}
+{% extends "mail_templated/base.tpl" %}
 
 {% block subject %}
 Account Created: Welcome to G2P, {{ first_name }} {{ last_name }},
@@ -18,7 +18,6 @@ Account Created: Welcome to G2P, {{ first_name }} {{ last_name }},
 
 <p>Thank you for using G2P</p>
 <footer>
-<p>The G2P team</p> 
-<img src="{% static 'gene2phenotype_app/G2P_ALL.png' %}" alt="G2P Logo" />
+<p>The G2P team</p>
 </footer>
 {% endblock %}

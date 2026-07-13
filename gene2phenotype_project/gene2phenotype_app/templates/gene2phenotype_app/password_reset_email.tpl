@@ -1,4 +1,4 @@
-{% extends "mail_templated/base.tpl" %} {% load static %}
+{% extends "mail_templated/base.tpl" %}
 
 {% block subject %}
 Hi {{ user }},
@@ -10,7 +10,6 @@ Hi {{ user }},
 <p> If you think you received this email in error, please contact the G2P team at <a href="mailto:g2p-help@ebi.ac.uk">g2p-help@ebi.ac.uk</a>.</p>
 <p>Thank you</p>
 <footer>
-<p>The G2P team</p> 
-<img src="{% static 'gene2phenotype_app/G2P_ALL.png' %}" alt="G2P Logo" />
+<p>The G2P team</p>
 </footer>
 {% endblock %}
