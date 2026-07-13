@@ -7,7 +7,7 @@ LOGO_CID = "g2p_logo"
 _LOGO_STATIC_PATH = "gene2phenotype_app/G2P-ALL.png"
 
 # Must match the width/height set on the <img> tag in the email templates.
-LOGO_DISPLAY_PX = 56
+LOGO_DISPLAY_PX = 72
 
 
 def attach_g2p_logo(message):

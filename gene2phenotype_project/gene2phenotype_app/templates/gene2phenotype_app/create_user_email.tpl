@@ -19,6 +19,6 @@ Account Created: Welcome to G2P, {{ first_name }} {{ last_name }},
 <p>Thank you for using G2P</p>
 <footer>
 <p>The G2P team</p> 
-<img src="cid:g2p_logo" alt="G2P Logo" width="56" height="56" style="width:56px;height:56px;" />
+<img src="cid:g2p_logo" alt="G2P Logo" width="72" height="72" style="width:72px;height:72px;" />
 </footer>
 {% endblock %}

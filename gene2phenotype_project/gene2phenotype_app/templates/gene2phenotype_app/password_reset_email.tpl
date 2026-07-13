@@ -11,6 +11,6 @@ Hi {{ user }},
 <p>Thank you</p>
 <footer>
 <p>The G2P team</p> 
-<img src="cid:g2p_logo" alt="G2P Logo" width="56" height="56" style="width:56px;height:56px;" />
+<img src="cid:g2p_logo" alt="G2P Logo" width="72" height="72" style="width:72px;height:72px;" />
 </footer>
 {% endblock %}
