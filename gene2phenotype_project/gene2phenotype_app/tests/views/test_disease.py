@@ -113,6 +113,7 @@ class DiseaseSummaryTests(TestCase):
         "gene2phenotype_app/fixtures/lgd_panel.json",
         "gene2phenotype_app/fixtures/lgd_publication.json",
         "gene2phenotype_app/fixtures/lgd_variant_type.json",
+        "gene2phenotype_app/fixtures/lgd_variant_type_publication.json",
         "gene2phenotype_app/fixtures/lgd_variant_consequence.json",
         "gene2phenotype_app/fixtures/user_panels.json",
         "gene2phenotype_app/fixtures/locus_genotype_disease.json",

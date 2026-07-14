@@ -19,7 +19,6 @@ from gene2phenotype_app.models import (
     LGDPhenotype,
     LGDVariantGenccConsequence,
     LGDVariantType,
-    LGDVariantTypePublication,
     LGDVariantTypeDescription,
     LGDMolecularMechanismEvidence,
     LGDMolecularMechanismSynopsis,

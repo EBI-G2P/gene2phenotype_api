@@ -34,6 +34,7 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
         "gene2phenotype_app/fixtures/mined_publication.json",
         "gene2phenotype_app/fixtures/lgd_mined_publication.json",
         "gene2phenotype_app/fixtures/lgd_variant_type.json",
+        "gene2phenotype_app/fixtures/lgd_variant_type_publication.json",
         "gene2phenotype_app/fixtures/lgd_variant_type_comment.json",
     ]
 
@@ -319,9 +320,9 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
             list(response.data["phenotype_summary"]), expected_phenotype_summary
         )
 
-    def test_lgd_detail_authenticated_variant_type_comments_include_id(self):
+    def test_lgd_detail_authenticated_variant_type_data(self):
         """
-        Test authenticated LGD detail includes variant type comment IDs.
+        Test authenticated LGD detail includes variant type data.
         """
         user = User.objects.get(email="user5@test.ac.uk")
         refresh = RefreshToken.for_user(user)
@@ -345,4 +346,20 @@ class LocusGenotypeDiseaseDetailEndpoint(TestCase):
                     "date": "2025-02-19",
                 }
             ],
+        )
+        self.assertEqual(
+            inframe_insertion["publications"],
+            [15214012],
+        )
+        self.assertEqual(
+            inframe_insertion["unknown_inheritance"],
+            False,
+        )
+        self.assertEqual(
+            inframe_insertion["de_novo"],
+            False,
+        )
+        self.assertEqual(
+            inframe_insertion["inherited"],
+            False,
         )
