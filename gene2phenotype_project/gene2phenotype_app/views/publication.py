@@ -25,7 +25,7 @@ from gene2phenotype_app.models import (
     LGDPublication,
     LGDPhenotype,
     LGDPhenotypeSummary,
-    LGDVariantType,
+    LGDVariantTypePublication,
     LGDVariantTypeDescription,
     LGDVariantTypeComment,
     LGDMolecularMechanismEvidence,
@@ -520,19 +520,29 @@ class LGDEditPublications(BaseUpdate):
             phenotype_summary.is_deleted = 1
             phenotype_summary.save()
 
-        # lgd_variant_type - different variant types can be linked to the same publication
-        for lgd_variant_type in LGDVariantType.objects.filter(
-            lgd=lgd_obj, publication=lgd_publication_obj.publication, is_deleted=0
+        # lgd_variant_type - a variant type can be supported by more than one publication,
+        # so only remove the link to this publication; only soft-delete the whole variant
+        # type (and its comments) once it has no other active supporting publication left
+        for lgd_var_type_pub in LGDVariantTypePublication.objects.filter(
+            lgd_variant_type__lgd=lgd_obj,
+            publication=lgd_publication_obj.publication,
+            is_deleted=0,
         ):
-            # Each variant type can be linked to a LGDVariantTypeComment
-            # Delete these objects too
-            for lgd_var_comment in LGDVariantTypeComment.objects.filter(
+            lgd_var_type_pub.is_deleted = 1
+            lgd_var_type_pub.save()
+
+            lgd_variant_type = lgd_var_type_pub.lgd_variant_type
+            still_supported = LGDVariantTypePublication.objects.filter(
                 lgd_variant_type=lgd_variant_type, is_deleted=0
-            ):
-                lgd_var_comment.is_deleted = 1
-                lgd_var_comment.save()
-            lgd_variant_type.is_deleted = 1
-            lgd_variant_type.save()
+            ).exists()
+            if not still_supported:
+                for lgd_var_comment in LGDVariantTypeComment.objects.filter(
+                    lgd_variant_type=lgd_variant_type, is_deleted=0
+                ):
+                    lgd_var_comment.is_deleted = 1
+                    lgd_var_comment.save()
+                lgd_variant_type.is_deleted = 1
+                lgd_variant_type.save()
 
         # lgd_variant_type_description - different descriptions can be linked to the same publication
         for lgd_variant_description in LGDVariantTypeDescription.objects.filter(
