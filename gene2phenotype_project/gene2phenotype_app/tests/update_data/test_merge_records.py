@@ -41,6 +41,7 @@ class LGDEditPublicationsEndpoint(TestCase):
         "gene2phenotype_app/fixtures/lgd_phenotype.json",
         "gene2phenotype_app/fixtures/lgd_variant_consequence.json",
         "gene2phenotype_app/fixtures/lgd_variant_type.json",
+        "gene2phenotype_app/fixtures/lgd_variant_type_publication.json",
         "gene2phenotype_app/fixtures/lgd_variant_type_comment.json",
     ]
 
@@ -190,11 +191,16 @@ class LGDEditPublicationsEndpoint(TestCase):
             stable_id=stable_id_obj.id, is_deleted=0
         )
         # Check if all variant types were merged correctly
+        # Note: a variant type is unique per (lgd, variant_type_ot), so the source
+        # record's "intron_variant" row is skipped during the merge since the
+        # target record already has one (with a different supporting publication)
         lgd_variant_type_list = LGDVariantType.objects.filter(lgd=lgd_obj.id)
-        self.assertEqual(len(lgd_variant_type_list), 3)
+        self.assertEqual(len(lgd_variant_type_list), 2)
         for variant_type in lgd_variant_type_list:
             if (
-                variant_type.publication.id == 1
+                variant_type.publications.filter(
+                    publication_id=1, is_deleted=0
+                ).exists()
                 and variant_type.variant_type_ot.term == "intron_variant"
             ):
                 variant_type_comment_list = LGDVariantTypeComment.objects.filter(

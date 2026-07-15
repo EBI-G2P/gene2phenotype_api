@@ -8,6 +8,7 @@ from gene2phenotype_app.models import (
     LGDPhenotype,
     LGDPhenotypeSummary,
     LGDVariantType,
+    LGDVariantTypePublication,
     LGDVariantTypeComment,
     LGDVariantTypeDescription,
     LGDMolecularMechanismEvidence,
@@ -44,6 +45,7 @@ class LGDDeletePublication(TestCase):
         "gene2phenotype_app/fixtures/lgd_phenotype.json",
         "gene2phenotype_app/fixtures/lgd_phenotype_summary.json",
         "gene2phenotype_app/fixtures/lgd_variant_type.json",
+        "gene2phenotype_app/fixtures/lgd_variant_type_publication.json",
         "gene2phenotype_app/fixtures/lgd_variant_type_comment.json",
         "gene2phenotype_app/fixtures/lgd_variant_type_description.json",
         "gene2phenotype_app/fixtures/lgd_variant_consequence.json",
@@ -232,12 +234,12 @@ class LGDDeletePublication(TestCase):
         )
         self.assertEqual(len(lgd_phenotype_summary), 1)
 
-        lgd_variant_type = LGDVariantType.objects.filter(
-            lgd__stable_id__stable_id="G2P00002",
+        lgd_variant_type_publications = LGDVariantTypePublication.objects.filter(
+            lgd_variant_type__lgd__stable_id__stable_id="G2P00002",
             publication__pmid=15214012,
             is_deleted=1,
         )
-        self.assertEqual(len(lgd_variant_type), 3)
+        self.assertEqual(len(lgd_variant_type_publications), 3)
 
         lgd_variant_description = LGDVariantTypeDescription.objects.filter(
             lgd__stable_id__stable_id="G2P00002",
