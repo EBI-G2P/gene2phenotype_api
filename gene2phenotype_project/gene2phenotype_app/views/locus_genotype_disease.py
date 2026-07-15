@@ -1918,7 +1918,7 @@ def MergeRecords(request):
                                         LGDVariantTypeDescription, lgd_obj, lgd_obj_keep
                                     )
                                     move_related_objects(
-                                        LGDComment, lgd_obj, lgd_obj_keep
+                                        LGDComment, lgd_obj, lgd_obj_keep, ["comment"]
                                     )
                                     move_related_objects(
                                         LGDMolecularMechanismSynopsis,
@@ -1937,12 +1937,8 @@ def MergeRecords(request):
                                         lgd_obj_keep,
                                         ["ccm"],
                                     )
-                                    move_related_objects(
-                                        LGDVariantType,
-                                        lgd_obj,
-                                        lgd_obj_keep,
-                                        ["variant_type_ot"],
-                                    )
+                                    # Merge the variant types and their related objects (comments, publications)
+                                    merge_lgd_variant_types(lgd_obj, lgd_obj_keep)
                                     move_related_objects(
                                         LGDMolecularMechanismEvidence,
                                         lgd_obj,
@@ -2136,6 +2132,61 @@ def delete_lgd_record(lgd_obj: Model) -> None:
     # Delete the LGD record
     lgd_obj.is_deleted = 1
     lgd_obj.save()
+
+
+@extend_schema(exclude=True)
+def merge_lgd_variant_types(lgd_obj: Model, lgd_obj_keep: Model) -> None:
+    """
+    Method to reassign LGDVariantType objects and their linked publications (LGDVariantTypePublication)
+    and comments (LGDVariantTypeComment) from a source LGD record to a target LGD record.
+
+    A variant type is unique per lgd+variant_type. When the source record has
+    a variant type that already exists on the target record, the source row itself
+    is left for delete_lgd_record() to soft-delete, but its LGDVariantTypePublication
+    and LGDVariantTypeComment children are reassigned onto the target's existing row
+    for that variant type.
+
+    Args:
+        lgd_obj (Model): The source LocusGenotypeDisease object (to merge from)
+        lgd_obj_keep (Model): The target LocusGenotypeDisease object (to merge into)
+    """
+    variant_types: QuerySet = LGDVariantType.objects.filter(lgd=lgd_obj, is_deleted=0)
+
+    for variant_type_obj in variant_types:
+        if variant_type_obj.lgd_id == lgd_obj_keep.id:
+            continue
+
+        target_variant_type = LGDVariantType.objects.filter(
+            lgd=lgd_obj_keep,
+            variant_type_ot=variant_type_obj.variant_type_ot,
+            is_deleted=0,
+        ).first()
+
+        if target_variant_type is None:
+            # If variant type not linked to the target record, move the row as-is.
+            # Its children move implicitly since they reference this row by id, not by lgd.
+            variant_type_obj.lgd = lgd_obj_keep
+            variant_type_obj.save()
+            continue
+
+        # If variant type already linked to the target record, don't move variant_type_obj itself,
+        # instead move its supporting publications/comments onto the target's existing row.
+        for pub in LGDVariantTypePublication.objects.filter(
+            lgd_variant_type=variant_type_obj, is_deleted=0
+        ):
+            if not LGDVariantTypePublication.objects.filter(
+                lgd_variant_type=target_variant_type,
+                publication=pub.publication,
+                is_deleted=0,
+            ).exists():
+                pub.lgd_variant_type = target_variant_type
+                pub.save()
+
+        for comment in LGDVariantTypeComment.objects.filter(
+            lgd_variant_type=variant_type_obj, is_deleted=0
+        ):
+            comment.lgd_variant_type = target_variant_type
+            comment.save()
 
 
 @extend_schema(exclude=True)
