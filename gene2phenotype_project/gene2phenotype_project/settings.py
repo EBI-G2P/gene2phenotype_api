@@ -21,6 +21,9 @@ from rest_framework.settings import api_settings
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 config = ConfigParser()
+
+# Default build-time config used by the Dockerfile collectstatic command.
+# Runtime deployments should override these values via PROJECT_CONFIG_PATH.
 default_config_path = os.path.join(BASE_DIR, 'default_config.ini')
 config.read(default_config_path)
 
