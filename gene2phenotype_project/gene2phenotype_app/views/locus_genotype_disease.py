@@ -42,6 +42,7 @@ from gene2phenotype_app.models import (
     LGDVariantType,
     LGDVariantTypeComment,
     LGDVariantTypeDescription,
+    LGDVariantTypePublication,
     LGDPanel,
     LGDPhenotype,
     LGDPhenotypeSummary,
@@ -1268,14 +1269,14 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Get entries to be deleted
-        # Different rows mean the lgd-variant type is associated with multiple publications
-        # We have to delete all rows
-        lgd_var_type_set = LGDVariantType.objects.filter(
-            lgd=lgd_obj, variant_type_ot=var_type_obj, is_deleted=0
-        )
-
-        if not lgd_var_type_set.exists():
+        # Get entry to be deleted
+        # A variant type is unique per lgd+variant_type and it may be linked to
+        # one or more publications (in LGDVariantTypePublication)
+        try:
+            lgd_var_type_obj = LGDVariantType.objects.get(
+                lgd=lgd_obj, variant_type_ot=var_type_obj, is_deleted=0
+            )
+        except LGDVariantType.DoesNotExist:
             return Response(
                 {
                     "error": f"Could not find variant type '{variant_type}' for ID '{stable_id}'"
@@ -1283,26 +1284,34 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        for lgd_var_type_obj in lgd_var_type_set:
-            # Check if the lgd-variant type has comments
-            # If so, delete the comments too
-            lgd_variant_comments = LGDVariantTypeComment.objects.filter(
-                lgd_variant_type=lgd_var_type_obj, is_deleted=0
-            )
-            for variant_comment in lgd_variant_comments:
-                variant_comment.is_deleted = 1
-                variant_comment.save()
-            lgd_var_type_obj.is_deleted = 1
+        # Check if the lgd-variant type has comments
+        # If so, delete the comments too
+        lgd_variant_comments = LGDVariantTypeComment.objects.filter(
+            lgd_variant_type=lgd_var_type_obj, is_deleted=0
+        )
+        for variant_comment in lgd_variant_comments:
+            variant_comment.is_deleted = 1
+            variant_comment.save()
 
-            try:
-                lgd_var_type_obj.save()
-            except Exception as e:
-                return Response(
-                    {
-                        "error": f"Could not delete variant type '{variant_type}' for ID '{stable_id}'"
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+        # Delete the publications linked to this variant type
+        lgd_variant_publications = LGDVariantTypePublication.objects.filter(
+            lgd_variant_type=lgd_var_type_obj, is_deleted=0
+        )
+        for lgd_variant_publication in lgd_variant_publications:
+            lgd_variant_publication.is_deleted = 1
+            lgd_variant_publication.save()
+
+        lgd_var_type_obj.is_deleted = 1
+
+        try:
+            lgd_var_type_obj.save()
+        except Exception as e:
+            return Response(
+                {
+                    "error": f"Could not delete variant type '{variant_type}' for ID '{stable_id}'"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Update the date_review of the record
         lgd_obj.date_review = get_date_now()
@@ -1909,7 +1918,7 @@ def MergeRecords(request):
                                         LGDVariantTypeDescription, lgd_obj, lgd_obj_keep
                                     )
                                     move_related_objects(
-                                        LGDComment, lgd_obj, lgd_obj_keep
+                                        LGDComment, lgd_obj, lgd_obj_keep, ["comment"]
                                     )
                                     move_related_objects(
                                         LGDMolecularMechanismSynopsis,
@@ -1928,12 +1937,8 @@ def MergeRecords(request):
                                         lgd_obj_keep,
                                         ["ccm"],
                                     )
-                                    move_related_objects(
-                                        LGDVariantType,
-                                        lgd_obj,
-                                        lgd_obj_keep,
-                                        ["variant_type_ot", "publication"],
-                                    )
+                                    # Merge the variant types and their related objects (comments, publications)
+                                    merge_lgd_variant_types(lgd_obj, lgd_obj_keep)
                                     move_related_objects(
                                         LGDMolecularMechanismEvidence,
                                         lgd_obj,
@@ -2071,7 +2076,7 @@ def delete_lgd_record(lgd_obj: Model) -> None:
         pheno_summary.is_deleted = 1
         pheno_summary.save()
 
-    # Delete variant types + comments
+    # Delete variant types + comments + publications
     lgd_var_type_set = LGDVariantType.objects.filter(lgd=lgd_obj, is_deleted=0)
 
     for lgd_var_type_obj in lgd_var_type_set:
@@ -2082,6 +2087,12 @@ def delete_lgd_record(lgd_obj: Model) -> None:
         ):
             var_comment.is_deleted = 1
             var_comment.save()
+        # Delete the publications linked to this variant type
+        for lgd_var_type_pub in LGDVariantTypePublication.objects.filter(
+            lgd_variant_type=lgd_var_type_obj, is_deleted=0
+        ):
+            lgd_var_type_pub.is_deleted = 1
+            lgd_var_type_pub.save()
         lgd_var_type_obj.is_deleted = 1
         lgd_var_type_obj.save()
 
@@ -2121,6 +2132,61 @@ def delete_lgd_record(lgd_obj: Model) -> None:
     # Delete the LGD record
     lgd_obj.is_deleted = 1
     lgd_obj.save()
+
+
+@extend_schema(exclude=True)
+def merge_lgd_variant_types(lgd_obj: Model, lgd_obj_keep: Model) -> None:
+    """
+    Method to reassign LGDVariantType objects and their linked publications (LGDVariantTypePublication)
+    and comments (LGDVariantTypeComment) from a source LGD record to a target LGD record.
+
+    A variant type is unique per lgd+variant_type. When the source record has
+    a variant type that already exists on the target record, the source row itself
+    is left for delete_lgd_record() to soft-delete, but its LGDVariantTypePublication
+    and LGDVariantTypeComment children are reassigned onto the target's existing row
+    for that variant type.
+
+    Args:
+        lgd_obj (Model): The source LocusGenotypeDisease object (to merge from)
+        lgd_obj_keep (Model): The target LocusGenotypeDisease object (to merge into)
+    """
+    variant_types: QuerySet = LGDVariantType.objects.filter(lgd=lgd_obj, is_deleted=0)
+
+    for variant_type_obj in variant_types:
+        if variant_type_obj.lgd_id == lgd_obj_keep.id:
+            continue
+
+        target_variant_type = LGDVariantType.objects.filter(
+            lgd=lgd_obj_keep,
+            variant_type_ot=variant_type_obj.variant_type_ot,
+            is_deleted=0,
+        ).first()
+
+        if target_variant_type is None:
+            # If variant type not linked to the target record, move the row as-is.
+            # Its children move implicitly since they reference this row by id, not by lgd.
+            variant_type_obj.lgd = lgd_obj_keep
+            variant_type_obj.save()
+            continue
+
+        # If variant type already linked to the target record, don't move variant_type_obj itself,
+        # instead move its supporting publications/comments onto the target's existing row.
+        for pub in LGDVariantTypePublication.objects.filter(
+            lgd_variant_type=variant_type_obj, is_deleted=0
+        ):
+            if not LGDVariantTypePublication.objects.filter(
+                lgd_variant_type=target_variant_type,
+                publication=pub.publication,
+                is_deleted=0,
+            ).exists():
+                pub.lgd_variant_type = target_variant_type
+                pub.save()
+
+        for comment in LGDVariantTypeComment.objects.filter(
+            lgd_variant_type=variant_type_obj, is_deleted=0
+        ):
+            comment.lgd_variant_type = target_variant_type
+            comment.save()
 
 
 @extend_schema(exclude=True)

@@ -224,12 +224,12 @@ class ActivityLogs(BaseView):
         )
 
         history_records_var_type = LGDVariantType.history.filter(filter_query).values(
+            "id",
             "history_user__first_name",
             "history_user__last_name",
             "history_date",
             "history_type",
             "variant_type_ot_id__term",
-            "publication_id__pmid",
             "lgd_id__stable_id__stable_id",
             "inherited",
             "de_novo",
@@ -424,7 +424,7 @@ class ActivityLogs(BaseView):
 
             output_data.append(log_data)
 
-        # Get variant type history
+        # Get variant type history without the publications info
         for log in history_records_var_type:
             date_formatted = log.get("history_date").strftime("%Y-%m-%d %H:%M:%S")
             log_data = {}
@@ -434,7 +434,6 @@ class ActivityLogs(BaseView):
             log_data["change_type"] = type_of_change[log.get("history_type")]
             log_data["date"] = date_formatted
             log_data["variant_type"] = log.get("variant_type_ot_id__term")
-            log_data["publication_pmid"] = log.get("publication_id__pmid")
             log_data["g2p_id"] = log.get("lgd_id__stable_id__stable_id")
             log_data["inherited"] = log.get("inherited")
             log_data["de_novo"] = log.get("de_novo")

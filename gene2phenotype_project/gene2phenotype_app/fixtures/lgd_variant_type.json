@@ -8,7 +8,6 @@
             "inherited": false,
             "de_novo": false,
             "unknown_inheritance": false,
-            "publication": 2,
             "is_deleted": 0
         }
     },
@@ -21,7 +20,6 @@
             "inherited": false,
             "de_novo": false,
             "unknown_inheritance": true,
-            "publication": 2,
             "is_deleted": 0
         }
     },
@@ -34,7 +32,6 @@
             "inherited": false,
             "de_novo": false,
             "unknown_inheritance": false,
-            "publication": 1,
             "is_deleted": 0
         }
     },
@@ -47,8 +44,31 @@
             "inherited": false,
             "de_novo": false,
             "unknown_inheritance": false,
-            "publication": 2,
             "is_deleted": 1
+        }
+    },
+    {
+        "model": "gene2phenotype_app.lgdvarianttype",
+        "pk": 5,
+        "fields": {
+            "lgd": 11,
+            "variant_type_ot": 13,
+            "inherited": false,
+            "de_novo": false,
+            "unknown_inheritance": false,
+            "is_deleted": 0
+        }
+    },
+    {
+        "model": "gene2phenotype_app.lgdvarianttype",
+        "pk": 6,
+        "fields": {
+            "lgd": 10,
+            "variant_type_ot": 13,
+            "inherited": false,
+            "de_novo": false,
+            "unknown_inheritance": false,
+            "is_deleted": 0
         }
     }
 ]

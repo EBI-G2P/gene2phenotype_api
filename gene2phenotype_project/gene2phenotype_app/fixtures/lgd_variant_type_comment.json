@@ -22,5 +22,17 @@
             "user": 1,
             "date": "2025-05-03T11:38:52Z"
         }
+    },
+    {
+        "model": "gene2phenotype_app.lgdvarianttypecomment",
+        "pk": 3,
+        "fields": {
+            "lgd_variant_type": 6,
+            "comment": "Comment only on the source record's variant type",
+            "is_public": 0,
+            "is_deleted": 0,
+            "user": 1,
+            "date": "2025-06-01T09:00:00Z"
+        }
     }
 ]

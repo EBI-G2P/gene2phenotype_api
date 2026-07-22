@@ -45,6 +45,7 @@ class LGDDeleteLGDEndpoint(TestCase):
         "gene2phenotype_app/fixtures/lgd_phenotype.json",
         "gene2phenotype_app/fixtures/lgd_phenotype_summary.json",
         "gene2phenotype_app/fixtures/lgd_variant_type.json",
+        "gene2phenotype_app/fixtures/lgd_variant_type_publication.json",
         "gene2phenotype_app/fixtures/lgd_variant_type_comment.json",
         "gene2phenotype_app/fixtures/lgd_variant_type_description.json",
         "gene2phenotype_app/fixtures/lgd_variant_consequence.json",

@@ -6,6 +6,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from gene2phenotype_app.models import (
     User,
     LGDVariantType,
+    LGDVariantTypePublication,
+    LGDVariantTypeComment,
     LocusGenotypeDisease,
     OntologyTerm,
 )
@@ -33,6 +35,7 @@ class LGDEditVariantTypesTests(TestCase):
         "gene2phenotype_app/fixtures/source.json",
         "gene2phenotype_app/fixtures/lgd_publication.json",
         "gene2phenotype_app/fixtures/lgd_variant_type.json",
+        "gene2phenotype_app/fixtures/lgd_variant_type_publication.json",
     ]
 
     def setUp(self):
@@ -233,6 +236,10 @@ class LGDEditVariantTypesTests(TestCase):
             inherited=True,
             de_novo=True,
             unknown_inheritance=True,
+            is_deleted=1,
+        )
+        LGDVariantTypePublication.objects.create(
+            lgd_variant_type=lgd_variant,
             publication_id=3,
             is_deleted=1,
         )
@@ -263,11 +270,16 @@ class LGDEditVariantTypesTests(TestCase):
         self.assertFalse(lgd_variant.inherited)
         self.assertFalse(lgd_variant.de_novo)
         self.assertFalse(lgd_variant.unknown_inheritance)
+        self.assertTrue(
+            LGDVariantTypePublication.objects.filter(
+                lgd_variant_type=lgd_variant, publication_id=3, is_deleted=0
+            ).exists()
+        )
 
     def test_reuse_existing_row_with_new_publication_updates_inheritance_flags(self):
         """
-        Test that converting an existing publication-less row into a
-        publication-linked row replaces inheritance flags with the latest payload.
+        Test that adding a publication link to an existing publication-less
+        variant type replaces inheritance flags with the latest payload.
         """
         user = User.objects.get(email="john@test.ac.uk")
         refresh = RefreshToken.for_user(user)
@@ -281,7 +293,6 @@ class LGDEditVariantTypesTests(TestCase):
             inherited=True,
             de_novo=True,
             unknown_inheritance=True,
-            publication=None,
             is_deleted=0,
         )
 
@@ -307,7 +318,69 @@ class LGDEditVariantTypesTests(TestCase):
         self.assertEqual(response.status_code, 201)
 
         lgd_variant.refresh_from_db()
-        self.assertEqual(lgd_variant.publication_id, 3)
+        self.assertTrue(
+            LGDVariantTypePublication.objects.filter(
+                lgd_variant_type=lgd_variant, publication_id=3, is_deleted=0
+            ).exists()
+        )
         self.assertFalse(lgd_variant.inherited)
         self.assertFalse(lgd_variant.de_novo)
         self.assertFalse(lgd_variant.unknown_inheritance)
+
+    def test_add_variant_type_with_multiple_publications_no_duplication(self):
+        """
+        Test that adding a variant type supported by more than one publication
+        creates exactly one LGDVariantType row, one LGDVariantTypePublication
+        row per publication, and does not duplicate the comment.
+        """
+        user = User.objects.get(email="john@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        payload = {
+            "variant_types": [
+                {
+                    "comment": "supported by two papers",
+                    "de_novo": False,
+                    "inherited": True,
+                    "primary_type": "protein_changing",
+                    "secondary_type": "stop_gained",
+                    "supporting_papers": ["12451214", "20512146"],
+                    "unknown_inheritance": False,
+                }
+            ]
+        }
+
+        response = self.client.post(
+            self.url_add_variant,
+            payload,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 201)
+
+        stop_gained = OntologyTerm.objects.get(term="stop_gained")
+        lgd_variant_qs = LGDVariantType.objects.filter(
+            lgd__stable_id__stable_id="G2P00002",
+            variant_type_ot=stop_gained,
+            is_deleted=0,
+        )
+        self.assertEqual(len(lgd_variant_qs), 1)
+
+        lgd_variant = lgd_variant_qs.first()
+        lgd_variant_publications = LGDVariantTypePublication.objects.filter(
+            lgd_variant_type=lgd_variant, is_deleted=0
+        )
+        self.assertEqual(len(lgd_variant_publications), 2)
+        self.assertEqual(
+            set(lgd_variant_publications.values_list("publication__pmid", flat=True)),
+            {12451214, 20512146},
+        )
+
+        lgd_variant_comments = LGDVariantTypeComment.objects.filter(
+            lgd_variant_type=lgd_variant, is_deleted=0
+        )
+        self.assertEqual(len(lgd_variant_comments), 1)
+        self.assertEqual(
+            lgd_variant_comments.first().comment, "supported by two papers"
+        )

@@ -198,10 +198,11 @@ class LGDPhenotypeSummary(models.Model):
 
 class LGDVariantType(models.Model):
     """
-    Represents the variant type associated with the G2P record and a publication.
+    Represents the variant type associated with the G2P record.
 
-    Types of variants reported in the publication: missense_variant, frameshift_variant, stop_gained, etc.
+    Types of variants reported in publications: missense_variant, frameshift_variant, stop_gained, etc.
     Sequence ontology terms are used to describe variant types.
+    A variant type can be supported by one or more publications - see LGDVariantTypePublication.
     """
 
     id = models.AutoField(primary_key=True)
@@ -212,17 +213,35 @@ class LGDVariantType(models.Model):
     inherited = models.BooleanField(default=False)
     de_novo = models.BooleanField(default=False)
     unknown_inheritance = models.BooleanField(default=False)
-    publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
     is_deleted = models.SmallIntegerField(null=False, default=False)
     history = HistoricalRecords()
 
     class Meta:
         db_table = "lgd_variant_type"
-        unique_together = ["lgd", "variant_type_ot", "publication"]
+        unique_together = ["lgd", "variant_type_ot"]
         indexes = [
             models.Index(fields=["lgd", "variant_type_ot"]),
             models.Index(fields=["variant_type_ot"]),
         ]
+
+
+class LGDVariantTypePublication(models.Model):
+    """
+    Links a LGDVariantType to the publication(s) that support it.
+    A single variant type can be evidenced by more than one publication.
+    """
+
+    id = models.AutoField(primary_key=True)
+    lgd_variant_type = models.ForeignKey(
+        "LGDVariantType", related_name="publications", on_delete=models.PROTECT
+    )
+    publication = models.ForeignKey("Publication", on_delete=models.PROTECT)
+    is_deleted = models.SmallIntegerField(null=False, default=False)
+    history = HistoricalRecords()
+
+    class Meta:
+        db_table = "lgd_variant_type_publication"
+        unique_together = ["lgd_variant_type", "publication"]
 
 
 class LGDVariantTypeDescription(models.Model):

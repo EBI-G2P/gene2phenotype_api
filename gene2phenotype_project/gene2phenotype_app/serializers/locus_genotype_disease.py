@@ -17,6 +17,7 @@ from ..models import (
     LGDMinedPublication,
     LGDPhenotype,
     LGDVariantType,
+    LGDVariantTypePublication,
     Locus,
     LGDComment,
     LGDVariantTypeComment,
@@ -430,11 +431,21 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         except User.DoesNotExist:
             authenticated_user = 0
 
+        queryset = LGDVariantType.objects.filter(
+            lgd_id=id, is_deleted=0
+        ).prefetch_related(
+            Prefetch(
+                "publications",
+                queryset=LGDVariantTypePublication.objects.filter(
+                    is_deleted=0
+                ).select_related("publication"),
+                to_attr="current_publications",
+            )
+        )
+
         if authenticated_user == 1:
             # Authenticated users have access to comments
-            queryset = LGDVariantType.objects.filter(
-                lgd_id=id, is_deleted=0
-            ).prefetch_related(
+            queryset = queryset.prefetch_related(
                 Prefetch(
                     "lgdvarianttypecomment_set",
                     queryset=LGDVariantTypeComment.objects.filter(
@@ -443,75 +454,47 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
                     to_attr="current_comments",  # prefetched comments are saved under 'current_comments'
                 )
             )
-        else:
-            queryset = LGDVariantType.objects.filter(lgd_id=id, is_deleted=0)
 
         data = {}
 
-        list_of_comments = {}
         for lgd_variant in queryset:
             # Get the variant type term (ex:frameshift_variant)
             accession = lgd_variant.variant_type_ot.accession
 
-            # Prepare the list of comments
+            # Prepare the list of comments (a variant type has a single set of
+            # comments, since it is unique per lgd+variant type)
             comments = getattr(
                 lgd_variant, "current_comments", []
             )  # Get the prefetched comments
-
+            seen_comment_ids = set()
+            variant_type_comments = []
             for comment_obj in comments:
-                comment_text = comment_obj.comment
-                # Format date
+                if comment_obj.id in seen_comment_ids:
+                    continue
+                seen_comment_ids.add(comment_obj.id)
                 date = None
                 if comment_obj.date is not None:
                     date = comment_obj.date.strftime("%Y-%m-%d")
-                comment_data = {
-                    "id": comment_obj.id,
-                    "text": comment_text,
-                    "date": date,
-                }
+                variant_type_comments.append(
+                    {"id": comment_obj.id, "text": comment_obj.comment, "date": date}
+                )
 
-                if accession not in list_of_comments:
-                    list_of_comments[accession] = [comment_data]
-                elif not any(
-                    comment["id"] == comment_obj.id for comment in list_of_comments[accession]
-                ):
-                    list_of_comments[accession].append(comment_data)
+            publication_list = [
+                lgd_variant_publication.publication.pmid
+                for lgd_variant_publication in getattr(
+                    lgd_variant, "current_publications", []
+                )
+            ]
 
-            if accession in data and lgd_variant.publication:
-                variant_type_comments = []
-                if accession in list_of_comments:
-                    variant_type_comments = list_of_comments[accession]
-
-                # Add pmid to list of publications
-                data[accession]["publications"].append(lgd_variant.publication.pmid)
-                data[accession]["comments"] = variant_type_comments
-                # Check the variant inheritance - we group this data for each publication
-                if lgd_variant.inherited is True:
-                    data[accession]["inherited"] = lgd_variant.inherited
-                if lgd_variant.de_novo is True:
-                    data[accession]["de_novo"] = lgd_variant.de_novo
-                if lgd_variant.unknown_inheritance is True:
-                    data[accession]["unknown_inheritance"] = (
-                        lgd_variant.unknown_inheritance
-                    )
-            else:
-                publication_list = []
-                if lgd_variant.publication:
-                    publication_list = [lgd_variant.publication.pmid]
-
-                variant_type_comments = []
-                if accession in list_of_comments:
-                    variant_type_comments = list_of_comments[accession]
-
-                data[accession] = {
-                    "term": lgd_variant.variant_type_ot.term,
-                    "accession": accession,
-                    "inherited": lgd_variant.inherited,
-                    "de_novo": lgd_variant.de_novo,
-                    "unknown_inheritance": lgd_variant.unknown_inheritance,
-                    "publications": publication_list,
-                    "comments": variant_type_comments,
-                }
+            data[accession] = {
+                "term": lgd_variant.variant_type_ot.term,
+                "accession": accession,
+                "inherited": lgd_variant.inherited,
+                "de_novo": lgd_variant.de_novo,
+                "unknown_inheritance": lgd_variant.unknown_inheritance,
+                "publications": publication_list,
+                "comments": variant_type_comments,
+            }
 
         return data.values()
 
@@ -1551,9 +1534,7 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
     inherited = serializers.BooleanField(allow_null=True)
     de_novo = serializers.BooleanField(allow_null=True)
     unknown_inheritance = serializers.BooleanField(allow_null=True)
-    publication = serializers.IntegerField(
-        source="publication.pmid", allow_null=True, required=False
-    )
+    publications = serializers.SerializerMethodField()
     comments = LGDVariantTypeCommentSerializer(many=True, required=False)
     # Extra fields for the create() method
     secondary_type = serializers.CharField(
@@ -1565,6 +1546,16 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
     comment = serializers.CharField(
         write_only=True, allow_blank=True
     )  # single comment (used by curation)
+
+    def get_publications(self, obj) -> list[int]:
+        """
+        Pmids of the publications that support this variant type.
+        """
+        return list(
+            LGDVariantTypePublication.objects.filter(
+                lgd_variant_type=obj, is_deleted=0
+            ).values_list("publication__pmid", flat=True)
+        )
 
     @staticmethod
     def _apply_latest_inheritance_flags(
@@ -1579,6 +1570,8 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
         """
         Method to create LGDVariantType object.
         A G2P record can be associated with one or more variant types.
+        A single variant type is unique per lgd+variant_type and can be
+        supported by one or more publications (in LGDVariantTypePublication).
 
         Returns:
                 LGDVariantType object
@@ -1602,153 +1595,87 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
                 {"error": f"Invalid variant type '{var_type}'"}
             )
 
-        # Variants are supposed to be linked to publications
-        # But if there is no publication then create the object without a pmid
-        if not publications:
-            # Check if entry exists in the table
-            # An unique entry is defined by: lgd, variant_type and publication
+        publication_objs = []
+        for publication in publications or []:
             try:
-                lgd_variant_type_obj = LGDVariantType.objects.get(
-                    lgd=lgd, variant_type_ot=var_type_obj, publication=None
+                # The publication is supposed to be stored in the G2P db
+                publication_objs.append(Publication.objects.get(pmid=publication))
+            except Publication.DoesNotExist:
+                raise serializers.ValidationError(
+                    {"error": f"Invalid publication '{publication}'"}
                 )
-            except LGDVariantType.DoesNotExist:
-                lgd_variant_type_obj = LGDVariantType.objects.create(
-                    lgd=lgd,
-                    variant_type_ot=var_type_obj,
-                    inherited=inherited,
-                    de_novo=de_novo,
-                    unknown_inheritance=unknown_inheritance,
+
+        # Check if entry exists in the table
+        # An unique entry is defined by: lgd and variant_type
+        try:
+            lgd_variant_type_obj = LGDVariantType.objects.get(
+                lgd=lgd, variant_type_ot=var_type_obj
+            )
+        except LGDVariantType.DoesNotExist:
+            lgd_variant_type_obj = LGDVariantType.objects.create(
+                lgd=lgd,
+                variant_type_ot=var_type_obj,
+                inherited=inherited,
+                de_novo=de_novo,
+                unknown_inheritance=unknown_inheritance,
+                is_deleted=0,
+            )
+        else:
+            # the entry already exists, it probably needs to be updated
+            # if deleted, set to not deleted
+            if lgd_variant_type_obj.is_deleted == 1:
+                lgd_variant_type_obj.is_deleted = 0
+            self._apply_latest_inheritance_flags(
+                lgd_variant_type_obj,
+                inherited,
+                de_novo,
+                unknown_inheritance,
+            )
+            lgd_variant_type_obj.save()
+
+        # Link the variant type to its supporting publication(s)
+        for publication_obj in publication_objs:
+            try:
+                lgd_var_type_publication_obj = LGDVariantTypePublication.objects.get(
+                    lgd_variant_type=lgd_variant_type_obj, publication=publication_obj
+                )
+            except LGDVariantTypePublication.DoesNotExist:
+                LGDVariantTypePublication.objects.create(
+                    lgd_variant_type=lgd_variant_type_obj,
+                    publication=publication_obj,
                     is_deleted=0,
                 )
             else:
-                # the entry already exists, it probably needs to be updated
-                # if deleted, set to not deleted
-                if lgd_variant_type_obj.is_deleted == 1:
-                    lgd_variant_type_obj.is_deleted = 0
-                self._apply_latest_inheritance_flags(
-                    lgd_variant_type_obj,
-                    inherited,
-                    de_novo,
-                    unknown_inheritance,
+                if lgd_var_type_publication_obj.is_deleted == 1:
+                    lgd_var_type_publication_obj.is_deleted = 0
+                    lgd_var_type_publication_obj.save()
+
+        # The comment applies to the variant type as a whole (not to a specific
+        # publication), so it is only created once regardless of how many
+        # publications support this variant type
+        if comment:
+            # Remove newlines from comment
+            comment = re.sub(r"\n", " ", comment)
+            try:
+                lgd_comment_obj = LGDVariantTypeComment.objects.get(
+                    comment=comment,
+                    lgd_variant_type=lgd_variant_type_obj,
+                    is_public=0,  # variant type comments are private
+                    user=user_obj,
                 )
-                lgd_variant_type_obj.save()
-
-            # The LGDPhenotypeSummary is created - next step is to create the LGDVariantTypeComment
-            if comment != "":
-                # Remove newlines from comment
-                comment = re.sub(r"\n", " ", comment)
-                try:
-                    lgd_comment_obj = LGDVariantTypeComment.objects.get(
-                        comment=comment,
-                        lgd_variant_type=lgd_variant_type_obj,
-                        is_public=0,  # variant type comments are private
-                        user=user_obj,
-                    )
-                except LGDVariantTypeComment.DoesNotExist:
-                    lgd_comment_obj = LGDVariantTypeComment.objects.create(
-                        comment=comment,
-                        lgd_variant_type=lgd_variant_type_obj,
-                        is_public=0,  # variant type comments are private
-                        is_deleted=0,
-                        user=user_obj,
-                        date=get_date_now(),
-                    )
-                else:
-                    if lgd_comment_obj.is_deleted == 1:
-                        lgd_comment_obj.is_deleted = 0
-                        lgd_comment_obj.save()
-
-        else:
-            # Variant type is linked to publication(s)
-            # A single variant type can be attached to several publications - create an object for each pmid
-            for publication in publications:
-                try:
-                    # The publication is supposed to be stored in the G2P db
-                    publication_obj = Publication.objects.get(pmid=publication)
-
-                except Publication.DoesNotExist:
-                    raise serializers.ValidationError(
-                        {"error": f"Invalid publication '{publication}'"}
-                    )
-
-                else:
-                    # The publication is valid
-                    # Check if LGDVariantType object already exists in db
-                    try:
-                        lgd_variant_type_obj = LGDVariantType.objects.get(
-                            lgd=lgd,
-                            variant_type_ot=var_type_obj,
-                            publication=publication_obj,
-                        )
-                    except LGDVariantType.DoesNotExist:
-                        # Check if LGDVariantType object already exists in db without a publication
-                        try:
-                            lgd_variant_type_obj = LGDVariantType.objects.get(
-                                lgd=lgd,
-                                variant_type_ot=var_type_obj,
-                                publication=None,  # no publication attached to entry
-                                is_deleted=0,
-                            )
-                        except LGDVariantType.DoesNotExist:
-                            # LGDVariantType does not exist with or without publication
-                            # Create LGDVariantType object with publication
-                            lgd_variant_type_obj = LGDVariantType.objects.create(
-                                lgd=lgd,
-                                variant_type_ot=var_type_obj,
-                                inherited=inherited,
-                                de_novo=de_novo,
-                                unknown_inheritance=unknown_inheritance,
-                                publication=publication_obj,
-                                is_deleted=0,
-                            )
-                        else:
-                            # LGDVariantType already exists in the db without a publication
-                            # Add publication to existing object
-                            lgd_variant_type_obj.publication = publication_obj
-                            self._apply_latest_inheritance_flags(
-                                lgd_variant_type_obj,
-                                inherited,
-                                de_novo,
-                                unknown_inheritance,
-                            )
-                            lgd_variant_type_obj.save()
-                    else:
-                        # the entry already exists, it probably needs to be updated
-                        # if deleted, set to not deleted
-                        if lgd_variant_type_obj.is_deleted == 1:
-                            lgd_variant_type_obj.is_deleted = 0
-                        self._apply_latest_inheritance_flags(
-                            lgd_variant_type_obj,
-                            inherited,
-                            de_novo,
-                            unknown_inheritance,
-                        )
-                        lgd_variant_type_obj.save()
-
-                    # The LGDPhenotypeSummary is created - next step is to create the LGDVariantTypeComment
-                    if comment != "":
-                        # Remove newlines from comment
-                        comment = re.sub(r"\n", " ", comment)
-                        try:
-                            lgd_comment_obj = LGDVariantTypeComment.objects.get(
-                                comment=comment,
-                                lgd_variant_type=lgd_variant_type_obj,
-                                is_public=0,  # variant type comments are private
-                                user=user_obj,
-                            )
-                        except LGDVariantTypeComment.DoesNotExist:
-                            lgd_comment_obj = LGDVariantTypeComment.objects.create(
-                                comment=comment,
-                                lgd_variant_type=lgd_variant_type_obj,
-                                is_public=0,  # variant type comments are private
-                                is_deleted=0,
-                                user=user_obj,
-                                date=get_date_now(),
-                            )
-                        else:
-                            if lgd_comment_obj.is_deleted == 1:
-                                lgd_comment_obj.is_deleted = 0
-                                lgd_comment_obj.save()
+            except LGDVariantTypeComment.DoesNotExist:
+                LGDVariantTypeComment.objects.create(
+                    comment=comment,
+                    lgd_variant_type=lgd_variant_type_obj,
+                    is_public=0,  # variant type comments are private
+                    is_deleted=0,
+                    user=user_obj,
+                    date=get_date_now(),
+                )
+            else:
+                if lgd_comment_obj.is_deleted == 1:
+                    lgd_comment_obj.is_deleted = 0
+                    lgd_comment_obj.save()
 
         return 1
 
@@ -1760,7 +1687,7 @@ class LGDVariantTypeSerializer(serializers.ModelSerializer):
             "inherited",
             "de_novo",
             "unknown_inheritance",
-            "publication",
+            "publications",
             "comments",
             "secondary_type",
             "supporting_papers",

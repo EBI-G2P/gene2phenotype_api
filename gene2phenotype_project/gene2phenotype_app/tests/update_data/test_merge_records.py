@@ -9,6 +9,7 @@ from gene2phenotype_app.models import (
     LocusGenotypeDisease,
     LGDVariantType,
     LGDVariantTypeComment,
+    LGDVariantTypePublication,
     LGDPublication,
     LGDMinedPublication,
 )
@@ -41,6 +42,7 @@ class LGDEditPublicationsEndpoint(TestCase):
         "gene2phenotype_app/fixtures/lgd_phenotype.json",
         "gene2phenotype_app/fixtures/lgd_variant_consequence.json",
         "gene2phenotype_app/fixtures/lgd_variant_type.json",
+        "gene2phenotype_app/fixtures/lgd_variant_type_publication.json",
         "gene2phenotype_app/fixtures/lgd_variant_type_comment.json",
     ]
 
@@ -190,13 +192,20 @@ class LGDEditPublicationsEndpoint(TestCase):
             stable_id=stable_id_obj.id, is_deleted=0
         )
         # Check if all variant types were merged correctly
+        # Note: a variant type is unique per (lgd, variant_type_ot), so the source
+        # record's "intron_variant" row is not itself moved (the target already has
+        # one), but its supporting publication is merged onto the target's existing
+        # "intron_variant" row instead of being lost
         lgd_variant_type_list = LGDVariantType.objects.filter(lgd=lgd_obj.id)
-        self.assertEqual(len(lgd_variant_type_list), 3)
+        self.assertEqual(len(lgd_variant_type_list), 2)
         for variant_type in lgd_variant_type_list:
-            if (
-                variant_type.publication.id == 1
-                and variant_type.variant_type_ot.term == "intron_variant"
-            ):
+            if variant_type.variant_type_ot.term == "intron_variant":
+                pub_ids = set(
+                    variant_type.publications.filter(is_deleted=0).values_list(
+                        "publication_id", flat=True
+                    )
+                )
+                self.assertEqual(pub_ids, {1, 2})
                 variant_type_comment_list = LGDVariantTypeComment.objects.filter(
                     lgd_variant_type=variant_type.id
                 )
@@ -204,6 +213,12 @@ class LGDEditPublicationsEndpoint(TestCase):
                     variant_type_comment_list[0].comment,
                     "Recurrent c.340C>T; other variant",
                 )
+
+        # Check the source record's duplicate "intron_variant" publication was
+        # reparented onto the target's row instead of being discarded
+        moved_pub = LGDVariantTypePublication.objects.get(pk=2)
+        self.assertEqual(moved_pub.lgd_variant_type_id, 3)
+        self.assertEqual(moved_pub.is_deleted, 0)
         # Count the number of curated publications
         lgd_publication_list = LGDPublication.objects.filter(lgd=lgd_obj.id)
         self.assertEqual(len(lgd_publication_list), 4)
@@ -278,3 +293,72 @@ class LGDEditPublicationsEndpoint(TestCase):
         # Check mined publications
         lgd_mined_publication_list = LGDMinedPublication.objects.filter(lgd=lgd_obj.id)
         self.assertEqual(len(lgd_mined_publication_list), 1)
+
+    def test_merge_records_variant_type_comment_migration(self):
+        """
+        Test that when a source record's variant type duplicates one already on
+        the target record, the source's LGDVariantTypeComment and
+        LGDVariantTypePublication are merged onto the target's existing row
+        instead of being discarded.
+        """
+        url_merge = reverse("merge_records")
+
+        records_to_merge = [
+            {"g2p_ids": ["G2P00012"], "final_g2p_id": "G2P00013"}
+        ]
+
+        # Login
+        user = User.objects.get(email="user5@test.ac.uk")
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Authenticate by setting cookie on the test client
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+
+        response = self.client.post(
+            url_merge, records_to_merge, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.json()
+        self.assertEqual(
+            response_data["merged_records"], [["G2P00012 merged into G2P00013"]]
+        )
+
+        stable_id_obj = G2PStableID.objects.get(stable_id="G2P00013")
+        lgd_obj = LocusGenotypeDisease.objects.get(
+            stable_id=stable_id_obj.id, is_deleted=0
+        )
+
+        # Only one "missense_variant" row should survive on the target - the
+        # source's duplicate row is not moved, it is soft-deleted
+        lgd_variant_type_list = LGDVariantType.objects.filter(
+            lgd=lgd_obj.id, is_deleted=0
+        )
+        self.assertEqual(len(lgd_variant_type_list), 1)
+        surviving_variant_type = lgd_variant_type_list[0]
+        self.assertEqual(surviving_variant_type.variant_type_ot.term, "missense_variant")
+
+        # The target's own publication and the source's publication should both
+        # end up attached to the surviving row
+        pub_ids = set(
+            surviving_variant_type.publications.filter(is_deleted=0).values_list(
+                "publication_id", flat=True
+            )
+        )
+        self.assertEqual(pub_ids, {1, 2})
+
+        # The comment that only existed on the source's duplicate row should now
+        # be attached to the target's surviving row, not deleted
+        variant_type_comment_list = LGDVariantTypeComment.objects.filter(
+            lgd_variant_type=surviving_variant_type.id, is_deleted=0
+        )
+        self.assertEqual(len(variant_type_comment_list), 1)
+        self.assertEqual(
+            variant_type_comment_list[0].comment,
+            "Comment only on the source record's variant type",
+        )
+
+        # The source's duplicate variant type row itself was soft-deleted
+        source_variant_type = LGDVariantType.objects.get(pk=6)
+        self.assertEqual(source_variant_type.is_deleted, 1)
