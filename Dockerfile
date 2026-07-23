@@ -51,6 +51,12 @@ USER django
 
 # Collect static files
 RUN SECRET_KEY=dummy-key-for-collectstatic-only \
+    DB_ENGINE=django.db.backends.sqlite3 \
+    DB_NAME=:memory: \
+    DB_USERNAME=dummy \
+    DB_PASSWORD=dummy \
+    DB_HOST=localhost \
+    DB_PORT=5432 \
     python manage.py collectstatic --noinput --clear
 
 EXPOSE 8000

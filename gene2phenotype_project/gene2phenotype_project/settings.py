@@ -27,7 +27,7 @@ config = ConfigParser()
 
 # Default build-time config used by the Dockerfile collectstatic command.
 # Runtime deployments should override these values via PROJECT_CONFIG_PATH.
-default_config_path = BASE_DIR / "default_config.ini"
+default_config_path = os.path.join(BASE_DIR, "default_config.ini")
 if not config.read(default_config_path):
     raise ImproperlyConfigured(
         f"Default config file could not be read: {default_config_path}"
