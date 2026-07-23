@@ -16,8 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from gene2phenotype_app.views.health_check import health_check, readiness_check
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('health/', health_check, name='health_check'),
+    path('ready/', readiness_check, name='readiness_check'),
     path('gene2phenotype/api/', include('gene2phenotype_app.urls')),
 ]

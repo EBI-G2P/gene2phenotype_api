@@ -11,17 +11,34 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
-import os, sys, json
+import json
+import os
+import sys
 from configparser import ConfigParser
 from datetime import timedelta
+from django.core.exceptions import ImproperlyConfigured
 from rest_framework.settings import api_settings
 
-config_path = os.environ.get("PROJECT_CONFIG_PATH")
-config = ConfigParser()
-config.read(config_path)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+config = ConfigParser()
+
+# Default build-time config used by the Dockerfile collectstatic command.
+# Runtime deployments should override these values via PROJECT_CONFIG_PATH.
+default_config_path = BASE_DIR / "default_config.ini"
+if not config.read(default_config_path):
+    raise ImproperlyConfigured(
+        f"Default config file could not be read: {default_config_path}"
+    )
+
+config_path = os.environ.get("PROJECT_CONFIG_PATH")
+
+if config_path:
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"PROJECT_CONFIG_PATH does not exist: {config_path}")
+    config.read(config_path)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -33,6 +50,12 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 DEBUG = config.getboolean("settings", "DEBUG")
 
 ALLOWED_HOSTS = json.loads(config.get("settings", "ALLOWED_HOSTS"))
+
+# Security headers
+if not DEBUG:
+    # XSS and content protection
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
 
 # Maximum length of the disease name
 # Used to limit the disease name when creating, updating or searching
@@ -99,6 +122,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -107,6 +131,22 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
 ]
+
+RUNNING_TESTS = "test" in sys.argv or "test_coverage" in sys.argv
+
+if RUNNING_TESTS:
+    STORAGES = {
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        }
+    }
+
+else:
+    STORAGES = {
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        }
+    }
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -211,21 +251,40 @@ WSGI_APPLICATION = "gene2phenotype_project.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-# For testing
-if "test" in sys.argv or "test_coverage" in sys.argv:
+USE_SQLITE_TEST_DB = os.environ.get("USE_SQLITE_TEST_DB", "true").lower() == "true"
+
+# For local testing, use SQLite by default. CI can set USE_SQLITE_TEST_DB=false
+# to run the Django test suite against the configured MySQL database.
+if RUNNING_TESTS and USE_SQLITE_TEST_DB:
     DATABASES = {
         "default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}
     }
-
 else:
+    required_db_env_vars = [
+        "DB_ENGINE",
+        "DB_NAME",
+        "DB_USERNAME",
+        "DB_PASSWORD",
+        "DB_HOST",
+        "DB_PORT",
+    ]
+    missing_db_env_vars = [
+        env_var for env_var in required_db_env_vars if not os.environ.get(env_var)
+    ]
+    if missing_db_env_vars:
+        raise ImproperlyConfigured(
+            "Missing required database environment variables: "
+            f"{', '.join(missing_db_env_vars)}"
+        )
+
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.backends.mysql",
-            "NAME": config.get("database", "name"),
-            "USER": config.get("database", "user"),
-            "PASSWORD": config.get("database", "password"),
-            "HOST": config.get("database", "host"),
-            "PORT": config.get("database", "port"),
+            "ENGINE": os.environ["DB_ENGINE"],
+            "NAME": os.environ["DB_NAME"],
+            "USER": os.environ["DB_USERNAME"],
+            "PASSWORD": os.environ["DB_PASSWORD"],
+            "HOST": os.environ["DB_HOST"],
+            "PORT": os.environ["DB_PORT"],
         }
     }
 

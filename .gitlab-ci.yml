@@ -1,9 +1,164 @@
-# This is a placeholder GitLab CI configuration.
-
 workflow:
   rules:
+    - if: '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_TAG'
+      variables:
+        IMAGE_TAG: "$CI_COMMIT_TAG"
+        DOCKER_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_BRANCH'
+      variables:
+        IMAGE_TAG: "$CI_COMMIT_REF_SLUG-$CI_PIPELINE_IID-$CI_COMMIT_SHORT_SHA"
+        DOCKER_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$CI_PIPELINE_IID-$CI_COMMIT_SHORT_SHA"
+      when: always
     - when: never
 
-hello-world:
+stages:
+  - test
+  - build
+  - deploy
+
+test:
+  stage: test
+  coverage: '/TOTAL.*\s+(\d+%)$/'
+  image: python:3.10-slim-bookworm
+  services:
+    - name: mysql:8.0
+      alias: mysql
+  variables:
+    MYSQL_ROOT_PASSWORD: ci-test-password
+    MYSQL_DATABASE: test_db
+    PROJECT_CONFIG_PATH: "$CI_PROJECT_DIR/config.ini"
+    VIRTUAL_ENV: "$CI_PROJECT_DIR/.venv"
+    DB_USERNAME: root
+    DB_PASSWORD: ci-test-password
+    DB_HOST: mysql
+    DB_NAME: test_db
+    DB_PORT: "3306"
+    DB_ENGINE: django.db.backends.mysql
+    USE_SQLITE_TEST_DB: "false"
+  before_script:
+    - |
+      apt-get update && apt-get install -y --no-install-recommends \
+        default-libmysqlclient-dev \
+        default-mysql-client \
+        build-essential \
+        pkg-config \
+        openssl && \
+      rm -rf /var/lib/apt/lists/*
+    - python -m venv "$VIRTUAL_ENV"
+    - . "$VIRTUAL_ENV/bin/activate"
+    - python -m pip install --upgrade pip
+    - python -m pip install -r requirements.txt
+    - python -m pip install coverage
+    - |
+      for i in $(seq 1 30); do
+        echo "Waiting for MySQL ($i/30)..."
+        if mysqladmin --host="$DB_HOST" --user="$DB_USERNAME" --password="$DB_PASSWORD" --ssl=0 ping; then
+          break
+        fi
+        if [ "$i" -eq 30 ]; then
+          echo "MySQL did not become ready"
+          exit 1
+        fi
+        sleep 2
+      done
+    - |
+      {
+        echo "# config.ini"
+        echo "[email]"
+        echo "from=test_email"
+        echo "host=localhost"
+        echo "port=25"
+        echo "mailing_list=test_email"
+        echo "send_to_mailing_list=False"
+        echo "[settings]"
+        echo "DEBUG=True"
+        echo "ALLOWED_HOSTS=[]"
+        echo "CSRF_TRUSTED_ORIGINS=[]"
+        echo "CORS_ALLOWED_ORIGINS=[]"
+        echo "AUTH_COOKIE_SECURE=False"
+        echo "STATIC_ROOT=/app/staticfiles"
+        echo "STATIC_URL=/static/"
+        echo "MAX_DISEASE_NAME_LENGTH=255"
+        echo "PUBLIC_APP_URL=localhost"
+        echo "[g2p]"
+        echo "version=1.0.0"
+      } > "$PROJECT_CONFIG_PATH"
   script:
-    - echo "Hello, world!"
+    - cd gene2phenotype_project
+    - export SECRET_KEY="$(openssl rand -base64 12)"
+    - python manage.py makemigrations --check --dry-run
+    - python manage.py migrate --noinput
+    - python -m coverage run --source=gene2phenotype_app --omit="*/tests/*" manage.py test --noinput gene2phenotype_app.tests
+    - python -m coverage report --fail-under=80
+    - python -m coverage xml -o coverage.cobertura.xml
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: gene2phenotype_project/coverage.cobertura.xml
+    paths:
+      - gene2phenotype_project/coverage.cobertura.xml
+    expire_in: 1 week
+
+build:
+  stage: build
+  needs: ["test"]
+  image: docker:27
+  services:
+    - docker:27-dind
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
+  script:
+    - docker build -t "$DOCKER_IMAGE" .
+    - docker tag "$DOCKER_IMAGE" "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+    - docker push "$DOCKER_IMAGE"
+    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+    - docker rmi "$DOCKER_IMAGE" "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+    - docker logout "$CI_REGISTRY"
+
+trigger_k8s_deploy_dev:
+  stage: deploy
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_BRANCH'
+      when: manual
+    - when: never
+  environment:
+    name: development
+  trigger:
+    project: "$K8S_MANIFESTS_PROJECT"
+    branch: "$K8S_MANIFESTS_BRANCH"
+    strategy: mirror
+  variables:
+    APP_NAME: g2p-api
+    IMAGE_TAG: "$CI_COMMIT_REF_SLUG-$CI_PIPELINE_IID-$CI_COMMIT_SHORT_SHA"
+    DOCKER_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$CI_PIPELINE_IID-$CI_COMMIT_SHORT_SHA"
+    DEPLOY_COMMIT_SHA: "$CI_COMMIT_SHA"
+    DEPLOY_REF: "$CI_COMMIT_REF_NAME"
+    DEPLOY_PIPELINE_URL: "$CI_PIPELINE_URL"
+    DEPLOY_ENV: development
+    KUBE_CONTEXT: "$DEV_AGENT"
+    KUBE_NAMESPACE: "$DEV_NS"
+
+trigger_k8s_deploy_prod:
+  stage: deploy
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_TAG'
+      when: manual
+    - when: never
+  environment:
+    name: production
+  trigger:
+    project: "$K8S_MANIFESTS_PROJECT"
+    branch: "$K8S_MANIFESTS_BRANCH"
+    strategy: mirror
+  variables:
+    APP_NAME: g2p-api
+    IMAGE_TAG: "$CI_COMMIT_TAG"
+    DOCKER_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
+    DEPLOY_COMMIT_SHA: "$CI_COMMIT_SHA"
+    DEPLOY_REF: "$CI_COMMIT_TAG"
+    DEPLOY_PIPELINE_URL: "$CI_PIPELINE_URL"
+    DEPLOY_ENV: production
+    KUBE_CONTEXT: "$PROD_AGENT"
+    KUBE_NAMESPACE: "$PROD_NS"

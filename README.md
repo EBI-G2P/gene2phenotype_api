@@ -20,25 +20,15 @@ pip install -r requirements.txt
 
 ### Configuration
 
-All configuration settings, including database details, should be set in the config.ini file. Here's an example configuration:
+All configuration settings should be set in the config.ini file. Here's an example configuration:
 
 ```ini
-[database]
-host=<your_host>
-port=<your_port>
-user=<your_user>
-password=<your_password>
-name=<your_name>
-
 [email]
 from=<from>
 host=<host>
 port=<port>
 mailing_list=<your_mailing_list>
 send_to_mailing_list=True
-
-[g2p]
-version=<version>
 
 [settings]
 DEBUG = False
@@ -48,12 +38,23 @@ CORS_ALLOWED_ORIGINS = []
 AUTH_COOKIE_SECURE = False
 STATIC_ROOT =
 STATIC_URL = <your_static_url>
+
+[g2p]
+version=<version>
 ```
 
 ### Usage
 
 1. Configure your environment by updating the config.ini file.
-2. Configure your environment variables (e.g. Django SECRET_KEY and PROJECT_CONFIG_PATH).
+2. Configure your environment variables (including database credentials):
+   - `SECRET_KEY`
+   - `PROJECT_CONFIG_PATH`
+   - `DB_ENGINE`
+   - `DB_NAME`
+   - `DB_USERNAME`
+   - `DB_PASSWORD`
+   - `DB_HOST`
+   - `DB_PORT`
 3. Run the server:
 
 ```bash
