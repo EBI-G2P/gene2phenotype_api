@@ -593,10 +593,10 @@ class DiseaseUpdateReferences(BaseAdd):
         else:
             try:
                 disease_ont_obj.delete()
-            except (DatabaseError, IntegrityError) as e:
+            except (DatabaseError, IntegrityError):
                 return Response(
                     {
-                        "error": f"Could not delete '{accession}' from disease ID '{id}': {str(e)}"
+                        "error": f"Could not delete '{accession}' from disease ID '{id}'"
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
@@ -801,10 +801,10 @@ class UpdateDiseaseOntologyTerms(BaseAdd):
                     try:
                         # Delete the DiseaseOntologyTerm obj
                         disease_ont_obj.delete()
-                    except Exception as e:
+                    except Exception:
                         errors.append(
                             {
-                                "error": f"Could not delete '{ontology_accession}' from disease '{disease_ont_obj.disease.name}': {str(e)}"
+                                "error": f"Could not delete '{ontology_accession}' from disease '{disease_ont_obj.disease.name}'"
                             }
                         )
                     else:
