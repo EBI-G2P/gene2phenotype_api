@@ -167,12 +167,19 @@ urlpatterns = [
         views.LGDEditVariantTypeDescriptions.as_view(),
         name="lgd_variant_description",
     ),
-    # Add or delete comment(s) from LGD record.
-    # Actions: PATCH (to delete comment), POST (to add comment)
+    # Add comment(s) to LGD record.
+    # Actions: POST
     path(
         "lgd/<str:stable_id>/comment/",
         views.LGDEditComment.as_view(),
         name="lgd_comment",
+    ),
+    # Delete comment from LGD record.
+    # Actions: PATCH
+    path(
+        "lgd/<str:stable_id>/comment/<int:comment_id>/",
+        views.LGDEditComment.as_view(),
+        name="lgd_comment_detail",
     ),
     # Update the review status of the LGD record. Action: POST
     path(

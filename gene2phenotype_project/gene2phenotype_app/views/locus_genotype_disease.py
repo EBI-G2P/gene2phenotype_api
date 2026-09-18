@@ -1624,17 +1624,16 @@ class LGDEditComment(APIView):
         return response
 
     @transaction.atomic
-    def patch(self, request, stable_id):
+    def patch(self, request, stable_id, comment_id=None):
         """
         This method deletes the LGD-comment.
         This action is available to all authenticated users.
         """
-        comment_id = request.data.get("comment_id", None)
         user = request.user
 
         if not comment_id:
             return Response(
-                {"error": "Missing input key 'comment_id'"},
+                {"error": "Missing path parameter 'comment_id'"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
