@@ -4,15 +4,30 @@ on: [pull_request]
 
 permissions:
   contents: read
-  actions: read
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    env:
+      SECRET_KEY: ci-only-not-a-secret
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      DB_HOST: 127.0.0.1
+      DB_NAME: test_db
+      DB_PORT: "3306"
+      DB_ENGINE: django.db.backends.mysql
+      PROJECT_CONFIG_PATH: ${{ github.workspace }}/gene2phenotype_project/test_config.ini
+      USE_SQLITE_TEST_DB: "false"
 
     services:
       mysql:
-        image: mysql:8.0
+        image: mysql:8.0.46
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: test_db
@@ -24,62 +39,35 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: requirements.txt
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install coverage
+        run: python -m pip install -r requirements.txt coverage
 
-      - name: Create project config file
-        run: |
-          echo "# config.ini" > /home/runner/work/config.ini
-          echo "[email]" >> /home/runner/work/config.ini
-          echo "from=test_email" >>  /home/runner/work/config.ini
-          echo "host=localhost" >> /home/runner/work/config.ini
-          echo "port=25" >> /home/runner/work/config.ini
-          echo "mailing_list=test_email" >> /home/runner/work/config.ini
-          echo "send_to_mailing_list=False" >>  /home/runner/work/config.ini
-          echo "[settings]" >> /home/runner/work/config.ini
-          echo "DEBUG=True" >> /home/runner/work/config.ini
-          echo "ALLOWED_HOSTS=[]" >> /home/runner/work/config.ini
-          echo "CSRF_TRUSTED_ORIGINS=[]" >> /home/runner/work/config.ini
-          echo "CORS_ALLOWED_ORIGINS=[]" >> /home/runner/work/config.ini
-          echo "AUTH_COOKIE_SECURE=False" >> /home/runner/work/config.ini
-          echo "STATIC_ROOT=" >> /home/runner/work/config.ini
-          echo "STATIC_URL=static/" >> /home/runner/work/config.ini
-          echo "MAX_DISEASE_NAME_LENGTH=255" >> /home/runner/work/config.ini
-          echo "PUBLIC_APP_URL=http://localhost:5173" >> /home/runner/work/config.ini
-          echo "[g2p]" >> /home/runner/work/config.ini
-          echo "version=1.0.0" >> /home/runner/work/config.ini
-
-      - name: Run Tests
-        run: |
-          export SECRET_KEY=$(openssl rand -base64 12)
-          export DB_USERNAME=root
-          export DB_PASSWORD=root
-          export DB_HOST=127.0.0.1
-          export DB_NAME=test_db
-          export DB_PORT=3306
-          export DB_ENGINE=django.db.backends.mysql
-          python manage.py makemigrations --check --dry-run
-          python manage.py migrate --noinput
-          python -m coverage run --source=gene2phenotype_app --omit="*/tests/*" manage.py test gene2phenotype_app.tests
-          python -m coverage xml -o coverage.cobertura.xml
-        env:
-          PROJECT_CONFIG_PATH: /home/runner/work/config.ini
-          USE_SQLITE_TEST_DB: "false"
+      - name: Check for missing migrations
+        run: python manage.py makemigrations --check --dry-run
         working-directory: gene2phenotype_project
 
-      - name: Code Coverage Summary
+      - name: Run tests with coverage
+        run: >-
+          python -m coverage run
+          --source=gene2phenotype_app
+          --omit="*/tests/*"
+          manage.py test gene2phenotype_app.tests
+        working-directory: gene2phenotype_project
+
+      - name: Generate coverage report
+        run: python -m coverage xml -o coverage.cobertura.xml
+        working-directory: gene2phenotype_project
+
+      - name: Code coverage summary
         uses: irongut/CodeCoverageSummary@v1.3.0
         with:
           filename: gene2phenotype_project/coverage.cobertura.xml
@@ -87,3 +75,10 @@ jobs:
           output: both
           fail_below_min: true
           thresholds: "80 90"
+
+      - name: Publish coverage summary
+        if: always()
+        run: |
+          if [ -f code-coverage-results.md ]; then
+            cat code-coverage-results.md >> "$GITHUB_STEP_SUMMARY"
+          fi
