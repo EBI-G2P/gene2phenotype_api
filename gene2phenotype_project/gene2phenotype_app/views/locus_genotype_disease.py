@@ -1720,9 +1720,7 @@ class LGDEditVariantTypeComment(CustomPermissionAPIView):
             )
         except LGDVariantTypeComment.DoesNotExist:
             return Response(
-                {
-                    "error": f"Cannot find variant type comment for record '{stable_id}'"
-                },
+                {"error": f"Cannot find variant type comment for record '{stable_id}'"},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
