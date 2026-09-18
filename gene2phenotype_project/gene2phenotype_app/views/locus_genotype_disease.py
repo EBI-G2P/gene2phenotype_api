@@ -1691,18 +1691,11 @@ class LGDEditVariantTypeComment(CustomPermissionAPIView):
     }
 
     @transaction.atomic
-    def patch(self, request, stable_id):
+    def patch(self, request, stable_id, comment_id):
         """
         Soft-delete a variant type comment by comment_id.
         """
-        comment_id = request.data.get("comment_id", None)
         user = request.user
-
-        if not comment_id:
-            return Response(
-                {"error": "Missing input key 'comment_id'"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
         lgd_obj = get_object_or_404(
             LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0

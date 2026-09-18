@@ -156,7 +156,7 @@ urlpatterns = [
     # Delete variant type comment from LGD record.
     # Action: PATCH
     path(
-        "lgd/<str:stable_id>/variant_type/comment/",
+        "lgd/<str:stable_id>/variant_type/comment/<int:comment_id>/",
         views.LGDEditVariantTypeComment.as_view(),
         name="lgd_variant_type_comment",
     ),
