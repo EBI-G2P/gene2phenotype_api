@@ -523,7 +523,9 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
             lgd_obj.save_without_historical_record()
 
         return Response(
-            {"message": f"Phenotype summary successfully deleted for record '{stable_id}'"},
+            {
+                "message": f"Phenotype summary successfully deleted for record '{stable_id}'"
+            },
             status=status.HTTP_200_OK,
         )
 

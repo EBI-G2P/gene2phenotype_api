@@ -171,9 +171,7 @@ class LGDDeletePublication(TestCase):
         access_token = str(refresh.access_token)
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        url_without_pmid = reverse(
-            "lgd_publication", kwargs={"stable_id": "G2P00002"}
-        )
+        url_without_pmid = reverse("lgd_publication", kwargs={"stable_id": "G2P00002"})
         response = self.client.patch(url_without_pmid)
         self.assertEqual(response.status_code, 400)
 

@@ -55,7 +55,8 @@ class LGDDeletePhenotypeSummary(TestCase):
 
         response_data = response.json()
         self.assertEqual(
-            response_data["error"], "Phenotype summary is not associated with 'G2P00002'"
+            response_data["error"],
+            "Phenotype summary is not associated with 'G2P00002'",
         )
 
     def test_invalid_input(self):
@@ -138,7 +139,8 @@ class LGDDeletePhenotypeSummary(TestCase):
 
         response_data = response.json()
         self.assertEqual(
-            response_data["message"], "Phenotype summary successfully deleted for record 'G2P00002'"
+            response_data["message"],
+            "Phenotype summary successfully deleted for record 'G2P00002'",
         )
 
         # Check deleted LGD-phenotype summary

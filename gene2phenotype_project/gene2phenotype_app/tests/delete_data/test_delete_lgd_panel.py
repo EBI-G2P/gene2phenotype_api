@@ -224,5 +224,7 @@ class LGDDeletePanelEndpoint(TestCase):
         # Test history tables
         history_records = LGDPanel.history.filter(lgd__stable_id__stable_id="G2P00006")
         self.assertEqual(len(history_records), 1)
-        history_records_lgd = LocusGenotypeDisease.history.filter(stable_id__stable_id="G2P00006")
+        history_records_lgd = LocusGenotypeDisease.history.filter(
+            stable_id__stable_id="G2P00006"
+        )
         self.assertEqual(len(history_records_lgd), 0)

@@ -579,7 +579,9 @@ def PanelDownload(request, name):
     # Process the extra columns
     include_record_summary = False
     if extra_columns:
-        extra_column_list = [extra_column.strip().lower() for extra_column in extra_columns.split(",")]
+        extra_column_list = [
+            extra_column.strip().lower() for extra_column in extra_columns.split(",")
+        ]
         if "summary" in extra_column_list:
             include_record_summary = True
 
@@ -703,7 +705,7 @@ def PanelDownload(request, name):
 
     # Preload mined publications
     # Return the publications that haven't been curated or rejected yet
-    lgd_mined_publication_data = {} # key = lgd_id; value = pmid
+    lgd_mined_publication_data = {}  # key = lgd_id; value = pmid
     queryset_lgd_mined_publication = (
         LGDMinedPublication.objects.filter(status="mined")
         .select_related("lgd__id", "mined_publication__pmid")
@@ -712,9 +714,13 @@ def PanelDownload(request, name):
 
     for data in queryset_lgd_mined_publication:
         if data["lgd__id"] not in lgd_mined_publication_data:
-            lgd_mined_publication_data[data["lgd__id"]] = [str(data["mined_publication__pmid"])]
+            lgd_mined_publication_data[data["lgd__id"]] = [
+                str(data["mined_publication__pmid"])
+            ]
         else:
-            lgd_mined_publication_data[data["lgd__id"]].append(str(data["mined_publication__pmid"]))
+            lgd_mined_publication_data[data["lgd__id"]].append(
+                str(data["mined_publication__pmid"])
+            )
 
     # Preload cross cutting modifier
     lgd_ccm_data = {}  # key = lgd_id; value = pmid
@@ -1024,7 +1030,9 @@ def PanelDownload(request, name):
 
             # Get preloaded mined publications for this g2p entry
             if lgd_id in lgd_mined_publication_data:
-                mined_publications = "; ".join(sorted(lgd_mined_publication_data[lgd_id]))
+                mined_publications = "; ".join(
+                    sorted(lgd_mined_publication_data[lgd_id])
+                )
 
             # Get preloaded cross cutting modifier for this g2p entry
             if lgd_id in lgd_ccm_data:
