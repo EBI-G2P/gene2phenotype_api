@@ -107,31 +107,25 @@ urlpatterns = [
         views.LGDUpdateMechanism.as_view(),
         name="lgd_update_mechanism",
     ),
-    # Add panel to LGD record. Action: POST
-    path("lgd/<str:stable_id>/panel/", views.LGDEditPanel.as_view(), name="lgd_panel"),
     # Delete panel from LGD record. Action: PATCH
     path(
         "lgd/<str:stable_id>/panel/<str:panel>/",
         views.LGDEditPanel.as_view(),
         name="lgd_panel_detail",
     ),
-    # Add publication(s) to LGD record.  Action: POST
-    path(
-        "lgd/<str:stable_id>/publication/",
-        views.LGDEditPublications.as_view(),
-        name="lgd_publication",
-    ),
-    # Delete publication from LGD record.  Action: PATCH
+    # Add panel to LGD record. Action: POST
+    path("lgd/<str:stable_id>/panel/", views.LGDEditPanel.as_view(), name="lgd_panel"),
+    # Delete publication from LGD record. Action: PATCH
     path(
         "lgd/<str:stable_id>/publication/<int:pmid>/",
         views.LGDEditPublications.as_view(),
         name="lgd_publication_detail",
     ),
-    # Add phenotype(s) to LGD record. Action: POST
+    # Add publication(s) to LGD record. Action: POST
     path(
-        "lgd/<str:stable_id>/phenotype/",
-        views.LGDEditPhenotypes.as_view(),
-        name="lgd_phenotype",
+        "lgd/<str:stable_id>/publication/",
+        views.LGDEditPublications.as_view(),
+        name="lgd_publication",
     ),
     # Delete phenotype from LGD record. Action: PATCH
     path(
@@ -139,11 +133,11 @@ urlpatterns = [
         views.LGDEditPhenotypes.as_view(),
         name="lgd_phenotype_detail",
     ),
-    # Add phenotype summary(s) to LGD record. Action: POST
+    # Add phenotype(s) to LGD record. Action: POST
     path(
-        "lgd/<str:stable_id>/phenotype_summary/",
-        views.LGDEditPhenotypeSummary.as_view(),
-        name="lgd_phenotype_summary",
+        "lgd/<str:stable_id>/phenotype/",
+        views.LGDEditPhenotypes.as_view(),
+        name="lgd_phenotype",
     ),
     # Delete phenotype summary from LGD record. Action: PATCH
     path(
@@ -151,11 +145,11 @@ urlpatterns = [
         views.LGDEditPhenotypeSummary.as_view(),
         name="lgd_phenotype_summary_detail",
     ),
-    # Add variant consequence(s) to LGD record. Action: POST
+    # Add phenotype summary(s) to LGD record. Action: POST
     path(
-        "lgd/<str:stable_id>/variant_consequence/",
-        views.LGDEditVariantConsequences.as_view(),
-        name="lgd_var_consequence",
+        "lgd/<str:stable_id>/phenotype_summary/",
+        views.LGDEditPhenotypeSummary.as_view(),
+        name="lgd_phenotype_summary",
     ),
     # Delete variant consequence from LGD record. Action: PATCH
     path(
@@ -163,11 +157,11 @@ urlpatterns = [
         views.LGDEditVariantConsequences.as_view(),
         name="lgd_var_consequence_detail",
     ),
-    # Add cross cutting modifier(s) to LGD record. Action: POST
+    # Add variant consequence(s) to LGD record. Action: POST
     path(
-        "lgd/<str:stable_id>/cross_cutting_modifier/",
-        views.LGDEditCCM.as_view(),
-        name="lgd_cross_cutting_modifier",
+        "lgd/<str:stable_id>/variant_consequence/",
+        views.LGDEditVariantConsequences.as_view(),
+        name="lgd_var_consequence",
     ),
     # Delete cross cutting modifier from LGD record. Action: PATCH
     path(
@@ -175,17 +169,23 @@ urlpatterns = [
         views.LGDEditCCM.as_view(),
         name="lgd_cross_cutting_modifier_detail",
     ),
-    # Add variant type(s) to LGD record. Action: POST
+    # Add cross cutting modifier(s) to LGD record. Action: POST
     path(
-        "lgd/<str:stable_id>/variant_type/",
-        views.LGDEditVariantTypes.as_view(),
-        name="lgd_variant_type",
+        "lgd/<str:stable_id>/cross_cutting_modifier/",
+        views.LGDEditCCM.as_view(),
+        name="lgd_cross_cutting_modifier",
     ),
     # Delete variant type from LGD record. Action: PATCH
     path(
         "lgd/<str:stable_id>/variant_type/<str:variant_type>/",
         views.LGDEditVariantTypes.as_view(),
         name="lgd_variant_type_detail",
+    ),
+    # Add variant type(s) to LGD record. Action: POST
+    path(
+        "lgd/<str:stable_id>/variant_type/",
+        views.LGDEditVariantTypes.as_view(),
+        name="lgd_variant_type",
     ),
     # Delete variant type comment from LGD record. Action: PATCH
     path(
@@ -200,17 +200,17 @@ urlpatterns = [
         views.LGDEditVariantTypeDescriptions.as_view(),
         name="lgd_variant_description",
     ),
-    # Add comment(s) to LGD record. Action: POST
-    path(
-        "lgd/<str:stable_id>/comment/",
-        views.LGDEditComment.as_view(),
-        name="lgd_comment",
-    ),
     # Delete comment from LGD record. Action: PATCH
     path(
         "lgd/<str:stable_id>/comment/<int:comment_id>/",
         views.LGDEditComment.as_view(),
         name="lgd_comment_detail",
+    ),
+    # Add comment(s) to LGD record. Action: POST
+    path(
+        "lgd/<str:stable_id>/comment/",
+        views.LGDEditComment.as_view(),
+        name="lgd_comment",
     ),
     # Update the review status of the LGD record. Action: POST
     path(
