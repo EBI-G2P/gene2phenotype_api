@@ -151,26 +151,41 @@ urlpatterns = [
         views.LGDEditPhenotypeSummary.as_view(),
         name="lgd_phenotype_summary_detail",
     ),
-    # Add or delete variant consequence(s) from LGD record.
-    # Actions: PATCH (to delete one consequence), POST (to add multiple consequences)
+    # Add variant consequence(s) to LGD record. Action: POST
     path(
         "lgd/<str:stable_id>/variant_consequence/",
         views.LGDEditVariantConsequences.as_view(),
         name="lgd_var_consequence",
     ),
-    # Add or delete cross cutting modifier(s) from LGD record.
-    # Actions: PATCH (to delete one ccm), POST (to add multiple ccm)
+    # Delete variant consequence from LGD record. Action: PATCH
+    path(
+        "lgd/<str:stable_id>/variant_consequence/<str:variant_consequence>/",
+        views.LGDEditVariantConsequences.as_view(),
+        name="lgd_var_consequence_detail",
+    ),
+    # Add cross cutting modifier(s) to LGD record. Action: POST
     path(
         "lgd/<str:stable_id>/cross_cutting_modifier/",
         views.LGDEditCCM.as_view(),
         name="lgd_cross_cutting_modifier",
     ),
-    # Add or delete variant type(s) from LGD record.
-    # Actions: PATCH (to delete one variant type), POST (to add multiple variant types)
+    # Delete cross cutting modifier from LGD record. Action: PATCH
+    path(
+        "lgd/<str:stable_id>/cross_cutting_modifier/<str:term>/",
+        views.LGDEditCCM.as_view(),
+        name="lgd_cross_cutting_modifier_detail",
+    ),
+    # Add variant type(s) to LGD record. Action: POST
     path(
         "lgd/<str:stable_id>/variant_type/",
         views.LGDEditVariantTypes.as_view(),
         name="lgd_variant_type",
+    ),
+    # Delete variant type from LGD record. Action: PATCH
+    path(
+        "lgd/<str:stable_id>/variant_type/<str:variant_type>/",
+        views.LGDEditVariantTypes.as_view(),
+        name="lgd_variant_type_detail",
     ),
     # Delete variant type comment from LGD record. Action: PATCH
     path(
