@@ -29,28 +29,27 @@ class LGDDeletePanelEndpoint(TestCase):
     ]
 
     def setUp(self):
-        self.url_delete_panel = reverse("lgd_panel", kwargs={"stable_id": "G2P00006"})
+        self.url_delete_panel = reverse(
+            "lgd_panel_detail",
+            kwargs={"stable_id": "G2P00006", "panel": "Ear"},
+        )
 
         self.url_delete_panel_invalid_record = reverse(
-            "lgd_panel", kwargs={"stable_id": "G2P00123"}
+            "lgd_panel_detail",
+            kwargs={"stable_id": "G2P00123", "panel": "Ear"},
         )
 
         self.url_delete_single_panel = reverse(
-            "lgd_panel", kwargs={"stable_id": "G2P00005"}
+            "lgd_panel_detail",
+            kwargs={"stable_id": "G2P00005", "panel": "Ear"},
         )
-
-        self.panel_to_delete = {"name": "Ear"}
 
     def test_delete_panel_unauthorised_access(self):
         """
         Test the endpoint to delete panel for non authenticated user
         """
 
-        response = self.client.patch(
-            self.url_delete_panel,
-            self.panel_to_delete,
-            content_type="application/json",
-        )
+        response = self.client.patch(self.url_delete_panel)
         self.assertEqual(response.status_code, 401)
 
     def test_delete_panel_no_permission(self):
@@ -65,11 +64,7 @@ class LGDDeletePanelEndpoint(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete_panel,
-            self.panel_to_delete,
-            content_type="application/json",
-        )
+        response = self.client.patch(self.url_delete_panel)
         self.assertEqual(response.status_code, 403)
 
         response_data = response.json()
@@ -87,11 +82,7 @@ class LGDDeletePanelEndpoint(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete_panel,
-            self.panel_to_delete,
-            content_type="application/json",
-        )
+        response = self.client.patch(self.url_delete_panel)
         self.assertEqual(response.status_code, 403)
 
         response_data = response.json()
@@ -103,8 +94,6 @@ class LGDDeletePanelEndpoint(TestCase):
         """
         Test the endpoint to delete empty panel
         """
-        empty_panel_to_delete = {"name": ""}
-
         # Login
         user = User.objects.get(email="user5@test.ac.uk")
         refresh = RefreshToken.for_user(user)
@@ -113,23 +102,18 @@ class LGDDeletePanelEndpoint(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete_panel,
-            empty_panel_to_delete,
-            content_type="application/json",
-        )
+        url_without_panel = reverse("lgd_panel", kwargs={"stable_id": "G2P00006"})
+        response = self.client.patch(url_without_panel)
         self.assertEqual(response.status_code, 400)
 
         response_data = response.json()
-        self.assertEqual(response_data["error"], "Please enter a panel name")
+        self.assertEqual(response_data["error"], "Missing path parameter 'panel'")
 
     def test_delete_invalid_panel(self):
         """
         Test the endpoint to delete invalid panel
         Cannot delete a panel that does not exist
         """
-        invalid_panel_to_delete = {"name": "Dummy"}
-
         # Login
         user = User.objects.get(email="user5@test.ac.uk")
         refresh = RefreshToken.for_user(user)
@@ -138,11 +122,11 @@ class LGDDeletePanelEndpoint(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete_panel,
-            invalid_panel_to_delete,
-            content_type="application/json",
+        invalid_panel_url = reverse(
+            "lgd_panel_detail",
+            kwargs={"stable_id": "G2P00006", "panel": "Dummy"},
         )
+        response = self.client.patch(invalid_panel_url)
         self.assertEqual(response.status_code, 404)
 
     def test_delete_single_panel(self):
@@ -159,11 +143,7 @@ class LGDDeletePanelEndpoint(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete_single_panel,
-            self.panel_to_delete,
-            content_type="application/json",
-        )
+        response = self.client.patch(self.url_delete_single_panel)
         self.assertEqual(response.status_code, 400)
 
         response_data = response.json()
@@ -177,8 +157,6 @@ class LGDDeletePanelEndpoint(TestCase):
         Cannot delete a panel not linked to the record
         """
 
-        panel_not_linked_to_record = {"name": "DD"}
-
         # Login
         user = User.objects.get(email="user5@test.ac.uk")
         refresh = RefreshToken.for_user(user)
@@ -187,11 +165,11 @@ class LGDDeletePanelEndpoint(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete_panel,
-            panel_not_linked_to_record,
-            content_type="application/json",
+        unlinked_panel_url = reverse(
+            "lgd_panel_detail",
+            kwargs={"stable_id": "G2P00006", "panel": "DD"},
         )
+        response = self.client.patch(unlinked_panel_url)
         self.assertEqual(response.status_code, 400)
 
         response_data = response.json()
@@ -213,11 +191,7 @@ class LGDDeletePanelEndpoint(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete_panel_invalid_record,
-            self.panel_to_delete,
-            content_type="application/json",
-        )
+        response = self.client.patch(self.url_delete_panel_invalid_record)
         self.assertEqual(response.status_code, 404)
 
     def test_delete_panel_success(self):
@@ -232,11 +206,7 @@ class LGDDeletePanelEndpoint(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete_panel,
-            self.panel_to_delete,
-            content_type="application/json",
-        )
+        response = self.client.patch(self.url_delete_panel)
         self.assertEqual(response.status_code, 200)
 
         response_data = response.json()

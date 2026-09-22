@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
-from gene2phenotype_app.models import (User, LGDPhenotypeSummary, LocusGenotypeDisease)
+from gene2phenotype_app.models import User, LGDPhenotypeSummary, LocusGenotypeDisease
 
 
 class LGDDeletePhenotypeSummary(TestCase):
@@ -30,8 +30,10 @@ class LGDDeletePhenotypeSummary(TestCase):
     ]
 
     def setUp(self):
-        self.url_delete = reverse("lgd_phenotype_summary", kwargs={"stable_id": "G2P00002"})
-        self.summary_to_delete = {"summary_id": 1}
+        self.url_delete = reverse(
+            "lgd_phenotype_summary_detail",
+            kwargs={"stable_id": "G2P00002", "summary_id": 1},
+        )
 
     def test_invalid_delete(self):
         """
@@ -44,11 +46,11 @@ class LGDDeletePhenotypeSummary(TestCase):
         access_token = str(refresh.access_token)
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete,
-            {"summary_id": 2},
-            content_type="application/json",
+        invalid_url = reverse(
+            "lgd_phenotype_summary_detail",
+            kwargs={"stable_id": "G2P00002", "summary_id": 2},
         )
+        response = self.client.patch(invalid_url)
         self.assertEqual(response.status_code, 400)
 
         response_data = response.json()
@@ -66,17 +68,16 @@ class LGDDeletePhenotypeSummary(TestCase):
         access_token = str(refresh.access_token)
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete,
-            {"summary": ""},
-            content_type="application/json",
+        url_without_summary_id = reverse(
+            "lgd_phenotype_summary", kwargs={"stable_id": "G2P00002"}
         )
+        response = self.client.patch(url_without_summary_id)
         self.assertEqual(response.status_code, 400)
 
         response_data = response.json()
         self.assertEqual(
             response_data["error"],
-            "Missing input key 'summary_id'",
+            "Missing path parameter 'summary_id'",
         )
 
     def test_delete_non_superuser(self):
@@ -90,11 +91,7 @@ class LGDDeletePhenotypeSummary(TestCase):
         access_token = str(refresh.access_token)
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete,
-            self.summary_to_delete,
-            content_type="application/json",
-        )
+        response = self.client.patch(self.url_delete)
         self.assertEqual(response.status_code, 403)
 
         response_data = response.json()
@@ -112,11 +109,7 @@ class LGDDeletePhenotypeSummary(TestCase):
         access_token = str(refresh.access_token)
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete,
-            self.summary_to_delete,
-            content_type="application/json",
-        )
+        response = self.client.patch(self.url_delete)
         self.assertEqual(response.status_code, 403)
 
         response_data = response.json()
@@ -140,11 +133,7 @@ class LGDDeletePhenotypeSummary(TestCase):
         )
         self.assertEqual(len(lgd_phenotype_summaries), 1)
 
-        response = self.client.patch(
-            self.url_delete,
-            self.summary_to_delete,
-            content_type="application/json",
-        )
+        response = self.client.patch(self.url_delete)
         self.assertEqual(response.status_code, 200)
 
         response_data = response.json()

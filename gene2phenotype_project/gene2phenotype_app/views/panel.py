@@ -438,19 +438,17 @@ class LGDEditPanel(CustomPermissionAPIView):
         return response
 
     @transaction.atomic
-    def patch(self, request, stable_id):
+    def patch(self, request, stable_id, panel=None):
         """
         This method deletes the LGD-panel
         """
-        panel = request.data.get("name", None)
 
-        # Check if panel name is valid
-        if panel is None or panel == "":
+        if not panel:
             return Response(
-                {"error": "Please enter a panel name"},
+                {"error": "Missing path parameter 'panel'"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         # Check if panel exists
         panel_obj = get_object_or_404(Panel, name=panel)
 
@@ -483,7 +481,9 @@ class LGDEditPanel(CustomPermissionAPIView):
             )
 
         try:
-            lgd_panel_obj = LGDPanel.objects.get(lgd=lgd_obj, panel=panel_obj, is_deleted=0)
+            lgd_panel_obj = LGDPanel.objects.get(
+                lgd=lgd_obj, panel=panel_obj, is_deleted=0
+            )
         except LGDPanel.DoesNotExist:
             return Response(
                 {"error": f"Panel '{panel}' does not exist for ID '{stable_id}'"},

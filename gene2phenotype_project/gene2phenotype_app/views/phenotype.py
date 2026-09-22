@@ -106,7 +106,8 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
         """
         Returns the appropriate serializer class based on the action.
         To add data use LGDPhenotypeListSerializer: it accepts a list of phenotypes.
-        To delete data use LGDPhenotypeSerializer: it accepts one phenotype.
+        To delete data use LGDPhenotypeSerializer: it accepts the phenotype accession
+        in the URL path.
         """
         action = action.lower()
 
@@ -284,14 +285,19 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
         return response
 
     @transaction.atomic
-    def patch(self, request, stable_id):
+    def patch(self, request, stable_id, accession=None):
         """
         Delete a phenotype from a LGD record.
         The deletion does not remove the entry from the database, instead
         it sets the flag 'is_deleted' to 1.
         """
-        accession = request.data.get("accession")
         user = request.user
+
+        if not accession:
+            return Response(
+                {"error": "Missing path parameter 'accession'"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         lgd_obj = get_object_or_404(
             LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0
@@ -362,7 +368,7 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
         """
         Returns the appropriate serializer class based on the action.
         To add data use LGDPhenotypeSummaryListSerializer: it accepts a list of phenotype summaries.
-        To delete data use LGDPhenotypeSummarySerializer: it accepts one phenotype summary.
+        To delete data use LGDPhenotypeSummarySerializer: it accepts the phenotype summary ID in the URL path.
         """
         action = action.lower()
 
@@ -463,18 +469,17 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
         return response
 
     @transaction.atomic
-    def patch(self, request, stable_id):
+    def patch(self, request, stable_id, summary_id=None):
         """
         This method deletes the LGD-phenotype summary.
         The deletion does not remove the entry from the database, instead
         it sets the flag 'is_deleted' to 1.
         """
         user = self.request.user
-        summary_id = request.data.get("summary_id")
 
         if not summary_id:
             return Response(
-                {"error": "Missing input key 'summary_id'"},
+                {"error": "Missing path parameter 'summary_id'"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

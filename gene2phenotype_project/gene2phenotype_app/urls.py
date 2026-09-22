@@ -90,7 +90,6 @@ urlpatterns = [
         views.ExternalDisease,
         name="external_disease",
     ),
-
     ### Endpoints to add data ###
     path("add/disease/", views.AddDisease.as_view(), name="add_disease"),
     path("add/phenotype/", views.AddPhenotype.as_view(), name="add_phenotype"),
@@ -108,29 +107,49 @@ urlpatterns = [
         views.LGDUpdateMechanism.as_view(),
         name="lgd_update_mechanism",
     ),
-    # Add or delete panel from LGD record.
-    # Actions: PATCH (to delete one panel), POST (to add one panel)
+    # Add panel to LGD record. Action: POST
     path("lgd/<str:stable_id>/panel/", views.LGDEditPanel.as_view(), name="lgd_panel"),
-    # Add or delete publication(s) from LGD record.
-    # Actions: PATCH (to delete one publication), POST (to add multiple publications)
+    # Delete panel from LGD record. Action: PATCH
+    path(
+        "lgd/<str:stable_id>/panel/<str:panel>/",
+        views.LGDEditPanel.as_view(),
+        name="lgd_panel_detail",
+    ),
+    # Add publication(s) to LGD record.  Action: POST
     path(
         "lgd/<str:stable_id>/publication/",
         views.LGDEditPublications.as_view(),
         name="lgd_publication",
     ),
-    # Add or delete phenotype(s) from LGD record.
-    # Actions: PATCH (to delete one phenotype), POST (to add multiple phenotypes)
+    # Delete publication from LGD record.  Action: PATCH
+    path(
+        "lgd/<str:stable_id>/publication/<int:pmid>/",
+        views.LGDEditPublications.as_view(),
+        name="lgd_publication_detail",
+    ),
+    # Add phenotype(s) to LGD record. Action: POST
     path(
         "lgd/<str:stable_id>/phenotype/",
         views.LGDEditPhenotypes.as_view(),
         name="lgd_phenotype",
     ),
-    # Add or delete a phenotype summary from LGD record.
-    # Actions: PATCH (to delete data), POST (to add data)
+    # Delete phenotype from LGD record. Action: PATCH
+    path(
+        "lgd/<str:stable_id>/phenotype/<str:accession>/",
+        views.LGDEditPhenotypes.as_view(),
+        name="lgd_phenotype_detail",
+    ),
+    # Add phenotype summary(s) to LGD record. Action: POST
     path(
         "lgd/<str:stable_id>/phenotype_summary/",
         views.LGDEditPhenotypeSummary.as_view(),
         name="lgd_phenotype_summary",
+    ),
+    # Delete phenotype summary from LGD record. Action: PATCH
+    path(
+        "lgd/<str:stable_id>/phenotype_summary/<int:summary_id>/",
+        views.LGDEditPhenotypeSummary.as_view(),
+        name="lgd_phenotype_summary_detail",
     ),
     # Add or delete variant consequence(s) from LGD record.
     # Actions: PATCH (to delete one consequence), POST (to add multiple consequences)
@@ -153,8 +172,7 @@ urlpatterns = [
         views.LGDEditVariantTypes.as_view(),
         name="lgd_variant_type",
     ),
-    # Delete variant type comment from LGD record.
-    # Action: PATCH
+    # Delete variant type comment from LGD record. Action: PATCH
     path(
         "lgd/<str:stable_id>/variant_type/comment/<int:comment_id>/",
         views.LGDEditVariantTypeComment.as_view(),
@@ -167,15 +185,13 @@ urlpatterns = [
         views.LGDEditVariantTypeDescriptions.as_view(),
         name="lgd_variant_description",
     ),
-    # Add comment(s) to LGD record.
-    # Actions: POST
+    # Add comment(s) to LGD record. Action: POST
     path(
         "lgd/<str:stable_id>/comment/",
         views.LGDEditComment.as_view(),
         name="lgd_comment",
     ),
-    # Delete comment from LGD record.
-    # Actions: PATCH
+    # Delete comment from LGD record. Action: PATCH
     path(
         "lgd/<str:stable_id>/comment/<int:comment_id>/",
         views.LGDEditComment.as_view(),
@@ -205,7 +221,6 @@ urlpatterns = [
         views.LGDUpdateDisease.as_view(),
         name="lgd_disease_updates",
     ),
-
     ### Endpoints to update other data ###
     # Update disease names in bulk
     path("update/diseases/", views.UpdateDisease.as_view(), name="update_diseases"),
@@ -215,10 +230,8 @@ urlpatterns = [
         views.UpdateDiseaseOntologyTerms.as_view(),
         name="update_ontology_terms",
     ),
-
     ### Endpoints to merge or split LGD records ###
     path("merge_records/", views.MergeRecords, name="merge_records"),
-
     ### Curation endpoints ###
     path("add/curation/", views.AddCurationData.as_view(), name="add_curation_data"),
     path(
@@ -244,14 +257,12 @@ urlpatterns = [
         views.DeleteCurationData.as_view(),
         name="delete_curation",
     ),
-
     ### Publish data ###
     path(
         "curation/publish/<str:stable_id>/",
         views.PublishRecord.as_view(),
         name="publish_record",
     ),
-
     ### User management ###
     path("create/user/", views.CreateUserView.as_view(), name="create_user"),
     path("add_user/panel/", views.AddUserToPanelView.as_view(), name="add_user_panel"),
@@ -270,13 +281,10 @@ urlpatterns = [
     path(
         "token/refresh/", views.CustomTokenRefreshView.as_view(), name="token_refresh"
     ),
-
     ### Panels management ###
     path("create/panel/", views.PanelCreateView.as_view(), name="panel_create"),
-
     ### Meta information ###
     path("reference_data/", views.MetaView.as_view(), name="get_reference_data"),
-
     ### Review Queue ###
     path(
         "review_queue/",
@@ -288,7 +296,6 @@ urlpatterns = [
         views.ReviewQueueDetail.as_view(),
         name="review_queue_detail",
     ),
-
     ### Activity logs ###
     path("activity_logs/", views.ActivityLogs.as_view(), name="activity_logs"),
 ]
