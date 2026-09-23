@@ -33,7 +33,8 @@ class LGDEditCCMEndpoint(TestCase):
 
     def setUp(self):
         self.url_delete = reverse(
-            "lgd_cross_cutting_modifier", kwargs={"stable_id": "G2P00002"}
+            "lgd_cross_cutting_modifier_detail",
+            kwargs={"stable_id": "G2P00002", "term": "typically_de_novo"},
         )
 
     def test_invalid_delete(self):
@@ -49,9 +50,12 @@ class LGDEditCCMEndpoint(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
+        invalid_ccm_url = reverse(
+            "lgd_cross_cutting_modifier_detail",
+            kwargs={"stable_id": "G2P00002", "term": "typically_de_novos"},
+        )
         response = self.client.patch(
-            self.url_delete,
-            {"term": "typically de novos"},
+            invalid_ccm_url,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 404)
@@ -75,9 +79,12 @@ class LGDEditCCMEndpoint(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
+        unlinked_ccm_url = reverse(
+            "lgd_cross_cutting_modifier_detail",
+            kwargs={"stable_id": "G2P00002", "term": "typically_mosaic"},
+        )
         response = self.client.patch(
-            self.url_delete,
-            {"term": "typically mosaic"},
+            unlinked_ccm_url,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 404)
@@ -103,7 +110,6 @@ class LGDEditCCMEndpoint(TestCase):
 
         response = self.client.patch(
             self.url_delete,
-            {"term": "typically de novo"},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 403)
@@ -127,7 +133,6 @@ class LGDEditCCMEndpoint(TestCase):
 
         response = self.client.patch(
             self.url_delete,
-            {"term": "typically de novo"},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 403)
@@ -149,9 +154,11 @@ class LGDEditCCMEndpoint(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
+        missing_term_url = reverse(
+            "lgd_cross_cutting_modifier", kwargs={"stable_id": "G2P00002"}
+        )
         response = self.client.patch(
-            self.url_delete,
-            {},
+            missing_term_url,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
@@ -159,7 +166,7 @@ class LGDEditCCMEndpoint(TestCase):
         response_data = response.json()
         self.assertEqual(
             response_data["error"],
-            "Empty cross cutting modifier. Please provide the 'term'.",
+            "Missing path parameter 'term'",
         )
 
     def test_lgd_ccm_delete(self):
@@ -182,7 +189,6 @@ class LGDEditCCMEndpoint(TestCase):
 
         response = self.client.patch(
             self.url_delete,
-            {"term": "typically de novo"},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)

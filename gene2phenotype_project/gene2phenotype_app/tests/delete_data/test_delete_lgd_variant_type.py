@@ -34,7 +34,8 @@ class LGDEditVariantTypesEndpoint(TestCase):
 
     def setUp(self):
         self.url_delete = reverse(
-            "lgd_variant_type", kwargs={"stable_id": "G2P00002"}
+            "lgd_variant_type_detail",
+            kwargs={"stable_id": "G2P00002", "variant_type": "intron_variant"},
         )
 
     def test_invalid_delete(self):
@@ -50,9 +51,12 @@ class LGDEditVariantTypesEndpoint(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
+        invalid_variant_type_url = reverse(
+            "lgd_variant_type_detail",
+            kwargs={"stable_id": "G2P00002", "variant_type": "stopp_gained"},
+        )
         response = self.client.patch(
-            self.url_delete,
-            {"secondary_type": "stopp_gained"},
+            invalid_variant_type_url,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 404)
@@ -76,9 +80,12 @@ class LGDEditVariantTypesEndpoint(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
+        unlinked_variant_type_url = reverse(
+            "lgd_variant_type_detail",
+            kwargs={"stable_id": "G2P00002", "variant_type": "stop_gained"},
+        )
         response = self.client.patch(
-            self.url_delete,
-            {"secondary_type": "stop_gained"},
+            unlinked_variant_type_url,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 404)
@@ -104,7 +111,6 @@ class LGDEditVariantTypesEndpoint(TestCase):
 
         response = self.client.patch(
             self.url_delete,
-            {"secondary_type": "intron_variant"},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 403)
@@ -128,7 +134,6 @@ class LGDEditVariantTypesEndpoint(TestCase):
 
         response = self.client.patch(
             self.url_delete,
-            {"secondary_type": "intron_variant"},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 403)
@@ -150,9 +155,11 @@ class LGDEditVariantTypesEndpoint(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
+        missing_variant_type_url = reverse(
+            "lgd_variant_type", kwargs={"stable_id": "G2P00002"}
+        )
         response = self.client.patch(
-            self.url_delete,
-            {},
+            missing_variant_type_url,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
@@ -160,7 +167,7 @@ class LGDEditVariantTypesEndpoint(TestCase):
         response_data = response.json()
         self.assertEqual(
             response_data["error"],
-            "Empty variant type. Please provide the 'secondary_type'.",
+            "Missing path parameter 'variant_type'",
         )
 
     def test_lgd_variant_type_delete(self):
@@ -183,7 +190,6 @@ class LGDEditVariantTypesEndpoint(TestCase):
 
         response = self.client.patch(
             self.url_delete,
-            {"secondary_type": "intron_variant"},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)

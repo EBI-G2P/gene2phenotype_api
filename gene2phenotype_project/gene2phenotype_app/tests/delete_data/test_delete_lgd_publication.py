@@ -52,17 +52,19 @@ class LGDDeletePublication(TestCase):
     ]
 
     def setUp(self):
-        self.url_delete = reverse("lgd_publication", kwargs={"stable_id": "G2P00002"})
-        self.url_try_delete = reverse(
-            "lgd_publication", kwargs={"stable_id": "G2P00001"}
+        self.url_delete = reverse(
+            "lgd_publication_detail",
+            kwargs={"stable_id": "G2P00002", "pmid": 15214012},
+        )
+        self.url_delete_only_publication = reverse(
+            "lgd_publication_detail",
+            kwargs={"stable_id": "G2P00001", "pmid": 3897232},
         )
 
     def test_delete_non_superuser(self):
         """
         Test deleting the publication for non superuser
         """
-        to_delete = {"pmid": 15214012}
-
         # Login
         user = User.objects.get(email="user3@test.ac.uk")
         refresh = RefreshToken.for_user(user)
@@ -71,17 +73,13 @@ class LGDDeletePublication(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete, to_delete, content_type="application/json"
-        )
+        response = self.client.patch(self.url_delete)
         self.assertEqual(response.status_code, 403)
 
     def test_delete_no_permission(self):
         """
         Test deleting the publication for user without permission to edit panel
         """
-        to_delete = {"pmid": 15214012}
-
         # Login with super user
         user = User.objects.get(email="sofia@test.ac.uk")
         refresh = RefreshToken.for_user(user)
@@ -90,18 +88,13 @@ class LGDDeletePublication(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete, to_delete, content_type="application/json"
-        )
+        response = self.client.patch(self.url_delete)
         self.assertEqual(response.status_code, 403)
 
     def test_forbidden_delete(self):
         """
         Test deleting the publication for record with only one publication
         """
-        url_no_delete = reverse("lgd_publication", kwargs={"stable_id": "G2P00001"})
-        to_delete = {"pmid": 3897232}
-
         # Login
         user = User.objects.get(email="user5@test.ac.uk")
         refresh = RefreshToken.for_user(user)
@@ -110,9 +103,7 @@ class LGDDeletePublication(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            url_no_delete, to_delete, content_type="application/json"
-        )
+        response = self.client.patch(self.url_delete_only_publication)
         self.assertEqual(response.status_code, 400)
 
         response_data = response.json()
@@ -125,8 +116,6 @@ class LGDDeletePublication(TestCase):
         """
         Test deleting an invalid publication from the record (LGD)
         """
-        to_delete = {"pmid": 1}
-
         # Login
         user = User.objects.get(email="john@test.ac.uk")
         refresh = RefreshToken.for_user(user)
@@ -135,9 +124,11 @@ class LGDDeletePublication(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete, to_delete, content_type="application/json"
+        invalid_url = reverse(
+            "lgd_publication_detail",
+            kwargs={"stable_id": "G2P00002", "pmid": 1},
         )
+        response = self.client.patch(invalid_url)
         self.assertEqual(response.status_code, 404)
 
         response_data = response.json()
@@ -149,8 +140,6 @@ class LGDDeletePublication(TestCase):
         """
         Test deleting a publication that is not linked to record (LGD)
         """
-        to_delete = {"pmid": 3897232}
-
         # Login
         user = User.objects.get(email="john@test.ac.uk")
         refresh = RefreshToken.for_user(user)
@@ -159,9 +148,11 @@ class LGDDeletePublication(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete, to_delete, content_type="application/json"
+        unlinked_url = reverse(
+            "lgd_publication_detail",
+            kwargs={"stable_id": "G2P00002", "pmid": 3897232},
         )
+        response = self.client.patch(unlinked_url)
         self.assertEqual(response.status_code, 404)
 
         response_data = response.json()
@@ -174,31 +165,26 @@ class LGDDeletePublication(TestCase):
         """
         Test deleting a publication with empty pmid
         """
-        to_delete = {"pmid": ""}
-
         # Login
         user = User.objects.get(email="john@test.ac.uk")
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete, to_delete, content_type="application/json"
-        )
+        url_without_pmid = reverse("lgd_publication", kwargs={"stable_id": "G2P00002"})
+        response = self.client.patch(url_without_pmid)
         self.assertEqual(response.status_code, 400)
 
         response_data = response.json()
         self.assertEqual(
             response_data["error"],
-            "Please provide valid pmid.",
+            "Missing path parameter 'pmid'",
         )
 
     def test_lgd_publication_delete(self):
         """
         Test deleting the publication from the record (LGD)
         """
-        to_delete = {"pmid": 15214012}
-
         # Login
         user = User.objects.get(email="john@test.ac.uk")
         refresh = RefreshToken.for_user(user)
@@ -207,9 +193,7 @@ class LGDDeletePublication(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete, to_delete, content_type="application/json"
-        )
+        response = self.client.patch(self.url_delete)
         self.assertEqual(response.status_code, 200)
 
         # Check deleted record-publication
@@ -278,8 +262,6 @@ class LGDDeletePublication(TestCase):
         """
         Test deleting a curated publication updates the matching mined publication to rejected
         """
-        to_delete = {"pmid": 15214012}
-
         lgd_obj = LocusGenotypeDisease.objects.get(stable_id__stable_id="G2P00002")
         mined_publication = MinedPublication.objects.get(pmid=15214012)
         lgd_mined_publication = LGDMinedPublication.objects.create(
@@ -294,9 +276,7 @@ class LGDDeletePublication(TestCase):
         access_token = str(refresh.access_token)
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete, to_delete, content_type="application/json"
-        )
+        response = self.client.patch(self.url_delete)
         self.assertEqual(response.status_code, 200)
 
         lgd_mined_publication.refresh_from_db()

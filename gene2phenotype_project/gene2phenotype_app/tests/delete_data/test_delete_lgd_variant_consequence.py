@@ -33,9 +33,12 @@ class LGDEditVariantConsequenceEndpoint(TestCase):
 
     def setUp(self):
         self.url_delete = reverse(
-            "lgd_var_consequence", kwargs={"stable_id": "G2P00002"}
+            "lgd_var_consequence_detail",
+            kwargs={
+                "stable_id": "G2P00002",
+                "variant_consequence": "absent_gene_product",
+            },
         )
-        self.consequence_to_delete = {"variant_consequence": "absent gene product"}
 
     def test_invalid_delete(self):
         """
@@ -48,9 +51,15 @@ class LGDEditVariantConsequenceEndpoint(TestCase):
         access_token = str(refresh.access_token)
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
+        invalid_variant_consequence_url = reverse(
+            "lgd_var_consequence_detail",
+            kwargs={
+                "stable_id": "G2P00002",
+                "variant_consequence": "absent_gene_products",
+            },
+        )
         response = self.client.patch(
-            self.url_delete,
-            {"variant_consequence": "absent gene products"},
+            invalid_variant_consequence_url,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 404)
@@ -72,9 +81,15 @@ class LGDEditVariantConsequenceEndpoint(TestCase):
         access_token = str(refresh.access_token)
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
+        unlinked_variant_consequence_url = reverse(
+            "lgd_var_consequence_detail",
+            kwargs={
+                "stable_id": "G2P00002",
+                "variant_consequence": "altered_gene_product_structure",
+            },
+        )
         response = self.client.patch(
-            self.url_delete,
-            {"variant_consequence": "altered gene product structure"},
+            unlinked_variant_consequence_url,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 404)
@@ -98,7 +113,6 @@ class LGDEditVariantConsequenceEndpoint(TestCase):
 
         response = self.client.patch(
             self.url_delete,
-            self.consequence_to_delete,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 403)
@@ -120,7 +134,6 @@ class LGDEditVariantConsequenceEndpoint(TestCase):
 
         response = self.client.patch(
             self.url_delete,
-            self.consequence_to_delete,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 403)
@@ -140,9 +153,11 @@ class LGDEditVariantConsequenceEndpoint(TestCase):
         access_token = str(refresh.access_token)
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
+        missing_variant_consequence_url = reverse(
+            "lgd_var_consequence", kwargs={"stable_id": "G2P00002"}
+        )
         response = self.client.patch(
-            self.url_delete,
-            {},
+            missing_variant_consequence_url,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
@@ -150,7 +165,7 @@ class LGDEditVariantConsequenceEndpoint(TestCase):
         response_data = response.json()
         self.assertEqual(
             response_data["error"],
-            "Empty variant consequence. Please provide the 'variant_consequence'.",
+            "Missing path parameter 'variant_consequence'",
         )
 
     def test_lgd_variant_consequence_delete(self):
@@ -171,7 +186,6 @@ class LGDEditVariantConsequenceEndpoint(TestCase):
 
         response = self.client.patch(
             self.url_delete,
-            self.consequence_to_delete,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)

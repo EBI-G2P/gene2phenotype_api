@@ -147,7 +147,7 @@ class LGDEditPublications(BaseUpdate):
         """
         Returns the appropriate serializer class based on the action.
         To add data use LGDPublicationListSerializer: it accepts a list of publications.
-        To delete data use LGDPublicationSerializer: it accepts one publication.
+        To delete data use LGDPublicationSerializer: it accepts one publication PMID in the URL path.
         """
         action = action.lower()
 
@@ -435,21 +435,17 @@ class LGDEditPublications(BaseUpdate):
         return response
 
     @transaction.atomic
-    def patch(self, request, stable_id):
+    def patch(self, request, stable_id, pmid=None):
         """
         This method deletes the LGD-publication.
         The deletion does not remove the entry from the database, instead
         it sets the flag 'is_deleted' to 1.
-
-        Args:
-            { "pmid": 1234 }
         """
-        pmid = request.data.get("pmid", None)
         user = request.user
 
-        if not pmid or pmid == "" or not isinstance(pmid, int):
+        if not pmid:
             return Response(
-                {"error": "Please provide valid pmid."},
+                {"error": "Missing path parameter 'pmid'"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -499,7 +495,9 @@ class LGDEditPublications(BaseUpdate):
             lgd_publication_obj.save()
         except Exception as e:
             return Response(
-                {"error": f"Could not delete PMID '{pmid}' for ID '{stable_id}': {str(e)}"},
+                {
+                    "error": f"Could not delete PMID '{pmid}' for ID '{stable_id}': {str(e)}"
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -560,7 +558,9 @@ class LGDEditPublications(BaseUpdate):
 
         # Update the mined publication status to "rejected" for the publication that is going to be deleted
         for lgd_mined_publication in LGDMinedPublication.objects.filter(
-            lgd=lgd_obj, mined_publication__pmid=lgd_publication_obj.publication.pmid, status= "curated"
+            lgd=lgd_obj,
+            mined_publication__pmid=lgd_publication_obj.publication.pmid,
+            status="curated",
         ):
             lgd_mined_publication.status = "rejected"
             lgd_mined_publication.comment = "Publication deleted from record"

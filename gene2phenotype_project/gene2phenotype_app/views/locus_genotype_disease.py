@@ -728,7 +728,8 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
         """
         Returns the appropriate serializer class based on the action.
         To add data use LGDVariantConsequenceListSerializer: it accepts a list of consequences.
-        To delete data use LGDVariantGenCCConsequenceSerializer: it accepts one consequence.
+        To delete data use LGDVariantGenCCConsequenceSerializer: it accepts the
+        variant consequence in the URL path.
         """
         action = action.lower()
 
@@ -833,35 +834,19 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
         return response
 
     @transaction.atomic
-    def patch(self, request, stable_id):
+    def patch(self, request, stable_id, variant_consequence=None):
         """
         This method deletes a variant GenCC consequence from the LGD record.
         The deletion does not remove the entry from the database, instead
         it sets the flag 'is_deleted' to 1.
-
-        Example: {"variant_consequence": "altered_gene_product_level"}
         """
-        # Check if input has the expected value
-        if (
-            "variant_consequence" not in request.data
-            or request.data.get("variant_consequence") == ""
-        ):
+        if not variant_consequence:
             return Response(
-                {
-                    "error": "Empty variant consequence. Please provide the 'variant_consequence'."
-                },
+                {"error": "Missing path parameter 'variant_consequence'"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        consequence = request.data.get("variant_consequence")
-
-        if consequence is None:
-            return Response(
-                {"error": "Empty variant consequence"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        consequence = consequence.replace("_", " ")
+        consequence = variant_consequence.replace("_", " ")
 
         # Fecth G2P record to update
         lgd_obj = get_object_or_404(
@@ -937,7 +922,8 @@ class LGDEditCCM(CustomPermissionAPIView):
         """
         Returns the appropriate serializer class based on the action.
         To add data use LGDCrossCuttingModifierListSerializer: it accepts a list of ccm.
-        To delete data use LGDCrossCuttingModifierSerializer: it accepts one ccm.
+        To delete data use LGDCrossCuttingModifierSerializer: it accepts the term in
+        the URL path.
         """
         action = action.lower()
 
@@ -1030,23 +1016,19 @@ class LGDEditCCM(CustomPermissionAPIView):
         return response
 
     @transaction.atomic
-    def patch(self, request, stable_id):
+    def patch(self, request, stable_id, term=None):
         """
         This method deletes a cross cutting modifier from the LGD record.
         The deletion does not remove the entry from the database, instead
         it sets the flag 'is_deleted' to 1.
-
-        Example:
-                { "term": "typically mosaic" }
         """
-        if "term" not in request.data or request.data.get("term") == "":
+        if not term:
             return Response(
-                {"error": "Empty cross cutting modifier. Please provide the 'term'."},
+                {"error": "Missing path parameter 'term'"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        ccm_tmp = request.data.get("term")
-        ccm = ccm_tmp.replace("_", " ")
+        ccm = term.replace("_", " ")
         user = request.user
 
         lgd_obj = get_object_or_404(
@@ -1120,7 +1102,8 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
         """
         Returns the appropriate serializer class based on the action.
         To add data use LGDVariantTypeListSerializer: it accepts a list of variant types.
-        To delete data use LGDVariantTypeSerializer: it accepts one variant type.
+        To delete data use LGDVariantTypeSerializer: it accepts the variant type in
+        the URL path.
         """
         action = action.lower()
 
@@ -1220,25 +1203,17 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
         return response
 
     @transaction.atomic
-    def patch(self, request, stable_id):
+    def patch(self, request, stable_id, variant_type=None):
         """
         This method deletes the LGD-variant type.
         The deletion does not remove the entry from the database, instead
         it sets the flag 'is_deleted' to 1.
-
-        Example: { "secondary_type": "stop_gained" }
         """
-        # Check if the input has the expected data
-        if (
-            "secondary_type" not in request.data
-            or request.data.get("secondary_type") == ""
-        ):
+        if not variant_type:
             return Response(
-                {"error": "Empty variant type. Please provide the 'secondary_type'."},
+                {"error": "Missing path parameter 'variant_type'"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        variant_type = request.data.get("secondary_type")
 
         lgd_obj = get_object_or_404(
             LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0
@@ -1624,17 +1599,16 @@ class LGDEditComment(APIView):
         return response
 
     @transaction.atomic
-    def patch(self, request, stable_id):
+    def patch(self, request, stable_id, comment_id=None):
         """
         This method deletes the LGD-comment.
         This action is available to all authenticated users.
         """
-        comment_id = request.data.get("comment_id", None)
         user = request.user
 
         if not comment_id:
             return Response(
-                {"error": "Missing input key 'comment_id'"},
+                {"error": "Missing path parameter 'comment_id'"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -1691,18 +1665,11 @@ class LGDEditVariantTypeComment(CustomPermissionAPIView):
     }
 
     @transaction.atomic
-    def patch(self, request, stable_id):
+    def patch(self, request, stable_id, comment_id):
         """
         Soft-delete a variant type comment by comment_id.
         """
-        comment_id = request.data.get("comment_id", None)
         user = request.user
-
-        if not comment_id:
-            return Response(
-                {"error": "Missing input key 'comment_id'"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
         lgd_obj = get_object_or_404(
             LocusGenotypeDisease, stable_id__stable_id=stable_id, is_deleted=0
@@ -1727,9 +1694,7 @@ class LGDEditVariantTypeComment(CustomPermissionAPIView):
             )
         except LGDVariantTypeComment.DoesNotExist:
             return Response(
-                {
-                    "error": f"Cannot find variant type comment for record '{stable_id}'"
-                },
+                {"error": f"Cannot find variant type comment for record '{stable_id}'"},
                 status=status.HTTP_404_NOT_FOUND,
             )
 

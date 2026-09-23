@@ -36,9 +36,9 @@ class LGDEditVariantTypeCommentEndpoint(TestCase):
 
     def setUp(self):
         self.url_delete = reverse(
-            "lgd_variant_type_comment", kwargs={"stable_id": "G2P00002"}
+            "lgd_variant_type_comment",
+            kwargs={"stable_id": "G2P00002", "comment_id": 1},
         )
-        self.comment_to_delete = {"comment_id": 1}
 
     def _authenticate(self, email):
         user = User.objects.get(email=email)
@@ -52,19 +52,16 @@ class LGDEditVariantTypeCommentEndpoint(TestCase):
         """
         self._authenticate("john@test.ac.uk")
 
-        response = self.client.patch(
-            self.url_delete, {"comment_id": 1000}, content_type="application/json"
+        url = reverse(
+            "lgd_variant_type_comment",
+            kwargs={"stable_id": "G2P00002", "comment_id": 1000},
         )
+        response = self.client.patch(url)
         self.assertEqual(response.status_code, 404)
         self.assertEqual(
             response.json()["error"],
             "Cannot find variant type comment for record 'G2P00002'",
         )
-
-        response_2 = self.client.patch(
-            self.url_delete, {}, content_type="application/json"
-        )
-        self.assertEqual(response_2.status_code, 400)
 
     def test_delete_non_superuser(self):
         """
@@ -72,9 +69,7 @@ class LGDEditVariantTypeCommentEndpoint(TestCase):
         """
         self._authenticate("mary@test.ac.uk")
 
-        response = self.client.patch(
-            self.url_delete, self.comment_to_delete, content_type="application/json"
-        )
+        response = self.client.patch(self.url_delete)
         self.assertEqual(response.status_code, 403)
         self.assertEqual(
             response.json()["error"],
@@ -87,9 +82,7 @@ class LGDEditVariantTypeCommentEndpoint(TestCase):
         """
         self._authenticate("sofia@test.ac.uk")
 
-        response = self.client.patch(
-            self.url_delete, self.comment_to_delete, content_type="application/json"
-        )
+        response = self.client.patch(self.url_delete)
         self.assertEqual(response.status_code, 403)
         self.assertEqual(
             response.json()["error"], "No permission to update record 'G2P00002'"
@@ -106,9 +99,7 @@ class LGDEditVariantTypeCommentEndpoint(TestCase):
         )
         self.assertEqual(len(lgd_variant_type_comments), 1)
 
-        response = self.client.patch(
-            self.url_delete, self.comment_to_delete, content_type="application/json"
-        )
+        response = self.client.patch(self.url_delete)
         self.assertEqual(response.status_code, 200)
 
         lgd_deleted_variant_type_comments = LGDVariantTypeComment.objects.filter(

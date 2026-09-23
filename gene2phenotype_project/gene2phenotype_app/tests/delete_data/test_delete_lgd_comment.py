@@ -28,10 +28,10 @@ class LGDDeleteComment(TestCase):
     ]
 
     def setUp(self):
-        self.url_delete = reverse("lgd_comment", kwargs={"stable_id": "G2P00002"})
-        self.comment_to_delete = {
-            "comment_id": 1
-        }
+        self.url_delete = reverse(
+            "lgd_comment_detail",
+            kwargs={"stable_id": "G2P00002", "comment_id": 1},
+        )
 
     def test_invalid_delete(self):
         """
@@ -46,9 +46,11 @@ class LGDDeleteComment(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete, {"comment_id": 1000}, content_type="application/json"
+        invalid_url = reverse(
+            "lgd_comment_detail",
+            kwargs={"stable_id": "G2P00002", "comment_id": 1000},
         )
+        response = self.client.patch(invalid_url)
         self.assertEqual(response.status_code, 404)
 
         response_data = response.json()
@@ -56,9 +58,10 @@ class LGDDeleteComment(TestCase):
             response_data["error"], "Cannot find comment for record 'G2P00002'"
         )
 
-        response_2 = self.client.patch(
-            self.url_delete, {}, content_type="application/json"
+        url_without_comment_id = reverse(
+            "lgd_comment", kwargs={"stable_id": "G2P00002"}
         )
+        response_2 = self.client.patch(url_without_comment_id)
         self.assertEqual(response_2.status_code, 400)
 
     def test_delete_non_superuser_no_permission(self):
@@ -73,9 +76,7 @@ class LGDDeleteComment(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete, self.comment_to_delete, content_type="application/json"
-        )
+        response = self.client.patch(self.url_delete)
         self.assertEqual(response.status_code, 403)
 
         response_data = response.json()
@@ -95,9 +96,7 @@ class LGDDeleteComment(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete, self.comment_to_delete, content_type="application/json"
-        )
+        response = self.client.patch(self.url_delete)
         self.assertEqual(response.status_code, 403)
 
         response_data = response.json()
@@ -118,9 +117,7 @@ class LGDDeleteComment(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete, self.comment_to_delete, content_type="application/json"
-        )
+        response = self.client.patch(self.url_delete)
         self.assertEqual(response.status_code, 200)
 
         # Check deleted record-publication
@@ -141,9 +138,7 @@ class LGDDeleteComment(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
-        response = self.client.patch(
-            self.url_delete, self.comment_to_delete, content_type="application/json"
-        )
+        response = self.client.patch(self.url_delete)
         self.assertEqual(response.status_code, 200)
 
         # Check deleted record-publication

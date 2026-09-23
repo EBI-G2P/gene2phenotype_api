@@ -28,9 +28,6 @@ class LGDDeletePhenotype(TestCase):
         "gene2phenotype_app/fixtures/source.json",
     ]
 
-    def setUp(self):
-        self.url_delete = reverse("lgd_phenotype", kwargs={"stable_id": "G2P00002"})
-
     def test_invalid_delete(self):
         """
         Test deleting an invalid phenotype from the record (LGD).
@@ -44,9 +41,12 @@ class LGDDeletePhenotype(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
+        url_delete = reverse(
+            "lgd_phenotype_detail",
+            kwargs={"stable_id": "G2P00002", "accession": "HP:0033128"},
+        )
         response = self.client.patch(
-            self.url_delete,
-            {"accession": "HP:0033128"},
+            url_delete,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 404)
@@ -68,9 +68,12 @@ class LGDDeletePhenotype(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
+        url_delete = reverse(
+            "lgd_phenotype_detail",
+            kwargs={"stable_id": "G2P00002", "accession": "HP:0000118"},
+        )
         response = self.client.patch(
-            self.url_delete,
-            {"accession": "HP:0000118"},
+            url_delete,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 404)
@@ -94,9 +97,12 @@ class LGDDeletePhenotype(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
+        url_delete = reverse(
+            "lgd_phenotype_detail",
+            kwargs={"stable_id": "G2P00002", "accession": "HP:0003549"},
+        )
         response = self.client.patch(
-            self.url_delete,
-            {"accession": "HP:0003549"},
+            url_delete,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 403)
@@ -118,9 +124,12 @@ class LGDDeletePhenotype(TestCase):
         # Authenticate by setting cookie on the test client
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
 
+        url_delete = reverse(
+            "lgd_phenotype_detail",
+            kwargs={"stable_id": "G2P00002", "accession": "HP:0003549"},
+        )
         response = self.client.patch(
-            self.url_delete,
-            {"accession": "HP:0003549"},
+            url_delete,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 403)
@@ -148,9 +157,12 @@ class LGDDeletePhenotype(TestCase):
         )
         self.assertEqual(len(lgd_phenotypes), 3)
 
+        url_delete = reverse(
+            "lgd_phenotype_detail",
+            kwargs={"stable_id": "G2P00002", "accession": "HP:0003549"},
+        )
         response = self.client.patch(
-            self.url_delete,
-            {"accession": "HP:0003549"},
+            url_delete,
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
