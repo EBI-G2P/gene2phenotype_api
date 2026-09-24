@@ -67,9 +67,7 @@ class PanelCreateSerializer(serializers.ModelSerializer):
             panel = Panel.objects.get(name=name)
 
             raise serializers.ValidationError(
-                {
-                    "error": f"The panel '{name}' already exists."
-                }
+                {"error": f"The panel '{name}' already exists."}
             )
 
         except Panel.DoesNotExist:
@@ -78,10 +76,8 @@ class PanelCreateSerializer(serializers.ModelSerializer):
                     name=name, description=description, is_visible=is_visible
                 )
                 return panel
-            except IntegrityError as e:
-                raise serializers.ValidationError(
-                    {"error": f"Database error: {str(e)}"}
-                )
+            except IntegrityError:
+                raise serializers.ValidationError({"error": "Could not create panel."})
 
     class Meta:
         model = Panel
@@ -110,7 +106,7 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                 panel=id,
                 is_deleted=0,
                 lgd__is_deleted=0,
-                lgd__date_review__isnull=False
+                lgd__date_review__isnull=False,
             )
             .select_related("lgd")
             .order_by("-lgd__date_review")
@@ -246,15 +242,11 @@ class PanelDetailSerializer(serializers.ModelSerializer):
                 variant_types = []
 
                 if (
-                    lgd_obj[
-                        "active_variant_consequence__variant_consequence__term"
-                    ]
+                    lgd_obj["active_variant_consequence__variant_consequence__term"]
                     is not None
                 ):
                     variant_consequences.append(
-                        lgd_obj[
-                            "active_variant_consequence__variant_consequence__term"
-                        ]
+                        lgd_obj["active_variant_consequence__variant_consequence__term"]
                     )
                 # Some records do not have variant types
                 if lgd_obj["active_variant_type__variant_type_ot__term"] is not None:
@@ -281,23 +273,17 @@ class PanelDetailSerializer(serializers.ModelSerializer):
 
             elif number_keys < 10:
                 if (
-                    lgd_obj[
-                        "active_variant_consequence__variant_consequence__term"
-                    ]
+                    lgd_obj["active_variant_consequence__variant_consequence__term"]
                     not in aggregated_data[lgd_obj["lgd__stable_id__stable_id"]][
                         "variant_consequence"
                     ]
-                    and lgd_obj[
-                        "active_variant_consequence__variant_consequence__term"
-                    ]
+                    and lgd_obj["active_variant_consequence__variant_consequence__term"]
                     is not None
                 ):
                     aggregated_data[lgd_obj["lgd__stable_id__stable_id"]][
                         "variant_consequence"
                     ].append(
-                        lgd_obj[
-                            "active_variant_consequence__variant_consequence__term"
-                        ]
+                        lgd_obj["active_variant_consequence__variant_consequence__term"]
                     )
                 if (
                     lgd_obj["active_variant_type__variant_type_ot__term"]

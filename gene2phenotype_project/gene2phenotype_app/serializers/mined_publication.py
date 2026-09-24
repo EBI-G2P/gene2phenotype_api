@@ -9,13 +9,17 @@ class LGDMinedPublicationSerializer(serializers.ModelSerializer):
     Serializer for the LGDMinedPublication model.
     Called by: LocusGenotypeDiseaseSerializer(), LGDMinedPublicationListSerializer()
     """
+
     pmid = serializers.IntegerField(source="mined_publication.pmid", required=False)
     year = serializers.IntegerField(source="mined_publication.year", required=False)
     title = serializers.CharField(source="mined_publication.title", required=False)
     status = serializers.CharField()
     comment = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     score = serializers.CharField()
-    score_comment = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    score_comment = serializers.CharField(
+        allow_blank=True, allow_null=True, required=False
+    )
+    valid_statuses = {"rejected", "curated", "mined"}
 
     def get_fields(self):
         fields = super().get_fields()
@@ -27,6 +31,13 @@ class LGDMinedPublicationSerializer(serializers.ModelSerializer):
             fields.pop("score_comment", None)
 
         return fields
+
+    def validate_status(self, value):
+        if value not in self.valid_statuses:
+            raise serializers.ValidationError(
+                f"Invalid mined publication status '{value}'"
+            )
+        return value
 
     def update(self, instance, validated_data):
         """

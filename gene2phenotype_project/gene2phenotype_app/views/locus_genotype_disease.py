@@ -60,13 +60,15 @@ from ..utils import get_date_now
 
 @extend_schema(
     tags=["Terminology"],
-    description=textwrap.dedent("""
+    description=textwrap.dedent(
+        """
     Fetch the molecular mechanism terminologies used in G2P following the definitions of Backwell and Marsh (see more details here https://europepmc.org/article/MED/35395171)
     
     The mechanism of disease is derived from the available evidence.
     
     The mechanism synopsis is a more detailed description of the molecular mechanism.
-    """),
+    """
+    ),
     responses={
         200: OpenApiResponse(
             description="Molecular mechanism terminology response",
@@ -219,11 +221,13 @@ class VariantTypesList(APIView):
 
 @extend_schema(
     tags=["G2P record"],
-    description=textwrap.dedent("""
+    description=textwrap.dedent(
+        """
     Fetch detailed information about a specific record using the G2P stable ID (stable_id).
     
     A record is a unique Locus-Genotype-Mechanism-Disease-Evidence (LGMDE) thread.
-    """),
+    """
+    ),
     examples=[
         OpenApiExample(
             "Example 1",
@@ -700,7 +704,10 @@ class LGDUpdateMechanism(BaseUpdate):
                     {"error": e.detail["error"]}, status=status.HTTP_400_BAD_REQUEST
                 )
             else:
-                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "Could not update molecular mechanism."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         else:
             return Response(
                 {
@@ -1569,9 +1576,9 @@ class LGDEditComment(APIView):
                 if serializer_class.is_valid():
                     try:
                         serializer_class.save()
-                    except IntegrityError as e:
+                    except IntegrityError:
                         return Response(
-                            {"error": f"A database integrity error occurred: {str(e)}"},
+                            {"error": "Could not add comment to the G2P entry."},
                             status=status.HTTP_400_BAD_REQUEST,
                         )
                 else:

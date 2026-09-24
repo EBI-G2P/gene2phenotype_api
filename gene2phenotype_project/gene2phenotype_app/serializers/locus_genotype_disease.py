@@ -1179,8 +1179,8 @@ class LGDCommentSerializer(serializers.ModelSerializer):
                     user=user,
                     date=get_date_now(),
                 )
-            except IntegrityError as e:
-                raise IntegrityError(f"{e}")
+            except IntegrityError:
+                raise IntegrityError("Could not create LGD comment.")
 
         return lgd_comment_obj
 

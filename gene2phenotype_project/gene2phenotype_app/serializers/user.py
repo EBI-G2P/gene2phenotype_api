@@ -18,6 +18,7 @@ class UserSerializer(serializers.ModelSerializer):
     """
     Serializer for the User model.
     """
+
     full_name = serializers.SerializerMethodField()
     email = serializers.CharField(read_only=True)
     panels = serializers.SerializerMethodField()
@@ -724,7 +725,7 @@ class LoginSerializer(serializers.ModelSerializer):
             - AuthenticationFailed: If the authentication fails due to incorrect username or password
             or if the user's account has been disabled.
         """
-        username = validated_data.get("username") # this is the email
+        username = validated_data.get("username")  # this is the email
         password = validated_data.get("password")
 
         if username and password:
@@ -810,9 +811,10 @@ class LogoutSerializer(serializers.Serializer):
         Raises:
             - serializers.ValidationError: If the token is invalid or blacklisting fails.
         """
-        token = RefreshToken(self.token)
-
         try:
+            token = RefreshToken(self.token)
             token.blacklist()
-        except TokenError as e:
-            raise serializers.ValidationError({"message": str(e)})
+        except TokenError:
+            raise serializers.ValidationError(
+                {"message": "Could not invalidate refresh token."}
+            )

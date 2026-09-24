@@ -147,9 +147,9 @@ class LGDEditMinedPublication(BaseUpdate):
                 if serializer_class.is_valid():
                     try:
                         serializer_class.save()
-                    except IntegrityError as e:
+                    except IntegrityError:
                         return Response(
-                            {"error": f"A database integrity error occurred: {str(e)}"},
+                            {"error": "Could not update mined publication."},
                             status=status.HTTP_400_BAD_REQUEST,
                         )
                 else:
