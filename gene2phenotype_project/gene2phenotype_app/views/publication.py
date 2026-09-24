@@ -493,11 +493,9 @@ class LGDEditPublications(BaseUpdate):
 
         try:
             lgd_publication_obj.save()
-        except Exception as e:
+        except Exception:
             return Response(
-                {
-                    "error": f"Could not delete PMID '{pmid}' for ID '{stable_id}': {str(e)}"
-                },
+                {"error": f"Could not delete PMID '{pmid}' for ID '{stable_id}'"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

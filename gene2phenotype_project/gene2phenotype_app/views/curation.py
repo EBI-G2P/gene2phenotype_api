@@ -198,7 +198,8 @@ class ListCurationEntries(BaseView):
                 "locus": data.json_data["locus"],
                 "disease": data.json_data["disease"]["disease_name"] or None,
                 "allelic_requirement": data.json_data["allelic_requirement"] or None,
-                "molecular_mechanism": data.json_data["molecular_mechanism"]["name"] or None,
+                "molecular_mechanism": data.json_data["molecular_mechanism"]["name"]
+                or None,
                 "panels": data.json_data["panels"],
                 "session_name": data.session_name,
                 "stable_id": data.stable_id.stable_id,
@@ -226,9 +227,7 @@ class CurationDataDetail(BaseView):
 
         g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
 
-        queryset = CurationData.objects.filter(
-            stable_id=g2p_stable_id
-        ).annotate(
+        queryset = CurationData.objects.filter(stable_id=g2p_stable_id).annotate(
             first_name=F("user_id__first_name"),
             last_name=F("user_id__last_name"),
             user_email=F("user__email"),
@@ -271,7 +270,9 @@ class CurationDataDetail(BaseView):
         curation_data_obj = self.get_queryset().first()
 
         curation_user_obj = User.objects.get(email=curation_data_obj.user)
-        unclaimed_draft = curation_user_obj.groups.filter(name__in=["g2p_admin"]).exists()
+        unclaimed_draft = curation_user_obj.groups.filter(
+            name__in=["g2p_admin"]
+        ).exists()
 
         response_data = {
             "session_name": curation_data_obj.session_name,
@@ -354,7 +355,9 @@ class ClaimCurationData(BaseUpdate):
         # The draft uses the panel description as the name
         user_panels = get_user_panel_descriptions(user_obj)
 
-        if (curation_obj.json_data["panels"] and not set(curation_obj.json_data["panels"]).intersection(set(user_panels))):
+        if curation_obj.json_data["panels"] and not set(
+            curation_obj.json_data["panels"]
+        ).intersection(set(user_panels)):
             return Response(
                 {
                     "error": f"You do not have permission to claim this curation draft with G2P Stable ID '{stable_id}'"
@@ -391,9 +394,7 @@ class UpdateCurationData(BaseUpdate):
 
         g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
 
-        queryset = CurationData.objects.filter(
-            stable_id=g2p_stable_id
-        )
+        queryset = CurationData.objects.filter(stable_id=g2p_stable_id)
 
         # Keep entries owned by the user or entries with at least one panel the user can edit
         user_panels = set(get_user_panel_descriptions(user))
@@ -490,11 +491,11 @@ class PublishRecord(BaseUpdate):
 
         g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
 
-        filters = Q(stable_id=g2p_stable_id) & (Q(user__email=user) | Q(user__groups__name="junior_curator"))
-
-        queryset = CurationData.objects.filter(
-            filters
+        filters = Q(stable_id=g2p_stable_id) & (
+            Q(user__email=user) | Q(user__groups__name="junior_curator")
         )
+
+        queryset = CurationData.objects.filter(filters)
 
         # Keep entries owned by the user or entries with at least one panel the user can edit
         user_panels = set(get_user_panel_descriptions(user))
@@ -542,15 +543,17 @@ class PublishRecord(BaseUpdate):
             self.serializer_class().validate_to_publish(curation_obj)
 
             # Check if user that created draft is a junior curator
-            is_junior_curator = curation_obj.user.groups.filter(name="junior_curator").exists()
+            is_junior_curator = curation_obj.user.groups.filter(
+                name="junior_curator"
+            ).exists()
 
             # Publish record
             try:
                 # 'user' is the curator that publishes the record
                 # 'is_junior_curator' is used to determine if the user that created the draft is a junior curator
-                lgd_obj, check = self.serializer_class(context={"user": user, "is_junior_curator": is_junior_curator}).publish(
-                    curation_obj
-                )
+                lgd_obj, check = self.serializer_class(
+                    context={"user": user, "is_junior_curator": is_junior_curator}
+                ).publish(curation_obj)
                 # Delete entry from 'curation_data'
                 curation_obj.delete()
 
@@ -642,9 +645,9 @@ class DeleteCurationData(generics.DestroyAPIView):
         try:
             # delete record + G2P ID
             self.perform_destroy(curation_obj, stable_id)
-        except Exception as e:
+        except Exception:
             return Response(
-                {"error": f"Cannot delete data for ID {stable_id}: {str(e)}"},
+                {"error": f"Cannot delete data for ID {stable_id}"},
                 status=status.HTTP_404_NOT_FOUND,
             )
 

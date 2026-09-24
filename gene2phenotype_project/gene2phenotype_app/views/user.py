@@ -125,12 +125,12 @@ class LoginView(generics.GenericAPIView):
             refresh_token_lifetime = settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"]
             access_token_lifetime = settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"]
             # Calculate refresh expiration time
-            refresh_expires = (timezone.now() + refresh_token_lifetime)
+            refresh_expires = timezone.now() + refresh_token_lifetime
             # calculate access expiration time
-            access_expires = (timezone.now() + access_token_lifetime)
+            access_expires = timezone.now() + access_token_lifetime
             refresh_expires_iso = refresh_expires.isoformat()
             # to add the refresh token time to the response
-            login_data["refresh_token_time"] = (refresh_expires.isoformat())
+            login_data["refresh_token_time"] = refresh_expires.isoformat()
 
             response.set_cookie(
                 key=settings.SIMPLE_JWT["AUTH_COOKIE"],
@@ -144,7 +144,7 @@ class LoginView(generics.GenericAPIView):
             )
 
             response.set_cookie(
-                key=settings.SIMPLE_JWT["REFRESH_COOKIE"], # Refresh token cookie name
+                key=settings.SIMPLE_JWT["REFRESH_COOKIE"],  # Refresh token cookie name
                 value=refresh_token,
                 domain=settings.SIMPLE_JWT["AUTH_COOKIE_DOMAIN"],
                 path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
@@ -277,7 +277,9 @@ class VerifyEmailView(generics.GenericAPIView):
         Returns:
             Response: Response (user information)
         """
-        serializer = self.serializer_class(data=request.data, context={"request": request})
+        serializer = self.serializer_class(
+            data=request.data, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         result = serializer.get_user_and_send_email(user=request.data)
 
@@ -349,8 +351,11 @@ class CustomTokenRefreshView(TokenRefreshView):
                 new_refresh_token = str(RefreshToken(refresh_token))
             else:
                 new_refresh_token = refresh_token
-        except ParseError as e:
-            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except ParseError:
+            return Response(
+                {"message": "Invalid refresh token."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         response_data = serializer.data
         response = Response(response_data, status=status.HTTP_200_OK)
@@ -362,7 +367,7 @@ class CustomTokenRefreshView(TokenRefreshView):
             # Calculate refresh expiration time
             refresh_expires = datetime.fromisoformat(refresh_token_lifetime)
             # calculate access expiration time
-            access_expires = (timezone.now() + access_token_lifetime)
+            access_expires = timezone.now() + access_token_lifetime
             response_data["refresh_token_time"] = refresh_expires
             refresh_expires_iso = refresh_expires.isoformat()
             response.set_cookie(

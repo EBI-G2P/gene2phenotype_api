@@ -9,35 +9,34 @@ class CustomAuthentication(JWTAuthentication):
 
     def authenticate(self, request):
         header = self.get_header(request)
-        
+
         if header is None:
             # getting authentication details from cookies
-            refresh_token = request.COOKIES.get(settings.SIMPLE_JWT['REFRESH_COOKIE'])
+            refresh_token = request.COOKIES.get(settings.SIMPLE_JWT["REFRESH_COOKIE"])
             if refresh_token:
                 if self.is_token_blacklisted(refresh_token):
                     raise AuthenticationFailed("Token has been blacklisted")
-            raw_token = request.COOKIES.get(settings.SIMPLE_JWT['AUTH_COOKIE'])
+            raw_token = request.COOKIES.get(settings.SIMPLE_JWT["AUTH_COOKIE"])
         else:
-            #just giving the option from headers but no longer being implemented
+            # just giving the option from headers but no longer being implemented
             raw_token = self.get_raw_token(header)
-        
+
         if not raw_token:
             return None
 
         try:
             validated_token = self.get_validated_token(raw_token)
-        except Exception as e:
-            raise AuthenticationFailed(str(e))
+        except Exception:
+            raise AuthenticationFailed("Invalid authentication credentials")
         return self.get_user(validated_token), validated_token
-
 
     @staticmethod
     def is_token_blacklisted(token_string):
         try:
             token = RefreshToken(token_string)
-            if BlacklistedToken.objects.filter(token__jti=token['jti']).exists():
+            if BlacklistedToken.objects.filter(token__jti=token["jti"]).exists():
                 return True
-        except Exception as e:
-            raise AuthenticationFailed(f"Token blacklist check failed: {str(e)}")
+        except Exception:
+            raise AuthenticationFailed("Invalid authentication credentials")
 
         return False

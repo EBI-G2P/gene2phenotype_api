@@ -229,10 +229,10 @@ class CurationDataSerializer(serializers.ModelSerializer):
 
             if lgd_obj.is_deleted == 1:
                 raise serializers.ValidationError(
-                            {
-                                "error": f"The locus, genotype, disease and molecular mechanism match an old record: '{lgd_obj.stable_id.stable_id}'"
-                            }
-                        )
+                    {
+                        "error": f"The locus, genotype, disease and molecular mechanism match an old record: '{lgd_obj.stable_id.stable_id}'"
+                    }
+                )
             else:
                 raise serializers.ValidationError(
                     {
@@ -253,10 +253,10 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 if similar_records.exists():
                     ids = [record.stable_id.stable_id for record in similar_records]
                     raise serializers.ValidationError(
-                    {
-                        "error": f"Found similar record(s) with same locus, genotype and disease. Please check G2P ID(s) '{', '.join(ids)}'"
-                    }
-                )
+                        {
+                            "error": f"Found similar record(s) with same locus, genotype and disease. Please check G2P ID(s) '{', '.join(ids)}'"
+                        }
+                    )
 
             return locus_obj
 
@@ -370,9 +370,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
         try:
             user_obj = User.objects.get(email=user_email)
         except User.DoesNotExist:
-            raise serializers.ValidationError(
-                {"error": f"Invalid user '{user_email}'"}
-            )
+            raise serializers.ValidationError({"error": f"Invalid user '{user_email}'"})
 
         # Check if gene symbol is valid
         try:
@@ -401,11 +399,9 @@ class CurationDataSerializer(serializers.ModelSerializer):
                 user=user_obj,
                 status=curation_status,
             )
-        except Exception as e:
+        except Exception:
             raise serializers.ValidationError(
-                {
-                    "error": f"Failed to create curation data '{session_name}': {str(e)}"
-                }
+                {"error": f"Failed to create curation data '{session_name}'"}
             )
 
         return new_curation_data
