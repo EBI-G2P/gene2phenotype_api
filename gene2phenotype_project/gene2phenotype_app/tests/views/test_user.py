@@ -322,7 +322,7 @@ class ChangePasswordTest(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["error"], "If an account exists for this email, a reset link has been sent.")
+        self.assertEqual(response.data["message"], "If an account exists for this email, a reset link has been sent.")
 
     def test_verify_email_failure(self):
         """
@@ -335,7 +335,7 @@ class ChangePasswordTest(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["error"], "If an account exists for this email, a reset link has been sent.")
+        self.assertEqual(response.data["message"], "If an account exists for this email, a reset link has been sent.")
 
     @override_settings(
         PUBLIC_APP_URL="https://public.example.org",

@@ -419,7 +419,7 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
             user_panel.is_deleted = 0
             user_panel.save()
 
-            user_info = {"error": f"{user} has been updated in this {panel}"}
+            user_info = {"message": f"{user} has been updated in this {panel}"}
 
         except ObjectDoesNotExist:
             return {"error": f"{user} does not exist in this panel "}
@@ -561,7 +561,7 @@ class VerifyEmailSerializer(serializers.ModelSerializer):
             )
 
         return {
-            "error": "If an account exists for this email, a reset link has been sent."
+            "message": "If an account exists for this email, a reset link has been sent."
         }
 
     class Meta:
