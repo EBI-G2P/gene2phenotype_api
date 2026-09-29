@@ -288,7 +288,7 @@ class ChangePasswordTest(TestCase):
 
         self.assertEqual(response_change_password.status_code, 400)
 
-    def test_change_password_short_password_uses_validator_message(self):
+    def test_change_password_short_password_uses_validator_error(self):
         change_password_data = {
             "old_password": "test_user5",
             "password": "xY3!",
@@ -305,7 +305,7 @@ class ChangePasswordTest(TestCase):
         self.assertEqual(
             response_change_password.data,
             {
-                "message": [
+                "error": [
                     "This password is too short. It must contain at least 8 characters."
                 ]
             },
@@ -322,7 +322,7 @@ class ChangePasswordTest(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["message"], "If an account exists for this email, a reset link has been sent.")
+        self.assertEqual(response.data["error"], "If an account exists for this email, a reset link has been sent.")
 
     def test_verify_email_failure(self):
         """
@@ -335,7 +335,7 @@ class ChangePasswordTest(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["message"], "If an account exists for this email, a reset link has been sent.")
+        self.assertEqual(response.data["error"], "If an account exists for this email, a reset link has been sent.")
 
     @override_settings(
         PUBLIC_APP_URL="https://public.example.org",
