@@ -1,17 +1,24 @@
 from rest_framework import serializers
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, password_validation
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.encoding import smart_str, force_bytes
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.models import update_last_login
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError as DjangoValidationError
 
 
 from ..utils import CustomMail, build_public_url
 from ..models import User, UserPanel, Panel
+
+
+def validate_user_password(password, user=None):
+    try:
+        password_validation.validate_password(password, user=user)
+    except DjangoValidationError as error:
+        raise serializers.ValidationError({"error": error.messages})
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -144,10 +151,10 @@ class CreateUserSerializer(serializers.ModelSerializer):
     """
 
     password = serializers.CharField(
-        write_only=True, style={"input_type": "password"}, min_length=6, max_length=20
+        write_only=True, style={"input_type": "password"}
     )
     password2 = serializers.CharField(
-        write_only=True, style={"input_type": "password"}, min_length=6, max_length=20
+        write_only=True, style={"input_type": "password"}
     )
     panels = serializers.ListField(
         child=serializers.CharField(), allow_empty=False, write_only=True
@@ -184,41 +191,50 @@ class CreateUserSerializer(serializers.ModelSerializer):
         email = attrs.get("email")
         if email is None:
             raise serializers.ValidationError(
-                {"message": "Email is needed to create a user"}
+                {"error": "Email is needed to create a user"}
             )
         username = attrs.get("username")
         if username is None:
             raise serializers.ValidationError(
-                {"message": "Username is needed to create a user"}
+                {"error": "Username is needed to create a user"}
             )
         password = attrs.get("password")
         # pop password2 from the validated data that will be sent to models
         password2 = attrs.pop("password2", "None")
         if password != password2:
-            raise serializers.ValidationError({"message": "Passwords do not match"})
+            raise serializers.ValidationError({"error": "Passwords do not match"})
+
         first_name = attrs.get("first_name")
         if first_name is None:
             raise serializers.ValidationError(
-                {"message": "First name is needed to create a user"}
+                {"error": "First name is needed to create a user"}
             )
         last_name = attrs.get("last_name")
         if last_name is None:
             raise serializers.ValidationError(
-                {"message": "Last name is needed to create a user"}
+                {"error": "Last name is needed to create a user"}
             )
 
+        user = User(
+            email=email,
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+        )
+        validate_user_password(password, user=user)
+
         if User.objects.filter(username=username).exists():
-            raise serializers.ValidationError({"message": "Username already exists"})
+            raise serializers.ValidationError({"error": "Username already exists"})
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError(
-                {"message": "An account with this email already exists"}
+                {"error": "An account with this email already exists"}
             )
 
         panels = attrs.get("panels")
         for panel in panels:
             if not Panel.objects.filter(name=panel).exists():
                 raise serializers.ValidationError(
-                    {"message": f"{panel} does not exist"}
+                    {"error": f"{panel} does not exist"}
                 )
 
         return attrs
@@ -274,7 +290,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
             "user_panels",
         ]
         extra_kwargs = {
-            "password": {"write_only": True, "min_length": 6, "max_length": 20},
+            "password": {"write_only": True},
             "email": {
                 "validators": [
                     UniqueValidator(
@@ -327,13 +343,13 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
         user = attrs.get("user", "")
         if user is None:
             raise serializers.ValidationError(
-                {"message": "user email is required to add user to panel"}
+                {"error": "user email is required to add user to panel"}
             )
         if user:
             if not User.objects.filter(email=user).exists():
                 raise serializers.ValidationError(
                     {
-                        "message": "User does not exist, please create a user and add user to panel"
+                        "error": "User does not exist, please create a user and add user to panel"
                     }
                 )
 
@@ -342,7 +358,7 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
             for panel in panels:
                 if not Panel.objects.filter(name=panel).exists():
                     raise serializers.ValidationError(
-                        {"message": "Panel does not exists, Please check panel"}
+                        {"error": "Panel does not exists, Please check panel"}
                     )
 
         return attrs
@@ -381,7 +397,7 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
                 )
             else:
                 raise serializers.ValidationError(
-                    {"message": f"User {user_email} already exists in this {panel}"}
+                    {"error": f"User {user_email} already exists in this {panel}"}
                 )
 
         return user_panel
@@ -406,7 +422,7 @@ class AddUserToPanelSerializer(serializers.ModelSerializer):
             user_info = {"message": f"{user} has been updated in this {panel}"}
 
         except ObjectDoesNotExist:
-            return {"message": f"{user} does not exist in this panel "}
+            return {"error": f"{user} does not exist in this panel "}
 
         return user_info
 
@@ -434,13 +450,13 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
     """
 
     old_password = serializers.CharField(
-        max_length=20, min_length=6, style={"input_type": "password"}, write_only=True
+        style={"input_type": "password"}, write_only=True
     )
     password = serializers.CharField(
-        max_length=20, min_length=6, style={"input_type": "password"}, write_only=True
+        style={"input_type": "password"}, write_only=True
     )
     password2 = serializers.CharField(
-        max_length=20, min_length=6, style={"input_type": "password"}, write_only=True
+        style={"input_type": "password"}, write_only=True
     )
 
     def validate(self, attrs):
@@ -462,15 +478,17 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         if user.check_password(old_password) is False:
             raise serializers.ValidationError(
                 {
-                    "message": "The password you entered is incorrect. Please provide the correct current password to update your password"
+                    "error": "The password you entered is incorrect. Please provide the correct current password to update your password"
                 }
             )
         password = attrs.get("password")
         password2 = attrs.pop("password2", None)
         if password != password2:
             raise serializers.ValidationError(
-                {"message": "Passwords do not match"}, password
+                {"error": "Passwords do not match"}, password
             )
+
+        validate_user_password(password, user=user)
 
         return attrs
 
@@ -492,7 +510,7 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         if user.check_password(password):
             raise serializers.ValidationError(
                 {
-                    "message": "The new password cannot be the same as the present password."
+                    "error": "The new password cannot be the same as the present password."
                 },
                 password,
             )
@@ -568,10 +586,10 @@ class PasswordResetSerializer(serializers.ModelSerializer):
     """
 
     password = serializers.CharField(
-        max_length=20, min_length=6, style={"input_type": "password"}, write_only=True
+        style={"input_type": "password"}, write_only=True
     )
     password2 = serializers.CharField(
-        max_length=20, min_length=6, style={"input_type": "password"}, write_only=True
+        style={"input_type": "password"}, write_only=True
     )
 
     def validate(self, attrs):
@@ -596,11 +614,12 @@ class PasswordResetSerializer(serializers.ModelSerializer):
 
         if password != password2:
             raise serializers.ValidationError(
-                {"message": "Passwords do not match"}, password
+                {"error": "Passwords do not match"}, password
             )
 
         uid = smart_str(urlsafe_base64_decode(uid))
         user = User.objects.get(id=uid)
+        validate_user_password(password, user=user)
 
         if not PasswordResetTokenGenerator().check_token(user, token):
             raise serializers.ValidationError("Token is not valid or expired")
@@ -816,5 +835,5 @@ class LogoutSerializer(serializers.Serializer):
             token.blacklist()
         except TokenError:
             raise serializers.ValidationError(
-                {"message": "Could not invalidate refresh token."}
+                {"error": "Could not invalidate refresh token."}
             )
