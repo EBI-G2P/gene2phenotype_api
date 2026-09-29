@@ -55,7 +55,7 @@ class CustomAuthenticationTest(TestCase):
                 serializer.save()
 
         self.assertEqual(
-            str(context.exception.detail["message"]),
+            str(context.exception.detail["error"]),
             "Could not invalidate refresh token.",
         )
         self.assertNotIn("sensitive logout token detail", str(context.exception.detail))
