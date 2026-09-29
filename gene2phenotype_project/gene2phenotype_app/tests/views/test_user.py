@@ -258,8 +258,8 @@ class ChangePasswordTest(TestCase):
         """
         change_password_data = {
             "old_password": "test_user5",
-            "password": "new_test_user5",
-            "password2": "new_test_user5",
+            "password": "SaffronRiver42!",
+            "password2": "SaffronRiver42!",
         }
 
         response_change_password = self.client.post(
@@ -287,6 +287,29 @@ class ChangePasswordTest(TestCase):
         )
 
         self.assertEqual(response_change_password.status_code, 400)
+
+    def test_change_password_short_password_uses_validator_message(self):
+        change_password_data = {
+            "old_password": "test_user5",
+            "password": "xY3!",
+            "password2": "xY3!",
+        }
+
+        response_change_password = self.client.post(
+            self.url_change_password,
+            change_password_data,
+            content_type="application/json",
+        )
+
+        self.assertEqual(response_change_password.status_code, 400)
+        self.assertEqual(
+            response_change_password.data,
+            {
+                "message": [
+                    "This password is too short. It must contain at least 8 characters."
+                ]
+            },
+        )
 
     def test_verify_email_success(self):
         """
