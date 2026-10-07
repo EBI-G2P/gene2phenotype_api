@@ -331,45 +331,40 @@ class CustomTokenRefreshView(TokenRefreshView):
             Response: the response
         """
 
-        # fetch refresh_token from the cookies
+        rotate_tokens = settings.SIMPLE_JWT["ROTATE_REFRESH_TOKENS"]
+
+        # fetch refresh token from the cookies
         refresh_token = request.COOKIES.get(settings.SIMPLE_JWT["REFRESH_COOKIE"])
 
         if CustomAuthentication.is_token_blacklisted(refresh_token):
             raise AuthenticationFailed("Token has been blacklisted")
 
-        # to make sure the data that's being sent is from the cookies
-        data = {"refresh": refresh_token}
         # instead of request data, give it the data created
-        serializer = TokenRefreshSerializer(data=data)
+        serializer = TokenRefreshSerializer(data={"refresh": refresh_token})
         serializer.is_valid(raise_exception=True)
         # the validated results sent from the TokenRefreshSerializer
-        refresh_token = serializer.validated_data.get("refresh")
+        new_refresh_token = serializer.validated_data.get("refresh", refresh_token)
         access_token = serializer.validated_data.get("access")
 
-        try:
-            if settings.SIMPLE_JWT["ROTATE_REFRESH_TOKENS"]:
-                new_refresh_token = str(RefreshToken(refresh_token))
-            else:
-                new_refresh_token = refresh_token
-        except ParseError:
-            return Response(
-                {"message": "Invalid refresh token."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        response_data = serializer.data
+        response_data = dict(serializer.validated_data)
         response = Response(response_data, status=status.HTTP_200_OK)
 
         if response.status_code == 200:
-            # we are getting the refresh timeline from the cookie
+            # Get the current refresh timeline from the cookie
             refresh_token_lifetime = request.COOKIES.get("refresh_token_lifetime")
-            access_token_lifetime = settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"]
+            # Get the new refresh token lifetime from settings
+            new_refresh_token_lifetime = settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"]
             # Calculate refresh expiration time
             refresh_expires = datetime.fromisoformat(refresh_token_lifetime)
-            # calculate access expiration time
-            access_expires = timezone.now() + access_token_lifetime
-            response_data["refresh_token_time"] = refresh_expires
+            new_refresh_expires = timezone.now() + new_refresh_token_lifetime
+            response_data["refresh_token_time"] = new_refresh_expires if rotate_tokens else refresh_expires
             refresh_expires_iso = refresh_expires.isoformat()
+            new_refresh_expires_iso = new_refresh_expires.isoformat()
+
+            # Calculate new access token expiration time
+            access_token_lifetime = settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"]
+            access_expires = timezone.now() + access_token_lifetime
+
             response.set_cookie(
                 key=settings.SIMPLE_JWT["AUTH_COOKIE"],
                 value=access_token,
@@ -385,17 +380,17 @@ class CustomTokenRefreshView(TokenRefreshView):
                 value=new_refresh_token,
                 domain=settings.SIMPLE_JWT["AUTH_COOKIE_DOMAIN"],
                 path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
-                expires=refresh_expires,
+                expires=new_refresh_expires if rotate_tokens else refresh_expires,
                 secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
                 httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
                 samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
             )
             response.set_cookie(
                 key="refresh_token_lifetime",
-                value=refresh_expires_iso,
+                value=new_refresh_expires_iso if rotate_tokens else refresh_expires_iso,
                 domain=settings.SIMPLE_JWT["AUTH_COOKIE_DOMAIN"],
                 path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
-                expires=refresh_expires,
+                expires=new_refresh_expires if rotate_tokens else refresh_expires,
                 secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
                 httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
                 samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
