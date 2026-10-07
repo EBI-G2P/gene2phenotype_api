@@ -11,14 +11,17 @@ class CustomAuthentication(JWTAuthentication):
         header = self.get_header(request)
 
         if header is None:
-            # getting authentication details from cookies
+            # Getting authentication details from cookies
+            # It only requires the access token but if the refresh token is present, it checks if it's blacklisted
             refresh_token = request.COOKIES.get(settings.SIMPLE_JWT["REFRESH_COOKIE"])
-            if refresh_token:
-                if self.is_token_blacklisted(refresh_token):
-                    raise AuthenticationFailed("Token has been blacklisted")
             raw_token = request.COOKIES.get(settings.SIMPLE_JWT["AUTH_COOKIE"])
+
+            if refresh_token and self.is_token_blacklisted(refresh_token):
+                raise AuthenticationFailed("Token has been blacklisted")
         else:
-            # just giving the option from headers but no longer being implemented
+            # Fallback to the default behavior if the header is present
+            # JWTAuthentication will handle the token validation and user retrieval
+            # By default, it only checks the access token
             raw_token = self.get_raw_token(header)
 
         if not raw_token:
