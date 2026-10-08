@@ -1,6 +1,6 @@
 from rest_framework.response import Response
 from rest_framework import generics, permissions, status
-from rest_framework.exceptions import ParseError, AuthenticationFailed
+from rest_framework.exceptions import APIException
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -13,6 +13,7 @@ from django.db.models import F
 from .base import BaseView, IsSuperUser
 
 from gene2phenotype_app.authentication import CustomAuthentication
+from gene2phenotype_app.utils.auth_cookie_utils import clear_auth_cookies
 
 from gene2phenotype_app.serializers import (
     UserSerializer,
@@ -206,18 +207,7 @@ class LogOutView(generics.GenericAPIView):
         serializer.save()
         response = Response(status=status.HTTP_204_NO_CONTENT)
         if response:
-            response.delete_cookie(
-                key=settings.SIMPLE_JWT["AUTH_COOKIE"],
-                path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
-            )
-            response.delete_cookie(
-                key=settings.SIMPLE_JWT["REFRESH_COOKIE"],
-                path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
-            )
-            response.delete_cookie(
-                key="refresh_token_lifetime",
-                path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
-            )
+            clear_auth_cookies(response)
         return response
 
 
@@ -259,7 +249,10 @@ class ChangePasswordView(generics.GenericAPIView):
         )
         serializer.is_valid(raise_exception=True)
         result = serializer.change_password(user=request.user)
-        return Response(result, status=status.HTTP_201_CREATED)
+        response = Response(result, status=status.HTTP_201_CREATED)
+        if response:
+            clear_auth_cookies(response)
+        return response
 
 
 @extend_schema(exclude=True)
@@ -308,13 +301,25 @@ class ResetPasswordView(generics.GenericAPIView):
         )
         serializer.is_valid(raise_exception=True)
         result = serializer.reset(password=request.data, user=uid)
-        return Response(result)
+        response = Response(result)
+        if response:
+            clear_auth_cookies(response)
+        return response
 
 
 @extend_schema(exclude=True)
 class CustomTokenRefreshView(TokenRefreshView):
     serializer_class = TokenRefreshSerializer
     permission_classes = [permissions.AllowAny]
+
+    @staticmethod
+    def invalid_refresh_response():
+        response = Response(
+            {"error": "Invalid authentication credentials"},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+        clear_auth_cookies(response)
+        return response
 
     def post(self, request, *args, **kwargs):
         """
@@ -324,7 +329,7 @@ class CustomTokenRefreshView(TokenRefreshView):
             request (Request): instance of Django's HttpRequest object
 
         Raises:
-            AuthenticationFailed : If the refresh token has been blacklisted (logged out)
+            AuthenticationFailed : If the refresh token is invalid
             ParseError : If the request is bad for other reasons
 
         Returns:
@@ -336,12 +341,15 @@ class CustomTokenRefreshView(TokenRefreshView):
         # fetch refresh token from the cookies
         refresh_token = request.COOKIES.get(settings.SIMPLE_JWT["REFRESH_COOKIE"])
 
-        if CustomAuthentication.is_token_blacklisted(refresh_token):
-            raise AuthenticationFailed("Token has been blacklisted")
+        if CustomAuthentication.is_refresh_token_valid(refresh_token) is False:
+            return self.invalid_refresh_response()
 
         # instead of request data, give it the data created
         serializer = TokenRefreshSerializer(data={"refresh": refresh_token})
-        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except APIException:
+            return self.invalid_refresh_response()
         # the validated results sent from the TokenRefreshSerializer
         new_refresh_token = serializer.validated_data.get("refresh", refresh_token)
         access_token = serializer.validated_data.get("access")

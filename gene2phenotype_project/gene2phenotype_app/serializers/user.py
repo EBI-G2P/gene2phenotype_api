@@ -522,7 +522,6 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
 
         user.set_password(password)
         user.save()
-        blacklist_user_tokens(user)
 
         CustomMail.send_change_password_email(
             user=user.first_name,
@@ -530,6 +529,9 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
             subject="Password change confirmation",
             to_email=user.email,
         )
+
+        blacklist_user_tokens(user)
+
         return user.email
 
     class Meta:
