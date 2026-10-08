@@ -5,6 +5,7 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.encoding import smart_str, force_bytes
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.models import update_last_login
 from django.core.exceptions import ObjectDoesNotExist, ValidationError as DjangoValidationError
@@ -19,6 +20,10 @@ def validate_user_password(password, user=None):
         password_validation.validate_password(password, user=user)
     except DjangoValidationError as error:
         raise serializers.ValidationError({"error": error.messages})
+
+def blacklist_user_tokens(user):
+    for token in OutstandingToken.objects.filter(user=user):
+        BlacklistedToken.objects.get_or_create(token=token)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -517,12 +522,16 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
 
         user.set_password(password)
         user.save()
+
         CustomMail.send_change_password_email(
             user=user.first_name,
             user_email=user.email,
             subject="Password change confirmation",
             to_email=user.email,
         )
+
+        blacklist_user_tokens(user)
+
         return user.email
 
     class Meta:
@@ -646,6 +655,7 @@ class PasswordResetSerializer(serializers.ModelSerializer):
         user = User.objects.get(id=self.validated_data.get("id"))
         user.set_password(password)
         user.save()
+        blacklist_user_tokens(user)
 
         return user.email
 

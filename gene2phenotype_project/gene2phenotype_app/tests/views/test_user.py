@@ -387,7 +387,10 @@ class TokenRefreshTest(TestCase):
     def test_token_refresh_missing_cookie(self):
         response = self.client.post(self.url_refresh, content_type="application/json")
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 401)
+        self.assertIn(settings.SIMPLE_JWT["AUTH_COOKIE"], response.cookies)
+        self.assertIn(settings.SIMPLE_JWT["REFRESH_COOKIE"], response.cookies)
+        self.assertIn("refresh_token_lifetime", response.cookies)
 
     def test_token_refresh_invalid_token(self):
         self.client.cookies[settings.SIMPLE_JWT["REFRESH_COOKIE"]] = "not-a-jwt"
@@ -397,6 +400,9 @@ class TokenRefreshTest(TestCase):
         response = self.client.post(self.url_refresh, content_type="application/json")
 
         self.assertEqual(response.status_code, 401)
+        self.assertIn(settings.SIMPLE_JWT["AUTH_COOKIE"], response.cookies)
+        self.assertIn(settings.SIMPLE_JWT["REFRESH_COOKIE"], response.cookies)
+        self.assertIn("refresh_token_lifetime", response.cookies)
 
     def test_token_refresh_blacklisted_token(self):
         refresh = RefreshToken.for_user(self.user)
@@ -406,6 +412,9 @@ class TokenRefreshTest(TestCase):
         response = self.client.post(self.url_refresh, content_type="application/json")
 
         self.assertEqual(response.status_code, 401)
+        self.assertIn(settings.SIMPLE_JWT["AUTH_COOKIE"], response.cookies)
+        self.assertIn(settings.SIMPLE_JWT["REFRESH_COOKIE"], response.cookies)
+        self.assertIn("refresh_token_lifetime", response.cookies)
 
     def test_logout_requires_access_token(self):
         refresh = RefreshToken.for_user(self.user)

@@ -1,6 +1,7 @@
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from django.conf import settings
 
@@ -11,14 +12,17 @@ class CustomAuthentication(JWTAuthentication):
         header = self.get_header(request)
 
         if header is None:
-            # getting authentication details from cookies
+            # Getting authentication details from cookies
+            # It only requires the access token but if the refresh token is present, it checks if it's blacklisted
             refresh_token = request.COOKIES.get(settings.SIMPLE_JWT["REFRESH_COOKIE"])
-            if refresh_token:
-                if self.is_token_blacklisted(refresh_token):
-                    raise AuthenticationFailed("Token has been blacklisted")
             raw_token = request.COOKIES.get(settings.SIMPLE_JWT["AUTH_COOKIE"])
+
+            if refresh_token and self.is_refresh_token_valid(refresh_token) is False:
+                raise AuthenticationFailed("Invalid authentication credentials")
         else:
-            # just giving the option from headers but no longer being implemented
+            # Fallback to the default behavior if the header is present
+            # JWTAuthentication will handle the token validation and user retrieval
+            # By default, it only checks the access token
             raw_token = self.get_raw_token(header)
 
         if not raw_token:
@@ -31,12 +35,12 @@ class CustomAuthentication(JWTAuthentication):
         return self.get_user(validated_token), validated_token
 
     @staticmethod
-    def is_token_blacklisted(token_string):
-        try:
-            token = RefreshToken(token_string)
-            if BlacklistedToken.objects.filter(token__jti=token["jti"]).exists():
-                return True
-        except Exception:
-            raise AuthenticationFailed("Invalid authentication credentials")
+    def is_refresh_token_valid(token_string):
+        if not token_string:
+            return False
 
-        return False
+        try:
+            RefreshToken(token_string)
+            return True
+        except TokenError:
+            return False
