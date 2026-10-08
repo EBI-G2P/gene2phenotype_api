@@ -13,7 +13,7 @@ from django.db.models import F
 from .base import BaseView, IsSuperUser
 
 from gene2phenotype_app.authentication import CustomAuthentication
-from gene2phenotype_app.utils.auth_cookie_utils import clear_auth_cookies
+from gene2phenotype_app.utils.user_utils import clear_auth_cookies
 
 from gene2phenotype_app.serializers import (
     UserSerializer,
