@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.contrib.auth import authenticate, password_validation
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.utils.encoding import smart_str, force_bytes
+from django.utils.encoding import DjangoUnicodeDecodeError, smart_str, force_bytes
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
@@ -600,6 +600,10 @@ class PasswordResetSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(
         style={"input_type": "password"}, write_only=True
     )
+    invalid_reset_link_error = (
+        "This password reset link is invalid or expired. "
+        "Please request a new password reset email."
+    )
 
     def validate(self, attrs):
         """
@@ -626,12 +630,25 @@ class PasswordResetSerializer(serializers.ModelSerializer):
                 {"error": "Passwords do not match"}, password
             )
 
-        uid = smart_str(urlsafe_base64_decode(uid))
-        user = User.objects.get(id=uid)
-        validate_user_password(password, user=user)
-
+        try:
+            uid = smart_str(urlsafe_base64_decode(uid))
+            user = User.objects.get(id=uid)
+        except (
+            DjangoUnicodeDecodeError,
+            ObjectDoesNotExist,
+            OverflowError,
+            TypeError,
+            ValueError,
+        ):
+            raise serializers.ValidationError(
+                {"error": self.invalid_reset_link_error}
+            )
         if not PasswordResetTokenGenerator().check_token(user, token):
-            raise serializers.ValidationError("Token is not valid or expired")
+            raise serializers.ValidationError(
+                {"error": self.invalid_reset_link_error}
+            )
+
+        validate_user_password(password, user=user)
 
         attrs["id"] = uid
 
