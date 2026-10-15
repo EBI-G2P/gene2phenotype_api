@@ -490,7 +490,7 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         password2 = attrs.pop("password2", None)
         if password != password2:
             raise serializers.ValidationError(
-                {"error": "Passwords do not match"}, password
+                {"error": "Passwords do not match"}
             )
 
         validate_user_password(password, user=user)
@@ -516,8 +516,7 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {
                     "error": "The new password cannot be the same as the present password."
-                },
-                password,
+                }
             )
 
         user.set_password(password)
@@ -554,7 +553,7 @@ class VerifyEmailSerializer(serializers.ModelSerializer):
             dict: a dictionary containg the user information
         """
         email = self.validated_data.get("email")
-        user = User.objects.filter(email=email, is_deleted=0).first()
+        user = User.objects.filter(email=email, is_deleted=0, is_active=1).first()
 
         if user:
             reset_token = PasswordResetTokenGenerator().make_token(user)
@@ -627,12 +626,12 @@ class PasswordResetSerializer(serializers.ModelSerializer):
 
         if password != password2:
             raise serializers.ValidationError(
-                {"error": "Passwords do not match"}, password
+                {"error": "Passwords do not match"}
             )
 
         try:
             uid = smart_str(urlsafe_base64_decode(uid))
-            user = User.objects.get(id=uid)
+            user = User.objects.get(id=uid, is_deleted=0, is_active=1)
         except (
             DjangoUnicodeDecodeError,
             ObjectDoesNotExist,
