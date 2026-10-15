@@ -4,6 +4,22 @@ from django.conf import settings
 from django.template.loader import render_to_string
 
 
+def clear_auth_cookies(response):
+    response.delete_cookie(
+        key=settings.SIMPLE_JWT["AUTH_COOKIE"],
+        path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
+    )
+    response.delete_cookie(
+        key=settings.SIMPLE_JWT["REFRESH_COOKIE"],
+        path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
+    )
+    response.delete_cookie(
+        key="refresh_token_lifetime",
+        path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
+    )
+    return response
+
+
 class CustomMail:
     @staticmethod
     def send_reset_email(user, subject, reset_link, to_email):

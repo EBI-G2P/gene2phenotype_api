@@ -150,7 +150,6 @@ else:
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
         "gene2phenotype_app.authentication.CustomAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
@@ -203,11 +202,11 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(hours=12),
     "BLACKLIST_AFTER_ROTATION": True,
+    "ROTATE_REFRESH_TOKENS": False,
     "TOKEN_BACKEND": "rest_framework_simplejwt.token_blacklist.backends.BlacklistBackend",
     "BLACKLIST_TOKEN_CHECKS": [
         "rest_framework_simplejwt.token_blacklist.check_blacklisted_token",
     ],
-    "ROTATE_REFRESH_TOKENS": True,
 }
 
 CORS_ALLOWED_ORIGINS = json.loads(config.get("settings", "CORS_ALLOWED_ORIGINS"))

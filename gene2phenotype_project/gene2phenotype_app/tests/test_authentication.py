@@ -30,18 +30,14 @@ class CustomAuthenticationTest(TestCase):
         )
         self.assertNotIn("sensitive token parser detail", str(context.exception.detail))
 
-    def test_blacklist_check_error_returns_generic_message(self):
+    def test_refresh_token_validation_error_returns_false(self):
         with patch(
             "gene2phenotype_app.authentication.RefreshToken",
-            side_effect=Exception("sensitive blacklist detail"),
+            side_effect=TokenError("sensitive refresh token detail"),
         ):
-            with self.assertRaises(AuthenticationFailed) as context:
-                CustomAuthentication.is_token_blacklisted("invalid-refresh-token")
-
-        self.assertEqual(
-            str(context.exception.detail), "Invalid authentication credentials"
-        )
-        self.assertNotIn("sensitive blacklist detail", str(context.exception.detail))
+            self.assertFalse(
+                CustomAuthentication.is_refresh_token_valid("invalid-refresh-token")
+            )
 
     def test_logout_token_error_returns_generic_message(self):
         serializer = LogoutSerializer()

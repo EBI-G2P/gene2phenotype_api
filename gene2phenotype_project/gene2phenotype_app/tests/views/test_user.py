@@ -360,6 +360,24 @@ class ChangePasswordTest(TestCase):
         )
         self.assertNotIn("evil.example", reset_link)
 
+    @patch("gene2phenotype_app.serializers.user.CustomMail.send_reset_email")
+    def test_verify_email_inactive_user_no_email_sent(self, mock_send_reset_email):
+        """
+        Test that no reset email is sent for a deactivated (is_active=False) account
+        """
+        response = self.client.post(
+            self.url_verify_email,
+            {"email": "user4@test.ac.uk"},  # user4 is_active=False
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data["message"],
+            "If an account exists for this email, a reset link has been sent.",
+        )
+        self.assertEqual(mock_send_reset_email.call_count, 0)
+
 
 class TokenRefreshTest(TestCase):
     fixtures = ["gene2phenotype_app/fixtures/user_panels.json"]
@@ -387,7 +405,10 @@ class TokenRefreshTest(TestCase):
     def test_token_refresh_missing_cookie(self):
         response = self.client.post(self.url_refresh, content_type="application/json")
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 401)
+        self.assertIn(settings.SIMPLE_JWT["AUTH_COOKIE"], response.cookies)
+        self.assertIn(settings.SIMPLE_JWT["REFRESH_COOKIE"], response.cookies)
+        self.assertIn("refresh_token_lifetime", response.cookies)
 
     def test_token_refresh_invalid_token(self):
         self.client.cookies[settings.SIMPLE_JWT["REFRESH_COOKIE"]] = "not-a-jwt"
@@ -397,6 +418,9 @@ class TokenRefreshTest(TestCase):
         response = self.client.post(self.url_refresh, content_type="application/json")
 
         self.assertEqual(response.status_code, 401)
+        self.assertIn(settings.SIMPLE_JWT["AUTH_COOKIE"], response.cookies)
+        self.assertIn(settings.SIMPLE_JWT["REFRESH_COOKIE"], response.cookies)
+        self.assertIn("refresh_token_lifetime", response.cookies)
 
     def test_token_refresh_blacklisted_token(self):
         refresh = RefreshToken.for_user(self.user)
@@ -406,6 +430,9 @@ class TokenRefreshTest(TestCase):
         response = self.client.post(self.url_refresh, content_type="application/json")
 
         self.assertEqual(response.status_code, 401)
+        self.assertIn(settings.SIMPLE_JWT["AUTH_COOKIE"], response.cookies)
+        self.assertIn(settings.SIMPLE_JWT["REFRESH_COOKIE"], response.cookies)
+        self.assertIn("refresh_token_lifetime", response.cookies)
 
     def test_logout_requires_access_token(self):
         refresh = RefreshToken.for_user(self.user)
@@ -462,6 +489,26 @@ class ResetPasswordTest(TestCase):
         )
 
         self.assertEqual(response.status_code, 400)
+
+    def test_reset_password_inactive_user_rejected(self):
+        """
+        Test that a deactivated (is_active=False) account cannot reset its password,
+        even with a token that is otherwise valid, and that the password is unchanged.
+        """
+        user4 = User.objects.get(email="user4@test.ac.uk")  # is_active=False
+        original_password_hash = user4.password
+        uid = urlsafe_base64_encode(force_bytes(user4.id))
+        token = PasswordResetTokenGenerator().make_token(user4)
+
+        response = self.client.post(
+            reverse("reset_password", kwargs={"uid": uid, "token": token}),
+            {"password": "new_password1", "password2": "new_password1"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        user4.refresh_from_db()
+        self.assertEqual(user4.password, original_password_hash)
 
 
 class UserAdminPermissionTest(TestCase):
