@@ -35,7 +35,11 @@ from .user import UserSerializer
 from .stable_id import G2PStableIDSerializer
 from .publication import PublicationSerializer
 
-from ..utils import get_date_now, validate_confidence_publications
+from ..utils import (
+    get_date_now,
+    validate_confidence_publications,
+    validate_genotype_for_locus,
+)
 
 
 class CurationDataSerializer(serializers.ModelSerializer):
@@ -194,28 +198,7 @@ class CurationDataSerializer(serializers.ModelSerializer):
             )
 
         # Check if allelic requirement is valid
-        locus_chr = locus_obj.sequence.name
-        if (
-            (
-                "autosomal" in json_data["allelic_requirement"]
-                and not locus_chr.isdigit()
-            )
-            or (
-                json_data["allelic_requirement"] == "mitochondrial"
-                and locus_chr != "MT"
-            )
-            or (
-                "_PAR" in json_data["allelic_requirement"]
-                and (locus_chr != "X" and locus_chr != "Y")
-            )
-            or ("_X" in json_data["allelic_requirement"] and locus_chr != "X")
-            or ("_Y" in json_data["allelic_requirement"] and locus_chr != "Y")
-        ):
-            raise serializers.ValidationError(
-                {
-                    "error": f"Invalid genotype '{json_data['allelic_requirement']}' for locus '{locus_obj.name}'"
-                }
-            )
+        validate_genotype_for_locus(json_data["allelic_requirement"], locus_obj)
 
         # Check if G2P record (LGD) is already published
         # Same record has the same gene, disease, genotype and mechanism

@@ -14,6 +14,7 @@ from typing import List, Type
 
 
 from gene2phenotype_app.serializers import (
+    LGDUpdateGenotypeSerializer,
     UserSerializer,
     LocusGenotypeDiseaseSerializer,
     LGDCrossCuttingModifierSerializer,
@@ -498,6 +499,50 @@ class LocusGenotypeDiseaseDetail(BaseAPIView):
 
 
 ### Add or delete data ###
+@extend_schema(exclude=True)
+class LGDUpdateGenotype(BaseUpdate):
+    """Replace the required genotype of an active LGD record (superusers only)."""
+
+    http_method_names = ["patch", "options"]
+    serializer_class = LGDUpdateGenotypeSerializer
+    permission_classes = [permissions.IsAuthenticated, IsSuperUser]
+
+    def get_queryset(self):
+        stable_id = self.kwargs["stable_id"]
+        g2p_stable_id = get_object_or_404(G2PStableID, stable_id=stable_id)
+        queryset = LocusGenotypeDisease.objects.filter(
+            stable_id=g2p_stable_id, is_deleted=0
+        )
+        if not queryset.exists():
+            self.handle_no_permission("Entry", stable_id)
+        return queryset
+
+    def patch(self, request, stable_id):
+        """Accept a genotype vocabulary value, e.g. {"genotype": "biallelic_autosomal"}."""
+        lgd_obj = self.get_queryset().first()
+        serializer = self.get_serializer(lgd_obj, data=request.data)
+        if not serializer.is_valid():
+            errors = serializer.errors
+            return Response(
+                {"error": errors["error"][0] if "error" in errors else errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            with transaction.atomic():
+                serializer.save()
+        except IntegrityError:
+            return Response(
+                {"error": "Could not update genotype."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {"message": f"Genotype updated successfully for '{stable_id}'"},
+            status=status.HTTP_200_OK,
+        )
+
+
 @extend_schema(exclude=True)
 class LGDUpdateConfidence(BaseUpdate):
     http_method_names = ["put", "options"]

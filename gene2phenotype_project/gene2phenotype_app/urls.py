@@ -95,13 +95,20 @@ urlpatterns = [
     path("add/phenotype/", views.AddPhenotype.as_view(), name="add_phenotype"),
     path("add/publication/", views.AddPublication.as_view(), name="add_publication"),
     ### Endpoints to update/add/delete the G2P record (LGD) ###
+    # Update the genotype of LGD record. Action: PATCH
+    # Only available for superusers.
+    path(
+        "lgd/<str:stable_id>/genotype/",
+        views.LGDUpdateGenotype.as_view(),
+        name="lgd_update_genotype",
+    ),
+    # Update the confidence of LGD record. Action: PUT
     path(
         "lgd/<str:stable_id>/update_confidence/",
         views.LGDUpdateConfidence.as_view(),
         name="lgd_update_confidence",
     ),
-    # Update molecular mechanism
-    # only allows to update if mechanism is "undetermined" and support is "inferred"
+    # Update molecular mechanism of LGD record. Action: PATCH
     path(
         "lgd/<str:stable_id>/update_mechanism/",
         views.LGDUpdateMechanism.as_view(),

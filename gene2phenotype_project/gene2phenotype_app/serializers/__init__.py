@@ -39,6 +39,7 @@ from .disease import (
 )
 
 from .locus_genotype_disease import (
+    LGDUpdateGenotypeSerializer,
     LocusGenotypeDiseaseSerializer,
     LGDCommentSerializer,
     LGDVariantConsequenceListSerializer,

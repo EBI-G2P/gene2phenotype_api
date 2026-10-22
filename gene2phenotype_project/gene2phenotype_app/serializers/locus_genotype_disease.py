@@ -38,6 +38,7 @@ from .disease import DiseaseSerializer
 from .panel import LGDPanelSerializer
 
 from ..utils import (
+    validate_genotype_for_locus,
     ConfidenceCustomMail,
     get_date_now,
     validate_mechanism_synopsis,
@@ -48,6 +49,54 @@ from ..utils import (
     plural_suffix,
     cross_cutting_modifier_fragment,
 )
+
+
+class LGDUpdateGenotypeSerializer(serializers.Serializer):
+    genotype = serializers.CharField()
+
+    def validate(self, data):
+        value = data["genotype"]
+        try:
+            genotype = Attrib.objects.get(value=value, type__code="genotype")
+        except Attrib.DoesNotExist:
+            raise serializers.ValidationError(
+                {"error": f"Invalid genotype value {value}"}
+            )
+
+        validate_genotype_for_locus(value, self.instance.locus)
+
+        if self.instance.genotype_id == genotype.pk:
+            raise serializers.ValidationError(
+                {
+                    "error": f"G2P record '{self.instance.stable_id.stable_id}' "
+                    f"already has genotype value {value}"
+                }
+            )
+
+        duplicate = (
+            LocusGenotypeDisease.objects.filter(
+                locus_id=self.instance.locus_id,
+                genotype=genotype,
+                disease_id=self.instance.disease_id,
+                mechanism_id=self.instance.mechanism_id,
+            )
+            .exclude(pk=self.instance.pk)
+            .first()
+        )
+        if duplicate:
+            raise serializers.ValidationError(
+                {
+                    "error": "Found a different record with same locus, genotype, disease "
+                    f"and mechanism: '{duplicate.stable_id.stable_id}'"
+                }
+            )
+        data["genotype"] = genotype
+        return data
+
+    def update(self, instance, validated_data):
+        instance.genotype = validated_data["genotype"]
+        instance.save(update_fields=["genotype"])
+        return instance
 
 
 def build_lgd_summary(lgd_obj: LocusGenotypeDisease) -> Optional[str]:

@@ -72,6 +72,7 @@ from .locus_genotype_disease import (
     LGDEditVariantTypes,
     LGDEditVariantTypeDescriptions,
     LGDUpdateConfidence,
+    LGDUpdateGenotype,
     LocusGenotypeDiseaseDelete,
     LGDUpdateMechanism,
     LGDEditReview,
