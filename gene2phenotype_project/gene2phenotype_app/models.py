@@ -118,6 +118,7 @@ class LGDMolecularMechanismSynopsis(models.Model):
 
     class Meta:
         db_table = "lgd_mechanism_synopsis"
+        unique_together = ["lgd", "synopsis"]
         indexes = [models.Index(fields=["lgd"])]
 
 
@@ -259,6 +260,7 @@ class LGDVariantTypeDescription(models.Model):
 
     class Meta:
         db_table = "lgd_variant_type_description"
+        unique_together = ["lgd", "publication", "description"]
 
 
 class LGDVariantTypeComment(models.Model):
@@ -709,6 +711,7 @@ class UserPanel(models.Model):
 
     class Meta:
         db_table = "user_panel"
+        unique_together = ["user", "panel"]
         indexes = [
             models.Index(fields=["user", "panel"]),
         ]
@@ -921,6 +924,7 @@ class LGDReviewItem(models.Model):
 
     class Meta:
         db_table = "lgd_review_item"
+        unique_together = ["review_case", "component"]
         constraints = [
             models.CheckConstraint(
                 condition=Q(status__in=["open", "under_review", "resolved"]),
