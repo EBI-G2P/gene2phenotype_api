@@ -70,6 +70,13 @@ class SearchTests(TestCase):
         self.assertEqual(response.data["previous"], None)
         self.assertEqual(response.data["results"], self.expected_data)
 
+    def assert_search_results_equal(self, actual, expected):
+        # Neither record order nor panel order is relevant to locus-type filtering.
+        self.assertCountEqual(
+            [dict(row, panel=sorted(row["panel"])) for row in actual],
+            [dict(row, panel=sorted(row["panel"])) for row in expected],
+        )
+
     def test_gene_search_excludes_non_gene_loci(self):
         locus = Locus.objects.get(name="CEP290")
         for locus_type in ["variant", "region"]:
@@ -88,7 +95,7 @@ class SearchTests(TestCase):
             # Generic search should continue to include other locus types.
             response = self.client.get(self.base_url_search, {"query": "CEP290"})
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.data["results"], self.expected_data)
+            self.assert_search_results_equal(response.data["results"], self.expected_data)
 
     def test_gene_search_filters_non_gene_alias_matches(self):
         locus = Locus.objects.get(name="RAB27A")
@@ -106,7 +113,7 @@ class SearchTests(TestCase):
                 )
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(response.data["count"], 1)
-                self.assertEqual(response.data["results"], self.expected_data)
+                self.assert_search_results_equal(response.data["results"], self.expected_data)
 
     def test_search_disease(self):
         """

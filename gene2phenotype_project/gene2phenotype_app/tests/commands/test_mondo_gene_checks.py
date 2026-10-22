@@ -36,10 +36,11 @@ class MondoGeneChecksTests(TestCase):
             source=self.source,
             group_type=template.ontology_term.group_type,
         )
-        self.records = list(LocusGenotypeDisease.objects.filter(pk__in=[1, 2]))
+        self.supported_record = LocusGenotypeDisease.objects.get(pk=1)
+        self.unsupported_record = LocusGenotypeDisease.objects.get(pk=2)
         LocusGenotypeDisease.objects.exclude(pk__in=[1, 2]).update(is_deleted=1)
         panel = Panel.objects.filter(is_visible=1).first()
-        for record in self.records:
+        for record in [self.supported_record, self.unsupported_record]:
             DiseaseOntologyTerm.objects.create(
                 disease=record.disease,
                 ontology_term=term,
@@ -50,7 +51,7 @@ class MondoGeneChecksTests(TestCase):
             )
         # Keep external associations isolated from fixture mappings.
         GeneDisease.objects.all().delete()
-        self.add_external_link(self.records[0].locus)
+        self.add_external_link(self.supported_record.locus)
 
     def add_external_link(self, locus):
         return GeneDisease.objects.create(
@@ -64,16 +65,16 @@ class MondoGeneChecksTests(TestCase):
         errors = check_mondo_single_gene_link()
         self.assertEqual(len(errors), 1)
         self.assertEqual(errors[0].id, "gene2phenotype_app.E403")
-        self.assertIn(self.records[1].locus.name, errors[0].msg)
+        self.assertIn(self.unsupported_record.locus.name, errors[0].msg)
 
     def test_supported_genes_are_accepted(self):
-        self.add_external_link(self.records[1].locus)
+        self.add_external_link(self.unsupported_record.locus)
         self.assertEqual(check_mondo_single_gene_link(), [])
 
     def test_non_gene_lgd_records_are_excluded(self):
         for locus_type in ["variant", "region"]:
             with self.subTest(locus_type=locus_type):
-                Locus.objects.filter(pk=self.records[1].locus_id).update(
+                Locus.objects.filter(pk=self.unsupported_record.locus_id).update(
                     type=Attrib.objects.get(type__code="locus_type", value=locus_type)
                 )
                 self.assertEqual(check_mondo_single_gene_link(), [])

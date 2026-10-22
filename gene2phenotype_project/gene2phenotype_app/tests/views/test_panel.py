@@ -238,7 +238,7 @@ class PanelDownloadEndpointTests(TestCase):
                 # Preserve every column and the content of retained gene rows.
                 self.assertEqual(rows[0], baseline[0])
                 self.assertEqual(rows[0][1], "gene symbol")
-                self.assertEqual(
+                self.assertCountEqual(
                     rows[1:],
                     [row for row in baseline[1:] if row[1] not in {"CEP290", "RAB27A"}],
                 )
