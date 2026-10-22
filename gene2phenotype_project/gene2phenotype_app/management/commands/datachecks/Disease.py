@@ -135,6 +135,8 @@ def check_mondo_single_gene_link():
             lgdpanel__panel__is_visible=1,
             lgdpanel__is_deleted=0,
             is_deleted=0,
+            locus__type__value="gene",
+            locus__type__type__code="locus_type",
         )
         .values("disease_id", "disease_name", "locus_name")
         .distinct()
@@ -174,6 +176,8 @@ def check_mondo_single_gene_link():
             identifier__in=mondo_gene_map.keys(),
             identifier__startswith="MONDO:",
             source__name="Mondo",
+            gene__type__value="gene",
+            gene__type__type__code="locus_type",
         )
         .values("identifier", "gene_name")
         .distinct()

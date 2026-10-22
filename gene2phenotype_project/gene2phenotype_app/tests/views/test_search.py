@@ -4,7 +4,7 @@ from django.urls import reverse
 
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from gene2phenotype_app.models import User
+from gene2phenotype_app.models import Attrib, AttribType, Locus, LocusAttrib, User
 
 
 class SearchTests(TestCase):
@@ -69,6 +69,44 @@ class SearchTests(TestCase):
         self.assertEqual(response.data["next"], None)
         self.assertEqual(response.data["previous"], None)
         self.assertEqual(response.data["results"], self.expected_data)
+
+    def test_gene_search_excludes_non_gene_loci(self):
+        locus = Locus.objects.get(name="CEP290")
+        for locus_type in ["variant", "region"]:
+            locus.type = Attrib.objects.get(type__code="locus_type", value=locus_type)
+            locus.save(update_fields=["type"])
+            for query in ["CEP290", "BBS14", "HGNC:29021"]:
+                with self.subTest(locus_type=locus_type, query=query):
+                    response = self.client.get(
+                        self.base_url_search, {"type": "gene", "query": query}
+                    )
+                    self.assertEqual(response.status_code, 404)
+                    self.assertEqual(
+                        response.data["error"], f"No matching Gene found for: {query}"
+                    )
+
+            # Generic search should continue to include other locus types.
+            response = self.client.get(self.base_url_search, {"query": "CEP290"})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.data["results"], self.expected_data)
+
+    def test_gene_search_filters_non_gene_alias_matches(self):
+        locus = Locus.objects.get(name="RAB27A")
+        LocusAttrib.objects.create(
+            locus=locus,
+            attrib_type=AttribType.objects.get(code="gene_synonym"),
+            value="CEP290",
+        )
+        for locus_type in ["variant", "region"]:
+            with self.subTest(locus_type=locus_type):
+                locus.type = Attrib.objects.get(type__code="locus_type", value=locus_type)
+                locus.save(update_fields=["type"])
+                response = self.client.get(
+                    self.base_url_search, {"type": "gene", "query": "CEP290"}
+                )
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.data["count"], 1)
+                self.assertEqual(response.data["results"], self.expected_data)
 
     def test_search_disease(self):
         """
