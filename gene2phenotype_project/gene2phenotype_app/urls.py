@@ -98,7 +98,7 @@ urlpatterns = [
     # Update the genotype of LGD record. Action: PATCH
     # Only available for superusers.
     path(
-        "lgd/<str:stable_id>/update_genotype/",
+        "lgd/<str:stable_id>/genotype/",
         views.LGDUpdateGenotype.as_view(),
         name="lgd_update_genotype",
     ),
