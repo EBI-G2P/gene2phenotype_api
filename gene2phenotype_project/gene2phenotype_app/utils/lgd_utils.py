@@ -3,6 +3,8 @@
 import re
 from typing import Optional
 
+from rest_framework import serializers
+
 
 def validate_mechanism_synopsis(mechanism: str, synopsis: str) -> bool:
     """
@@ -122,3 +124,18 @@ def cross_cutting_modifier_fragment(value: str) -> str:
     if normalized in custom_fragments:
         return custom_fragments[normalized]
     return f"has {article_for_phrase(value)} {value}"
+
+
+def validate_genotype_for_locus(genotype: str, locus) -> None:
+    """Reject allelic requirements incompatible with the gene's chromosome."""
+    locus_chr = locus.sequence.name
+    if (
+        ("autosomal" in genotype and not locus_chr.isdigit())
+        or (genotype == "mitochondrial" and locus_chr != "MT")
+        or ("_PAR" in genotype and locus_chr not in ("X", "Y"))
+        or ("_X" in genotype and locus_chr != "X")
+        or ("_Y" in genotype and locus_chr != "Y")
+    ):
+        raise serializers.ValidationError(
+            {"error": f"Invalid genotype '{genotype}' for locus '{locus.name}'"}
+        )

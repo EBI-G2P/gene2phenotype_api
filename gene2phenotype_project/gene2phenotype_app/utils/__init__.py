@@ -14,6 +14,7 @@ from .url_utils import build_public_url
 from .date_utils import get_date_now
 from .curationinfo_utils import ConfidenceCustomMail
 from .lgd_utils import (
+    validate_genotype_for_locus,
     validate_mechanism_synopsis,
     validate_confidence_publications,
     article_for_phrase,
