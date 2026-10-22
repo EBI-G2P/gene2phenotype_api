@@ -73,7 +73,7 @@ class LGDUpdateGenotypeSerializer(serializers.Serializer):
                 }
             )
 
-        duplicate = (
+        has_duplicate = (
             LocusGenotypeDisease.objects.filter(
                 locus_id=self.instance.locus_id,
                 genotype=genotype,
@@ -83,7 +83,7 @@ class LGDUpdateGenotypeSerializer(serializers.Serializer):
             .exclude(pk=self.instance.pk)
             .first()
         )
-        if duplicate:
+        if has_duplicate:
             raise serializers.ValidationError(
                 {
                     "error": "Found a different record with same locus, genotype, disease "
