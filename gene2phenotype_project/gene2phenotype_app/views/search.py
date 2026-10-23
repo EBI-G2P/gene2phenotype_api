@@ -311,7 +311,7 @@ class SearchView(BaseView):
                     base_deleted
                     & options_query
                     & base_locus
-                    & Q(locus__type__value="gene", locus__type__type__code="locus_type")
+                    & Q(locus__type__value="gene")
                 )
                 .order_by("locus__name", "disease__name")
                 .distinct()

@@ -839,7 +839,6 @@ def PanelDownload(request, name):
             LocusGenotypeDisease.objects.filter(
                 filter_query,
                 locus__type__value="gene",
-                locus__type__type__code="locus_type",
             )
             .distinct()
             .select_related(
