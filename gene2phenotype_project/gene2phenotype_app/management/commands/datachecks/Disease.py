@@ -176,7 +176,6 @@ def check_mondo_single_gene_link():
             identifier__startswith="MONDO:",
             source__name="Mondo",
             gene__type__value="gene",
-            gene__type__type__code="locus_type",
         )
         .values("identifier", "gene_name")
         .distinct()
