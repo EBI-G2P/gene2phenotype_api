@@ -4,7 +4,7 @@ from django.test import TestCase
 from django.conf import settings
 from django.urls import reverse
 import datetime
-from gene2phenotype_app.models import LGDVariantGenccConsequence, User
+from gene2phenotype_app.models import Attrib, Locus, LGDVariantGenccConsequence, User
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
@@ -205,6 +205,43 @@ class PanelDownloadEndpointTests(TestCase):
         "gene2phenotype_app/fixtures/lgd_variant_type_publication.json",
         "gene2phenotype_app/fixtures/lgd_variant_consequence.json",
     ]
+
+    def test_download_excludes_non_gene_loci(self):
+        user = User.objects.get(email="user5@test.ac.uk")
+        access_token = str(RefreshToken.for_user(user).access_token)
+
+        def download(name, authenticated, summary):
+            self.client.cookies.clear()
+            if authenticated:
+                self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = access_token
+            response = self.client.get(
+                reverse("panel_download", kwargs={"name": name}),
+                {"extra_columns": "summary"} if summary else {},
+            )
+            self.assertEqual(response.status_code, 200)
+            return list(csv.reader(StringIO(response.content.decode("utf-8"))))
+
+        baselines = {
+            (name, authenticated, summary): download(name, authenticated, summary)
+            for name in ["DD", "Eye", "all"]
+            for authenticated in [False, True]
+            for summary in [False, True]
+        }
+        for name, locus_type in [("CEP290", "variant"), ("RAB27A", "region")]:
+            Locus.objects.filter(name=name).update(
+                type=Attrib.objects.get(type__code="locus_type", value=locus_type)
+            )
+
+        for options, baseline in baselines.items():
+            with self.subTest(options=options):
+                rows = download(*options)
+                # Preserve every column and the content of retained gene rows.
+                self.assertEqual(rows[0], baseline[0])
+                self.assertEqual(rows[0][1], "gene symbol")
+                self.assertCountEqual(
+                    rows[1:],
+                    [row for row in baseline[1:] if row[1] not in {"CEP290", "RAB27A"}],
+                )
 
     def test_download_visible_panel(self):
         """
