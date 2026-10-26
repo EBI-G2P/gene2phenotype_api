@@ -72,7 +72,7 @@ class LGDEditVariantTypeCommentEndpoint(TestCase):
         response = self.client.patch(self.url_delete)
         self.assertEqual(response.status_code, 403)
         self.assertEqual(
-            response.json()["error"],
+            response.json()["detail"],
             "You do not have permission to perform this action.",
         )
 
