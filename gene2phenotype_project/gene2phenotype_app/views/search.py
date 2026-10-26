@@ -308,7 +308,10 @@ class SearchView(BaseView):
         elif search_type == "gene":
             queryset = (
                 LocusGenotypeDisease.objects.filter(
-                    base_deleted & options_query & base_locus
+                    base_deleted
+                    & options_query
+                    & base_locus
+                    & Q(locus__type__value="gene")
                 )
                 .order_by("locus__name", "disease__name")
                 .distinct()
