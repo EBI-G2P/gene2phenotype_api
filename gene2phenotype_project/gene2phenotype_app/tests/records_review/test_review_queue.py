@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
@@ -22,6 +24,9 @@ class ReviewQueueEndpointTests(TestCase):
 
     def setUp(self):
         self.url_review_queue = reverse("review_queue")
+        self.url_review_queue_detail = reverse(
+            "review_queue_detail", kwargs={"case_id": 1}
+        )
 
     def _login(self, email):
         user = User.objects.get(email=email)
@@ -29,10 +34,49 @@ class ReviewQueueEndpointTests(TestCase):
         self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = str(
             refresh.access_token
         )
+        return refresh
+
+    def _assert_access_denied(self, status_code):
+        for method, url in [
+            ("get", self.url_review_queue),
+            ("post", self.url_review_queue),
+            ("get", self.url_review_queue_detail),
+            ("patch", self.url_review_queue_detail),
+        ]:
+            with self.subTest(method=method, url=url):
+                response = getattr(self.client, method)(url)
+                self.assertEqual(response.status_code, status_code)
+                if status_code == 401:
+                    self.assertIn("error", response.json())
+                    self.assertIn("WWW-Authenticate", response)
+                else:
+                    self.assertEqual(
+                        response.json()["detail"],
+                        "You do not have permission to perform this action.",
+                    )
 
     def test_review_queue_requires_authentication(self):
-        response = self.client.get(self.url_review_queue)
-        self.assertEqual(response.status_code, 403)
+        self._assert_access_denied(401)
+
+    def test_review_queue_with_deleted_access_token_and_valid_refresh_token(self):
+        refresh = self._login("user5@test.ac.uk")
+        self.client.cookies[settings.SIMPLE_JWT["REFRESH_COOKIE"]] = str(refresh)
+        del self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]]
+
+        self._assert_access_denied(401)
+
+    def test_review_queue_with_expired_access_token(self):
+        refresh = self._login("user5@test.ac.uk")
+        access_token = refresh.access_token
+        access_token.set_exp(lifetime=timedelta(seconds=-1))
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = str(access_token)
+
+        self._assert_access_denied(401)
+
+    def test_review_queue_requires_superuser(self):
+        self._login("user1@test.ac.uk")
+
+        self._assert_access_denied(403)
 
     def test_create_and_update_review_case(self):
         self._login("user5@test.ac.uk")

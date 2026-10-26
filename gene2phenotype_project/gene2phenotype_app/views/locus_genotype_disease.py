@@ -1,6 +1,5 @@
 from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
-from django.core.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db import transaction, IntegrityError
@@ -723,10 +722,8 @@ class LGDUpdateMechanism(BaseUpdate):
             and molecular_mechanism["name"] != ""
             and lgd_obj.mechanism.value != "undetermined"
         ):
-            try:
-                IsSuperUser().has_permission(request, self)
-            except PermissionDenied as e:
-                return Response(e.args[0], status=status.HTTP_403_FORBIDDEN)
+            if not IsSuperUser().has_permission(request, self):
+                self.permission_denied(request)
 
         # If the mechanism support is "evidence" then the evidence has to be provided
         if (

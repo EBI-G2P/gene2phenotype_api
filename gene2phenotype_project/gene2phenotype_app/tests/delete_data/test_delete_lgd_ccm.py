@@ -116,7 +116,7 @@ class LGDEditCCMEndpoint(TestCase):
 
         response_data = response.json()
         self.assertEqual(
-            response_data["error"], "You do not have permission to perform this action."
+            response_data["detail"], "You do not have permission to perform this action."
         )
 
     def test_delete_no_permission(self):
