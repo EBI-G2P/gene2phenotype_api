@@ -1,4 +1,3 @@
-from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.http import Http404
 from django.urls import reverse
@@ -176,11 +175,7 @@ class IsSuperUser(BasePermission):
     """Allows access only to superusers."""
 
     def has_permission(self, request, view):
-        if not (request.user and request.user.is_superuser):
-            raise PermissionDenied(
-                {"error": "You do not have permission to perform this action."}
-            )
-        return True
+        return bool(request.user and request.user.is_superuser)
 
 
 class IsNotJuniorCurator(BasePermission):
