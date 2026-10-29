@@ -20,11 +20,13 @@ workflow:
       variables:
         IMAGE_TAG: "prod-$CI_COMMIT_TAG"
         DOCKER_IMAGE: "$CI_REGISTRY_IMAGE:prod-$CI_COMMIT_TAG"
+        G2P_VERSION: "$CI_COMMIT_TAG"
       when: always
     - if: '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_BRANCH'
       variables:
         IMAGE_TAG: "dev-$CI_COMMIT_REF_SLUG-$CI_PIPELINE_IID-$CI_COMMIT_SHORT_SHA"
         DOCKER_IMAGE: "$CI_REGISTRY_IMAGE:dev-$CI_COMMIT_REF_SLUG-$CI_PIPELINE_IID-$CI_COMMIT_SHORT_SHA"
+        G2P_VERSION: "v1.0.0-dev.$CI_PIPELINE_IID"
       when: always
     - when: never
 
@@ -105,8 +107,6 @@ unit_tests:
         echo "STATIC_URL=/static/"
         echo "MAX_DISEASE_NAME_LENGTH=255"
         echo "PUBLIC_APP_URL=localhost"
-        echo "[g2p]"
-        echo "version=1.0.0"
       } > "$PROJECT_CONFIG_PATH"
   script:
     - cd gene2phenotype_project
@@ -133,9 +133,10 @@ build:
   services:
     - name: docker:29.9.2-dind
   before_script:
+    - test -n "$G2P_VERSION" || (echo "G2P_VERSION is required for this pipeline" && exit 1)
     - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
   script:
-    - docker build -t "$DOCKER_IMAGE" .
+    - docker build --build-arg G2P_VERSION="$G2P_VERSION" -t "$DOCKER_IMAGE" .
     - docker push "$DOCKER_IMAGE"
     - docker rmi "$DOCKER_IMAGE"
   after_script:

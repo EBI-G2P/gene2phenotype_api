@@ -38,9 +38,6 @@ CORS_ALLOWED_ORIGINS = []
 AUTH_COOKIE_SECURE = False
 STATIC_ROOT =
 STATIC_URL = <your_static_url>
-
-[g2p]
-version=<version>
 ```
 
 ### Usage
@@ -55,6 +52,7 @@ version=<version>
    - `DB_PASSWORD`
    - `DB_HOST`
    - `DB_PORT`
+   - `G2P_VERSION` (optional for local development; populated from the Git tag in release images)
 3. Run the server:
 
 ```bash
