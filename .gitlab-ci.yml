@@ -10,6 +10,9 @@ include:
 
 variables:
   AST_ENABLE_MR_PIPELINES: "false"
+  # Allow the v2 dependency scanner to scan requirements.txt when no
+  # pip-compile lockfile or pipdeptree dependency graph is present.
+  DS_ENABLE_MANIFEST_FALLBACK: "true"
 
 workflow:
   rules:
