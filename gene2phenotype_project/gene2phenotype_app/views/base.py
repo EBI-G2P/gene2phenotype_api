@@ -1,7 +1,7 @@
 from django.db import transaction
 from django.http import Http404
 from django.urls import reverse
-from rest_framework import generics, status, permissions
+from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import BasePermission
 from rest_framework.exceptions import AuthenticationFailed
@@ -148,14 +148,6 @@ class CustomPermissionAPIView(APIView):
     Usually the method post() updates data while update() deletes data.
     """
 
-    method_permissions = {
-        "update": [
-            permissions.IsAuthenticated()
-        ],  # this will be defined further in the specific view
-        "post": [permissions.IsAuthenticated()],
-        "patch": [permissions.IsAuthenticated()],
-    }
-
     def get_permissions(self):
         """
         Instantiates and returns the list of permissions for this view.
@@ -163,12 +155,9 @@ class CustomPermissionAPIView(APIView):
         update(): deletes data - only available to authenticated super users
         patch(): deletes data - only available to authenticated super users
         """
-        if (
-            self.request.method.lower() == "update"
-            or self.request.method.lower() == "patch"
-        ):
-            return [permissions.IsAuthenticated(), IsSuperUser()]
-        return [permissions.IsAuthenticated()]
+        if self.request.method.lower() in ("update", "patch"):
+            return [IsAuthenticatedWritePermission(), IsSuperUser()]
+        return [IsAuthenticatedWritePermission()]
 
 
 class IsSuperUser(BasePermission):
@@ -176,6 +165,17 @@ class IsSuperUser(BasePermission):
 
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_superuser)
+
+
+class IsAuthenticatedWritePermission(BasePermission):
+    """Allows access only to authenticated users outside the read_only group."""
+
+    def has_permission(self, request, view):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and not request.user.groups.filter(name="read_only").exists()
+        )
 
 
 class IsNotJuniorCurator(BasePermission):

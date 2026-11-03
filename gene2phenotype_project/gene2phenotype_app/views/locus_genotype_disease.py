@@ -1,61 +1,64 @@
-from rest_framework import status, permissions
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from django.db import transaction, IntegrityError
-from django.db.models import Model, QuerySet
-from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiResponse
-
 import re
 import textwrap
 from typing import List, Type
 
-
-from gene2phenotype_app.serializers import (
-    LGDUpdateGenotypeSerializer,
-    UserSerializer,
-    LocusGenotypeDiseaseSerializer,
-    LGDCrossCuttingModifierSerializer,
-    LGDCommentSerializer,
-    LGDVariantConsequenceListSerializer,
-    LGDVariantGenCCConsequenceSerializer,
-    LGDCrossCuttingModifierListSerializer,
-    LGDVariantTypeListSerializer,
-    LGDVariantTypeSerializer,
-    LGDVariantTypeDescriptionListSerializer,
-    LGDVariantTypeDescriptionSerializer,
-    LGDCommentListSerializer,
-    LGDReviewSerializer,
-)
+from django.db import IntegrityError, transaction
+from django.db.models import Model, QuerySet
+from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from gene2phenotype_app.models import (
-    User,
     Attrib,
-    LocusGenotypeDisease,
-    OntologyTerm,
+    CVMolecularMechanism,
     DiseaseSynonym,
     G2PStableID,
-    CVMolecularMechanism,
+    LGDComment,
     LGDCrossCuttingModifier,
+    LGDMinedPublication,
+    LGDMolecularMechanismEvidence,
+    LGDMolecularMechanismSynopsis,
+    LGDPanel,
+    LGDPhenotype,
+    LGDPhenotypeSummary,
+    LGDPublication,
     LGDVariantGenccConsequence,
     LGDVariantType,
     LGDVariantTypeComment,
     LGDVariantTypeDescription,
     LGDVariantTypePublication,
-    LGDPanel,
-    LGDPhenotype,
-    LGDPhenotypeSummary,
-    LGDMolecularMechanismEvidence,
-    LGDMolecularMechanismSynopsis,
-    LGDPublication,
-    LGDMinedPublication,
-    LGDComment,
+    LocusGenotypeDisease,
+    OntologyTerm,
+    User,
+)
+from gene2phenotype_app.serializers import (
+    LGDCommentListSerializer,
+    LGDCommentSerializer,
+    LGDCrossCuttingModifierListSerializer,
+    LGDCrossCuttingModifierSerializer,
+    LGDReviewSerializer,
+    LGDUpdateGenotypeSerializer,
+    LGDVariantConsequenceListSerializer,
+    LGDVariantGenCCConsequenceSerializer,
+    LGDVariantTypeDescriptionListSerializer,
+    LGDVariantTypeDescriptionSerializer,
+    LGDVariantTypeListSerializer,
+    LGDVariantTypeSerializer,
+    LocusGenotypeDiseaseSerializer,
+    UserSerializer,
 )
 
-from .base import BaseAPIView, BaseUpdate, CustomPermissionAPIView, IsSuperUser
-
 from ..utils import get_date_now
+from .base import (
+    BaseAPIView,
+    BaseUpdate,
+    CustomPermissionAPIView,
+    IsAuthenticatedWritePermission,
+    IsSuperUser,
+)
 
 
 @extend_schema(
@@ -504,7 +507,7 @@ class LGDUpdateGenotype(BaseUpdate):
 
     http_method_names = ["patch", "options"]
     serializer_class = LGDUpdateGenotypeSerializer
-    permission_classes = [permissions.IsAuthenticated, IsSuperUser]
+    permission_classes = [IsAuthenticatedWritePermission, IsSuperUser]
 
     def get_queryset(self):
         stable_id = self.kwargs["stable_id"]
@@ -546,7 +549,7 @@ class LGDUpdateGenotype(BaseUpdate):
 class LGDUpdateConfidence(BaseUpdate):
     http_method_names = ["put", "options"]
     serializer_class = LocusGenotypeDiseaseSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticatedWritePermission]
 
     def get_queryset(self):
         stable_id = self.kwargs["stable_id"]
@@ -626,7 +629,7 @@ class LGDUpdateConfidence(BaseUpdate):
 class LGDUpdateMechanism(BaseUpdate):
     http_method_names = ["patch", "options"]
     serializer_class = LocusGenotypeDiseaseSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticatedWritePermission]
 
     def get_queryset(self):
         """
@@ -769,8 +772,8 @@ class LGDEditVariantConsequences(CustomPermissionAPIView):
 
     # Define specific permissions
     method_permissions = {
-        "post": [permissions.IsAuthenticated],
-        "patch": [permissions.IsAuthenticated, IsSuperUser],
+        "post": [IsAuthenticatedWritePermission],
+        "patch": [IsAuthenticatedWritePermission, IsSuperUser],
     }
 
     def get_serializer_class(self, action):
@@ -963,8 +966,8 @@ class LGDEditCCM(CustomPermissionAPIView):
 
     # Define specific permissions
     method_permissions = {
-        "post": [permissions.IsAuthenticated],
-        "patch": [permissions.IsAuthenticated, IsSuperUser],
+        "post": [IsAuthenticatedWritePermission],
+        "patch": [IsAuthenticatedWritePermission, IsSuperUser],
     }
 
     def get_serializer_class(self, action):
@@ -1143,8 +1146,8 @@ class LGDEditVariantTypes(CustomPermissionAPIView):
 
     # Define specific permissions
     method_permissions = {
-        "post": [permissions.IsAuthenticated],
-        "patch": [permissions.IsAuthenticated, IsSuperUser],
+        "post": [IsAuthenticatedWritePermission],
+        "patch": [IsAuthenticatedWritePermission, IsSuperUser],
     }
 
     def get_serializer_class(self, action):
@@ -1359,8 +1362,8 @@ class LGDEditVariantTypeDescriptions(CustomPermissionAPIView):
 
     # Define specific permissions
     method_permissions = {
-        "post": [permissions.IsAuthenticated],
-        "patch": [permissions.IsAuthenticated, IsSuperUser],
+        "post": [IsAuthenticatedWritePermission],
+        "patch": [IsAuthenticatedWritePermission, IsSuperUser],
     }
 
     def get_serializer_class(self, action):
@@ -1538,7 +1541,7 @@ class LGDEditComment(APIView):
 
     http_method_names = ["post", "patch", "options"]
     serializer_class = LGDCommentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticatedWritePermission]
 
     def get_serializer_class(self, action):
         """
@@ -1710,7 +1713,7 @@ class LGDEditVariantTypeComment(CustomPermissionAPIView):
     http_method_names = ["patch", "options"]
 
     method_permissions = {
-        "patch": [permissions.IsAuthenticated, IsSuperUser],
+        "patch": [IsAuthenticatedWritePermission, IsSuperUser],
     }
 
     @transaction.atomic
@@ -1764,7 +1767,7 @@ class LGDEditVariantTypeComment(CustomPermissionAPIView):
 class LGDEditReview(APIView):
     http_method_names = ["post", "options"]
     serializer_class = LGDReviewSerializer
-    permission_classes = [IsSuperUser]
+    permission_classes = [IsAuthenticatedWritePermission, IsSuperUser]
 
     @transaction.atomic
     def post(self, request, stable_id):
@@ -1820,7 +1823,7 @@ class LocusGenotypeDiseaseDelete(APIView):
 
     http_method_names = ["patch", "options"]
     serializer_class = LocusGenotypeDiseaseSerializer
-    permission_classes = [permissions.IsAuthenticated, IsSuperUser]
+    permission_classes = [IsAuthenticatedWritePermission, IsSuperUser]
 
     @transaction.atomic
     def patch(self, request, stable_id):
@@ -1890,7 +1893,7 @@ class LocusGenotypeDiseaseDelete(APIView):
 ### Merge/Split records ###
 @extend_schema(exclude=True)
 @api_view(["POST"])
-@permission_classes([IsSuperUser])
+@permission_classes([IsAuthenticatedWritePermission, IsSuperUser])
 def MergeRecords(request):
     """
     Merges one or more LGD records ("g2p_ids") into a target record ("final_g2p_id").

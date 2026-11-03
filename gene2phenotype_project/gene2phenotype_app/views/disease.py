@@ -1,37 +1,36 @@
 import textwrap
+
+from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import Q
-from django.db import transaction, DatabaseError, IntegrityError
-from django.shortcuts import get_object_or_404
 from django.http import Http404
-from rest_framework import permissions, status
-from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
+from rest_framework import status
 from rest_framework.decorators import api_view
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
-
-
-from gene2phenotype_app.serializers import (
-    GeneDiseaseSerializer,
-    DiseaseDetailSerializer,
-    CreateDiseaseSerializer,
-    DiseaseOntologyTermSerializer,
-    DiseaseOntologyTermListSerializer,
-)
+from rest_framework.response import Response
 
 from gene2phenotype_app.models import (
     AttribType,
-    Locus,
-    OntologyTerm,
-    DiseaseOntologyTerm,
     Disease,
-    DiseaseSynonym,
-    LocusAttrib,
-    GeneDisease,
-    LocusGenotypeDisease,
     DiseaseExternal,
+    DiseaseOntologyTerm,
+    DiseaseSynonym,
+    GeneDisease,
+    Locus,
+    LocusAttrib,
+    LocusGenotypeDisease,
+    OntologyTerm,
+)
+from gene2phenotype_app.serializers import (
+    CreateDiseaseSerializer,
+    DiseaseDetailSerializer,
+    DiseaseOntologyTermListSerializer,
+    DiseaseOntologyTermSerializer,
+    GeneDiseaseSerializer,
 )
 
 from ..utils import clean_omim_disease, validate_disease_name
-from .base import BaseAPIView, BaseAdd, IsSuperUser
+from .base import BaseAdd, BaseAPIView, IsAuthenticatedWritePermission, IsSuperUser
 
 
 @extend_schema(exclude=True)
@@ -307,7 +306,7 @@ class AddDisease(BaseAdd):
     """
 
     serializer_class = CreateDiseaseSerializer
-    permission_classes = [IsSuperUser]
+    permission_classes = [IsAuthenticatedWritePermission, IsSuperUser]
 
     def create(self, request, *args, **kwargs):
         """
@@ -330,7 +329,7 @@ class AddDisease(BaseAdd):
 @extend_schema(exclude=True)
 class UpdateDisease(BaseAdd):
     http_method_names = ["post", "options"]
-    permission_classes = [IsSuperUser]
+    permission_classes = [IsAuthenticatedWritePermission, IsSuperUser]
 
     @transaction.atomic
     def post(self, request):
@@ -477,8 +476,8 @@ class DiseaseUpdateReferences(BaseAdd):
         delete(): deletes data - only available to authenticated super users
         """
         if self.request.method.lower() == "delete":
-            return [permissions.IsAuthenticated(), IsSuperUser()]
-        return [permissions.IsAuthenticated()]
+            return [IsAuthenticatedWritePermission(), IsSuperUser()]
+        return [IsAuthenticatedWritePermission()]
 
     @transaction.atomic
     def post(self, request, id):
@@ -614,7 +613,7 @@ class DiseaseUpdateReferences(BaseAdd):
 @extend_schema(exclude=True)
 class LGDUpdateDisease(BaseAdd):
     http_method_names = ["post", "options"]
-    permission_classes = [IsSuperUser]
+    permission_classes = [IsAuthenticatedWritePermission, IsSuperUser]
 
     def post(self, request):
         """
@@ -713,7 +712,7 @@ class LGDUpdateDisease(BaseAdd):
 @extend_schema(exclude=True)
 class UpdateDiseaseOntologyTerms(BaseAdd):
     http_method_names = ["post", "delete", "options"]
-    permission_classes = [IsSuperUser]
+    permission_classes = [IsAuthenticatedWritePermission, IsSuperUser]
 
     def post(self, request):
         """

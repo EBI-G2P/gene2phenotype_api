@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
 from django.conf import settings
+from django.contrib.auth.models import Group
 from rest_framework_simplejwt.tokens import RefreshToken
 from gene2phenotype_app.models import User, CurationData
 
@@ -98,6 +99,38 @@ class LGDClaimCurationEndpoint(TestCase):
             stable_id__stable_id="G2P00014", user__email="user5@test.ac.uk"
         )
         self.assertEqual(len(curation_entries), 1)
+
+    def test_claim_curation_read_only_user(self):
+        """Read-only users cannot claim junior-curator or unclaimed drafts."""
+        read_only_user = User.objects.create_user(
+            email="read-only@test.ac.uk",
+            username="test_read_only_user",
+            first_name="Read Only",
+            last_name="User",
+        )
+        read_only_user.groups.add(Group.objects.get(name="read_only"))
+        refresh = RefreshToken.for_user(read_only_user)
+        self.client.cookies[settings.SIMPLE_JWT["AUTH_COOKIE"]] = str(
+            refresh.access_token
+        )
+
+        for stable_id, url in (
+            ("G2P00013", self.url_claim_curation_1),
+            ("G2P00014", self.url_claim_curation_2),
+        ):
+            with self.subTest(stable_id=stable_id):
+                draft = CurationData.objects.get(stable_id__stable_id=stable_id)
+                original_user_id = draft.user_id
+
+                response = self.client.patch(
+                    url,
+                    data=None,
+                    content_type="application/json",
+                )
+
+                self.assertEqual(response.status_code, 403)
+                draft.refresh_from_db()
+                self.assertEqual(draft.user_id, original_user_id)
 
     def test_claim_invalid_curation(self):
         """

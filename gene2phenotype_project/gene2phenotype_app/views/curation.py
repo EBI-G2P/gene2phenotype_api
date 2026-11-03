@@ -1,23 +1,29 @@
-import json, jsonschema
-from rest_framework import generics, status, permissions
-from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
-from jsonschema import validate, exceptions
-from django.conf import settings
-from rest_framework.views import APIView
-from drf_spectacular.utils import extend_schema
-from django.db.models import Q, F
+import json
 
-from gene2phenotype_app.serializers import CurationDataSerializer, UserSerializer
+import jsonschema
+from django.conf import settings
+from django.db.models import F, Q
+from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema
+from jsonschema import exceptions, validate
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
 
 from gene2phenotype_app.models import (
-    G2PStableID,
     CurationData,
+    G2PStableID,
     LocusGenotypeDisease,
     User,
 )
+from gene2phenotype_app.serializers import CurationDataSerializer, UserSerializer
 
-from .base import BaseView, BaseAdd, BaseUpdate, IsNotJuniorCurator
+from .base import (
+    BaseAdd,
+    BaseUpdate,
+    BaseView,
+    IsAuthenticatedWritePermission,
+    IsNotJuniorCurator,
+)
 
 
 def get_user_panel_descriptions(user):
@@ -28,7 +34,7 @@ def get_user_panel_descriptions(user):
 @extend_schema(exclude=True)
 class AddCurationData(BaseAdd):
     serializer_class = CurationDataSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticatedWritePermission]
 
     def post(self, request):
         """
@@ -296,7 +302,7 @@ class CurationDataDetail(BaseView):
 class ClaimCurationData(BaseUpdate):
     http_method_names = ["patch", "options"]
     serializer_class = CurationDataSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticatedWritePermission]
 
     def get_queryset(self):
         """
@@ -381,7 +387,7 @@ class ClaimCurationData(BaseUpdate):
 class UpdateCurationData(BaseUpdate):
     http_method_names = ["put", "options"]
     serializer_class = CurationDataSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticatedWritePermission]
 
     def get_queryset(self):
         """
@@ -478,7 +484,7 @@ class UpdateCurationData(BaseUpdate):
 class PublishRecord(BaseUpdate):
     http_method_names = ["post", "head"]
     serializer_class = CurationDataSerializer
-    permission_classes = [permissions.IsAuthenticated, IsNotJuniorCurator]
+    permission_classes = [IsAuthenticatedWritePermission, IsNotJuniorCurator]
 
     def get_queryset(self):
         """
@@ -589,7 +595,7 @@ class PublishRecord(BaseUpdate):
 class DeleteCurationData(generics.DestroyAPIView):
     http_method_names = ["delete", "head"]
     serializer_class = CurationDataSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticatedWritePermission]
 
     def get_queryset(self):
         stable_id = self.kwargs["stable_id"]

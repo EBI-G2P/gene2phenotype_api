@@ -1,32 +1,30 @@
-from rest_framework import status, permissions
-from rest_framework.response import Response
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
-
-
-from gene2phenotype_app.serializers import (
-    UserSerializer,
-    LocusGenotypeDiseaseSerializer,
-    LGDMinedPublicationSerializer,
-    LGDMinedPublicationListSerializer,
-)
+from rest_framework import status
+from rest_framework.response import Response
 
 from gene2phenotype_app.models import (
-    User,
     LGDMinedPublication,
-    MinedPublication,
     LocusGenotypeDisease,
+    MinedPublication,
+    User,
+)
+from gene2phenotype_app.serializers import (
+    LGDMinedPublicationListSerializer,
+    LGDMinedPublicationSerializer,
+    LocusGenotypeDiseaseSerializer,
+    UserSerializer,
 )
 
-from .base import BaseUpdate
+from .base import BaseUpdate, IsAuthenticatedWritePermission
 
 
 @extend_schema(exclude=True)
 class LGDEditMinedPublication(BaseUpdate):
     http_method_names = ["put", "options"]
     serializer_class = LGDMinedPublicationSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticatedWritePermission]
 
     def update(self, request, stable_id):
         """

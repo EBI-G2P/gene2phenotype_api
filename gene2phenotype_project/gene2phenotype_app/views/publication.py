@@ -1,41 +1,38 @@
-from rest_framework import permissions, status, serializers
-from rest_framework.response import Response
-from rest_framework.decorators import api_view
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
-
-
-from gene2phenotype_app.serializers import (
-    PublicationSerializer,
-    LGDPublicationSerializer,
-    LGDPublicationListSerializer,
-    LGDPhenotypeSerializer,
-    LGDVariantTypeSerializer,
-    LGDVariantTypeDescriptionSerializer,
-    LocusGenotypeDiseaseSerializer,
-    LGDPhenotypeSummarySerializer,
-    UserSerializer,
-    LGDMinedPublicationSerializer,
-)
+from rest_framework import serializers, status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 from gene2phenotype_app.models import (
-    Publication,
-    LocusGenotypeDisease,
-    LGDPublication,
+    LGDMinedPublication,
+    LGDMolecularMechanismEvidence,
     LGDPhenotype,
     LGDPhenotypeSummary,
-    LGDVariantTypePublication,
-    LGDVariantTypeDescription,
+    LGDPublication,
     LGDVariantTypeComment,
-    LGDMolecularMechanismEvidence,
-    LGDMinedPublication,
+    LGDVariantTypeDescription,
+    LGDVariantTypePublication,
+    LocusGenotypeDisease,
+    Publication,
     User,
 )
+from gene2phenotype_app.serializers import (
+    LGDMinedPublicationSerializer,
+    LGDPhenotypeSerializer,
+    LGDPhenotypeSummarySerializer,
+    LGDPublicationListSerializer,
+    LGDPublicationSerializer,
+    LGDVariantTypeDescriptionSerializer,
+    LGDVariantTypeSerializer,
+    LocusGenotypeDiseaseSerializer,
+    PublicationSerializer,
+    UserSerializer,
+)
 
-from .base import BaseAdd, BaseUpdate, IsSuperUser
-
-from ..utils import get_publication, get_authors, clean_title, get_date_now
+from ..utils import clean_title, get_authors, get_date_now, get_publication
+from .base import BaseAdd, BaseUpdate, IsAuthenticatedWritePermission, IsSuperUser
 
 
 @extend_schema(exclude=True)
@@ -124,7 +121,7 @@ class AddPublication(BaseAdd):
     """
 
     serializer_class = PublicationSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticatedWritePermission]
 
 
 ### LGD-publication ###
@@ -140,8 +137,8 @@ class LGDEditPublications(BaseUpdate):
         patch(): deletes data - only available to authenticated super users
         """
         if self.request.method.lower() == "patch":
-            return [permissions.IsAuthenticated(), IsSuperUser()]
-        return [permissions.IsAuthenticated()]
+            return [IsAuthenticatedWritePermission(), IsSuperUser()]
+        return [IsAuthenticatedWritePermission()]
 
     def get_serializer_class(self, action):
         """

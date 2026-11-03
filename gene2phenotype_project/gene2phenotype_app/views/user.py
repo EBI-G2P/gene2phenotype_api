@@ -1,31 +1,31 @@
-from rest_framework.response import Response
+from datetime import datetime
+
+from django.conf import settings
+from django.db.models import F
+from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import APIException
-from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework.response import Response
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
-from drf_spectacular.utils import extend_schema
-from datetime import datetime
-from django.conf import settings
-from django.utils import timezone
-from django.db.models import F
-
-from .base import BaseView, IsSuperUser
+from rest_framework_simplejwt.views import TokenRefreshView
 
 from gene2phenotype_app.authentication import CustomAuthentication
+from gene2phenotype_app.models import User, UserPanel
+from gene2phenotype_app.serializers import (
+    AddUserToPanelSerializer,
+    ChangePasswordSerializer,
+    CreateUserSerializer,
+    LoginSerializer,
+    LogoutSerializer,
+    PasswordResetSerializer,
+    UserSerializer,
+    VerifyEmailSerializer,
+)
 from gene2phenotype_app.utils.user_utils import clear_auth_cookies
 
-from gene2phenotype_app.serializers import (
-    UserSerializer,
-    LoginSerializer,
-    CreateUserSerializer,
-    AddUserToPanelSerializer,
-    LogoutSerializer,
-    ChangePasswordSerializer,
-    VerifyEmailSerializer,
-    PasswordResetSerializer,
-)
-from gene2phenotype_app.models import User, UserPanel
+from .base import BaseView, IsAuthenticatedWritePermission, IsSuperUser
 
 
 @extend_schema(exclude=True)
@@ -76,7 +76,7 @@ class CreateUserView(generics.CreateAPIView):
     """
 
     serializer_class = CreateUserSerializer
-    permission_classes = [IsSuperUser]
+    permission_classes = [IsAuthenticatedWritePermission, IsSuperUser]
 
 
 @extend_schema(exclude=True)
@@ -87,7 +87,7 @@ class AddUserToPanelView(generics.CreateAPIView):
     """
 
     serializer_class = AddUserToPanelSerializer
-    permission_classes = [IsSuperUser]
+    permission_classes = [IsAuthenticatedWritePermission, IsSuperUser]
 
 
 @extend_schema(exclude=True)
