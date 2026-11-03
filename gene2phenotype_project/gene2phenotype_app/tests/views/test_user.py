@@ -230,6 +230,56 @@ class LoginLogoutTest(TestCase):
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.data["error"], "Username or password is incorrect")
 
+    def test_login_existing_user_wrong_password(self):
+        response = self.client.post(
+            self.url_login,
+            {"username": "user5@test.ac.uk", "password": "incorrect-password"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.data["error"], "Username or password is incorrect")
+
+    def test_login_disabled_account(self):
+        user = User.objects.get(email="user2@test.ac.uk")
+        user.set_password("disabled-account-password")
+        user.save(update_fields=["password"])
+        original_last_login = user.last_login
+
+        for is_deleted, is_active in ((True, True), (True, False), (False, False)):
+            user.is_deleted = is_deleted
+            user.is_active = is_active
+            user.save(update_fields=["is_deleted", "is_active"])
+
+            for correct_password in (True, False):
+                with self.subTest(
+                    is_deleted=is_deleted,
+                    is_active=is_active,
+                    correct_password=correct_password,
+                ):
+                    password = (
+                        "disabled-account-password"
+                        if correct_password
+                        else "incorrect-password"
+                    )
+                    response = self.client.post(
+                        self.url_login,
+                        {"username": user.email, "password": password},
+                        content_type="application/json",
+                    )
+
+                    self.assertEqual(response.status_code, 401)
+                    self.assertEqual(
+                        response.data["error"],
+                        "Account disabled. Please contact Admin at g2p-help@ebi.ac.uk"
+                        if correct_password
+                        else "Username or password is incorrect",
+                    )
+                    self.assertNotIn(settings.SIMPLE_JWT["AUTH_COOKIE"], response.cookies)
+                    self.assertNotIn(settings.SIMPLE_JWT["REFRESH_COOKIE"], response.cookies)
+                    user.refresh_from_db()
+                    self.assertEqual(user.last_login, original_last_login)
+
     def test_login_deleted_user(self):
         data = {"username": "user2@test.ac.uk", "password": "test_user2"}
 
