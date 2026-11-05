@@ -778,9 +778,12 @@ class LoginSerializer(serializers.ModelSerializer):
                 request=self.context.get("request"), email=username, password=password
             )
             if not user:
-                raise AuthenticationFailed("Username or password is incorrect")
+                # Django's default backend returns None for inactive users.
+                user = User.objects.filter(email=username, is_active=False).first()
+                if not user or not user.check_password(password):
+                    raise AuthenticationFailed("Username or password is incorrect")
 
-            if user.is_deleted:
+            if user.is_deleted or not user.is_active:
                 raise AuthenticationFailed(
                     "Account disabled. Please contact Admin at g2p-help@ebi.ac.uk"
                 )
