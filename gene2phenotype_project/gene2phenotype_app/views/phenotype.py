@@ -1,33 +1,37 @@
-from rest_framework import permissions, status
-from rest_framework.response import Response
-from rest_framework.decorators import api_view
-from django.http import Http404
-from django.db import transaction
-from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema
 import re
 
+from django.db import transaction
+from django.http import Http404
+from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+from gene2phenotype_app.models import (
+    LGDPhenotype,
+    LGDPhenotypeSummary,
+    LocusGenotypeDisease,
+    OntologyTerm,
+    User,
+)
 from gene2phenotype_app.serializers import (
-    PhenotypeOntologyTermSerializer,
-    LGDPhenotypeSerializer,
-    LGDPhenotypeSummarySerializer,
     LGDPhenotypeListSerializer,
+    LGDPhenotypeSerializer,
     LGDPhenotypeSummaryListSerializer,
+    LGDPhenotypeSummarySerializer,
     LocusGenotypeDiseaseSerializer,
+    PhenotypeOntologyTermSerializer,
     UserSerializer,
 )
 
-from gene2phenotype_app.models import (
-    OntologyTerm,
-    LGDPhenotype,
-    LocusGenotypeDisease,
-    LGDPhenotypeSummary,
-    User,
+from ..utils import get_date_now, validate_phenotype
+from .base import (
+    BaseAdd,
+    CustomPermissionAPIView,
+    IsAuthenticatedWritePermission,
+    IsSuperUser,
 )
-
-from .base import BaseAdd, CustomPermissionAPIView, IsSuperUser
-
-from ..utils import validate_phenotype, get_date_now
 
 
 @extend_schema(exclude=True)
@@ -98,8 +102,8 @@ class LGDEditPhenotypes(CustomPermissionAPIView):
 
     # Define specific permissions
     method_permissions = {
-        "post": [permissions.IsAuthenticated],
-        "patch": [permissions.IsAuthenticated, IsSuperUser],
+        "post": [IsAuthenticatedWritePermission],
+        "patch": [IsAuthenticatedWritePermission, IsSuperUser],
     }
 
     def get_serializer_class(self, action):
@@ -360,8 +364,8 @@ class LGDEditPhenotypeSummary(CustomPermissionAPIView):
 
     # Define specific permissions
     method_permissions = {
-        "post": [permissions.IsAuthenticated],
-        "patch": [permissions.IsAuthenticated, IsSuperUser],
+        "post": [IsAuthenticatedWritePermission],
+        "patch": [IsAuthenticatedWritePermission, IsSuperUser],
     }
 
     def get_serializer_class(self, action):
@@ -541,4 +545,4 @@ class AddPhenotype(BaseAdd):
     """
 
     serializer_class = PhenotypeOntologyTermSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticatedWritePermission]

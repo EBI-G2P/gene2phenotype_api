@@ -1,21 +1,21 @@
-from rest_framework import status
-from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
+from rest_framework import status
+from rest_framework.response import Response
 
 from gene2phenotype_app.models import LGDReviewCase
 from gene2phenotype_app.serializers import (
-    LGDReviewCaseSerializer,
     LGDReviewCaseCreateSerializer,
+    LGDReviewCaseSerializer,
     LGDReviewCaseUpdateSerializer,
 )
 
-from .base import BaseAPIView, IsSuperUser
+from .base import BaseAPIView, IsAuthenticatedWritePermission, IsSuperUser
 
 
 @extend_schema(exclude=True)
 class ReviewQueueListCreate(BaseAPIView):
-    permission_classes = [IsSuperUser]
+    permission_classes = [IsAuthenticatedWritePermission, IsSuperUser]
     serializer_class = LGDReviewCaseSerializer
     http_method_names = ["get", "post", "head", "options"]
 
@@ -55,7 +55,7 @@ class ReviewQueueListCreate(BaseAPIView):
 
 @extend_schema(exclude=True)
 class ReviewQueueDetail(BaseAPIView):
-    permission_classes = [IsSuperUser]
+    permission_classes = [IsAuthenticatedWritePermission, IsSuperUser]
     serializer_class = LGDReviewCaseSerializer
     http_method_names = ["get", "patch", "head", "options"]
 

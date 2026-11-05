@@ -1,50 +1,54 @@
-from rest_framework import generics, status, permissions
-from rest_framework.renderers import BaseRenderer
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from django.http import Http404, HttpResponse
-from django.db.models import Q
-from rest_framework.decorators import api_view, renderer_classes
-from drf_spectacular.utils import (
-    extend_schema,
-    OpenApiResponse,
-    OpenApiExample,
-    OpenApiTypes,
-)
-from django.db import transaction
-from django.shortcuts import get_object_or_404
-from datetime import datetime
-import textwrap
 import csv
 import re
+import textwrap
+from datetime import datetime
+
+from django.db import transaction
+from django.db.models import Q
+from django.http import Http404, HttpResponse
+from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiResponse,
+    OpenApiTypes,
+    extend_schema,
+)
+from rest_framework import generics, permissions, status
+from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.renderers import BaseRenderer
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from gene2phenotype_app.models import (
-    Panel,
-    User,
-    LocusGenotypeDisease,
-    LGDVariantType,
-    LGDVariantGenccConsequence,
-    LGDMolecularMechanismSynopsis,
+    LGDComment,
+    LGDCrossCuttingModifier,
+    LGDMinedPublication,
     LGDMolecularMechanismEvidence,
+    LGDMolecularMechanismSynopsis,
+    LGDPanel,
     LGDPhenotype,
     LGDPublication,
-    LGDMinedPublication,
-    LGDCrossCuttingModifier,
-    LGDPanel,
-    LGDComment,
+    LGDVariantGenccConsequence,
+    LGDVariantType,
+    LocusGenotypeDisease,
+    Panel,
+    User,
 )
-
 from gene2phenotype_app.serializers import (
+    LGDPanelSerializer,
     PanelCreateSerializer,
     PanelDetailSerializer,
-    LGDPanelSerializer,
     UserSerializer,
     build_lgd_summary,
 )
 
-from .base import BaseAPIView, IsSuperUser, CustomPermissionAPIView
-
 from ..utils import get_date_now
+from .base import (
+    BaseAPIView,
+    CustomPermissionAPIView,
+    IsAuthenticatedWritePermission,
+    IsSuperUser,
+)
 
 
 class CSVRenderer(BaseRenderer):
@@ -60,7 +64,7 @@ class CSVRenderer(BaseRenderer):
 @extend_schema(exclude=True)
 class PanelCreateView(generics.CreateAPIView):
     serializer_class = PanelCreateSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAdminUser, IsAuthenticatedWritePermission]
 
 
 @extend_schema(
@@ -372,8 +376,8 @@ class LGDEditPanel(CustomPermissionAPIView):
 
     # Define specific permissions
     method_permissions = {
-        "post": [permissions.IsAuthenticated],
-        "patch": [IsSuperUser],
+        "post": [IsAuthenticatedWritePermission],
+        "patch": [IsAuthenticatedWritePermission, IsSuperUser],
     }
 
     @transaction.atomic
