@@ -1,15 +1,17 @@
 import json
+from unittest.mock import patch
+
 from django.conf import settings
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.test import TestCase
+from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils import timezone
-from django.test.utils import override_settings
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
-from gene2phenotype_app.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
-from unittest.mock import patch
+
+from gene2phenotype_app.models import User
 
 
 def login(user):
@@ -65,8 +67,8 @@ class CreateUserEndpointTest(TestCase):
             "email": "user6@test.ac.uk",
             "first_name": "First name test",
             "last_name": "Last name test",
-            "password": "testpassword2",
-            "password2": "testpassword2",
+            "password": "SaffronRiver42!",
+            "password2": "SaffronRiver42!",
             "is_superuser": False,
             "is_staff": False,
             "panels": ["DD", "Ear"],
@@ -84,8 +86,8 @@ class CreateUserEndpointTest(TestCase):
     def test_create_user_missing_info(self):
         post_data = {
             "username": "test_user6",
-            "password": "testpassword2",
-            "password2": "testpassword2",
+            "password": "SaffronRiver42!",
+            "password2": "SaffronRiver42!",
             "is_superuser": False,
             "is_staff": False,
             "panels": ["DD"],
@@ -97,14 +99,41 @@ class CreateUserEndpointTest(TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def test_create_user_requires_password_complexity(self):
+        post_data = {
+            "username": "test_user6",
+            "email": "user6@test.ac.uk",
+            "first_name": "First name test",
+            "last_name": "Last name test",
+            "password": "saffronriver",
+            "password2": "saffronriver",
+            "panels": ["DD"],
+        }
+        response = self.client.post(
+            self.url_create_user, post_data, content_type="application/json"
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.data,
+            {
+                "error": [
+                    "This password must contain at least one uppercase letter.",
+                    "This password must contain at least one special character.",
+                    "This password must contain at least one digit.",
+                ]
+            },
+        )
+        self.assertFalse(User.objects.filter(email=post_data["email"]).exists())
+
     def test_create_user_existing_email(self):
         post_data = {
             "username": "test_user30",
             "email": "user3@test.ac.uk",
             "first_name": "First name test",
             "last_name": "Last name test",
-            "password": "testpassword3",
-            "password2": "testpassword3",
+            "password": "SaffronRiver42!",
+            "password2": "SaffronRiver42!",
             "is_superuser": False,
             "is_staff": False,
             "panels": ["DD"],
@@ -127,8 +156,8 @@ class CreateUserEndpointTest(TestCase):
             "email": "user31@test.ac.uk",
             "first_name": "First name test",
             "last_name": "Last name test",
-            "password": "testpassword31",
-            "password2": "testpassword31",
+            "password": "SaffronRiver42!",
+            "password2": "SaffronRiver42!",
             "is_superuser": False,
             "is_staff": False,
             "panels": ["DD"],
@@ -361,6 +390,35 @@ class ChangePasswordTest(TestCase):
             },
         )
 
+    def test_change_password_requires_password_complexity(self):
+        user = User.objects.get(email="user5@test.ac.uk")
+        user.set_password("test_user5")
+        user.save(update_fields=["password"])
+        original_password_hash = user.password
+        response = self.client.post(
+            self.url_change_password,
+            {
+                "old_password": "test_user5",
+                "password": "saffronriver",
+                "password2": "saffronriver",
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.data,
+            {
+                "error": [
+                    "This password must contain at least one uppercase letter.",
+                    "This password must contain at least one special character.",
+                    "This password must contain at least one digit.",
+                ]
+            },
+        )
+        user.refresh_from_db()
+        self.assertEqual(user.password, original_password_hash)
+
     def test_verify_email_success(self):
         """
         Test verifying email for password reset with correct email
@@ -519,6 +577,69 @@ class ResetPasswordTest(TestCase):
     def setUp(self):
         self.user = User.objects.get(email="user5@test.ac.uk")
 
+    def test_reset_password_requires_password_complexity(self):
+        original_password_hash = self.user.password
+        uid = urlsafe_base64_encode(force_bytes(self.user.id))
+        token = PasswordResetTokenGenerator().make_token(self.user)
+        response = self.client.post(
+            reverse("reset_password", kwargs={"uid": uid, "token": token}),
+            {"password": "saffronriver", "password2": "saffronriver"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.data,
+            {
+                "error": [
+                    "This password must contain at least one uppercase letter.",
+                    "This password must contain at least one special character.",
+                    "This password must contain at least one digit.",
+                ]
+            },
+        )
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.password, original_password_hash)
+
+    def test_reset_password_rejects_current_password(self):
+        password = "SaffronRiver42!"
+        self.user.set_password(password)
+        self.user.save()
+        original_password_hash = self.user.password
+        uid = urlsafe_base64_encode(force_bytes(self.user.id))
+        token = PasswordResetTokenGenerator().make_token(self.user)
+
+        response = self.client.post(
+            reverse("reset_password", kwargs={"uid": uid, "token": token}),
+            {"password": password, "password2": password},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.data,
+            {"error": ["The new password cannot be the same as the present password."]},
+        )
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.password, original_password_hash)
+        self.assertTrue(PasswordResetTokenGenerator().check_token(self.user, token))
+
+    def test_reset_password_accepts_different_password(self):
+        password = "SaffronRiver42!"
+        self.assertFalse(self.user.check_password(password))
+        uid = urlsafe_base64_encode(force_bytes(self.user.id))
+        token = PasswordResetTokenGenerator().make_token(self.user)
+
+        response = self.client.post(
+            reverse("reset_password", kwargs={"uid": uid, "token": token}),
+            {"password": password, "password2": password},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(password))
+
     def test_reset_password_invalid_token(self):
         uid = urlsafe_base64_encode(force_bytes(self.user.id))
         response = self.client.post(
@@ -583,8 +704,8 @@ class UserAdminPermissionTest(TestCase):
             "email": "user6@test.ac.uk",
             "first_name": "First name test",
             "last_name": "Last name test",
-            "password": "testpassword2",
-            "password2": "testpassword2",
+            "password": "SaffronRiver42!",
+            "password2": "SaffronRiver42!",
             "is_superuser": False,
             "is_staff": False,
             "panels": ["DD", "Ear"],
@@ -619,8 +740,8 @@ class UserAdminPermissionTest(TestCase):
             "email": "user6@test.ac.uk",
             "first_name": "First name test",
             "last_name": "Last name test",
-            "password": "testpassword2",
-            "password2": "testpassword2",
+            "password": "SaffronRiver42!",
+            "password2": "SaffronRiver42!",
             "is_superuser": False,
             "is_staff": False,
             "panels": ["DD", "Ear"],
@@ -644,8 +765,8 @@ class UserAdminPermissionTest(TestCase):
             "email": "user6@test.ac.uk",
             "first_name": "First name test",
             "last_name": "Last name test",
-            "password": "testpassword2",
-            "password2": "testpassword2",
+            "password": "SaffronRiver42!",
+            "password2": "SaffronRiver42!",
             "is_superuser": False,
             "is_staff": False,
             "panels": ["DD", "Ear"],

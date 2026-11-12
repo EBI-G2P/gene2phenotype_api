@@ -647,6 +647,13 @@ class PasswordResetSerializer(serializers.ModelSerializer):
                 {"error": self.invalid_reset_link_error}
             )
 
+        if user.check_password(password):
+            raise serializers.ValidationError(
+                {
+                    "error": "The new password cannot be the same as the present password."
+                }
+            )
+
         validate_user_password(password, user=user)
 
         attrs["id"] = uid
