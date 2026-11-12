@@ -1,24 +1,22 @@
 import csv
 import json
 import logging
-from pathlib import Path
-import re
 import os.path
+import re
+from pathlib import Path
 
-from django.db.models import Count, F
 from django.core.management.base import BaseCommand, CommandError
-
-from ...utils import get_publication, clean_title, get_date_now
-
+from django.db.models import Count, F
 from gene2phenotype_app.models import (
-    MinedPublication,
     LGDMinedPublication,
-    LGDPublication,
     LGDPanel,
+    LGDPublication,
     LocusGenotypeDisease,
+    MinedPublication,
     User,
 )
 
+from ...utils import clean_title, get_date_now, get_publication
 
 """
 Command to load mined publications into G2P database.
@@ -29,8 +27,9 @@ do not insert rows into history tables.
 Supported input formats: csv, json
 
 The csv file format is the following:
-    PMID\tG2P_IDs\trelevance_label
-note: relevance_label is optional
+    PMID\tG2P_IDs\tstatus\tcomment\tanalysis_text
+
+    note: status, comment and analysis_text are optional
 
 How to run the command:
 python manage.py load_mined_publications --data_file <csv data file> --email <user account email>
@@ -158,12 +157,27 @@ class Command(BaseCommand):
                 score = None
                 score_comment = None
 
-                if "relevance_label" in row:
-                    relevant_publication = row["relevance_label"].strip()
+                # Check if there are scores in the csv file
+                if "status" in row:
+                    relevant_publication = row["status"].strip()
                     score = relevant_publication
-                    score_comment = row["relevance_comment"].strip() + " (Score based on abstract only)"
-                    if relevant_publication == "low":
-                        logger.warning(f"Low score {pmid}-{g2p_ids}. Skipping import.")
+
+                    analysis_text = row["analysis_text"].strip()
+                    if analysis_text == "abstract_only":
+                        extra_text = " (Score based on abstract only)"
+                    elif analysis_text == "full_text":
+                        extra_text = " (Score based on full text)"
+                    else:
+                        extra_text = ""
+
+                    score_comment = row["comment"].strip() + extra_text
+
+                    if relevant_publication == "incomplete":
+                        score = "N/A"
+                        score_comment = "No access to this publication"
+
+                    if relevant_publication == "low" or relevant_publication == "medium":
+                        logger.warning(f"Low/Medium score {pmid}-{g2p_ids}. Skipping import.")
                         continue
 
                 if not pmid or not g2p_ids or not g2p_ids.startswith("G2P"):
@@ -247,8 +261,8 @@ class Command(BaseCommand):
 
                             # If run with option --check_json:
                             # Get scores (if available)
-                            score = score or "N/A"
-                            score_comment = score_comment or "No access to this publication"
+                            # score = score or "N/A"
+                            # score_comment = score_comment or "No access to this publication"
                             if new_g2p_id in gemini_scores:
                                 if int(pmid) in gemini_scores[g2p_id]:
                                     score = gemini_scores[g2p_id][int(pmid)]["score"]
