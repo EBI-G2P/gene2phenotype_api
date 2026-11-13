@@ -303,6 +303,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
+    {
+        "NAME": "gene2phenotype_app.password_validation.PasswordComplexityValidator",
+    },
 ]
 
 AUTH_USER_MODEL = "gene2phenotype_app.User"
