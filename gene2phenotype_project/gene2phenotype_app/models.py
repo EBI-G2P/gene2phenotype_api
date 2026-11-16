@@ -550,6 +550,55 @@ class DiseaseOntologyTerm(models.Model):
         unique_together = ["disease", "ontology_term"]
         indexes = [models.Index(fields=["ontology_term"])]
 
+### Variant-Phenotype association models ###
+class Variant(models.Model):
+    id = models.AutoField(primary_key=True)
+    variant = models.CharField(max_length=255, null=False) # variant name, e.g. chr1:123456A>T
+    disease = models.ForeignKey("Disease", on_delete=models.PROTECT, null=False)
+    description = models.TextField(null=True) # synonyms?
+    sequence = models.ForeignKey("Sequence", on_delete=models.PROTECT, null=False) # TODO: support multiple assemblies?
+    start = models.IntegerField(null=False)
+    end = models.IntegerField(null=False)
+    alleles = models.CharField(max_length=255, null=False) # ref/alt alleles
+    strand = models.SmallIntegerField(null=False, default=1)
+    history = HistoricalRecords()
+
+    class Meta:
+        db_table = "variant"
+        unique_together = ["variant", "disease"]
+        indexes = [models.Index(fields=["variant"])]
+
+class VariantConsequence(models.Model):
+    id = models.AutoField(primary_key=True)
+    variant = models.ForeignKey("Variant", on_delete=models.PROTECT)
+    consequence = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
+    history = HistoricalRecords()
+
+    class Meta:
+        db_table = "variant_consequence"
+        unique_together = ["variant", "consequence"]
+
+class VariantPhenotype(models.Model):
+    id = models.AutoField(primary_key=True)
+    variant = models.ForeignKey("Variant", on_delete=models.PROTECT)
+    phenotype = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
+    history = HistoricalRecords()
+
+    class Meta:
+        db_table = "variant_phenotype"
+        unique_together = ["variant", "phenotype"]
+
+class VariantPhenotypePublication(models.Model):
+    id = models.AutoField(primary_key=True)
+    variant_phenotype = models.ForeignKey("VariantPhenotype", on_delete=models.PROTECT)
+    publication = models.ForeignKey("Publication", on_delete=models.PROTECT)
+    count = models.PositiveIntegerField(null=False)
+    history = HistoricalRecords()
+
+    class Meta:
+        db_table = "variant_phenotype_publication"
+        unique_together = ["variant_phenotype", "publication"]
+######
 
 class Publication(models.Model):
     id = models.AutoField(primary_key=True)
