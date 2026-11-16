@@ -551,47 +551,6 @@ class DiseaseOntologyTerm(models.Model):
         indexes = [models.Index(fields=["ontology_term"])]
 
 
-class DiseasePhenotype(models.Model):
-    disease = models.ForeignKey("Disease", on_delete=models.PROTECT)
-    phenotype = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
-    publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
-    score = models.DecimalField(max_digits=10, decimal_places=6, null=False)
-    history = HistoricalRecords()
-
-    class Meta:
-        db_table = "disease_phenotype"
-        unique_together = ["disease", "phenotype", "publication"]
-
-
-class DiseasePhenotypeComment(models.Model):
-    id = models.AutoField(primary_key=True)
-    disease_phenotype = models.ForeignKey("DiseasePhenotype", on_delete=models.PROTECT)
-    comment = models.TextField()
-    date_created = models.DateField()
-    user = models.ForeignKey("User", on_delete=models.PROTECT)
-    is_public = models.SmallIntegerField(null=False, default=True)
-    is_deleted = models.SmallIntegerField(null=False, default=False)
-
-    class Meta:
-        db_table = "disease_phenotype_comment"
-
-
-class PhenotypePublication(models.Model):
-    id = models.AutoField(primary_key=True)
-    phenotype = models.ForeignKey("OntologyTerm", on_delete=models.PROTECT)
-    publication = models.ForeignKey("Publication", on_delete=models.PROTECT, null=True)
-    pheno_count = models.IntegerField(
-        null=True
-    )  # Probably not necessary - maybe a comment
-    is_deleted = models.SmallIntegerField(null=False, default=False)
-    history = HistoricalRecords()
-
-    class Meta:
-        db_table = "phenotype_publication"
-        indexes = [models.Index(fields=["phenotype"])]
-        unique_together = ["phenotype", "publication"]
-
-
 class Publication(models.Model):
     id = models.AutoField(primary_key=True)
     pmid = models.IntegerField(null=False, unique=True)
