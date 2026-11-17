@@ -39,7 +39,7 @@ stages:
 unit_tests:
   stage: unit-test
   coverage: '/TOTAL.*\s+(\d+%)$/'
-  image: python:3.12.16-slim-bookworm
+  image: python:3.12.16-slim-trixie
   services:
     - name: mysql:8.0.46
       alias: mysql

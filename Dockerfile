@@ -1,4 +1,4 @@
-FROM python:3.12.16-slim-bookworm AS builder
+FROM python:3.12.16-slim-trixie AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -19,7 +19,7 @@ COPY requirements.txt .
 RUN python -m venv "$VIRTUAL_ENV" && \
     pip install --no-cache-dir -r requirements.txt
 
-FROM python:3.12.16-slim-bookworm AS runtime
+FROM python:3.12.16-slim-trixie AS runtime
 
 ARG G2P_VERSION=development
 
@@ -36,8 +36,7 @@ ENV PORT=8000
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libmariadb3 \
     && rm -rf /var/lib/apt/lists/* && \
-    useradd -m -u 1000 django && \
-    mkdir -p /app
+    useradd -m -u 1000 django
 
 WORKDIR /app
 
