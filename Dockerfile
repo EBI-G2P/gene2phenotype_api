@@ -1,4 +1,4 @@
-FROM python:3.12-slim-bookworm AS builder
+FROM python:3.12.16-slim-trixie AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -19,13 +19,16 @@ COPY requirements.txt .
 RUN python -m venv "$VIRTUAL_ENV" && \
     pip install --no-cache-dir -r requirements.txt
 
-FROM python:3.12-slim-bookworm AS runtime
+FROM python:3.12.16-slim-trixie AS runtime
+
+ARG G2P_VERSION=development
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 ENV DJANGO_SETTINGS_MODULE=gene2phenotype_project.settings
+ENV G2P_VERSION="$G2P_VERSION"
 ENV HOST=0.0.0.0
 ENV PORT=8000
 
@@ -33,21 +36,17 @@ ENV PORT=8000
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libmariadb3 \
     && rm -rf /var/lib/apt/lists/* && \
-    useradd -m -u 1000 django && \
-    mkdir -p /app && \
-    chown django:django /app
+    useradd -m -u 1000 django
 
 WORKDIR /app
 
 COPY --from=builder /opt/venv /opt/venv
 
 # Copy application code
-COPY --chown=django:django . .
+COPY . .
 
 # Change to the gene2phenotype_project directory
 WORKDIR /app/gene2phenotype_project
-
-USER django
 
 # Collect static files
 RUN SECRET_KEY=dummy-key-for-collectstatic-only \
@@ -58,6 +57,8 @@ RUN SECRET_KEY=dummy-key-for-collectstatic-only \
     DB_HOST=localhost \
     DB_PORT=5432 \
     python manage.py collectstatic --noinput --clear
+
+USER django
 
 EXPOSE 8000
 

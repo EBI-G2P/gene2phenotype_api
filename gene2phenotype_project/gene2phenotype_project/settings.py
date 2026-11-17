@@ -166,7 +166,7 @@ SPECTACULAR_SETTINGS = {
         "See [https://www.ebi.ac.uk/gene2phenotype/](https://www.ebi.ac.uk/gene2phenotype/) for more details.<br><br>"
         "Contact us by submitting an issue via [https://github.com/EBI-G2P/gene2phenotype_api/issues](https://github.com/EBI-G2P/gene2phenotype_api/issues)."
     ),
-    "VERSION": config.get("g2p", "version"),
+    "VERSION": os.environ.get("G2P_VERSION", "development"),
     "SERVE_INCLUDE_SCHEMA": False,
     "DISABLE_FORMAT_SUFFIX": True,
     "SORT_OPERATIONS": False,
