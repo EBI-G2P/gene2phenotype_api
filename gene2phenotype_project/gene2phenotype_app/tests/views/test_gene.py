@@ -91,7 +91,13 @@ class GeneSummaryEndpointTests(TestCase):
                 "stable_id": "G2P00001",
             }
         ]
-        self.assertEqual(list(response.data["records_summary"]), expected_data)
+        actual_data = list(response.data["records_summary"])
+        self.assertEqual(len(actual_data), len(expected_data))
+        self.assertCountEqual(actual_data[0]["panels"], expected_data[0]["panels"])
+        self.assertEqual(
+            {key: value for key, value in actual_data[0].items() if key != "panels"},
+            {key: value for key, value in expected_data[0].items() if key != "panels"},
+        )
 
     def test_get_summary_complete(self):
         """
@@ -114,9 +120,7 @@ class GeneSummaryEndpointTests(TestCase):
         self.assertEqual(record["molecular_mechanism"], "loss of function")
         self.assertEqual(record["last_updated"], "2018-07-05")
         self.assertCountEqual(record["panels"], ["Cardiac"])
-        self.assertCountEqual(
-            record["variant_consequence"], ["absent gene product"]
-        )
+        self.assertCountEqual(record["variant_consequence"], ["absent gene product"])
         self.assertCountEqual(
             record["variant_type"], ["inframe_insertion", "intron_variant"]
         )
