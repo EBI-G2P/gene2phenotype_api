@@ -263,7 +263,7 @@
         "/gene2phenotype/api/search/": {
             "get": {
                 "operationId": "search_list",
-                "description": "\nSearch G2P records and return summaries of LGMDE records.\nG2P stable IDs (stable_id) are returned to enable extraction of full details.\n\nYou can tailor your search using the following query parameters:\n\n**Required Parameter**\n- `query`\n  The term you wish to search for.\n  This could be a gene symbol, disease name, phenotype (e.g. HP:0000853) or a G2P stable ID.\n\n**Optional Parameters**\n- `type`\n  Specifies the type of your search. If omitted, the endpoint performs a generic search across all types.\n\n  Accepted values include:\n\n\n    gene      : by gene symbol\n    disease   : by text string (e.g. Cowden syndrome), Mondo or OMIM identifier\n    phenotype : by description (e.g. Goiter) or accession (e.g.  HP:0000853)\n    stable_id : by the G2P stable ID\n\n\n- `panel`\n  Filters results to a specific panel by name.\n\n  Accepted names include:\n\n\n    Cancer\n    Cardiac\n    DD\n    Ear\n    Eye\n    Skeletal\n    Skin\n\n\n- `genotype`\n  Filters results to a specific genotype (allelic requirement).\n\n  Accepted values can be found at:\n  https://www.ebi.ac.uk/gene2phenotype/about/terminology#allelic-requirement-section\n\n\n- `mechanism`\n  Filters results to a specific molecular mechanism.\n\n  Accepted values include:\n\n\n    dominant negative\n    gain of function\n    loss of function\n    undetermined\n    undetermined non-loss-of-function\n\n\n- `variant_consequence`\n  Filters results to a specific variant consequence.\n  The consequence can be provided either as a Sequence Ontology term or accession.\n\n  Accepted values can be found at:\n  https://www.ebi.ac.uk/gene2phenotype/about/terminology#variant-consequence-section\n\n\nWhen more than 20 records are available, results are paginated.\n\n**Example Requests**\n- Search by gene:\n    `/search/?query=TP53&type=gene`\n\n- Search by phenotype:\n    `/search/?query=HP:0003416&type=phenotype`\n\n- Generic search across all categories:\n    `/search/?query=Weill-Marchesani syndrome`\n\n- Search gene within a specific panel:\n    `/search/?type=gene&query=FBN1&panel=DD`\n\n- Search gene filtering by molecular mechanism and variant consequence:\n    `/search/?type=gene&query=FBN1&mechanism=loss of function&variant_consequence=SO:0002317`\n",
+                "description": "\nSearch G2P records and return summaries of LGMDE records.\nG2P stable IDs (stable_id) are returned to enable extraction of full details.\n\nYou can tailor your search using the following query parameters:\n\n**Required Parameter**\n- `query`\n  The term you wish to search for.\n  This could be a gene symbol, disease name, phenotype (e.g. HP:0000853) or a G2P stable ID.\n\n**Optional Parameters**\n- `type`\n  Specifies the type of your search. If omitted, the endpoint performs a generic search across all types.\n\n  Accepted values include:\n\n\n    gene      : by gene symbol\n    disease   : by text string (e.g. Cowden syndrome), Mondo or OMIM identifier\n    phenotype : by description (e.g. Goiter) or accession (e.g.  HP:0000853)\n    stable_id : by the G2P stable ID\n\n\n- `panel`\n  Filters results to a specific panel by name.\n\n  Accepted names include:\n\n\n    Cancer\n    Cardiac\n    DD\n    Ear\n    Eye\n    Skeletal\n    Skin\n\n\n- `genotype`\n  Filters results to a specific genotype (allelic requirement).\n\n  Accepted values can be found at:\n  https://www.ebi.ac.uk/gene2phenotype/about/terminology#allelic-requirement-section\n\n\n- `mechanism`\n  Filters results to a specific molecular mechanism.\n\n  Accepted values include:\n\n\n    dominant negative\n    gain of function\n    loss of function\n    undetermined\n    undetermined non-loss-of-function\n\n\n- `variant_consequence`\n  Filters results to a specific variant consequence.\n  The consequence can be provided either as a Sequence Ontology term or accession.\n\n  Accepted values can be found at:\n  https://www.ebi.ac.uk/gene2phenotype/about/terminology#variant-consequence-section\n\n\n**Pagination**\nEach response contains at most 20 records. Use `page` to request a page;\nthe first page is returned when `page` is omitted.\n\n- `count` is the total number of matching G2P records, not unique genes.\n\n- `results` contains only the records on the requested page.\n\n- `next` and `previous` are page URLs that preserve the search filters,\n  or null when there is no page in that direction.\nTo retrieve all results, start at the first page and follow `next` until\nit is null. A null `next` means this is the last page; it does not mean\nearlier pages have been retrieved.\n\n\n**Example Requests**\n- Search by gene:\n    `/search/?query=TP53&type=gene`\n\n- Search by phenotype:\n    `/search/?query=HP:0003416&type=phenotype`\n\n- Generic search across all categories:\n    `/search/?query=Weill-Marchesani syndrome`\n\n- Search gene within a specific panel:\n    `/search/?type=gene&query=FBN1&panel=DD`\n\n- Search gene filtering by molecular mechanism and variant consequence:\n    `/search/?type=gene&query=FBN1&mechanism=loss of function&variant_consequence=SO:0002317`\n",
                 "parameters": [
                     {
                         "in": "query",
@@ -343,19 +343,22 @@
                                     "properties": {
                                         "count": {
                                             "type": "integer",
-                                            "example": 123
+                                            "example": 1,
+                                            "description": "Total number of matching G2P records across all pages, not unique genes."
                                         },
                                         "next": {
                                             "type": "string",
                                             "nullable": true,
                                             "format": "uri",
-                                            "example": "http://api.example.org/accounts/?page=4"
+                                            "example": null,
+                                            "description": "URL for the next page, or null on the last page."
                                         },
                                         "previous": {
                                             "type": "string",
                                             "nullable": true,
                                             "format": "uri",
-                                            "example": "http://api.example.org/accounts/?page=2"
+                                            "example": null,
+                                            "description": "URL for the previous page, or null on the first page."
                                         },
                                         "results": {
                                             "type": "array",
@@ -387,16 +390,17 @@
                                                         "type": "string"
                                                     }
                                                 }
-                                            }
+                                            },
+                                            "description": "Items on the requested page; additional items may be available on other pages."
                                         }
                                     }
                                 },
                                 "examples": {
                                     "SearchByPhenotype": {
                                         "value": {
-                                            "count": 123,
-                                            "next": "http://api.example.org/accounts/?page=4",
-                                            "previous": "http://api.example.org/accounts/?page=2",
+                                            "count": 1,
+                                            "next": null,
+                                            "previous": null,
                                             "results": [
                                                 {
                                                     "stable_id": "G2P01947",
@@ -413,13 +417,13 @@
                                             ]
                                         },
                                         "summary": "Search by phenotype",
-                                        "description": "Search G2P records associated with phenotype HP:0003416"
+                                        "description": "Illustrative single-record response for phenotype HP:0003416; live result counts may differ."
                                     },
                                     "SearchByGene": {
                                         "value": {
-                                            "count": 123,
-                                            "next": "http://api.example.org/accounts/?page=4",
-                                            "previous": "http://api.example.org/accounts/?page=2",
+                                            "count": 1,
+                                            "next": null,
+                                            "previous": null,
                                             "results": [
                                                 {
                                                     "stable_id": "G2P01830",
@@ -435,7 +439,7 @@
                                             ]
                                         },
                                         "summary": "Search by gene",
-                                        "description": "Search G2P records associated with gene TP53"
+                                        "description": "Illustrative single-record response for gene TP53; live result counts may differ."
                                     }
                                 }
                             }
