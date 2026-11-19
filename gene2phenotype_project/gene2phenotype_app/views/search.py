@@ -27,6 +27,22 @@ from gene2phenotype_app.models import (
 from .base import BaseView, CustomPagination
 
 
+class SearchPagination(CustomPagination):
+    """Search-specific schema examples; runtime pagination is inherited."""
+
+    def get_paginated_response_schema(self, schema):
+        response_schema = super().get_paginated_response_schema(schema)
+        properties = response_schema["properties"]
+        properties["count"]["description"] = (
+            "Total number of matching G2P records across all pages, not unique genes."
+        )
+        # Illustrative single-record responses; live result counts may differ.
+        properties["count"]["example"] = 1
+        properties["next"]["example"] = None
+        properties["previous"]["example"] = None
+        return response_schema
+
+
 @extend_schema(
     tags=["Search records"],
     description=textwrap.dedent("""
@@ -96,7 +112,20 @@ from .base import BaseView, CustomPagination
       https://www.ebi.ac.uk/gene2phenotype/about/terminology#variant-consequence-section
 
 
-    When more than 20 records are available, results are paginated.
+    **Pagination**
+    Each response contains at most 20 records. Use `page` to request a page;
+    the first page is returned when `page` is omitted.
+
+    - `count` is the total number of matching G2P records, not unique genes.
+
+    - `results` contains only the records on the requested page.
+
+    - `next` and `previous` are page URLs that preserve the search filters,
+      or null when there is no page in that direction.
+    To retrieve all results, start at the first page and follow `next` until
+    it is null. A null `next` means this is the last page; it does not mean
+    earlier pages have been retrieved.
+
 
     **Example Requests**
     - Search by gene:
@@ -159,7 +188,10 @@ from .base import BaseView, CustomPagination
     examples=[
         OpenApiExample(
             "Search by phenotype",
-            description="Search G2P records associated with phenotype HP:0003416",
+            description=(
+                "Illustrative single-record response for phenotype HP:0003416; "
+                "live result counts may differ."
+            ),
             value={
                 "stable_id": "G2P01947",
                 "gene": "ADAMTS10",
@@ -172,7 +204,10 @@ from .base import BaseView, CustomPagination
         ),
         OpenApiExample(
             "Search by gene",
-            description="Search G2P records associated with gene TP53",
+            description=(
+                "Illustrative single-record response for gene TP53; "
+                "live result counts may differ."
+            ),
             value={
                 "stable_id": "G2P01830",
                 "gene": "TP53",
@@ -203,7 +238,7 @@ from .base import BaseView, CustomPagination
     },
 )
 class SearchView(BaseView):
-    pagination_class = CustomPagination
+    pagination_class = SearchPagination
 
     def get_serializer_class(self):
         if self.request.query_params.get("type", None) == "draft":

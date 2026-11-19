@@ -1,10 +1,21 @@
+from urllib.parse import parse_qs, urlencode, urlsplit
+
 from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
-
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from gene2phenotype_app.models import Attrib, AttribType, Locus, LocusAttrib, User
+from gene2phenotype_app.models import (
+    Attrib,
+    AttribType,
+    Disease,
+    G2PStableID,
+    LGDPanel,
+    Locus,
+    LocusAttrib,
+    LocusGenotypeDisease,
+    User,
+)
 
 
 class SearchTests(TestCase):
@@ -69,6 +80,74 @@ class SearchTests(TestCase):
         self.assertEqual(response.data["next"], None)
         self.assertEqual(response.data["previous"], None)
         self.assertEqual(response.data["results"], self.expected_data)
+
+    def test_search_pagination_preserves_filters_and_returns_all_records(self):
+        """Follow three pages without losing filters, records or total counts."""
+        template = LocusGenotypeDisease.objects.get(stable_id__stable_id="G2P00001")
+        panel = template.lgdpanel_set.get(panel__name="DD").panel
+        expected_ids = []
+        for index in range(45):
+            stable_id = G2PStableID.objects.create(
+                stable_id=f"G2P{90000 + index}", is_live=True
+            )
+            record = LocusGenotypeDisease.objects.create(
+                stable_id=stable_id,
+                locus=template.locus,
+                genotype=template.genotype,
+                disease=Disease.objects.create(name=f"Pagination regression {index:02d}"),
+                mechanism=template.mechanism,
+                mechanism_support=template.mechanism_support,
+                confidence=template.confidence,
+                is_reviewed=1,
+            )
+            LGDPanel.objects.create(lgd=record, panel=panel)
+            expected_ids.append(stable_id.stable_id)
+
+        filters = {
+            "query": "Pagination regression",
+            "type": "disease",
+            "panel": panel.name,
+            "genotype": template.genotype.value,
+            "mechanism": template.mechanism.value,
+        }
+        next_url = f"{self.base_url_search}?{urlencode(filters)}"
+        returned_ids = []
+        pages = []
+        # A fixed traversal also catches repeated links without an unbounded loop.
+        for page_number, expected_size in enumerate((20, 20, 5), start=1):
+            with self.subTest(page=page_number):
+                self.assertIsNotNone(next_url)
+                response = self.client.get(next_url)
+                self.assertEqual(response.status_code, 200)
+                data = response.data
+                self.assertEqual(data["count"], 45)
+                self.assertEqual(len(data["results"]), expected_size)
+                pages.append(data["results"])
+                returned_ids.extend(row["stable_id"] for row in data["results"])
+
+                for direction, target_page in (
+                    ("previous", page_number - 1),
+                    ("next", page_number + 1),
+                ):
+                    link = data[direction]
+                    if target_page not in (1, 2, 3):
+                        self.assertIsNone(link)
+                        continue
+                    self.assertIsNotNone(link)
+                    parsed = urlsplit(link)
+                    self.assertEqual(parsed.path, self.base_url_search)
+                    params = parse_qs(parsed.query)
+                    self.assertEqual(params.pop("page", ["1"]), [str(target_page)])
+                    self.assertEqual(params, {key: [value] for key, value in filters.items()})
+
+                next_url = data["next"]
+
+        self.assertIsNone(next_url)
+        self.assertEqual(len(returned_ids), len(set(returned_ids)))
+        self.assertCountEqual(returned_ids, expected_ids)
+        previous_response = self.client.get(data["previous"])
+        self.assertEqual(previous_response.status_code, 200)
+        self.assertEqual(previous_response.data["results"], pages[1])
 
     def assert_search_results_equal(self, actual, expected):
         # Neither record order nor panel order is relevant to locus-type filtering.

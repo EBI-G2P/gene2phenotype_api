@@ -199,3 +199,21 @@ class CustomPagination(PageNumberPagination):
     """
 
     page_size = 20
+
+    def get_paginated_response_schema(self, schema):
+        response_schema = super().get_paginated_response_schema(schema)
+        descriptions = {
+            "count": "Total number of matching items across all pages.",
+            "results": "Items on the requested page; additional items may be available on other pages.",
+            "next": "URL for the next page, or null on the last page.",
+            "previous": "URL for the previous page, or null on the first page.",
+        }
+        for field, description in descriptions.items():
+            field_schema = response_schema["properties"][field]
+            # drf-spectacular uses a sentinel for results when wrapping examples.
+            if isinstance(field_schema, dict):
+                response_schema["properties"][field] = {
+                    **field_schema,
+                    "description": description,
+                }
+        return response_schema
