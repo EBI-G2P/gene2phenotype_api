@@ -2,7 +2,7 @@
     "openapi": "3.0.3",
     "info": {
         "title": "Gene2Phenotype (G2P)",
-        "version": "18.0.0",
+        "version": "23.0.0",
         "description": "This API enables access to gene disease models held in the G2P database. See [https://www.ebi.ac.uk/gene2phenotype/](https://www.ebi.ac.uk/gene2phenotype/) for more details.<br><br>Contact us by submitting an issue via [https://github.com/EBI-G2P/gene2phenotype_api/issues](https://github.com/EBI-G2P/gene2phenotype_api/issues)."
     },
     "paths": {
@@ -24,9 +24,6 @@
                     "G2P record"
                 ],
                 "security": [
-                    {
-                        "jwtAuth": []
-                    },
                     {}
                 ],
                 "responses": {
@@ -269,6 +266,22 @@
                 "description": "\nSearch G2P records and return summaries of LGMDE records.\nG2P stable IDs (stable_id) are returned to enable extraction of full details.\n\nYou can tailor your search using the following query parameters:\n\n**Required Parameter**\n- `query`\n  The term you wish to search for.\n  This could be a gene symbol, disease name, phenotype (e.g. HP:0000853) or a G2P stable ID.\n\n**Optional Parameters**\n- `type`\n  Specifies the type of your search. If omitted, the endpoint performs a generic search across all types.\n\n  Accepted values include:\n\n\n    gene      : by gene symbol\n    disease   : by text string (e.g. Cowden syndrome), Mondo or OMIM identifier\n    phenotype : by description (e.g. Goiter) or accession (e.g.  HP:0000853)\n    stable_id : by the G2P stable ID\n\n\n- `panel`\n  Filters results to a specific panel by name.\n\n  Accepted names include:\n\n\n    Cancer\n    Cardiac\n    DD\n    Ear\n    Eye\n    Skeletal\n    Skin\n\n\n- `genotype`\n  Filters results to a specific genotype (allelic requirement).\n\n  Accepted values can be found at:\n  https://www.ebi.ac.uk/gene2phenotype/about/terminology#allelic-requirement-section\n\n\n- `mechanism`\n  Filters results to a specific molecular mechanism.\n\n  Accepted values include:\n\n\n    dominant negative\n    gain of function\n    loss of function\n    undetermined\n    undetermined non-loss-of-function\n\n\n- `variant_consequence`\n  Filters results to a specific variant consequence.\n  The consequence can be provided either as a Sequence Ontology term or accession.\n\n  Accepted values can be found at:\n  https://www.ebi.ac.uk/gene2phenotype/about/terminology#variant-consequence-section\n\n\nWhen more than 20 records are available, results are paginated.\n\n**Example Requests**\n- Search by gene:\n    `/search/?query=TP53&type=gene`\n\n- Search by phenotype:\n    `/search/?query=HP:0003416&type=phenotype`\n\n- Generic search across all categories:\n    `/search/?query=Weill-Marchesani syndrome`\n\n- Search gene within a specific panel:\n    `/search/?type=gene&query=FBN1&panel=DD`\n\n- Search gene filtering by molecular mechanism and variant consequence:\n    `/search/?type=gene&query=FBN1&mechanism=loss of function&variant_consequence=SO:0002317`\n",
                 "parameters": [
                     {
+                        "in": "query",
+                        "name": "genotype",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Filter by genotype (allelic requirement), e.g. biallelic_autosomal"
+                    },
+                    {
+                        "in": "query",
+                        "name": "mechanism",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Filter by molecular mechanism, e.g. loss of function"
+                    },
+                    {
                         "name": "page",
                         "required": false,
                         "in": "query",
@@ -301,15 +314,20 @@
                             "type": "string"
                         },
                         "description": "Type of search can be: gene symbol, disease name, phenotype (e.g. HP:0000853) or a G2P stable ID"
+                    },
+                    {
+                        "in": "query",
+                        "name": "variant_consequence",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Filter by Sequence Ontology term or accession, e.g. absent gene product or SO:0002317"
                     }
                 ],
                 "tags": [
                     "Search records"
                 ],
                 "security": [
-                    {
-                        "jwtAuth": []
-                    },
                     {}
                 ],
                 "responses": {
@@ -435,9 +453,6 @@
                     "Fetch counts by panel"
                 ],
                 "security": [
-                    {
-                        "jwtAuth": []
-                    },
                     {}
                 ],
                 "responses": {
@@ -578,9 +593,6 @@
                     "Fetch information by panel"
                 ],
                 "security": [
-                    {
-                        "jwtAuth": []
-                    },
                     {}
                 ],
                 "responses": {
@@ -625,6 +637,9 @@
                                                         },
                                                         "refuted": {
                                                             "type": "integer"
+                                                        },
+                                                        "disputed": {
+                                                            "type": "integer"
                                                         }
                                                     }
                                                 }
@@ -637,16 +652,17 @@
                                         "value": {
                                             "name": "DD",
                                             "description": "Developmental disorders",
-                                            "last_updated": "2025-04-11",
+                                            "last_updated": "2026-11-19",
                                             "stats": {
-                                                "total_records": 2768,
-                                                "total_genes": 2457,
+                                                "total_records": 2873,
+                                                "total_genes": 2567,
                                                 "by_confidence": {
-                                                    "definitive": 1482,
-                                                    "strong": 726,
-                                                    "limited": 374,
-                                                    "moderate": 185,
-                                                    "refuted": 1
+                                                    "definitive": 1484,
+                                                    "strong": 759,
+                                                    "limited": 339,
+                                                    "moderate": 285,
+                                                    "refuted": 2,
+                                                    "disputed": 4
                                                 }
                                             }
                                         },
@@ -679,9 +695,6 @@
                     "Fetch information by panel"
                 ],
                 "security": [
-                    {
-                        "jwtAuth": []
-                    },
                     {}
                 ],
                 "responses": {
@@ -707,9 +720,6 @@
                     "Terminology"
                 ],
                 "security": [
-                    {
-                        "jwtAuth": []
-                    },
                     {}
                 ],
                 "responses": {
@@ -828,9 +838,6 @@
                     "Fetch G2P summary records by gene"
                 ],
                 "security": [
-                    {
-                        "jwtAuth": []
-                    },
                     {}
                 ],
                 "responses": {
@@ -1009,9 +1016,6 @@
                     "Fetch G2P summary records by disease"
                 ],
                 "security": [
-                    {
-                        "jwtAuth": []
-                    },
                     {}
                 ],
                 "responses": {
@@ -1111,9 +1115,6 @@
                     "Reference data"
                 ],
                 "security": [
-                    {
-                        "jwtAuth": []
-                    },
                     {}
                 ],
                 "responses": {
@@ -1147,6 +1148,491 @@
     },
     "components": {
         "schemas": {
+            "Disease": {
+                "type": "object",
+                "description": "Serializer for the Disease model.\nThis serializer returns the ontology terms associated with the disease\nand synonyms names.",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "ontology_terms": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DiseaseOntologyTerm"
+                        },
+                        "readOnly": true
+                    },
+                    "synonyms": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Returns disease synonyms used in other sources.",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "ontology_terms",
+                    "synonyms"
+                ]
+            },
+            "DiseaseOntologyTerm": {
+                "type": "object",
+                "description": "Serializer for the DiseaseOntologyTerm model.\nLinks the disease to ontology terms imported from external ontology sources.",
+                "properties": {
+                    "accession": {
+                        "type": "string"
+                    },
+                    "term": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "source": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "accession",
+                    "source",
+                    "term"
+                ]
+            },
+            "LGDCommentResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "text": {
+                        "type": "string"
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "is_public": {
+                        "type": "integer"
+                    },
+                    "user": {
+                        "type": "string",
+                        "description": "Included only for authenticated users."
+                    }
+                },
+                "required": [
+                    "date",
+                    "id",
+                    "is_public",
+                    "text"
+                ]
+            },
+            "LGDCrossCuttingModifier": {
+                "type": "object",
+                "description": "Serializer for the LGDCrossCuttingModifier model.\nA G2P record can be linked to one or more cross cutting modifier.",
+                "properties": {
+                    "term": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "term"
+                ]
+            },
+            "LGDMechanismEvidenceResponse": {
+                "type": "object",
+                "properties": {
+                    "functional_studies": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "description": "Evidence category mapped to the supporting study types."
+                    },
+                    "descriptions": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Evidence descriptions; empty for unauthenticated users."
+                    }
+                },
+                "required": [
+                    "descriptions",
+                    "functional_studies"
+                ]
+            },
+            "LGDMechanismSynopsisResponse": {
+                "type": "object",
+                "properties": {
+                    "synopsis": {
+                        "type": "string"
+                    },
+                    "support": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "support",
+                    "synopsis"
+                ]
+            },
+            "LGDMinedPublicationResponse": {
+                "type": "object",
+                "properties": {
+                    "pmid": {
+                        "type": "integer"
+                    },
+                    "year": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/StatusEnum"
+                    },
+                    "comment": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "score": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Included only for authenticated users."
+                    },
+                    "score_comment": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Included only for authenticated users."
+                    }
+                },
+                "required": [
+                    "comment",
+                    "pmid",
+                    "status",
+                    "title",
+                    "year"
+                ]
+            },
+            "LGDMolecularMechanismResponse": {
+                "type": "object",
+                "properties": {
+                    "mechanism": {
+                        "type": "string"
+                    },
+                    "mechanism_support": {
+                        "type": "string"
+                    },
+                    "synopsis": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/LGDMechanismSynopsisResponse"
+                        }
+                    },
+                    "evidence": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/LGDMechanismEvidenceResponse"
+                        },
+                        "description": "Supporting evidence keyed by publication PMID."
+                    }
+                },
+                "required": [
+                    "evidence",
+                    "mechanism",
+                    "mechanism_support",
+                    "synopsis"
+                ]
+            },
+            "LGDPanel": {
+                "type": "object",
+                "description": "Serializer for the LGDPanel model.\nThe LGDPanel model represents the panels associated with LGD entries.",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            },
+            "LGDPhenotypeResponse": {
+                "type": "object",
+                "properties": {
+                    "term": {
+                        "type": "string"
+                    },
+                    "accession": {
+                        "type": "string"
+                    },
+                    "publications": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "required": [
+                    "accession",
+                    "publications",
+                    "term"
+                ]
+            },
+            "LGDPhenotypeSummaryResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "summary": {
+                        "type": "string"
+                    },
+                    "publication": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "id",
+                    "publication",
+                    "summary"
+                ]
+            },
+            "LGDPublication": {
+                "type": "object",
+                "description": "Serializer for the LGDPublication model.\nCalled by: LocusGenotypeDiseaseSerializer()\n           LGDPublicationListSerializer()",
+                "properties": {
+                    "publication": {
+                        "$ref": "#/components/schemas/Publication"
+                    },
+                    "number_of_families": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "consanguinity": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "affected_individuals": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "ancestry": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "comments": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/LGDPublicationCommentResponse"
+                        },
+                        "readOnly": true,
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "comments",
+                    "publication"
+                ]
+            },
+            "LGDPublicationCommentResponse": {
+                "type": "object",
+                "description": "Schema for the comment dictionaries returned by get_comments().",
+                "properties": {
+                    "comment": {
+                        "type": "string"
+                    },
+                    "user": {
+                        "type": "string"
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "comment",
+                    "date",
+                    "user"
+                ]
+            },
+            "LGDVariantDescriptionResponse": {
+                "type": "object",
+                "properties": {
+                    "description": {
+                        "type": "string"
+                    },
+                    "publications": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "required": [
+                    "description",
+                    "publications"
+                ]
+            },
+            "LGDVariantGenCCConsequence": {
+                "type": "object",
+                "description": "Serializer for the LGDVariantGenccConsequence model.",
+                "properties": {
+                    "variant_consequence": {
+                        "type": "string"
+                    },
+                    "accession": {
+                        "type": "string"
+                    },
+                    "support": {
+                        "type": "string"
+                    },
+                    "publication": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "support",
+                    "variant_consequence"
+                ]
+            },
+            "LGDVariantTypeCommentResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "text": {
+                        "type": "string"
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "date",
+                    "id",
+                    "text"
+                ]
+            },
+            "LGDVariantTypeResponse": {
+                "type": "object",
+                "properties": {
+                    "term": {
+                        "type": "string"
+                    },
+                    "accession": {
+                        "type": "string"
+                    },
+                    "inherited": {
+                        "type": "boolean"
+                    },
+                    "de_novo": {
+                        "type": "boolean"
+                    },
+                    "unknown_inheritance": {
+                        "type": "boolean"
+                    },
+                    "publications": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "comments": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/LGDVariantTypeCommentResponse"
+                        },
+                        "description": "Variant comments; empty for unauthenticated users."
+                    }
+                },
+                "required": [
+                    "accession",
+                    "comments",
+                    "de_novo",
+                    "inherited",
+                    "publications",
+                    "term",
+                    "unknown_inheritance"
+                ]
+            },
+            "Locus": {
+                "type": "object",
+                "description": "Serializer for the Locus model.\nIf the locus is a gene then the name is the gene symbol.\nThe sequence is the chromosome overlapping the locus.",
+                "properties": {
+                    "gene_symbol": {
+                        "type": "string"
+                    },
+                    "sequence": {
+                        "type": "string"
+                    },
+                    "start": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648
+                    },
+                    "end": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": -2147483648
+                    },
+                    "strand": {
+                        "type": "integer",
+                        "maximum": 32767,
+                        "minimum": -32768
+                    },
+                    "reference": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "ids": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "description": "Locus IDs from external sources.\nIt can be the HGNC ID for a gene.",
+                        "readOnly": true
+                    },
+                    "synonyms": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "nullable": true,
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "end",
+                    "gene_symbol",
+                    "ids",
+                    "reference",
+                    "sequence",
+                    "start",
+                    "synonyms"
+                ]
+            },
             "LocusGenotypeDisease": {
                 "type": "object",
                 "description": "Serializer for the LocusGenotypeDisease model.\nLocusGenotypeDisease represents a unique Locus-Genotype-Mechanism-Disease-Evidence (LGMDE) record.",
@@ -1158,9 +1644,11 @@
                         "readOnly": true
                     },
                     "locus": {
-                        "type": "object",
-                        "additionalProperties": {},
-                        "description": "Gene associated with the LGMDE record",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Locus"
+                            }
+                        ],
                         "readOnly": true
                     },
                     "stable_id": {
@@ -1174,24 +1662,26 @@
                     "variant_consequence": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                            "$ref": "#/components/schemas/LGDVariantGenCCConsequence"
                         },
-                        "description": "Variant consequences linked to the LGMDE record.\nThis is the GenCC level of variant consequence: altered_gene_product_level, etc.",
                         "readOnly": true,
                         "nullable": true
                     },
                     "molecular_mechanism": {
-                        "type": "object",
-                        "additionalProperties": {},
-                        "description": "Molecular mechanism associated with the LGMDE record.\nIf available, also returns the evidence.",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/LGDMolecularMechanismResponse"
+                            }
+                        ],
                         "readOnly": true,
                         "nullable": true
                     },
                     "disease": {
-                        "type": "object",
-                        "additionalProperties": {},
-                        "description": "Disease associated with the LGMDE record",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Disease"
+                            }
+                        ],
                         "readOnly": true
                     },
                     "confidence": {
@@ -1200,84 +1690,61 @@
                     "publications": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "object",
-                                "additionalProperties": {}
-                            }
+                            "$ref": "#/components/schemas/LGDPublication"
                         },
-                        "description": "Publications associated with the LGMDE record.",
                         "readOnly": true
                     },
                     "mined_publications": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                            "$ref": "#/components/schemas/LGDMinedPublicationResponse"
                         },
-                        "description": "Mined publications associated with the LGMDE record.\nThis response includes the list of publications that are automatically extracted from literature which are relevant to the LGMDE record.\nThe \"status\" field can have the following three possible values:\n1. \"mined\" - extracted publication which was not yet curated\n2. \"curated\" - extracted publication which was curated\n3. \"rejected\" - extracted publication which was rejected by curators",
                         "readOnly": true
                     },
                     "panels": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/components/schemas/LGDPanel"
                         },
-                        "description": "Panel(s) associated with the LGMDE record.",
                         "readOnly": true
                     },
                     "cross_cutting_modifier": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/components/schemas/LGDCrossCuttingModifier"
                         },
-                        "description": "Cross cutting modifier terms associated with the LGMDE record.",
                         "readOnly": true,
                         "nullable": true
                     },
                     "variant_type": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                            "$ref": "#/components/schemas/LGDVariantTypeResponse"
                         },
-                        "description": "Variant types associated with the LGMDE record.\nThe variant type can be linked to several publications therefore response\nincludes the list of publications associated with the variant type.",
                         "readOnly": true,
                         "nullable": true
                     },
                     "variant_description": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                            "$ref": "#/components/schemas/LGDVariantDescriptionResponse"
                         },
-                        "description": "Variant HGVS description linked to the LGMDE record and publication(s).\nThe response includes a list of publications associated with the HGVS description.",
                         "readOnly": true,
                         "nullable": true
                     },
                     "phenotypes": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                            "$ref": "#/components/schemas/LGDPhenotypeResponse"
                         },
-                        "description": "Phenotypes associated with the LGMDE record.\nThe response includes the list of publications associated with the phenotype.",
                         "readOnly": true,
                         "nullable": true
                     },
                     "phenotype_summary": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                            "$ref": "#/components/schemas/LGDPhenotypeSummaryResponse"
                         },
-                        "description": "A summary about the phenotypes associated with the LGMDE record.\nThe response includes the publication associated with the summary.",
                         "readOnly": true,
                         "nullable": true
                     },
@@ -1297,10 +1764,8 @@
                     "comments": {
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "additionalProperties": {}
+                            "$ref": "#/components/schemas/LGDCommentResponse"
                         },
-                        "description": "Comments associated with the LGMDE record.\nComments can be public or private. Private comments can only be\nseen by curators.",
                         "readOnly": true,
                         "nullable": true
                     },
@@ -1332,13 +1797,42 @@
                     "variant_description",
                     "variant_type"
                 ]
-            }
-        },
-        "securitySchemes": {
-            "jwtAuth": {
-                "type": "http",
-                "scheme": "bearer",
-                "bearerFormat": "JWT"
+            },
+            "Publication": {
+                "type": "object",
+                "description": "Serializer for the Publication model.",
+                "properties": {
+                    "pmid": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "authors": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "year": {
+                        "type": "integer",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "authors",
+                    "pmid",
+                    "title",
+                    "year"
+                ]
+            },
+            "StatusEnum": {
+                "enum": [
+                    "mined",
+                    "curated",
+                    "rejected"
+                ],
+                "type": "string",
+                "description": "* `mined` - mined\n* `curated` - curated\n* `rejected` - rejected"
             }
         }
     },

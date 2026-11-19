@@ -134,6 +134,27 @@ from .base import BaseView, CustomPagination
             location=OpenApiParameter.QUERY,
             description="Fetch only records associated with a specific panel",
         ),
+        OpenApiParameter(
+            name="genotype",
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description="Filter by genotype (allelic requirement), e.g. biallelic_autosomal",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="mechanism",
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description="Filter by molecular mechanism, e.g. loss of function",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="variant_consequence",
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description="Filter by Sequence Ontology term or accession, e.g. absent gene product or SO:0002317",
+            required=False,
+        ),
     ],
     examples=[
         OpenApiExample(

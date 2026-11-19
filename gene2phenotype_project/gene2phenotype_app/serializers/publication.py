@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 import re
 
 from ..models import Publication, LGDPublicationComment, Attrib, LGDPublication
@@ -125,6 +126,14 @@ class PublicationSerializer(serializers.ModelSerializer):
 
 
 ### G2P record (LGD) - publication ###
+class LGDPublicationCommentResponseSerializer(serializers.Serializer):
+    """Schema for the comment dictionaries returned by get_comments()."""
+
+    comment = serializers.CharField()
+    user = serializers.CharField()
+    date = serializers.DateField(allow_null=True)
+
+
 class LGDPublicationSerializer(serializers.ModelSerializer):
     """
     Serializer for the LGDPublication model.
@@ -140,6 +149,7 @@ class LGDPublicationSerializer(serializers.ModelSerializer):
     ancestry = serializers.CharField(required=False, allow_null=True)
     comments = serializers.SerializerMethodField(allow_null=True)
 
+    @extend_schema_field(LGDPublicationCommentResponseSerializer(many=True))
     def get_comments(self, id):
         """
         Get all comments associated with the LGD-publication.

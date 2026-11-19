@@ -233,16 +233,17 @@ class PanelList(APIView):
             value={
                 "name": "DD",
                 "description": "Developmental disorders",
-                "last_updated": "2025-04-11",
+                "last_updated": "2026-11-19",
                 "stats": {
-                    "total_records": 2768,
-                    "total_genes": 2457,
+                    "total_records": 2873,
+                    "total_genes": 2567,
                     "by_confidence": {
-                        "definitive": 1482,
-                        "strong": 726,
-                        "limited": 374,
-                        "moderate": 185,
-                        "refuted": 1,
+                        "definitive": 1484,
+                        "strong": 759,
+                        "limited": 339,
+                        "moderate": 285,
+                        "refuted": 2,
+                        "disputed": 4
                     },
                 },
             },
@@ -270,6 +271,7 @@ class PanelList(APIView):
                                     "limited": {"type": "integer"},
                                     "moderate": {"type": "integer"},
                                     "refuted": {"type": "integer"},
+                                    "disputed": {"type": "integer"},
                                 },
                             },
                         },

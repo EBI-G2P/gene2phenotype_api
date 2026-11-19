@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from django.db.models import Q, FilteredRelation
 from typing import Optional
 from datetime import date
@@ -39,7 +40,10 @@ class LocusSerializer(serializers.ModelSerializer):
 
         return data
 
-    def get_synonyms(self, id: int) -> list[str]:
+    @extend_schema_field(
+        serializers.ListField(child=serializers.CharField(), allow_null=True)
+    )
+    def get_synonyms(self, id: int) -> Optional[list[str]]:
         """
         Returns the locus synonyms.
         The locus synonym can be an old gene symbol.

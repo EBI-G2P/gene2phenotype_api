@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from django.db.models import Q, FilteredRelation
 from typing import Any, Optional
 from datetime import date
@@ -133,6 +134,7 @@ class DiseaseSerializer(serializers.ModelSerializer):
     ontology_terms = serializers.SerializerMethodField()
     synonyms = serializers.SerializerMethodField()
 
+    @extend_schema_field(DiseaseOntologyTermSerializer(many=True))
     def get_ontology_terms(self, id: int) -> list[dict[str, Any]]:
         """
         Returns the ontology terms associated with the disease.
