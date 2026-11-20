@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from drf_spectacular.helpers import lazy_serializer
+from drf_spectacular.utils import extend_schema_field
 from django.db import IntegrityError, transaction
 from django.db.models import Prefetch, F
 from django.conf import settings
@@ -230,6 +232,100 @@ def build_lgd_summary(lgd_obj: LocusGenotypeDisease) -> Optional[str]:
     return " ".join(sentences)
 
 
+# Response-only serializers describe the dictionaries returned by the record getters.
+# They are schema annotations, not replacements for runtime serialisation or permissions.
+class LGDMechanismSynopsisResponseSerializer(serializers.Serializer):
+    synopsis = serializers.CharField()
+    support = serializers.CharField()
+
+
+class LGDMechanismEvidenceResponseSerializer(serializers.Serializer):
+    functional_studies = serializers.DictField(
+        child=serializers.ListField(child=serializers.CharField()),
+        help_text="Evidence category mapped to the supporting study types.",
+    )
+    descriptions = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="Evidence descriptions; empty for unauthenticated users.",
+    )
+
+
+class LGDMolecularMechanismResponseSerializer(serializers.Serializer):
+    mechanism = serializers.CharField()
+    mechanism_support = serializers.CharField()
+    synopsis = LGDMechanismSynopsisResponseSerializer(many=True)
+    evidence = serializers.DictField(
+        child=LGDMechanismEvidenceResponseSerializer(),
+        help_text="Supporting evidence keyed by publication PMID.",
+    )
+
+
+class LGDMinedPublicationResponseSerializer(serializers.Serializer):
+    pmid = serializers.IntegerField()
+    year = serializers.IntegerField(allow_null=True)
+    title = serializers.CharField()
+    status = serializers.ChoiceField(choices=("mined", "curated", "rejected"))
+    comment = serializers.CharField(allow_blank=True, allow_null=True)
+    score = serializers.CharField(
+        required=False,
+        allow_null=True,
+        help_text="Included only for authenticated users.",
+    )
+    score_comment = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        help_text="Included only for authenticated users.",
+    )
+
+
+class LGDPhenotypeResponseSerializer(serializers.Serializer):
+    term = serializers.CharField()
+    accession = serializers.CharField()
+    publications = serializers.ListField(child=serializers.IntegerField())
+
+
+class LGDPhenotypeSummaryResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    summary = serializers.CharField()
+    publication = serializers.IntegerField()
+
+
+class LGDVariantTypeCommentResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    text = serializers.CharField()
+    date = serializers.DateField(allow_null=True)
+
+
+class LGDVariantTypeResponseSerializer(serializers.Serializer):
+    term = serializers.CharField()
+    accession = serializers.CharField()
+    inherited = serializers.BooleanField()
+    de_novo = serializers.BooleanField()
+    unknown_inheritance = serializers.BooleanField()
+    publications = serializers.ListField(child=serializers.IntegerField())
+    comments = LGDVariantTypeCommentResponseSerializer(
+        many=True,
+        help_text="Variant comments; empty for unauthenticated users.",
+    )
+
+
+class LGDVariantDescriptionResponseSerializer(serializers.Serializer):
+    description = serializers.CharField()
+    publications = serializers.ListField(child=serializers.IntegerField())
+
+
+class LGDCommentResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    text = serializers.CharField()
+    date = serializers.DateField(allow_null=True)
+    is_public = serializers.IntegerField()
+    user = serializers.CharField(
+        required=False,
+        help_text="Included only for authenticated users.",
+    )
+
+
 class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
     """
     Serializer for the LocusGenotypeDisease model.
@@ -268,6 +364,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         """
         return build_lgd_summary(id)
 
+    @extend_schema_field(LocusSerializer)
     def get_locus(self, id: int) -> dict[str, Any]:
         """
         Gene associated with the LGMDE record
@@ -275,6 +372,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         locus = LocusSerializer(id.locus).data
         return locus
 
+    @extend_schema_field(DiseaseSerializer)
     def get_disease(self, id: int) -> dict[str, Any]:
         """
         Disease associated with the LGMDE record
@@ -291,6 +389,11 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         else:
             return None
 
+    @extend_schema_field(
+        lazy_serializer(__name__ + ".LGDVariantGenCCConsequenceSerializer")(
+            many=True
+        )
+    )
     def get_variant_consequence(self, id: int) -> list[dict[str, Any]]:
         """
         Variant consequences linked to the LGMDE record.
@@ -299,6 +402,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         queryset = LGDVariantGenccConsequence.objects.filter(lgd_id=id, is_deleted=0)
         return LGDVariantGenCCConsequenceSerializer(queryset, many=True).data
 
+    @extend_schema_field(LGDMolecularMechanismResponseSerializer)
     def get_molecular_mechanism(self, id: int) -> dict[str, Any]:
         """
         Molecular mechanism associated with the LGMDE record.
@@ -378,6 +482,11 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         return mechanism_result
 
+    @extend_schema_field(
+        lazy_serializer(__name__ + ".LGDCrossCuttingModifierSerializer")(
+            many=True
+        )
+    )
     def get_cross_cutting_modifier(self, id: int) -> list[dict[str, str]]:
         """
         Cross cutting modifier terms associated with the LGMDE record.
@@ -385,6 +494,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
         queryset = LGDCrossCuttingModifier.objects.filter(lgd_id=id, is_deleted=0)
         return LGDCrossCuttingModifierSerializer(queryset, many=True).data
 
+    @extend_schema_field(LGDPublicationSerializer(many=True))
     def get_publications(self, id: int) -> list[dict[str, dict[str, Any]]]:
         """
         Publications associated with the LGMDE record.
@@ -395,6 +505,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             queryset, context={"user": self.context.get("user")}, many=True
         ).data
 
+    @extend_schema_field(LGDMinedPublicationResponseSerializer(many=True))
     def get_mined_publications(self, id: int) -> list[dict[str, Any]]:
         """
         Mined publications associated with the LGMDE record.
@@ -414,6 +525,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
             queryset, many=True, context={"user": self.context.get("user")}
         ).data
 
+    @extend_schema_field(LGDPhenotypeResponseSerializer(many=True))
     def get_phenotypes(self, id: int) -> list[dict[str, Any]]:
         """
         Phenotypes associated with the LGMDE record.
@@ -443,6 +555,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         return data.values()
 
+    @extend_schema_field(LGDPhenotypeSummaryResponseSerializer(many=True))
     def get_phenotype_summary(self, id: int) -> list[dict[str, Any]]:
         """
         A summary about the phenotypes associated with the LGMDE record.
@@ -466,6 +579,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         return data.values()
 
+    @extend_schema_field(LGDVariantTypeResponseSerializer(many=True))
     def get_variant_type(self, id: int) -> list[dict[str, Any]]:
         """
         Variant types associated with the LGMDE record.
@@ -547,6 +661,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         return data.values()
 
+    @extend_schema_field(LGDVariantDescriptionResponseSerializer(many=True))
     def get_variant_description(self, id: int) -> list[dict[str, Any]]:
         """
         Variant HGVS description linked to the LGMDE record and publication(s).
@@ -573,6 +688,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         return data.values()
 
+    @extend_schema_field(LGDPanelSerializer(many=True))
     def get_panels(self, id: int) -> list[dict[str, str]]:
         """
         Panel(s) associated with the LGMDE record.
@@ -596,6 +712,7 @@ class LocusGenotypeDiseaseSerializer(serializers.ModelSerializer):
 
         return LGDPanelSerializer(queryset, many=True).data
 
+    @extend_schema_field(LGDCommentResponseSerializer(many=True))
     def get_comments(self, id: int) -> list[dict[str, Any]]:
         """
         Comments associated with the LGMDE record.
